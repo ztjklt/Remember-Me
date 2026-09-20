@@ -26,6 +26,10 @@
 
 ## 下一阶段
 
+> **基线更新（2026-09-21）**：本节原写于原型完成时，把「视觉评审通过」作为接入真实链路的前置条件。PRD v3.0 与 Team Development Guide v1.0 已把 Phase 1 — Golden Path 定为 COMMITTED / NOW，该前置条件不再成立。视觉评审可以持续进行，但不再是 Phase 1 的阻塞项；当前的下一步是真实录音与 Backend 接入，见 [NEXT_PHASE.md](NEXT_PHASE.md)。
+
 由产品负责人先评审视觉、文案节奏和 Legacy 氛围。视觉通过前不要接真实 AI、Voice、Backend 或 Work 3200 SDK。
+
+（以上为原型完成时的原始记录，保留作为历史。）
 
 现在应打开正在运行的 `RememberMe_API_35`，从 Welcome 走完整 Onboarding；随后在 Creator Home 右上角 `•••` 打开 Demo Menu，切换到 Legacy Mode 评审第二种产品状态。
