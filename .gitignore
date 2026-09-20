@@ -4,8 +4,15 @@
 local.properties
 build/
 **/build/
+node_modules/
 .DS_Store
 captures/
 *.jks
 *.keystore
 secrets.properties
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.p12
+*.pem

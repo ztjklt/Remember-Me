@@ -9,6 +9,7 @@
     { "$ref": "#/$defs/processingStatus" },
     { "$ref": "#/$defs/aiCoreInput" },
     { "$ref": "#/$defs/aiCoreOutput" },
+    { "$ref": "#/$defs/episodeResult" },
     { "$ref": "#/$defs/twinRequest" },
     { "$ref": "#/$defs/twinResponse" },
     { "$ref": "#/$defs/voiceRequest" },
@@ -23,10 +24,34 @@
       "required": ["evidence_id", "source_type", "source_ref"],
       "properties": {
         "evidence_id": { "type": "string", "minLength": 1 },
-        "source_type": { "enum": ["SUBJECT", "THIRD_PARTY", "AI_INFERENCE", "CALIBRATION"] },
+        "source_type": { "enum": ["SUBJECT", "THIRD_PARTY", "AI_INFERENCE", "OBJECTIVE", "CALIBRATION"] },
         "source_ref": { "type": "string", "minLength": 1 },
         "excerpt": { "type": "string" },
+        "span_start": { "type": "integer", "minimum": 0 },
+        "span_end": { "type": "integer", "minimum": 0 },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "memoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memory_type", "content", "source_type", "evidence_ids", "confidence", "model_version", "prompt_version", "schema_version"],
+      "properties": {
+        "memory_type": { "enum": ["EVENT", "PERSON", "RELATIONSHIP", "PREFERENCE", "VALUE", "EMOTION"] },
+        "content": { "type": "string", "minLength": 1 },
+        "source_type": { "enum": ["SUBJECT", "THIRD_PARTY", "AI_INFERENCE", "OBJECTIVE", "CALIBRATION"] },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "model_version": { "type": "string", "minLength": 1 },
+        "prompt_version": { "type": "string", "minLength": 1 },
+        "schema_version": { "type": "string", "minLength": 1 },
+        "effective_at": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
     "captureEpisode": {
@@ -35,6 +60,9 @@
       "required": ["subject_id", "audio_ref", "source", "recorded_at"],
       "properties": {
         "subject_id": { "type": "string", "minLength": 1 },
+        "actor_id": { "type": "string", "minLength": 1 },
+        "recording_consent_id": { "type": "string", "minLength": 1 },
+        "idempotency_key": { "type": "string", "minLength": 1 },
         "audio_ref": { "type": "string", "minLength": 1 },
         "source": { "enum": ["ANDROID_MIC", "WORK_3200", "RECORDING_DEVICE", "IMPORT"] },
         "recorded_at": { "type": "string", "format": "date-time" },
@@ -71,6 +99,7 @@
       "properties": {
         "episode_id": { "type": "string", "minLength": 1 },
         "subject_id": { "type": "string", "minLength": 1 },
+        "trace_id": { "type": "string", "minLength": 1 },
         "transcript": { "type": "string", "minLength": 1 },
         "subject_context": { "type": "object", "additionalProperties": true },
         "existing_model_version": { "type": "string", "minLength": 1 }
@@ -81,11 +110,23 @@
       "additionalProperties": false,
       "required": ["memory_items", "graph_updates", "persona_updates", "evidence", "model_version"],
       "properties": {
-        "memory_items": { "type": "array", "items": { "type": "object" } },
+        "memory_items": { "type": "array", "items": { "$ref": "#/$defs/memoryItem" } },
         "graph_updates": { "type": "array", "items": { "type": "object" } },
         "persona_updates": { "type": "array", "items": { "type": "object" } },
         "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
         "model_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "episodeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["episode_id", "status", "memory_items", "model_version"],
+      "properties": {
+        "episode_id": { "type": "string", "minLength": 1 },
+        "status": { "const": "ready" },
+        "memory_items": { "type": "array", "items": { "$ref": "#/$defs/memoryItem" } },
+        "model_version": { "type": "string", "minLength": 1 },
+        "trace_id": { "type": "string", "minLength": 1 }
       }
     },
     "twinRequest": {
