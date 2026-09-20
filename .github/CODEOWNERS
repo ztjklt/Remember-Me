@@ -1,9 +1,10 @@
 * @ztjklt
 /apps/android/ @shuziyuxingxing-stack @ztjklt
 /.github/workflows/android-ci.yml @shuziyuxingxing-stack @ztjklt
-/services/ai-core/ @centraler @ztjklt
-/services/backend/ @qingtian-4 @ztjklt
-/services/voice/ @qingtian-4 @ztjklt
-/infra/ @qingtian-4 @ztjklt
+# Re-add the named module owners after their pending repository invitations are accepted.
+/services/ai-core/ @ztjklt
+/services/backend/ @ztjklt
+/services/voice/ @ztjklt
+/infra/ @ztjklt
 /packages/contracts/ @ztjklt
 /docs/team/ @ztjklt
