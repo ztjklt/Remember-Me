@@ -1,0 +1,8 @@
+{
+  "name": "@remember-me/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Versioned cross-module JSON Schemas for Remember Me",
+  "files": ["schemas"]
+}
+

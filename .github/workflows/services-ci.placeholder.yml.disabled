@@ -1,0 +1,4 @@
+# Reserved Phase 0 workflow template.
+# Rename to services-ci.yml only after a service has real source code and a real test command.
+# Do not add no-op commands or green placeholder jobs: a passing check must verify executable behavior.
+
