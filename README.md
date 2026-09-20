@@ -21,6 +21,7 @@ The Android prototype is runnable and tested, but it is a Mock product-flow prot
 - [PRD v3.0 Summary](docs/PRD/PRD_V3_SUMMARY.md) — agent-readable orientation
 - [Team Development Guide v1.0](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx) — engineering execution baseline
 - [Roadmap](docs/roadmap/ROADMAP.md) — phases, exit gates, owners
+- [Phase 1 Team Kickoff](docs/team/PHASE1_KICKOFF.md) — first tasks, branch names, dependency order, and temporary local-verification policy
 
 PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). Older text naming iOS, Swift, or SwiftUI as the current client is superseded by PRD v3.0.
 
@@ -40,7 +41,7 @@ PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). Older 
 
 ## Start here
 
-All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the [PRD v3.0 summary](docs/PRD/PRD_V3_SUMMARY.md), the [Team Development Guide](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx), [team ownership](docs/team/00_TEAM_OWNERSHIP.md), your own task brief in `docs/team/`, the [roadmap](docs/roadmap/ROADMAP.md), and [contract v0.1](packages/contracts/README.md) before changing code.
+All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the [PRD v3.0 summary](docs/PRD/PRD_V3_SUMMARY.md), the [Team Development Guide](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx), [team ownership](docs/team/00_TEAM_OWNERSHIP.md), the [Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md), your own task brief in `docs/team/`, the [roadmap](docs/roadmap/ROADMAP.md), and [contract v0.1](packages/contracts/README.md) before changing code.
 
 Android setup and build commands are in [apps/android/README.md](apps/android/README.md). The local verification command is:
 

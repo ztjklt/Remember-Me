@@ -12,9 +12,13 @@ Baseline: [PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx), the [Team Development 
 
 Create feature branches from `develop` and open Pull Requests back to `develop`. Release Pull Requests go from `develop` to `main`.
 
+The current owner-by-owner starting order and suggested branch names are recorded in [the Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md).
+
 ## Pull Request contract
 
 Every Pull Request must state what changed, how it was tested, whether `packages/contracts` changed, and any consent, privacy, migration, or rollback impact. Cross-module contract changes require an Issue or proposal before implementation.
+
+While the known Hosted Runner dependency-resolution failure is tracked in Issue #17, it is not a Phase 1 product gate. Pull Requests into `develop` still require a Code Owner review and exact local verification evidence. Do not use a skipped, placeholder, or no-op check as a substitute. `main` retains its required CI check and is not released while that check is failing.
 
 ## Scope
 
