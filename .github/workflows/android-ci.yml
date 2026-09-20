@@ -17,6 +17,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true"
     defaults:
       run:
         working-directory: apps/android
