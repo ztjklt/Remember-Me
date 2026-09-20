@@ -1,22 +1,19 @@
 pluginManagement {
     repositories {
-        maven("https://repo.huaweicloud.com/repository/maven")
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/gradle-plugin")
-        maven("https://maven.aliyun.com/repository/public")
         google()
-        mavenCentral()
+        maven("https://maven-central-asia.storage-download.googleapis.com/maven2/") {
+            name = "GoogleCloudMavenCentralMirror"
+        }
         gradlePluginPortal()
     }
 }
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven("https://repo.huaweicloud.com/repository/maven")
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/public")
         google()
-        mavenCentral()
+        maven("https://maven-central-asia.storage-download.googleapis.com/maven2/") {
+            name = "GoogleCloudMavenCentralMirror"
+        }
     }
 }
 rootProject.name = "RememberMe"

@@ -1,6 +1,6 @@
 # Coding Agent Instructions
 
-You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/team/00_TEAM_OWNERSHIP.md`, the task brief for the affected owner, and `packages/contracts/README.md`.
+You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V2_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, the task brief for the affected owner, and `packages/contracts/README.md`.
 
 ## Boundaries
 
@@ -14,4 +14,3 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 ## Delivery flow
 
 Work from `develop` on the owner-specific feature prefixes listed in `CONTRIBUTING.md`. Keep changes reviewable, update tests and docs with behavior, and disclose contract impact in every Pull Request. Never push directly to `main`.
-
