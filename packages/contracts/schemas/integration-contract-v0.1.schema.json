@@ -57,6 +57,7 @@
       "required": ["episode_id", "status"],
       "properties": {
         "episode_id": { "type": "string", "minLength": 1 },
+        "trace_id": { "type": "string", "minLength": 1 },
         "status": { "enum": ["uploaded", "transcribing", "extracting", "modeling", "ready", "failed"] },
         "progress": { "type": "number", "minimum": 0, "maximum": 1 },
         "error_code": { "type": "string" },

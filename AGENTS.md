@@ -1,6 +1,6 @@
 # Coding Agent Instructions
 
-You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V3_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, the task brief for the affected owner, `docs/roadmap/ROADMAP.md`, and `packages/contracts/README.md`.
+You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V3_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, `docs/team/PHASE1_KICKOFF.md`, the task brief for the affected owner, `docs/roadmap/ROADMAP.md`, and `packages/contracts/README.md`.
 
 ## Source of truth
 
