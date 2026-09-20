@@ -1,17 +1,28 @@
 # Remember Me Team Ownership
 
-This document converts the Remember Me PRD v2.0 into an engineering ownership baseline. The current Android prototype is a runnable product-flow prototype, not a completed product. The team will extend it rather than rewrite it.
+This document is the engineering ownership baseline for [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) under the [Team Development Guide v1.0](Remember_Me_Team_Development_Guide_v1.0.docx). The current Android prototype is a runnable product-flow prototype, not a completed product. The team extends it rather than rewrites it.
 
 ## Ownership
 
-| Member | GitHub | Role | Sole ownership domain |
-| --- | --- | --- | --- |
-| 张天霁 | `ztjklt` | Product Repo Integration Owner | PRD, product experience, contract baseline, review, integration acceptance, demo |
-| 刘修贤 | `shuziyuxingxing-stack` | Android Hardware SDK Owner | Android UI and UX, real capture, client state, Work 3200 and recording-device adapter |
-| 康欣 | `centraler` | AI Core Person Model Owner | Post-STT AI, memory, temporal graph, person model, Twin, calibration, capture planner |
-| 王昊宇 | `qingtian-4` | Backend Voice Infrastructure Owner | API, database, storage, auth, jobs, cloud sync, voice seed, clone, and TTS |
+| Member | GitHub | Role | Sole ownership domain | Primary deliverables |
+| --- | --- | --- | --- | --- |
+| 张天霁 | `ztjklt` | Product / Repo / Integration | PRD, priority, contract freeze, acceptance, PR and integration, demo | PRD v3.0 and product principles, contract approval, Golden Path integration on `develop`, Phase Gate acceptance, demo script and scope control |
+| 刘修贤 | `shuziyuxingxing-stack` | Android / Hardware | Android client, Capture, Local Audio, Upload, Hardware Adapter | Compose client, real recording, audio persistence, upload and processing states, capability-based device adapter |
+| 康欣 | `centraler` | AI Core / Person Model | Memory, Graph, Person Model, Twin, Calibration, Capture Planner | Schema-validated extraction, temporal graph, seven person domains, evidence retrieval, Original Router, calibration |
+| 王昊宇 | `qingtian-4` | Backend / Voice / Infrastructure | API/Auth/DB/Storage/Jobs, STT plumbing, Voice pipeline, deployment and observability | Upload and Episode API, async jobs and status, consent and subject isolation, voice pipeline and provider adapters |
 
 Each module has one final owner. Members may help across boundaries but must not create duplicate interfaces or competing implementations.
+
+**Boundary rule:** 刘修贤 does not own Person Model algorithms. 康欣 does not own Android pages or account/storage. 王昊宇 does not decide Person Model product logic. Cross-module contracts are coordinated and frozen by 张天霁. Covering for each other is allowed; a second owner is not.
+
+## Phase responsibility boundaries
+
+| Phase | Status | 刘修贤 | 康欣 | 王昊宇 | 张天霁 |
+| --- | --- | --- | --- | --- | --- |
+| 1 — Golden Path | COMMITTED / NOW | Real capture, file persistence, upload, Episode and Processing states | Schema-validated Memory Extractor, provenance, fixtures | Upload API, Episode persistence, STT plumbing, async jobs, result API | Contract freeze, integration on `develop`, Phase 1 acceptance |
+| 2 — Core Twin | PLANNED / NEXT | Memories on real data, Person Model and Coverage UI, Twin client, correction/deletion UI | Temporal graph, seven domains, Conflict Detector, Evidence Retrieval, Twin Agent, Original Router | Memory/Graph/Persona API, Twin Query API, recompute and cache invalidation | Evidence Twin acceptance, UX review of Memories and Twin |
+| 3 — Calibration + Voice | PLANNED | Calibration UI, Voice Seed/Confirmation UI, Twin Voice player | Calibration Agent, follow-up questions, Capture Planner | Voice consent, speaker verification, dataset, profile, clone/TTS adapter, audit | Calibration and Voice acceptance, consent-scope review |
+| 4 — Hardware + Legacy | BACKLOG / CONDITIONAL | Work 3200 adapter, capability probe, Hardware fallback, Handover/Legacy client pages | Legacy Mode evidence and Original Router behaviour, baseline freeze | Trusted People, grant scope, activation state, audit, Legacy policy gate | Legacy acceptance, competition scope control |
 
 ## Integration path
 
@@ -28,18 +39,8 @@ The Phase 1 Golden Path is real Android recording, backend upload, Episode creat
 - Voice clone consent is separate from recording consent. Third-party speech is excluded from subject voice datasets.
 - No hardware is required for the core app path; device capabilities enhance rather than block it.
 
-## Phases
-
-1. Repo and Contract: monorepo, Android import, collaborators, branches, v0.1 contract, and CI.
-2. Golden Path A: real recording through real Memory display.
-3. Person Model: explainable update from a second recording.
-4. Twin: evidence retrieval and Original or Simulation routing.
-5. Voice: separate consent, seed, clone or TTS, and playback.
-6. Calibration: locked Twin answer, human answer, diff, model update, and next question.
-7. Hardware: capability-based Work 3200 or recording-device adapter.
-8. Handover and Legacy: competition-scope permissions and key UI.
-
 ## Required first instruction for module owners
 
-You are the sole Owner of this module in the Remember Me team. First read the root PRD summary, TEAM OWNERSHIP, CONTRACTS, and existing code. Do not rewrite another member's module or change a cross-module Contract without approval. Complete your Phase 1 minimum loop first, verify it locally, then submit it through a feature branch and Pull Request.
+You are the sole Owner of this module in the Remember Me team. First read the root PRD summary, TEAM OWNERSHIP, the Team Development Guide, CONTRACTS, and existing code. Do not rewrite another member's module or change a cross-module Contract without approval. Complete your Phase 1 minimum loop first, verify it locally, then submit it through a feature branch and Pull Request.
 
+Phase status, owners, and exit gates are tracked in [docs/roadmap/ROADMAP.md](../roadmap/ROADMAP.md).

@@ -1,30 +1,50 @@
 # Remember Me
 
-Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. This repository contains the Android prototype and the shared baseline for backend, AI Core, voice, infrastructure, and team integration.
+Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. This repository contains the Android client and the shared baseline for backend, AI Core, voice, infrastructure, and team integration.
 
 ## Current status
 
-Phase 0 is in progress. The Android UI prototype is runnable and tested; real capture, backend ingestion, STT, AI extraction, person modeling, Twin, voice cloning, cloud sync, accounts, and Work 3200 integration are not yet implemented.
+The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
+
+The Android prototype is runnable and tested, but it is a Mock product-flow prototype, not a working product. Real microphone capture, upload, STT, AI extraction, person modeling, Twin, voice cloning, backend persistence, accounts, cloud sync, and Work 3200 integration are **not yet implemented**.
+
+| Phase | Status |
+| --- | --- |
+| Phase 1 — Golden Path | COMMITTED / NOW |
+| Phase 2 — Core Twin | PLANNED / NEXT |
+| Phase 3 — Calibration + Voice | PLANNED |
+| Phase 4 — Hardware + Legacy | BACKLOG / CONDITIONAL |
+
+## Baseline documents
+
+- [Remember Me PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx) — current product Source of Truth (Android First)
+- [PRD v3.0 Summary](docs/PRD/PRD_V3_SUMMARY.md) — agent-readable orientation
+- [Team Development Guide v1.0](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx) — engineering execution baseline
+- [Roadmap](docs/roadmap/ROADMAP.md) — phases, exit gates, owners
+
+PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). Older text naming iOS, Swift, or SwiftUI as the current client is superseded by PRD v3.0.
 
 ## Repository map
 
-- `apps/android` — existing Android prototype and its original build documentation
+- `apps/android` — Android client (Kotlin, Jetpack Compose) and its build documentation
 - `services/backend` — API, persistence, auth, jobs, and storage
 - `services/ai-core` — memory extraction, person model, Twin, calibration, and capture planning
 - `services/voice` — consent-gated voice dataset, clone, and TTS adapters
 - `packages/contracts` — versioned cross-module schemas; the integration source of truth
 - `infra` — environments, deployment, migrations, logging, and monitoring
-- `docs/team` — ownership and individual task briefs
+- `docs/PRD` — current PRD and its agent-readable summary
+- `docs/architecture` — system architecture baseline
+- `docs/roadmap` — phase status, gates, and owners
+- `docs/team` — team development guide, ownership, and individual task briefs
 - `docs/api` — contract field and integration guidance
 
 ## Start here
 
-All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), [team ownership](docs/team/00_TEAM_OWNERSHIP.md), and [contract v0.1](packages/contracts/README.md) before changing code.
+All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the [PRD v3.0 summary](docs/PRD/PRD_V3_SUMMARY.md), the [Team Development Guide](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx), [team ownership](docs/team/00_TEAM_OWNERSHIP.md), your own task brief in `docs/team/`, the [roadmap](docs/roadmap/ROADMAP.md), and [contract v0.1](packages/contracts/README.md) before changing code.
 
 Android setup and build commands are in [apps/android/README.md](apps/android/README.md). The local verification command is:
 
 ```bash
 cd apps/android
-./gradlew test
+./gradlew test assembleDebug
 ```
-
