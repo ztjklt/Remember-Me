@@ -17,8 +17,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true"
     defaults:
       run:
         working-directory: apps/android
@@ -35,21 +33,6 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: "platform-tools platforms;android-35 build-tools;35.0.0"
-      - name: Configure Gradle network
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require("fs");
-          const raw = process.env.HTTPS_PROXY || process.env.https_proxy || process.env.HTTP_PROXY || process.env.http_proxy;
-          let options = "-Djava.net.preferIPv4Stack=true";
-          if (raw) {
-            const proxy = new URL(raw);
-            const port = proxy.port || (proxy.protocol === "https:" ? "443" : "80");
-            options += ` -Dhttps.proxyHost=${proxy.hostname} -Dhttps.proxyPort=${port}`;
-            options += ` -Dhttp.proxyHost=${proxy.hostname} -Dhttp.proxyPort=${port}`;
-          }
-          fs.appendFileSync(process.env.GITHUB_ENV, `GRADLE_OPTS=${options}\n`);
-          NODE
       - name: Run Android unit tests
         run: gradle test --stacktrace
       - name: Build debug APK
