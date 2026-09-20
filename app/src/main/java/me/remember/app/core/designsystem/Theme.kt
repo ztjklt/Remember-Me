@@ -31,4 +31,9 @@ private val type = Typography(
     bodyMedium=Typography().bodyMedium.copy(fontSize=15.sp,lineHeight=23.sp),
     labelLarge=Typography().labelLarge.copy(fontSize=15.sp,fontWeight=FontWeight.Medium)
 )
-@Composable fun RememberMeTheme(content:@Composable()->Unit)=MaterialTheme(colorScheme=scheme,typography=type,content=content)
+@Composable
+fun RememberMeTheme(content: @Composable () -> Unit) = MaterialTheme(
+    colorScheme = scheme,
+    typography = type,
+    content = content
+)

@@ -1,16 +1,16 @@
 # Remember Me Android Build Report
 
-报告日期：2026-09-19。当前状态是工程与产品原型代码已完成首轮搭建，Gradle 配置检查成功；由于 Mac 锁屏且 Google SDK 下载连接反复重置，Android SDK、APK 编译和 Emulator 运行尚未完成，因此本报告明确标记为待设备验收，不宣称第一阶段已全部完成。
+报告日期：2026-09-20。第一阶段 Android Prototype 已完成构建与 Emulator 验收，可进入产品视觉评审。
 
 ## 安装和配置
 
-已安装 Android Studio Stable 2026.1.4.8 ARM64、OpenJDK 17.0.20.1、Gradle 8.9 Wrapper。已建立 Android Native Kotlin、Jetpack Compose、Material 3、Compose Navigation、Flow、Gradle Kotlin DSL 与 Version Catalog 工程。Gradle `tasks` 配置检查成功。
+已安装 Android Studio Stable 2026.1.4.8 ARM64、OpenJDK 17.0.20.1、Gradle 8.9 Wrapper、Android SDK 35、Build Tools、Platform Tools、Emulator 和 ARM64 system image。已创建并启动 `RememberMe_API_35`。
 
-Android SDK、adb、Build Tools、Emulator 与 AVD 尚未安装完成。官方 command-line tools 下载多次发生 connection reset；Android Studio 首次向导无法自动操作，因为 Mac 当前锁屏。
+`./gradlew test assembleDebug` 成功；Debug APK 安装与冷启动成功。Compose instrumentation smoke test 已通过 adb 运行，结果为 `OK (1 test)`，覆盖 Welcome → Consent → Introduce → Recording → Processing → Twin Birth → Voice Seed → Home。
 
 ## 项目位置和启动
 
-项目位于 `/Users/jitian/Documents/ChatGPT/Remember Me`。解锁 Mac 并由 Android Studio Setup Wizard 安装 SDK 后，打开此目录，选择 `RememberMe_API_35`，运行 `app`。命令行方式见根目录 README。
+项目位于 `/Users/jitian/Documents/ChatGPT/Remember Me`。Android Studio 打开此目录，选择 `RememberMe_API_35`，运行 `app`。命令行方式见根目录 README。
 
 ## 已实现页面
 
@@ -22,10 +22,10 @@ Android SDK、adb、Build Tools、Emulator 与 AVD 尚未安装完成。官方 c
 
 ## 未完成和已知问题
 
-尚未完成 APK clean build、单元测试执行、instrumentation smoke test、AVD 创建、安装启动与真机视觉检查。现有页面虽按可访问尺寸和 Compose 自适应布局实现，仍需 Emulator 上检查系统大字号、键盘和小屏溢出。Debug Menu 尚未通过 `BuildConfig.DEBUG` 对 release 隐藏。
+真实录音、STT、LLM、Voice Clone、Backend 和 Work 3200 按首期边界未接入。当前依赖下载需要本机网络代理，Gradle 已记录本机回环代理设置；换电脑时应按当地网络删除或调整。SDK 工具版本会输出 XML schema 兼容警告，但不影响构建。Debug Menu 入口只在 Debug build 显示。
 
 ## 下一阶段
 
-先完成 SDK 与 Emulator 验收并修复编译或布局问题，再由产品负责人评审视觉。视觉通过前不要接真实 AI、Voice、Backend 或 Work 3200 SDK。
+由产品负责人先评审视觉、文案节奏和 Legacy 氛围。视觉通过前不要接真实 AI、Voice、Backend 或 Work 3200 SDK。
 
-完成环境后应首先打开 `RememberMe_API_35`，从 Welcome 走完整 Onboarding；随后在 Creator Home 右上角 `•••` 打开 Demo Menu，切换到 Legacy Mode 评审第二种产品状态。
+现在应打开正在运行的 `RememberMe_API_35`，从 Welcome 走完整 Onboarding；随后在 Creator Home 右上角 `•••` 打开 Demo Menu，切换到 Legacy Mode 评审第二种产品状态。
