@@ -14,8 +14,10 @@ Two things the contract leaves open and this boundary decides:
   replayed safely.
 * Reading an Episode requires an actor but no consent. Consent guards the act of
   capturing; an Episode that already exists stays readable, which is what makes a
-  failed processing run survivable. Phase 1 has no roles, so any authenticated
-  actor can read any Episode; see the README's note on what is not here yet.
+  failed processing run survivable. What "readable" is scoped to is the Actor: an
+  Episode is readable by the Actor that captured it and by nobody else, and
+  another Actor's Episode is answered exactly as one that does not exist, so the
+  API cannot be used to discover that another Actor's recording is there.
 
 `job_id` appears nowhere in a response. Work is addressed by `episode_id`, and the
 contract's test asserts the job id never leaks.
@@ -134,6 +136,39 @@ def _parse_metadata(raw: str | None) -> dict | None:
     return parsed
 
 
+def _discard_orphaned_audio(store: ObjectStore, key: str, episode_id: str) -> None:
+    """Remove audio written by a request whose Episode never committed.
+
+    The bytes are stored before the Episode is committed, so a request that fails
+    to commit leaves an object behind that no record refers to. Removing it is the
+    compensation for that ordering, and it is safe for the reason the ordering is
+    acceptable at all: the key is derived from an episode id this request
+    generated, so nothing else can be pointing at it.
+
+    This is not the cleanup-on-failure ADR-0001 D11 rejects. That would delete the
+    audio of a *committed* Episode because a later stage failed, destroying the
+    subject's recording to tidy up a processing error; this deletes an object that
+    belongs to no Episode at all.
+
+    Best-effort: the request has already failed, and a second failure here must
+    not replace an error the client can act on with one it cannot. An object that
+    survives is a leak, not an inconsistency, and it is logged as one.
+    """
+    try:
+        store.delete(key)
+    except Exception as error:  # noqa: BLE001 - compensation must not mask the cause
+        logger.warning(
+            "upload.orphan_not_removed",
+            extra={
+                "extra_fields": {
+                    "episode_id": episode_id,
+                    "object_key": key,
+                    "error": str(error),
+                }
+            },
+        )
+
+
 class CaptureEpisodeForm(BaseModel):
     """The multipart body of a capture, mirroring the contract's captureEpisode.
 
@@ -185,6 +220,10 @@ def create_episode(
     instead of 201. The same key with different audio is a conflict rather than a
     replay: answering with the stored Episode would attach the wrong recording to
     the key.
+
+    The consent that authorizes this is the caller's own. Asking for a `RECORDING`
+    consent is not enough on its own — it has to be one this Actor granted, or the
+    upload would be authorized by somebody else's grant (ADR-0001 D7).
     """
     if form.actor_id is not None and form.actor_id != actor.actor_id:
         raise RequestInvalid(
@@ -197,7 +236,10 @@ def create_episode(
     subjects = SubjectRepository(session)
     subjects.require(form.subject_id)
     ConsentRepository(session).require_active(
-        form.recording_consent_id, subject_id=form.subject_id, scope=ConsentScope.RECORDING
+        form.recording_consent_id,
+        subject_id=form.subject_id,
+        scope=ConsentScope.RECORDING,
+        actor_id=actor.actor_id,
     )
 
     content_type = (form.file.content_type or "").lower()
@@ -262,14 +304,17 @@ def create_episode(
             extra={"extra_fields": {"episode_id": episode.episode_id, "error": str(error)}},
         )
         raise StorageUnavailable(f"Object storage refused the upload: {error}") from error
-    episodes.attach_audio(episode, stored, audio_ref=form.audio_ref)
 
+    # Everything from here to the commit has an object behind it that no Episode
+    # refers to yet, so all of it is inside the compensation.
     try:
+        episodes.attach_audio(episode, stored, audio_ref=form.audio_ref)
         session.commit()
     except IntegrityError:
         # Two uploads with the same key raced. The unique index chose one; this
         # request reports the winner rather than a duplicate.
         session.rollback()
+        _discard_orphaned_audio(store, key, episode.episode_id)
         existing = episodes.find_by_idempotency(
             subject_id=form.subject_id,
             actor_id=actor.actor_id,
@@ -288,6 +333,13 @@ def create_episode(
         )
         response.status_code = status.HTTP_200_OK
         return EpisodeCreated(episode_id=existing.episode_id, upload_status="uploaded")
+    except Exception:
+        # The Episode did not commit, so the object written for it belongs to no
+        # record. Without this the bytes would outlive the request that made them
+        # and nothing would ever refer to them again.
+        session.rollback()
+        _discard_orphaned_audio(store, key, episode.episode_id)
+        raise
 
     return EpisodeCreated(episode_id=episode.episode_id, upload_status="uploaded")
 
@@ -295,7 +347,7 @@ def create_episode(
 @router.get("/{episode_id}", response_model=ProcessingStatus, response_model_exclude_none=True)
 def read_status(
     episode_id: str,
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> ProcessingStatus:
     """Where the Episode is in processing.
@@ -305,8 +357,11 @@ def read_status(
     deliberately absent for a second reason — a number derived from the status
     would only restate it, and a client that read it as real progress would be
     misled.
+
+    Scoped to the Actor that captured the Episode: another Actor's Episode is
+    EPISODE_NOT_FOUND, exactly as an id nobody holds would be.
     """
-    episode = EpisodeRepository(session).require(episode_id)
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
     return ProcessingStatus(
         episode_id=episode.episode_id,
         status=EpisodeStatus(episode.status),
@@ -321,15 +376,16 @@ def read_status(
 )
 def read_result(
     episode_id: str,
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> EpisodeResult:
     """The memories an Episode produced.
 
     Reading before processing finishes is EPISODE_NOT_READY rather than an empty
-    result, so a client polling can tell "not yet" from "nothing was found".
+    result, so a client polling can tell "not yet" from "nothing was found" — and
+    like the status, it is readable only by the Actor that captured the Episode.
     """
-    episode = EpisodeRepository(session).require(episode_id)
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
     if episode.status != str(EpisodeStatus.READY) or episode.model_version is None:
         raise EpisodeNotReady(
             f"Episode {episode_id} is {episode.status}, not ready"

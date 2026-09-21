@@ -32,6 +32,16 @@ def audio_object_key(subject_id: str, episode_id: str) -> str:
 
 
 class EpisodeRepository:
+    """Episodes, and the rule that decides who may read one.
+
+    An Episode belongs to the Actor that captured it. `require` is for the worker,
+    which acts on behalf of no Actor and addresses Episodes it was handed by the
+    queue; every method that answers a *request* is scoped to the Actor making it,
+    and an Episode belonging to another Actor is reported exactly as one that does
+    not exist, so a response never discloses that another Actor's Episode exists
+    (ADR-0001 D7).
+    """
+
     def __init__(self, session: Session) -> None:
         self.session = session
 
@@ -43,8 +53,33 @@ class EpisodeRepository:
         return self.session.get(Episode, episode_id)
 
     def require(self, episode_id: str) -> Episode:
-        """Return the Episode or fail with EPISODE_NOT_FOUND."""
+        """Return the Episode or fail with EPISODE_NOT_FOUND.
+
+        Unscoped on purpose — the worker has no Actor — which is why no request
+        handler uses it: see `require_for`.
+        """
         episode = self.get(episode_id)
+        if episode is None:
+            raise EpisodeNotFound(f"No episode with id {episode_id}")
+        return episode
+
+    def for_actor(self, episode_id: str, *, actor_id: str) -> Episode | None:
+        """The Episode as this Actor may see it, or None when it is not theirs."""
+        return self.session.scalars(
+            select(Episode).where(
+                Episode.episode_id == episode_id,
+                Episode.actor_id == actor_id,
+            )
+        ).one_or_none()
+
+    def require_for(self, episode_id: str, *, actor_id: str) -> Episode:
+        """Return the caller's own Episode, or fail EPISODE_NOT_FOUND.
+
+        An Episode captured by another Actor is EPISODE_NOT_FOUND rather than a
+        refusal of its own: a distinguishable "exists but is not yours" would let
+        one Actor enumerate another's recordings by id.
+        """
+        episode = self.for_actor(episode_id, actor_id=actor_id)
         if episode is None:
             raise EpisodeNotFound(f"No episode with id {episode_id}")
         return episode

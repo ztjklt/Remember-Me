@@ -6,17 +6,26 @@ same audio returns that Episode instead of a second one. Around them are the
 cases that decide whether the boundary is safe to point a client at — a capture
 with no consent, a voice consent offered as a recording consent, audio that is
 not audio, and a key reused for different bytes.
+
+Two things are scoped to the Actor rather than to the request: an Episode is
+readable only by the Actor that captured it, and the consent that authorizes a
+capture has to be one the caller granted. A cross-Actor attempt is answered
+exactly as an id nobody holds would be, so the API cannot be asked whether
+another Actor's recording is there.
 """
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
-from app.models import Episode, Job, JobStage, JobState, as_utc
+from app.models import Actor, Episode, Job, JobStage, JobState, as_utc
+from app.repositories.episodes import EpisodeRepository
 from app.seed import seed_development_data
 from app.storage.base import checksum_of
+from app.tokens import generate_actor_token, hash_actor_token
 
 AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmt "
 OTHER_AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmy"
@@ -41,6 +50,25 @@ def seeded(session):
 @pytest.fixture
 def auth(seeded) -> dict[str, str]:
     return {"Authorization": f"Bearer {seeded.actor_token}"}
+
+
+@pytest.fixture
+def other(session) -> dict[str, str]:
+    """A second Actor's credentials, and nothing else of its own.
+
+    Built here rather than by seeding again, because the rule under test is about
+    *which Actor* captured an Episode, with the subject held constant. A second
+    seeded Subject would let the tests pass for the wrong reason.
+    """
+    token = generate_actor_token()
+    actor = Actor(
+        actor_id=f"actor_{uuid4().hex[:16]}",
+        display_name="Bob",
+        token_hash=hash_actor_token(token),
+    )
+    session.add(actor)
+    session.commit()
+    return {"actor_id": actor.actor_id, "headers": {"Authorization": f"Bearer {token}"}}
 
 
 def capture(
@@ -365,3 +393,160 @@ def test_the_episode_endpoints_require_an_actor(client: TestClient, method: str,
 
     assert response.status_code == 401
     assert response.json()["error_code"] == "AUTH_REQUIRED"
+
+
+# An Episode belongs to the Actor that captured it. Every refusal below is a 404
+# rather than a 403, because a distinguishable "exists but is not yours" would let
+# one Actor enumerate another Actor's recordings by id.
+
+
+def test_an_episode_is_readable_only_by_the_actor_that_captured_it(client, seeded, auth, other):
+    episode_id = capture(client, auth, seeded).json()["episode_id"]
+
+    assert client.get(f"/api/v1/episodes/{episode_id}", headers=auth).status_code == 200
+
+    response = client.get(f"/api/v1/episodes/{episode_id}", headers=other["headers"])
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "EPISODE_NOT_FOUND"
+
+
+def test_another_actors_episode_answers_exactly_like_a_missing_one(client, seeded, auth, other):
+    """The two refusals are one answer, so neither can be used as a probe."""
+    episode_id = capture(client, auth, seeded).json()["episode_id"]
+
+    missing = client.get("/api/v1/episodes/ep_does_not_exist", headers=other["headers"])
+    someone_elses = client.get(f"/api/v1/episodes/{episode_id}", headers=other["headers"])
+
+    assert missing.status_code == someone_elses.status_code == 404
+    assert (
+        missing.json()["error_code"]
+        == someone_elses.json()["error_code"]
+        == "EPISODE_NOT_FOUND"
+    )
+
+
+def test_the_result_of_an_episode_is_readable_only_by_its_actor(client, seeded, auth, other):
+    episode_id = capture(client, auth, seeded).json()["episode_id"]
+
+    response = client.get(f"/api/v1/episodes/{episode_id}/result", headers=other["headers"])
+
+    # Not EPISODE_NOT_READY: which of the two refusals comes back would itself say
+    # that the Episode exists.
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "EPISODE_NOT_FOUND"
+
+
+def test_a_consent_granted_by_another_actor_cannot_authorize_an_upload(
+    client, session, seeded, other
+):
+    """The capture asks for the caller's own grant, not for any grant."""
+    response = capture(client, other["headers"], seeded)
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "CONSENT_NOT_FOUND"
+    assert count(session, Episode) == 0
+
+
+def test_each_actor_reads_only_the_episodes_it_captured(client, seeded, auth, other):
+    """The whole rule, with the subject held constant on both sides."""
+    mine = capture(client, auth, seeded).json()["episode_id"]
+
+    theirs_consent = client.post(
+        "/api/v1/consents",
+        headers=other["headers"],
+        json={"subject_id": seeded.subject_id, "scope": "RECORDING"},
+    ).json()
+    theirs = capture(
+        client,
+        other["headers"],
+        seeded,
+        recording_consent_id=theirs_consent["consent_id"],
+    ).json()["episode_id"]
+
+    assert mine != theirs
+    for reader, visible, hidden in (
+        (auth, mine, theirs),
+        (other["headers"], theirs, mine),
+    ):
+        assert client.get(f"/api/v1/episodes/{visible}", headers=reader).status_code == 200
+        assert client.get(f"/api/v1/episodes/{hidden}", headers=reader).status_code == 404
+
+
+# The audio is written before the Episode is committed, so a request that fails to
+# commit has already put an object somewhere. Nothing will ever refer to it, and
+# these are the tests that it does not stay there.
+
+
+def _miss_the_pre_check_once(monkeypatch) -> None:
+    """Make the second capture's idempotency pre-check miss what is already there.
+
+    The pre-check is a read, so it can miss a row another request is about to
+    commit — that race is exactly what the unique index on (subject, actor,
+    idempotency_key) exists to catch. Counting calls reproduces it: the first
+    capture's pre-check genuinely finds nothing, the racing one is made to miss,
+    and the handler's post-IntegrityError lookup is left alone so it can find the
+    winner.
+    """
+    original = EpisodeRepository.find_by_idempotency
+    calls = {"seen": 0}
+
+    def miss_the_second_time(self, **kwargs):  # noqa: ANN003, ANN202 - test double
+        calls["seen"] += 1
+        return None if calls["seen"] == 2 else original(self, **kwargs)
+
+    monkeypatch.setattr(EpisodeRepository, "find_by_idempotency", miss_the_second_time)
+
+
+def test_a_lost_idempotency_race_leaves_no_orphaned_audio(
+    client, session, seeded, auth, monkeypatch
+):
+    _miss_the_pre_check_once(monkeypatch)
+
+    winner = capture(client, auth, seeded).json()["episode_id"]
+    raced = capture(client, auth, seeded)
+
+    assert raced.status_code == 200, raced.text
+    assert raced.json()["episode_id"] == winner
+    assert count(session, Episode) == 1
+
+    store = client.app.state.object_store
+    stored = session.get(Episode, winner).audio_object_key
+    # One object, and it is the one the committed Episode points at. Two would
+    # mean the losing request's bytes survived the request that wrote them.
+    assert list(store._objects) == [stored]
+    assert store.get(stored) == AUDIO
+
+
+def test_a_raced_upload_of_different_audio_leaves_no_orphaned_audio(
+    client, session, seeded, auth, monkeypatch
+):
+    _miss_the_pre_check_once(monkeypatch)
+
+    winner = capture(client, auth, seeded).json()["episode_id"]
+    raced = capture(client, auth, seeded, audio=OTHER_AUDIO)
+
+    assert raced.status_code == 409
+    assert raced.json()["error_code"] == "IDEMPOTENCY_CONFLICT"
+    assert count(session, Episode) == 1
+
+    store = client.app.state.object_store
+    assert list(store._objects) == [session.get(Episode, winner).audio_object_key]
+
+
+def test_a_capture_that_cannot_commit_leaves_no_orphaned_audio(
+    client, session, seeded, auth, monkeypatch
+):
+    """Any failure between storing the bytes and committing the Episode."""
+    store = client.app.state.object_store
+
+    def fail_after_the_bytes_are_stored(self, episode, stored, *, audio_ref):  # noqa: ANN001, ANN202
+        raise RuntimeError("the Episode row could not be written")
+
+    monkeypatch.setattr(EpisodeRepository, "attach_audio", fail_after_the_bytes_are_stored)
+
+    with pytest.raises(RuntimeError):
+        capture(client, auth, seeded)
+
+    assert store._objects == {}
+    assert count(session, Episode) == 0
