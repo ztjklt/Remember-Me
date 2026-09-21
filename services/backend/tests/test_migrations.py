@@ -4,7 +4,16 @@ from conftest import alembic_config, upgrade_to_head
 
 from app.models import Base
 
-FOUNDATION_TABLES = {"alembic_version", "subjects", "actors", "consents"}
+EXPECTED_TABLES = {
+    "alembic_version",
+    "subjects",
+    "actors",
+    "consents",
+    "episodes",
+    "jobs",
+    "evidence",
+    "memory_items",
+}
 
 
 def table_names(database_url: str) -> set[str]:
@@ -20,14 +29,14 @@ def test_migration_creates_the_foundation_tables_from_empty(tmp_path):
 
     upgrade_to_head(database_url)
 
-    assert table_names(database_url) == FOUNDATION_TABLES
+    assert table_names(database_url) == EXPECTED_TABLES
 
 
 def test_upgrade_is_repeatable(database_url):
     # Already at head; applying head again must be a no-op rather than an error.
     upgrade_to_head(database_url)
 
-    assert table_names(database_url) == FOUNDATION_TABLES
+    assert table_names(database_url) == EXPECTED_TABLES
 
 
 def test_downgrade_removes_the_foundation_tables(tmp_path):

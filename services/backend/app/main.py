@@ -10,12 +10,14 @@ from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
-from .api import consents, health, session
+from .ai_core import build_ai_client
+from .api import consents, episodes, health, session
 from .config import Settings, get_settings
 from .db import Database
 from .errors import REQUEST_INVALID, AppError
 from .logging_config import configure_logging, trace_id_var
 from .storage import build_object_store
+from .stt import build_stt_provider
 
 access_logger = logging.getLogger("app.access")
 
@@ -120,6 +122,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     database = Database(settings.database_url)
     object_store = build_object_store(settings)
+    # Built here, although the API process does not run them, so that a provider
+    # this environment is not allowed to use fails at startup rather than in the
+    # worker long after the deployment looked healthy.
+    stt_provider = build_stt_provider(settings)
+    ai_client = build_ai_client(settings)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -135,6 +142,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.database = database
     app.state.object_store = object_store
+    app.state.stt_provider = stt_provider
+    app.state.ai_client = ai_client
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)
@@ -142,6 +151,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(session.router)
     app.include_router(consents.router)
+    app.include_router(episodes.router)
     return app
 
 

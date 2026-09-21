@@ -9,12 +9,21 @@ dependencies = [
     "sqlalchemy>=2.0.30",
     "alembic>=1.13",
     "pydantic-settings>=2.3",
+    # Multipart form parsing, which FastAPI requires for the audio upload.
+    "python-multipart>=0.0.32",
+    # Outbound calls to AI Core. A timeout is part of the failure model, so the
+    # client is a real HTTP client rather than the stdlib.
+    "httpx>=0.27",
+    # The S3-compatible object store backend used in deployment.
+    "boto3>=1.34",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.2",
-    "httpx>=0.27",
+    # Exercises the S3-compatible object store in-process, so the deployment
+    # backend is tested without a server.
+    "moto[s3]>=5.0",
 ]
 
 [tool.uv]
