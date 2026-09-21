@@ -1,4 +1,5 @@
 import pytest
+import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from app.errors import ConsentInvalid, ConsentRequired
@@ -71,19 +72,18 @@ def test_a_consent_belonging_to_another_subject_does_not_authorize(session, seed
     assert error.value.code == "CONSENT_INVALID"
 
 
-def test_a_consent_for_another_scope_does_not_authorize_recording(session, seeded):
-    """Scope is part of the grant, not a label.
+def test_a_grant_for_another_scope_does_not_authorize_recording(session, seeded):
+    """Scope is part of the grant, not a label on it.
 
-    RECORDING is the only scope Phase 1 registers; Issue #9 introduces the voice
-    scope as a separate grant. This proves the mechanism already refuses a
-    consent whose scope does not match what is being asked for.
+    Both scopes are registered, so this is the separation itself rather than a
+    placeholder for it: a VOICE grant does not authorize RECORDING.
     """
     session.add(
         Consent(
-            consent_id="consent_other_scope",
+            consent_id="consent_voice",
             subject_id=seeded.subject_id,
             granted_by_actor_id=seeded.actor_id,
-            scope="VOICE",
+            scope=str(ConsentScope.VOICE),
             status=ConsentStatus.GRANTED,
             granted_at=utcnow(),
         )
@@ -94,13 +94,95 @@ def test_a_consent_for_another_scope_does_not_authorize_recording(session, seede
 
     with pytest.raises(ConsentInvalid) as error:
         repository.require_active(
-            "consent_other_scope",
-            subject_id=seeded.subject_id,
-            scope=ConsentScope.RECORDING,
+            "consent_voice", subject_id=seeded.subject_id, scope=ConsentScope.RECORDING
         )
     assert error.value.code == "CONSENT_INVALID"
 
     # The row itself is a valid, granted consent — for its own scope.
-    assert repository.find_active(
-        "consent_other_scope", subject_id=seeded.subject_id, scope="VOICE"
-    ) is not None
+    assert (
+        repository.find_active(
+            "consent_voice", subject_id=seeded.subject_id, scope=ConsentScope.VOICE
+        )
+        is not None
+    )
+
+
+def test_recording_consent_does_not_authorize_a_voice_operation(session, seeded):
+    """The boundary Issue #9 draws, stated as the rule rather than as a note.
+
+    seeded carries a granted RECORDING consent for the same subject. A voice
+    operation naming the VOICE scope must not be satisfiable by it, and the
+    failure must be a validation error rather than a warning.
+    """
+    with pytest.raises(ConsentInvalid) as error:
+        ConsentRepository(session).require_active(
+            seeded.consent_id, subject_id=seeded.subject_id, scope=ConsentScope.VOICE
+        )
+
+    assert error.value.code == "CONSENT_INVALID"
+
+
+def test_a_voice_grant_authorizes_the_voice_scope(session, seeded):
+    repository = ConsentRepository(session)
+    grant = repository.grant(
+        subject_id=seeded.subject_id,
+        granted_by_actor_id=seeded.actor_id,
+        scope=ConsentScope.VOICE,
+        evidence_ref="test-fixture",
+    )
+    session.commit()
+
+    verified = repository.require_active(
+        grant.consent_id, subject_id=seeded.subject_id, scope=ConsentScope.VOICE
+    )
+
+    assert verified.consent_id == grant.consent_id
+    assert verified.scope == str(ConsentScope.VOICE)
+    assert verified.granted_by_actor_id == seeded.actor_id
+    assert verified.evidence_ref == "test-fixture"
+
+
+def test_the_two_scopes_are_independent_grants(session, seeded):
+    """Granting voice does not revoke or alter recording, and vice versa."""
+    repository = ConsentRepository(session)
+    voice = repository.grant(
+        subject_id=seeded.subject_id,
+        granted_by_actor_id=seeded.actor_id,
+        scope=ConsentScope.VOICE,
+    )
+    session.commit()
+
+    repository.revoke(voice)
+    session.commit()
+
+    assert repository.require_active(
+        seeded.consent_id, subject_id=seeded.subject_id, scope=ConsentScope.RECORDING
+    ).consent_id == seeded.consent_id
+    with pytest.raises(ConsentInvalid):
+        repository.require_active(
+            voice.consent_id, subject_id=seeded.subject_id, scope=ConsentScope.VOICE
+        )
+
+
+def test_the_database_refuses_a_scope_this_codebase_does_not_register(session, seeded):
+    """The registered scopes are enforced by the database, not only by the enum.
+
+    A row written by hand, by a future migration, or by another service cannot
+    create a grant that no verification rule would ever match.
+    """
+    with pytest.raises(sa.exc.IntegrityError):
+        session.execute(
+            sa.text(
+                "INSERT INTO consents (consent_id, subject_id, granted_by_actor_id,"
+                " scope, status, granted_at, created_at)"
+                " VALUES ('consent_typo', :subject_id, :actor_id, 'RECORDNG',"
+                " 'granted', :now, :now)"
+            ),
+            {
+                "subject_id": seeded.subject_id,
+                "actor_id": seeded.actor_id,
+                "now": utcnow(),
+            },
+        )
+        session.flush()
+    session.rollback()

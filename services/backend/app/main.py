@@ -4,15 +4,16 @@ from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
-from .api import health, session
+from .api import consents, health, session
 from .config import Settings, get_settings
 from .db import Database
-from .errors import AppError
+from .errors import REQUEST_INVALID, AppError
 from .logging_config import configure_logging, trace_id_var
 from .storage import build_object_store
 
@@ -81,6 +82,38 @@ async def _app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     )
 
 
+def _validation_message(exc: RequestValidationError) -> str:
+    """One readable line naming the offending fields.
+
+    Only loc and msg are copied out: pydantic puts exception objects in `ctx`,
+    which would not survive JSON serialization.
+    """
+    parts = []
+    for error in exc.errors()[:5]:
+        location = ".".join(str(part) for part in error.get("loc", ())[1:])
+        message = str(error.get("msg", "invalid"))
+        parts.append(f"{location}: {message}" if location else message)
+    return "; ".join(parts)
+
+
+async def _request_error_handler(
+    _request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """Malformed requests get the same envelope as rejected operations.
+
+    Without this, a bad body would return FastAPI's default shape while every
+    other failure returned ours, and a client would need two parsers.
+    """
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error_code": REQUEST_INVALID,
+            "error_message": _validation_message(exc),
+            "request_id": trace_id_var.get(),
+        },
+    )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level)
@@ -105,8 +138,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)
+    app.add_exception_handler(RequestValidationError, _request_error_handler)
     app.include_router(health.router)
     app.include_router(session.router)
+    app.include_router(consents.router)
     return app
 
 
