@@ -4,8 +4,15 @@ The tests here drive the real repositories against the test database, and the
 assertions are about what survives a failure as much as about the happy path —
 "a failed AI step leaves the raw Episode intact and readable" is a definition of
 done, not a nicety.
+
+The last group is about the lease. A worker holds one while its stage runs, and
+two things can go wrong with that: the stage can outlive the lease, and the lease
+can be taken over while the stage is still going. Both end the same way — the
+duplicate result must not be written — and the tests reproduce each one rather
+than reasoning about it.
 """
 
+import time
 from datetime import timedelta
 
 import pytest
@@ -17,7 +24,7 @@ from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
 from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
 from app.seed import seed_development_data
 from app.stt import FakeSttProvider, Transcript
-from app.worker import ProcessingWorker
+from app.worker import LeaseHeartbeat, ProcessingWorker
 
 AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmt "
 
@@ -363,3 +370,148 @@ def test_a_worker_that_lost_its_lease_abandons_the_stage(app, session, uploaded)
 
 def test_nothing_runs_when_the_queue_is_empty(worker):
     assert worker.run_once() is None
+
+
+# The lease, from the two directions it can go wrong. Both are about the same
+# thing: a stage's result is written only while the worker that produced it still
+# holds the work.
+
+
+def _hand_the_work_to_another_worker(session, uploaded, usurper) -> str:  # noqa: ANN001
+    """Expire the lease and let a second worker claim the job, mid-stage.
+
+    This is the interleaving a slow provider call makes possible: the lease lapses
+    while the stage runs, not between stages, and the work is claimed again before
+    the first worker gets to write anything.
+    """
+    session.execute(
+        update(Job)
+        .where(Job.episode_id == uploaded)
+        .values(lease_expires_at=utcnow() - timedelta(seconds=1))
+    )
+    session.commit()
+    job_id = usurper._claim()
+    assert job_id == job_of(session, uploaded).job_id
+    return job_id
+
+
+def test_a_stage_that_outlives_its_lease_commits_nothing(app, session, uploaded):
+    """The hazard the commit-time compare-and-swap closes.
+
+    The stage succeeds. It is the lease that lapses while it runs, which is what a
+    slow provider does to a lease that was sized for a fast one — so the worker is
+    holding a result for work that another worker is producing its own result for.
+    """
+    usurper = build_worker(app, owner="worker-that-took-over")
+
+    class SlowProvider(FakeSttProvider):
+        def transcribe(self, audio: bytes, content_type: str) -> Transcript:
+            _hand_the_work_to_another_worker(session, uploaded, usurper)
+            return Transcript(
+                text="the transcript of the worker that lost the lease",
+                backend="fake",
+                model_version="fake-stt-v1",
+            )
+
+    slow = build_worker(app, stt=SlowProvider(), owner="slow-worker", lease_seconds=1)
+
+    assert slow.run_once() == uploaded
+
+    # Nothing the losing worker produced survived, the transcript included.
+    assert episode_of(session, uploaded).transcript is None
+
+    # The job is untouched and still owned by whoever holds the lease.
+    job = job_of(session, uploaded)
+    assert job.stage == str(JobStage.TRANSCRIBE)
+    assert job.state == str(JobState.RUNNING)
+    assert job.lease_owner == "worker-that-took-over"
+
+    # And the work is not lost: the worker that holds it can finish it.
+    assert usurper._run_stage(job.job_id) == uploaded
+    assert episode_of(session, uploaded).transcript.startswith("[fake-stt]")
+
+
+def test_a_failure_after_the_lease_lapsed_is_not_recorded(app, session, uploaded, monkeypatch):
+    """A retry decision is a lease release, so it goes through the same swap.
+
+    The pre-check is forced to answer yes here, because that is what a read taken
+    a moment earlier would have said: the point of the test is the write, which is
+    the only place the answer is still true when it is used.
+    """
+    usurper = build_worker(app, owner="worker-that-took-over")
+
+    class FailingProvider(FakeSttProvider):
+        def transcribe(self, audio: bytes, content_type: str) -> Transcript:
+            _hand_the_work_to_another_worker(session, uploaded, usurper)
+            raise SttUnavailable("no provider answered")
+
+    slow = build_worker(
+        app,
+        stt=FailingProvider(),
+        owner="slow-worker",
+        lease_seconds=1,
+        backoff_seconds=3600,
+    )
+    monkeypatch.setattr(slow, "_still_holds_the_lease", lambda job: True)
+
+    slow.run_once()
+
+    # Neither the retry nor the give-up was this worker's to record.
+    job = job_of(session, uploaded)
+    assert job.state == str(JobState.RUNNING)
+    assert job.lease_owner == "worker-that-took-over"
+    assert job.last_error_code is None
+    assert job.attempts == 2, "the claim that took the work over is the only attempt"
+
+    episode = episode_of(session, uploaded)
+    assert episode.error_code is None
+    assert episode.status == "transcribing"
+
+
+def test_the_heartbeat_renews_the_lease_while_a_stage_runs(app, session, uploaded):
+    """Renewal is what stops a slow stage from being executed twice at all."""
+    worker = build_worker(app, owner="renewing-worker", lease_seconds=8)
+    job_id = worker._claim()
+    claimed_expiry = as_utc(job_of(session, uploaded).lease_expires_at)
+
+    heartbeat = LeaseHeartbeat(
+        app.state.database,
+        job_id,
+        "renewing-worker",
+        lease_seconds=8,
+        interval_seconds=0.05,
+    )
+    heartbeat.start()
+    time.sleep(0.3)
+    heartbeat.stop()
+
+    assert as_utc(job_of(session, uploaded).lease_expires_at) > claimed_expiry
+
+
+def test_the_heartbeat_gives_up_a_lease_it_no_longer_holds(app, session, uploaded):
+    """Renewing a lease this process does not hold would extend a claim it lost."""
+    worker = build_worker(app, owner="renewing-worker")
+    job_id = worker._claim()
+
+    heartbeat = LeaseHeartbeat(
+        app.state.database,
+        job_id,
+        "renewing-worker",
+        lease_seconds=60,
+        interval_seconds=0.05,
+    )
+    heartbeat.start()
+    time.sleep(0.15)
+    assert heartbeat.alive, "the heartbeat must still be renewing a lease it holds"
+
+    session.execute(
+        update(Job).where(Job.job_id == job_id).values(lease_owner="someone-else")
+    )
+    session.commit()
+
+    deadline = time.monotonic() + 5
+    while heartbeat.alive and time.monotonic() < deadline:
+        time.sleep(0.02)
+    heartbeat.stop()
+
+    assert not heartbeat.alive
