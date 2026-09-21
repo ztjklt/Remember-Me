@@ -1,0 +1,27 @@
+[project]
+name = "remember-me-backend"
+version = "0.1.0"
+description = "Remember Me Backend — Phase 1 service foundation (see docs/architecture/backend-adr.md)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13",
+    "pydantic-settings>=2.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "httpx>=0.27",
+]
+
+[tool.uv]
+# The service is deployed as an application, not installed as a library.
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

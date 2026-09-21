@@ -1,0 +1,113 @@
+import logging
+import time
+from contextlib import asynccontextmanager
+from uuid import uuid4
+
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.datastructures import MutableHeaders
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from . import __version__
+from .api import health, session
+from .config import Settings, get_settings
+from .db import Database
+from .errors import AppError
+from .logging_config import configure_logging, trace_id_var
+from .storage import build_object_store
+
+access_logger = logging.getLogger("app.access")
+
+
+class RequestContextMiddleware:
+    """Attach a trace id to every request and emit one structured access log.
+
+    The trace id is generated here, at the request boundary, and is the value
+    Issue #1 propagates as the contract's trace_id (ADR-0001 D13).
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        trace_id = uuid4().hex
+        token = trace_id_var.set(trace_id)
+        started = time.perf_counter()
+        status_code = 500
+
+        async def send_with_request_id(message: Message) -> None:
+            nonlocal status_code
+            if message["type"] == "http.response.start":
+                status_code = message["status"]
+                MutableHeaders(scope=message)["X-Request-ID"] = trace_id
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_with_request_id)
+        finally:
+            access_logger.info(
+                "request.completed",
+                extra={
+                    "extra_fields": {
+                        "method": scope.get("method"),
+                        "path": scope.get("path"),
+                        "status_code": status_code,
+                        "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+                    }
+                },
+            )
+            trace_id_var.reset(token)
+
+
+async def _app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
+    """HTTP-level error envelope.
+
+    Backend-owned rather than contract-defined: the contract fixes error_code and
+    error_message on Processing Status, and this reuses those names for
+    request-level failures instead of inventing competing ones. Codes come from
+    app/errors.py.
+    """
+    return JSONResponse(
+        status_code=exc.http_status,
+        content={
+            "error_code": exc.code,
+            "error_message": exc.message,
+            "request_id": trace_id_var.get(),
+        },
+    )
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
+    configure_logging(settings.log_level)
+
+    database = Database(settings.database_url)
+    object_store = build_object_store(settings)
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        database.dispose()
+
+    app = FastAPI(
+        title="Remember Me Backend",
+        version=__version__,
+        summary="Phase 1 service foundation. See docs/architecture/backend-adr.md.",
+        lifespan=lifespan,
+    )
+    app.state.settings = settings
+    app.state.database = database
+    app.state.object_store = object_store
+
+    app.add_middleware(RequestContextMiddleware)
+    app.add_exception_handler(AppError, _app_error_handler)
+    app.include_router(health.router)
+    app.include_router(session.router)
+    return app
+
+
+app = create_app()
