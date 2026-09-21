@@ -100,7 +100,9 @@ Two constraints shape most decisions below:
 | `actor` | whoever currently operates the app | may be the subject, or later a recipient or steward |
 | `consent` | a granted permission record | references the subject, the granting actor, a scope, and a status |
 
-An Episode references `subject_id`, `actor_id`, and `recording_consent_id`. A consent record carries `consent_id`, `subject_id`, `granted_by_actor_id`, `scope`, `granted_at`, `revoked_at`, and an evidence reference. Phase 1 implements the **recording** scope only. A real upload boundary must **verify** that the referenced consent is granted for recording and belongs to the same subject; a missing, revoked, or mismatched consent is an application-level validation error, not a warning.
+An Episode references `subject_id`, `actor_id`, and `recording_consent_id`. A consent record carries `consent_id`, `subject_id`, `granted_by_actor_id`, `scope`, `granted_at`, `revoked_at`, and an evidence reference. Phase 1 implements the **recording** scope and registers the **voice** scope as a value the model recognizes, so the Phase 3 boundary is closed structurally rather than by convention; the voice *pipeline* stays Phase 3. An upload boundary must **verify** that the referenced consent is granted for recording, belongs to the same subject, **and was granted by the calling actor**; a missing, revoked, or mismatched consent is an application-level validation error, not a warning.
+
+**Phase 1 authorization.** Stated here because it is a boundary rule rather than an implementation detail: a consent may be read, used, or revoked by **only the actor that granted it**, and an Episode may be read by **only the actor that owns it**. An actor may grant a consent for an existing subject, and that grant is the only way authority over a record is acquired in Phase 1 — the subject↔actor relationship is deliberately not modeled yet. A request from any other actor is refused with the same code and status as a record that does not exist, so a response never discloses that another actor's consent or Episode exists. Phase 1 models no steward and no trusted person; those arrive with the Legacy work and will narrow this rule rather than widen it.
 
 Phase 1 authentication is deliberately minimal: a bearer token resolved to an Actor, sufficient to attribute work correctly on the Golden Path. It is not production authentication, and it must not be presented as such.
 
@@ -108,13 +110,13 @@ Phase 1 authentication is deliberately minimal: a bearer token resolved to an Ac
 
 **Rejected.** *External identity provider now* (out of Issue #8 scope and a blocker for the Golden Path; the Actor record is the seam an IdP plugs into later, so this is deferral, not debt). *A single `users` table* (conflates the operator with the modeled person). *Inventing `role`, `grant_scope`, or `legacy_state` semantics now* (Contract v0.1 explicitly keeps these as later-phase policy fields that must not be relied on in a payload).
 
-**Deferred.** The voice consent scope, grant scope, trusted-people relations, and Legacy activation state. They reuse this structure in Phase 3/4; none are built now.
+**Deferred.** The voice pipeline (clone and TTS) that the voice scope gates, grant scope, trusted-people relations, and Legacy activation state. They reuse this structure in Phase 3/4; none are built now. The voice *scope* is registered in Phase 1 (above), so Phase 3 adds behavior rather than migrating a data model.
 
 ## D8 — Database-backed job model
 
-**Decision.** A `processing_job` table with worker leasing: `worker_id`, `lease_expires_at`, `attempts`, `state`, `last_error_code`. The Worker claims a job with a lease, runs the pipeline, and renews or releases it. Job states map exactly to the contract's `processingStatus` enum: `uploaded → transcribing → extracting → modeling → ready | failed`. The `job_id` is internal and never appears in a contract payload.
+**Decision.** A `processing_job` table with worker leasing: `worker_id`, `lease_expires_at`, `attempts`, `state`, `last_error_code`. The Worker claims a job with a lease, renews it while a stage runs, and releases it when the stage ends. A stage's result is committed only if the worker still holds an **unexpired** lease for that job: the commit is an atomic compare-and-swap on `lease_owner` and `lease_expires_at`, so a lease that expires mid-stage cannot let two workers commit the same stage — the stale worker's transaction rolls back and its result is discarded rather than overwriting the new owner's. Job states map exactly to the contract's `processingStatus` enum: `uploaded → transcribing → extracting → modeling → ready | failed`. The `job_id` is internal and never appears in a contract payload.
 
-**Rationale.** Phase 1 volume is tiny and Postgres is already present, so a durable job row is the cheapest correct queue: status, retry history, and audit are all one query away, and the status endpoint reads the same row the worker writes, so there is no second source of truth. A lease means a crashed worker does not strand an Episode — the job becomes reclaimable instead. It also keeps the local test path broker-free, which D14 requires.
+**Rationale.** Phase 1 volume is tiny and Postgres is already present, so a durable job row is the cheapest correct queue: status, retry history, and audit are all one query away, and the status endpoint reads the same row the worker writes, so there is no second source of truth. A lease means a crashed worker does not strand an Episode — the job becomes reclaimable instead. Lease renewal and the commit-time compare-and-swap answer different halves of one hazard: renewal keeps a long stage from being executed twice, and the compare-and-swap makes a double commit impossible even when renewal fails. The second is the correctness guarantee; the first is economics, which is why both exist and why the tests cover the failure of each. It also keeps the local test path broker-free, which D14 requires.
 
 `modeling` is a contract state that Phase 1 does not need to distinguish: when AI Core returns its result the pipeline moves through `modeling` to `ready` in one step. The state exists in the enum and the Worker passes through it rather than inventing a new sequence.
 
@@ -126,9 +128,11 @@ Phase 1 authentication is deliberately minimal: a bearer token resolved to an Ac
 
 Three adapters, named now, implemented on their own schedule:
 
-**`STTAdapter` — Phase 1.** `transcribe(audio_ref, language?, trace_id) -> TranscriptResult{text, segments, provider, model_version}`. Issue #1 requires at least one real implementation behind the boundary. The provider is not frozen: it is selected by configuration, and a deterministic fake implementation exists for tests. Provider credentials stay server-side and must never appear inside `audio_ref` or any contract payload.
+**`STTAdapter` — Phase 1.** `transcribe(audio: bytes, content_type: str) -> Transcript{text, backend, model_version}`. Two implementations sit behind the boundary: a deterministic fake for development and tests, and a configurable HTTP adapter for a real provider, so selecting a provider is configuration rather than code. The boundary takes the audio bytes rather than a storage reference, because the Worker already holds the audio and a reference would let the adapter reach the object store on its own. Per-segment output and language selection are not Phase 1 needs; they arrive with the provider decision. Provider credentials stay server-side and must never appear in a contract payload.
 
-**`AICoreClient` — Phase 1.** Sends `aiCoreInput` (episode id, subject id, transcript, `existing_model_version`, `trace_id`) and returns `aiCoreOutput`. The boundary **is** the contract message, not a private shape, so the transport can change without a semantic change: Phase 1 may call AI Core's callable interface in-process for determinism, and an HTTP adapter can replace that later without touching the Worker's logic. Backend does **not** decide extraction depth, prompt design, or person-model semantics — those belong to the AI Core owner.
+**Where the fake may run.** The fake STT and AI providers are **refused at startup** outside `development` and `test`, so no deployment can silently record placeholder transcripts or placeholder memories. Phase 1 has no real STT provider (the voice work is Phase 3), so an integration environment that must boot before a provider exists sets an explicit, documented opt-in — `REMEMBER_ALLOW_FAKE_PROVIDERS=true` — which is logged as a warning at startup and is visible in every subsequent log line. The default remains a refusal, and the flag is a deliberate escape hatch with a visible cost rather than a silent fallback.
+
+**`AICoreClient` — Phase 1.** Sends `aiCoreInput` (episode id, subject id, transcript, `existing_model_version`, `trace_id`) and returns `aiCoreOutput`. The boundary **is** the contract message, not a private shape, so the transport can change without a semantic change: Phase 1 ships a deterministic fake and a configurable HTTP client, and an in-process callable remains a valid swap because the contract message is what crosses either transport. Backend does **not** decide extraction depth, prompt design, or person-model semantics — those belong to the AI Core owner.
 
 **`VoiceProviderAdapter` — Phase 3, named only.** Clone and TTS behind one boundary, reachable only through the Backend, gated by independent voice consent. Not implemented in Phase 1; `provider_metadata` in `voiceResponse` stays non-normative as the contract states.
 
@@ -155,21 +159,31 @@ STT and AI Core run **only after the Episode row exists**. Any downstream failur
 
 Derived data — transcript, memory items, future persona and graph updates — is disposable and recomputable. The Episode is not. A `failed` Episode is retryable with the same idempotency key, and a retry must not create a second Episode or a second audio object.
 
+**Ordering, and the one window it opens.** The audio object is written before the Episode transaction commits, because the Episode row must be able to reference an object that already exists — a durable row whose audio never landed would be the worse failure of the two. That leaves exactly one window: a request that has written its object and then fails to commit — a duplicate `idempotency_key` losing a race, or a database error — holds an object that no Episode will ever reference. The failing request removes that object as part of failing. The removal is best-effort: if it also fails, the result is an unreferenced object rather than a damaged record, because no Episode is left missing its audio and nothing points at the orphan. The distinction that matters: this removes a write belonging to **no record**, which is not the same act as deleting an Episode's audio to tidy up an error state. This decision forbids the second; the paragraph above specifies the first.
+
 Contract states may not be extended: failure is `failed` plus an error code, never a new status. The `failed` state is reached atomically with the error fields so a client can never observe `failed` with no reason.
 
 **Backend-owned error codes** (carried in the contract's free-string `error_code` field, so adding one is not a contract change; renaming one that Android branches on is a compatibility concern and must be disclosed):
 
 | Area | Codes |
 | --- | --- |
-| Request / audio | `AUDIO_INVALID`, `AUDIO_TOO_LARGE` |
-| Consent / identity | `CONSENT_REQUIRED`, `CONSENT_INVALID`, `SUBJECT_NOT_FOUND`, `ACTOR_NOT_FOUND` |
-| Episode lookup | `EPISODE_NOT_FOUND` |
-| STT | `STT_UNAVAILABLE`, `STT_FAILED`, `STT_EMPTY_TRANSCRIPT` |
+| Request / internal | `REQUEST_INVALID`, `INTERNAL` |
+| Auth / identity | `AUTH_REQUIRED`, `AUTH_INVALID`, `ACTOR_NOT_FOUND`, `SUBJECT_NOT_FOUND` |
+| Consent | `CONSENT_REQUIRED`, `CONSENT_INVALID`, `CONSENT_NOT_FOUND` |
+| Audio | `AUDIO_INVALID`, `AUDIO_TOO_LARGE`, `AUDIO_UNAVAILABLE` |
+| Object store | `STORAGE_UNAVAILABLE` |
+| Episode lookup | `EPISODE_NOT_FOUND`, `EPISODE_NOT_READY` |
+| Idempotency | `IDEMPOTENCY_CONFLICT` |
+| STT | `STT_UNAVAILABLE`, `STT_FAILED`, `STT_TIMEOUT`, `STT_EMPTY_TRANSCRIPT` |
 | AI Core | `AI_UNAVAILABLE`, `AI_FAILED`, `AI_TIMEOUT`, `AI_SCHEMA_INVALID` |
+
+**Retryable, as part of the taxonomy rather than a per-call decision:** `STORAGE_UNAVAILABLE`, `AUDIO_UNAVAILABLE`, `STT_UNAVAILABLE`, `STT_TIMEOUT`, `AI_UNAVAILABLE`, `AI_TIMEOUT`. These describe something that was temporarily unavailable, so the stage's retry budget applies. Every other code is terminal for that stage: the same input would produce the same answer, and retrying it would spend the budget on a certainty. Whether a code is retryable is a property of the code, so the Worker reads it rather than deciding it.
+
+**One disclosure for Android:** `CONSENT_NOT_FOUND` and `EPISODE_NOT_FOUND` also carry the Phase 1 cross-actor refusal (D7), so a client may see them for a record that exists but belongs to another actor. A client's handling does not change — the record is not available to this actor either way — but the codes must not be read as proof that no such record exists anywhere.
 
 **Rationale.** This is the issue's stated principle and the PRD's: a downstream model outage is an inconvenience, a lost life record is not. Ordering the writes this way makes the guarantee structural rather than aspirational — there is no code path in which AI work begins before the Episode is committed.
 
-**Rejected.** *Process-first* (a crash or an outage after STT would lose the recording). *Cleanup-on-failure* (deleting the Episode or audio to "tidy up" an error state is exactly the destructive behavior the principle forbids).
+**Rejected.** *Process-first* (a crash or an outage after STT would lose the recording). *Cleanup-on-failure* (deleting the Episode, or the audio a committed Episode references, to "tidy up" an error state is exactly the destructive behavior the principle forbids; removing a write that no Episode ever referenced is a different act, specified above).
 
 ## D12 — Idempotency
 
@@ -227,7 +241,7 @@ Selecting the STT, LLM, or Voice provider. Implementing any Phase 2–4 endpoint
 
 ## Open items carried forward
 
-- STT provider selection (Issue #1 keeps the adapter boundary until then).
+- STT provider selection. The adapter boundary and a configurable HTTP adapter exist, so the decision is a URL, a credential, and a response mapping — not code.
 - LLM provider and where AI Core runs: in-process callable versus HTTP service (the contract message is the boundary either way).
-- Voice consent scope and voice pipeline design (Phase 3, requires its own decision).
-- Trusted people, grant scope, and Legacy activation policy (Phase 4).
+- Voice pipeline design (Phase 3, requires its own decision). The voice consent scope it is gated by is registered in Phase 1.
+- Trusted people, grant scope, and Legacy activation policy (Phase 4). Phase 1 authorization is narrow by construction, so this work widens access rather than repairing it.
