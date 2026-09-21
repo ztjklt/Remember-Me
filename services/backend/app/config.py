@@ -40,7 +40,12 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake"] = "fake"
+    stt_backend: Literal["fake", "http"] = "fake"
+    stt_url: str = "http://127.0.0.1:8200"
+    stt_path: str = "/transcribe"
+    # Transcription is slower than inference per byte of input, so this budget is
+    # larger than AI Core's. A timeout is a failure the retry budget handles.
+    stt_timeout_seconds: float = 60.0
     ai_backend: Literal["fake", "http"] = "fake"
     ai_core_url: str = "http://127.0.0.1:8100"
     # AI Core's URL path is its own surface, not the contract's: the contract
@@ -49,12 +54,21 @@ class Settings(BaseSettings):
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
 
+    # A placeholder provider is refused outside development and test. This is the
+    # explicit way to say "yes, here too" — bringing an environment up end to end
+    # before its real provider exists (app/providers.py). Building a fake because
+    # of it logs a warning, so the decision is visible at startup.
+    allow_fake_providers: bool = False
+
     # One processing stage per worker tick, so a transition is observable from
-# outside the process (ADR-0001 D8). The retry budget is per stage: a stage that
-# keeps failing ends the Episode as failed, and a stage that succeeds does not
-# spend the next stage's attempts.
+    # outside the process (ADR-0001 D8). The retry budget is per stage: a stage
+    # that keeps failing ends the Episode as failed, and a stage that succeeds
+    # does not spend the next stage's attempts.
     job_max_attempts: int = 3
     job_retry_backoff_seconds: int = 5
+    # How long a claim is good for, and how long a stage may run before the claim
+    # has to be renewed (app/worker.py). A lease that expires returns the work to
+    # any worker, and a result is committed only while the claim is held.
     job_lease_seconds: int = 60
 
 

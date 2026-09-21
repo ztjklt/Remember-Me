@@ -11,7 +11,8 @@ packages/contracts asserts it). The response is not trusted for it either — th
 episode id written to the record is the one the worker is holding.
 
 As with the speech-to-text boundary, `build_ai_client` refuses the fake outside
-development and test.
+development and test. The rule itself is in app/providers.py, written once for
+both boundaries.
 """
 
 from typing import Protocol
@@ -23,6 +24,7 @@ from .contracts import SCHEMA_VERSION, AICoreInput, AICoreOutput, Evidence, Memo
 from .config import Settings
 from .errors import AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable
 from .models import MemoryType, SourceType
+from .providers import refuse_fake_unless_permitted
 
 FAKE_BACKEND = "fake"
 FAKE_MODEL_VERSION = "fake-ai-v1"
@@ -159,11 +161,7 @@ def _first_problem(error: ValidationError) -> str:
 
 def build_ai_client(settings: Settings) -> AiCoreClient:
     if settings.ai_backend == FAKE_BACKEND:
-        if settings.environment not in ("development", "test"):
-            raise ValueError(
-                "The fake AI Core client is only allowed in development and test; "
-                f"configure a real AI Core for {settings.environment!r}"
-            )
+        refuse_fake_unless_permitted(settings, "AI Core")
         return FakeAiCoreClient()
     if settings.ai_backend == "http":
         return HttpAiCoreClient(

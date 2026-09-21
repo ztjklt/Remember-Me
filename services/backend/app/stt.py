@@ -5,20 +5,51 @@ vendor: the worker asks for a transcript and gets one, and which service produce
 it is recorded on the Episode as `stt_backend` and `stt_model_version` rather than
 assumed.
 
-`build_stt_provider` refuses the fake outside development and test. That check is
-the reason the fake can be deterministic and this module can stay small: a
-validation-environment deployment that forgot to configure a real provider fails
-at startup instead of quietly filling the record with placeholder transcripts.
+Two adapters ship. `http` is the deployment one and speaks a deliberately small
+wire contract of this module's own, so a provider can be attached without any
+other part of the service changing:
+
+    POST {stt_url}{stt_path}
+    Content-Type: <the audio's content type>
+    <the raw audio bytes>
+    ->
+    200 {"text": "...", "model_version": "..."}   # model_version optional
+
+`model_version` is optional because a provider that does not report one is still
+a provider; what it must not do is have "unreported" written into the record as
+if it were a version, so the absence gets a name of its own.
+
+**Where the fake may run.** `build_stt_provider` refuses the fake outside
+development and test, which is what stops a validation-environment deployment
+from quietly filling the record with placeholder transcripts. The refusal has an
+explicit override — `REMEMBER_ALLOW_FAKE_PROVIDERS=true` — for the one case that
+needs it: bringing up an environment end to end before its real provider exists.
+The rule is shared with the AI Core boundary in app/providers.py, so the two
+cannot disagree about it.
 """
 
 from dataclasses import dataclass
 from typing import Protocol
 
+import httpx
+
 from .config import Settings
+from .errors import SttFailed, SttTimeout, SttUnavailable
+from .providers import refuse_fake_unless_permitted
 from .storage.base import checksum_of
 
 FAKE_BACKEND = "fake"
 FAKE_MODEL_VERSION = "fake-stt-v1"
+HTTP_BACKEND = "http"
+
+# What is recorded when a provider answered without naming the model that produced
+# the transcript. A version that says "unknown" is honest; an empty string would
+# read as a version that is there.
+UNREPORTED_MODEL_VERSION = "unreported"
+
+# Long enough to identify the cause, short enough that a provider returning an
+# HTML error page cannot push a novel into the Episode's error_message column.
+_ERROR_EXCERPT = 300
 
 
 @dataclass(frozen=True)
@@ -59,13 +90,82 @@ class FakeSttProvider:
         )
 
 
+class HttpSttProvider:
+    """Speech-to-text over HTTP, the deployment transport.
+
+    One attempt per call, like the object store and AI Core: a retry is the job's
+    decision, made with the attempt count and the backoff in view.
+
+    The audio is the request body rather than a multipart part. A multipart form
+    would put the provider's field naming into this service, and every provider
+    names it differently; the body plus the content type is the part of the
+    request every provider agrees on.
+    """
+
+    backend = HTTP_BACKEND
+
+    def __init__(self, base_url: str, path: str, timeout_seconds: float) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.path = path
+        self.timeout_seconds = timeout_seconds
+
+    def transcribe(self, audio: bytes, content_type: str) -> Transcript:
+        url = f"{self.base_url}/{self.path.lstrip('/')}"
+        try:
+            response = httpx.post(
+                url,
+                content=audio,
+                headers={"Content-Type": content_type},
+                timeout=httpx.Timeout(self.timeout_seconds),
+            )
+        except httpx.TimeoutException as error:
+            raise SttTimeout(
+                f"The speech-to-text provider did not answer within "
+                f"{self.timeout_seconds}s"
+            ) from error
+        except httpx.TransportError as error:
+            raise SttUnavailable(
+                f"The speech-to-text provider is unreachable at {url}: {error}"
+            ) from error
+
+        if response.status_code >= 400:
+            raise SttFailed(
+                f"The speech-to-text provider answered {response.status_code}: "
+                f"{response.text[:_ERROR_EXCERPT]}"
+            )
+
+        try:
+            body = response.json()
+        except ValueError as error:
+            raise SttFailed(
+                f"The speech-to-text provider answered with something that is not "
+                f"JSON: {response.text[:_ERROR_EXCERPT]}"
+            ) from error
+
+        if not isinstance(body, dict) or not isinstance(body.get("text"), str):
+            raise SttFailed(
+                "The speech-to-text provider answered without a 'text' string: "
+                f"{str(body)[:_ERROR_EXCERPT]}"
+            )
+
+        model_version = body.get("model_version")
+        return Transcript(
+            text=body["text"],
+            backend=self.backend,
+            model_version=model_version
+            if isinstance(model_version, str) and model_version
+            else UNREPORTED_MODEL_VERSION,
+        )
+
+
 def build_stt_provider(settings: Settings) -> SttProvider:
     if settings.stt_backend == FAKE_BACKEND:
-        if settings.environment not in ("development", "test"):
-            raise ValueError(
-                "The fake speech-to-text provider is only allowed in development "
-                "and test; configure a real provider for "
-                f"{settings.environment!r}"
-            )
+        refuse_fake_unless_permitted(settings, "speech-to-text")
         return FakeSttProvider()
+    if settings.stt_backend == HTTP_BACKEND:
+        return HttpSttProvider(
+            settings.stt_url,
+            settings.stt_path,
+            settings.stt_timeout_seconds,
+        )
     raise ValueError(f"Unsupported STT backend: {settings.stt_backend!r}")

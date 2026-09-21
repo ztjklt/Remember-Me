@@ -169,6 +169,19 @@ class SttFailed(AppError):
     http_status = 502
 
 
+class SttTimeout(AppError):
+    """The speech-to-text provider did not answer in time. Retrying may work.
+
+    Its own code rather than STT_UNAVAILABLE because the two call for different
+    things: a provider that is unreachable is a provider to check, while one that
+    is reachable but slower than the budget is a budget to raise.
+    """
+
+    code = "STT_TIMEOUT"
+    http_status = 504
+    retryable = True
+
+
 class SttEmptyTranscript(AppError):
     """The provider returned an empty transcript: there is nothing to extract."""
 

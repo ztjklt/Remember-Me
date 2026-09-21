@@ -3,8 +3,12 @@
 Neither provider is frozen (ADR-0001 D9), so both sit behind a Protocol and the
 only thing the rest of the service knows about them is the shape they return.
 That makes two properties worth asserting here rather than in the worker: the
-fakes are deterministic and identifiable as fakes, and every way a real AI Core
+fakes are deterministic and identifiable as fakes, and every way a real provider
 can fail arrives as a code from the taxonomy instead of a raw httpx exception.
+
+Both boundaries have a real transport as well as a fake, and both of those are
+exercised the same way: against a mock httpx transport, so the wire contract is
+visible in the test rather than described in a comment.
 """
 
 import json
@@ -12,7 +16,6 @@ import json
 import httpx
 import pytest
 
-from app import ai_core
 from app.ai_core import (
     FAKE_MODEL_VERSION,
     FAKE_PROMPT_VERSION,
@@ -22,8 +25,21 @@ from app.ai_core import (
 )
 from app.config import Settings
 from app.contracts import SCHEMA_VERSION, AICoreInput, AICoreOutput
-from app.errors import AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable
-from app.stt import FakeSttProvider, build_stt_provider
+from app.errors import (
+    AiFailed,
+    AiSchemaInvalid,
+    AiTimeout,
+    AiUnavailable,
+    SttFailed,
+    SttTimeout,
+    SttUnavailable,
+)
+from app.stt import (
+    UNREPORTED_MODEL_VERSION,
+    FakeSttProvider,
+    HttpSttProvider,
+    build_stt_provider,
+)
 from app.storage.base import checksum_of
 
 AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmt "
@@ -76,7 +92,9 @@ def http_post(monkeypatch):
                 sent.append(request)
                 return client.send(request)
 
-        monkeypatch.setattr(ai_core.httpx, "post", post)
+        # Both provider boundaries call the same httpx.post, so one patch covers
+        # both; that is the reason neither of them builds its own client object.
+        monkeypatch.setattr(httpx, "post", post)
         return sent
 
     return install
@@ -90,6 +108,16 @@ def client_for(**overrides) -> HttpAiCoreClient:  # noqa: ANN003
     }
     options.update(overrides)
     return HttpAiCoreClient(**options)
+
+
+def stt_for(**overrides) -> HttpSttProvider:  # noqa: ANN003
+    options = {
+        "base_url": "http://stt.internal",
+        "path": "/transcribe",
+        "timeout_seconds": 5.0,
+    }
+    options.update(overrides)
+    return HttpSttProvider(**options)
 
 
 def test_the_fake_transcript_is_a_function_of_the_audio_and_says_so():
@@ -279,6 +307,34 @@ def test_the_fake_providers_are_refused_outside_development():
     assert "AI Core" in str(ai_error.value)
 
 
+def test_a_fake_may_run_elsewhere_with_an_explicit_override(caplog):
+    """The one way a placeholder reaches a deployed environment: being asked for.
+
+    The override exists so an environment can be brought up end to end before its
+    real provider is reachable, and the warning is the price of it — an
+    environment running on placeholders says so at startup instead of being
+    inferred from the record afterwards.
+    """
+    settings = Settings(
+        _env_file=None, environment="staging", allow_fake_providers=True
+    )
+
+    with caplog.at_level("WARNING", logger="app.providers"):
+        stt = build_stt_provider(settings)
+        ai = build_ai_client(settings)
+
+    assert isinstance(stt, FakeSttProvider)
+    assert isinstance(ai, FakeAiCoreClient)
+
+    overrides = [record for record in caplog.records if record.message == "providers.fake_allowed_by_override"]
+    assert len(overrides) == 2, "one per provider built"
+    assert {record.extra_fields["provider"] for record in overrides} == {
+        "speech-to-text",
+        "AI Core",
+    }
+    assert all(record.extra_fields["environment"] == "staging" for record in overrides)
+
+
 def test_the_http_client_is_built_from_settings():
     settings = Settings(
         _env_file=None,
@@ -297,3 +353,118 @@ def test_the_http_client_is_built_from_settings():
     assert client.base_url == "http://ai-core.internal"
     assert client.path == "/process"
     assert client.timeout_seconds == 12.5
+
+
+def test_the_http_stt_provider_is_built_from_settings():
+    settings = Settings(
+        _env_file=None,
+        environment="staging",
+        stt_backend="http",
+        stt_url="http://stt.internal/",
+        stt_path="/transcribe",
+        stt_timeout_seconds=90.0,
+    )
+
+    provider = build_stt_provider(settings)
+
+    assert isinstance(provider, HttpSttProvider)
+    assert provider.base_url == "http://stt.internal"
+    assert provider.path == "/transcribe"
+    assert provider.timeout_seconds == 90.0
+
+
+# The deployment speech-to-text transport. Its wire contract is this module's
+# own — the audio is the body, the answer is JSON with a text field — so it is
+# tested against that contract rather than against a vendor.
+
+
+def test_the_audio_is_the_request_body_and_the_declared_type_is_the_header(http_post):
+    sent = http_post(lambda request: httpx.Response(200, json={"text": "hello"}))
+
+    stt_for().transcribe(AUDIO, "audio/mp4")
+
+    assert sent[0].url == httpx.URL("http://stt.internal/transcribe")
+    assert sent[0].headers["content-type"] == "audio/mp4"
+    assert sent[0].read() == AUDIO
+
+
+def test_a_transcript_is_read_with_the_model_that_produced_it(http_post):
+    http_post(
+        lambda request: httpx.Response(
+            200, json={"text": "We walked by the river.", "model_version": "whisper-large-v3"}
+        )
+    )
+
+    transcript = stt_for().transcribe(AUDIO, "audio/mp4")
+
+    assert transcript.text == "We walked by the river."
+    assert transcript.backend == "http"
+    assert transcript.model_version == "whisper-large-v3"
+
+
+def test_a_provider_that_names_no_model_is_recorded_as_unreported(http_post):
+    """Absence gets a name, so the record never reads a missing version as a real one."""
+    for body in ({"text": "hello"}, {"text": "hello", "model_version": ""}, {"text": "hello", "model_version": None}):
+        http_post(lambda request, body=body: httpx.Response(200, json=body))
+
+        assert stt_for().transcribe(AUDIO, "audio/mp4").model_version == UNREPORTED_MODEL_VERSION
+
+
+def test_a_slow_provider_is_reported_as_a_timeout(http_post):
+    def handler(request):  # noqa: ANN001, ANN202 - httpx handler
+        raise httpx.ReadTimeout("the other end went quiet")
+
+    http_post(handler)
+
+    with pytest.raises(SttTimeout) as raised:
+        stt_for(timeout_seconds=2.5).transcribe(AUDIO, "audio/mp4")
+
+    assert raised.value.code == "STT_TIMEOUT"
+    assert "2.5" in raised.value.message
+    assert raised.value.retryable, "a slow provider is worth asking again"
+
+
+def test_an_unreachable_provider_is_reported_as_unavailable(http_post):
+    def handler(request):  # noqa: ANN001, ANN202 - httpx handler
+        raise httpx.ConnectError("connection refused")
+
+    http_post(handler)
+
+    with pytest.raises(SttUnavailable) as raised:
+        stt_for().transcribe(AUDIO, "audio/mp4")
+
+    assert raised.value.code == "STT_UNAVAILABLE"
+    assert "http://stt.internal/transcribe" in raised.value.message
+    assert raised.value.retryable
+
+
+def test_a_refusal_from_the_provider_is_a_failed_call(http_post):
+    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+
+    with pytest.raises(SttFailed) as raised:
+        stt_for().transcribe(AUDIO, "audio/mp4")
+
+    assert raised.value.code == "STT_FAILED"
+    assert "500" in raised.value.message
+    # The provider ran and refused: the same audio would be refused again.
+    assert not raised.value.retryable
+
+
+def test_a_response_that_is_not_json_is_a_failed_call(http_post):
+    http_post(lambda request: httpx.Response(200, text="<html>proxy</html>"))
+
+    with pytest.raises(SttFailed) as raised:
+        stt_for().transcribe(AUDIO, "audio/mp4")
+
+    assert "not JSON" in raised.value.message
+
+
+def test_a_response_without_a_text_field_is_a_failed_call(http_post):
+    """A 200 that says nothing is not a transcript, and must not read as one."""
+    for body in ({"transcript": "hello"}, {"text": 12}, []):
+        http_post(lambda request, body=body: httpx.Response(200, json=body))
+
+        with pytest.raises(SttFailed) as raised:
+            stt_for().transcribe(AUDIO, "audio/mp4")
+
+        assert "text" in raised.value.message
