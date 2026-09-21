@@ -3,15 +3,23 @@
 The centre of this file is `test_recording_consent_cannot_authorize_a_voice_operation`:
 it is Issue #9's definition of done, expressed as a request rather than as a note
 in a document.
+
+The other half of the boundary is *whose* grant it is. A grant is usable, readable,
+and revocable only by the Actor that made it, and a cross-Actor attempt is refused
+with the same status and code as a record that does not exist, so the API cannot
+be used to discover another Actor's grants.
 """
 
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from app.models import Actor
 from app.seed import seed_development_data
+from app.tokens import generate_actor_token, hash_actor_token
 
 
 @pytest.fixture
@@ -22,6 +30,25 @@ def seeded(session):
 @pytest.fixture
 def auth(seeded) -> dict[str, str]:
     return {"Authorization": f"Bearer {seeded.actor_token}"}
+
+
+@pytest.fixture
+def other(session) -> dict[str, str]:
+    """A second Actor's credentials, and nothing else of its own.
+
+    Built here rather than by seeding again, because several tests need a second
+    Actor acting on the *same* subject — which is the form of the rule that a
+    differing subject would silently satisfy for the wrong reason.
+    """
+    token = generate_actor_token()
+    actor = Actor(
+        actor_id=f"actor_{uuid4().hex[:16]}",
+        display_name="Bob",
+        token_hash=hash_actor_token(token),
+    )
+    session.add(actor)
+    session.commit()
+    return {"actor_id": actor.actor_id, "headers": {"Authorization": f"Bearer {token}"}}
 
 
 def grant(client: TestClient, auth, subject_id: str, scope: str, **extra) -> dict:
@@ -226,3 +253,95 @@ def test_the_consent_boundary_requires_an_actor(client, seeded):
         response = client.request(method.upper(), path, json=body)
         assert response.status_code == 401, f"{method} {path}"
         assert response.json()["error_code"] == "AUTH_REQUIRED"
+
+
+# The second half of the boundary: whose grant it is. Every refusal below is a
+# 404 rather than a 403, because a distinguishable "exists but is not yours"
+# would let one Actor enumerate another Actor's grants.
+
+
+def test_a_consent_is_readable_only_by_the_actor_that_granted_it(client, seeded, auth, other):
+    assert (
+        client.get(f"/api/v1/consents/{seeded.consent_id}", headers=auth).status_code == 200
+    )
+
+    response = client.get(f"/api/v1/consents/{seeded.consent_id}", headers=other["headers"])
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "CONSENT_NOT_FOUND"
+
+
+def test_another_actors_consent_answers_exactly_like_a_missing_one(client, seeded, other):
+    missing = client.get(
+        "/api/v1/consents/consent_that_does_not_exist", headers=other["headers"]
+    )
+    someone_elses = client.get(
+        f"/api/v1/consents/{seeded.consent_id}", headers=other["headers"]
+    )
+
+    assert missing.status_code == someone_elses.status_code == 404
+    assert (
+        missing.json()["error_code"]
+        == someone_elses.json()["error_code"]
+        == "CONSENT_NOT_FOUND"
+    )
+
+
+def test_a_consent_cannot_be_revoked_by_another_actor(client, seeded, auth, other):
+    response = client.post(
+        f"/api/v1/consents/{seeded.consent_id}/revoke", headers=other["headers"]
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "CONSENT_NOT_FOUND"
+
+    # The grant is untouched, which is the part a 404 alone would not prove.
+    assert (
+        authorize(client, auth, seeded.subject_id, "RECORDING", seeded.consent_id).status_code
+        == 200
+    )
+
+
+def test_a_consent_cannot_be_used_by_another_actor(client, seeded, other):
+    response = authorize(
+        client, other["headers"], seeded.subject_id, "RECORDING", seeded.consent_id
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error_code"] == "CONSENT_NOT_FOUND"
+
+
+def test_the_rule_is_about_the_actor_and_not_the_subject(client, seeded, auth, other):
+    """Same subject, same scope, different grantor — the rule with nothing else varying.
+
+    Granting is deliberately open in Phase 1, so the second Actor can grant a
+    VOICE consent for this subject. What it cannot do is make that grant usable
+    by anyone else, or use anyone else's.
+    """
+    theirs = grant(client, other["headers"], seeded.subject_id, "VOICE")
+
+    assert (
+        authorize(
+            client, other["headers"], seeded.subject_id, "VOICE", theirs["consent_id"]
+        ).status_code
+        == 200
+    )
+
+    refused = authorize(client, auth, seeded.subject_id, "VOICE", theirs["consent_id"])
+    assert refused.status_code == 404
+    assert refused.json()["error_code"] == "CONSENT_NOT_FOUND"
+
+
+def test_listing_shows_only_the_callers_own_grants(client, seeded, auth, other):
+    grant(client, other["headers"], seeded.subject_id, "VOICE")
+
+    mine = client.get(
+        f"/api/v1/consents?subject_id={seeded.subject_id}", headers=auth
+    ).json()
+    theirs = client.get(
+        f"/api/v1/consents?subject_id={seeded.subject_id}", headers=other["headers"]
+    ).json()
+
+    assert {consent["scope"] for consent in mine} == {"RECORDING"}
+    assert [consent["scope"] for consent in theirs] == ["VOICE"]
+    assert all(consent["granted_by_actor_id"] == seeded.actor_id for consent in mine)

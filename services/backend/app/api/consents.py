@@ -16,6 +16,16 @@ has no way to express "either one".
 URL paths and payloads here are Backend-owned. The integration contract does not
 define a consent shape; it defines who an Episode is attributed to and which
 consent reference accompanies a capture.
+
+A grant is attributed as well as scoped: the granting Actor comes from the
+credential, and every later read, use, and revocation of that grant is scoped
+back to the same Actor. A consent belonging to another Actor is answered exactly
+as one that does not exist, so no response confirms that another Actor's grant
+exists. Granting is deliberately *not* restricted to a subset of Actors — in
+Phase 1 a grant is the only way authority over a subject's record is acquired,
+and the subject-to-actor relationship is not modeled yet, so narrowing who may
+grant would leave no way to obtain the authority the rest of this file enforces
+(ADR-0001 D7).
 """
 
 from datetime import datetime
@@ -117,17 +127,21 @@ def grant_consent(
 @router.post("/authorize", response_model=AuthorizeResponse)
 def authorize(
     payload: AuthorizeRequest,
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> AuthorizeResponse:
-    """Verify that an active consent permits this scope for this subject.
+    """Verify that an active consent of the caller's permits this scope for this subject.
 
-    Raises CONSENT_REQUIRED when no reference was supplied and CONSENT_INVALID
-    when the reference does not authorize the requested scope — including when it
-    is an active grant for a different scope.
+    Raises CONSENT_REQUIRED when no reference was supplied, CONSENT_NOT_FOUND when
+    the reference is not the caller's own grant, and CONSENT_INVALID when it is
+    the caller's but does not authorize the requested scope — including when it is
+    an active grant for a different scope.
     """
     consent = ConsentRepository(session).require_active(
-        payload.consent_id, subject_id=payload.subject_id, scope=payload.scope
+        payload.consent_id,
+        subject_id=payload.subject_id,
+        scope=payload.scope,
+        actor_id=actor.actor_id,
     )
     return AuthorizeResponse(
         authorized=True,
@@ -142,35 +156,43 @@ def authorize(
 def list_consents(
     subject_id: str = Query(...),
     scope: ConsentScope | None = Query(None),
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> list[ConsentResponse]:
     SubjectRepository(session).require(subject_id)
-    consents = ConsentRepository(session).list_for_subject(subject_id, scope=scope)
+    consents = ConsentRepository(session).list_for_actor(
+        subject_id, actor_id=actor.actor_id, scope=scope
+    )
     return [ConsentResponse.of(consent) for consent in consents]
 
 
 @router.get("/{consent_id}", response_model=ConsentResponse)
 def read_consent(
     consent_id: str,
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> ConsentResponse:
-    return ConsentResponse.of(ConsentRepository(session).require(consent_id))
+    return ConsentResponse.of(
+        ConsentRepository(session).require_for(consent_id, actor_id=actor.actor_id)
+    )
 
 
 @router.post("/{consent_id}/revoke", response_model=ConsentResponse)
 def revoke_consent(
     consent_id: str,
-    _actor: Actor = Depends(current_actor),
+    actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> ConsentResponse:
-    """Revoke a consent.
+    """Revoke a consent the caller granted.
 
     Revocation is a state change rather than a deletion: the record of what was
     permitted, by whom, and when stays, because the work done under it was done.
+    A consent granted by another actor is CONSENT_NOT_FOUND here, so revocation
+    cannot be used to discover or disturb another actor's grants.
     """
     repository = ConsentRepository(session)
-    consent = repository.revoke(repository.require(consent_id))
+    consent = repository.revoke(
+        repository.require_for(consent_id, actor_id=actor.actor_id)
+    )
     session.commit()
     return ConsentResponse.of(consent)

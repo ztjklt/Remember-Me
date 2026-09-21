@@ -97,10 +97,10 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `GET /ready` | Readiness. Checks the database and the object store; returns `503` with per-component state when either is unreachable. |
 | `GET /api/v1/session` | Resolves the bearer token to its Actor. |
 | `POST /api/v1/consents` | Records a granted consent of one scope for one subject. The granting Actor comes from the credential, never from the body. |
-| `POST /api/v1/consents/authorize` | **The consent boundary.** Verifies that an active consent authorizes this scope for this subject, or fails with `CONSENT_REQUIRED` / `CONSENT_INVALID`. Every sensitive operation asks here. |
-| `GET /api/v1/consents?subject_id=&scope=` | Lists a subject's consents, optionally filtered by scope. |
-| `GET /api/v1/consents/{consent_id}` | Reads one consent record. |
-| `POST /api/v1/consents/{consent_id}/revoke` | Revokes a consent. The record stays; what was done under it was done. |
+| `POST /api/v1/consents/authorize` | **The consent boundary.** Verifies that a consent **this Actor granted** authorizes this scope for this subject, or fails with `CONSENT_REQUIRED` / `CONSENT_NOT_FOUND` / `CONSENT_INVALID`. Every sensitive operation asks here. |
+| `GET /api/v1/consents?subject_id=&scope=` | Lists the consents **this Actor** granted for a subject, optionally filtered by scope. Another Actor's grants for the same subject are filtered out, not reported. |
+| `GET /api/v1/consents/{consent_id}` | Reads one consent record this Actor granted. Another Actor's is `CONSENT_NOT_FOUND`. |
+| `POST /api/v1/consents/{consent_id}/revoke` | Revokes a consent this Actor granted. The record stays; what was done under it was done. |
 
 URL paths are Backend-owned. Payload shapes for Capture, Processing Status, AI Process, and Episode Result belong to the contract and arrive with Issue #1.
 
@@ -124,7 +124,9 @@ A request presents `Authorization: Bearer <actor token>`. The token resolves to 
 
 This is **not** production authentication: there is no identity provider, no expiry, and no rotation. The `Actor` record is the seam a real identity provider plugs into later. Android holds no privileged backend credential (ADR-0001 D10).
 
-There are also no roles. Any authenticated Actor may grant or revoke a consent for any Subject, and the record says which Actor did it — it does not restrict who may. In Phase 1 the Actor is the subject or the person operating the app on their behalf, and a role model would need the identity provider that Phase 1 does not have. The consent boundary is about *which scope* an operation holds, not about which actor may hold it.
+There are also no roles in the identity-provider sense, but a consent is not a free-floating record either. **Granting is open**: any authenticated Actor may grant a consent for an existing Subject, and the grant records which Actor made it. In Phase 1 that grant is the only way an Actor acquires authority over a Subject's records — the subject-to-actor relationship is not modeled yet — so narrowing who may grant would leave no way to obtain the authority the rest of the API enforces.
+
+**Everything after the grant is scoped to it.** A consent can be read, used, or revoked **only by the Actor that granted it**. A request naming another Actor's consent is answered exactly as one naming a record that does not exist (`CONSENT_NOT_FOUND`), so no response discloses that another Actor's grant exists. This is why the refusal is a 404 rather than a 403: `CONSENT_INVALID` already means "yours, but it does not authorize this scope, this subject, or this moment", and a distinguishable "exists but is not yours" would let one Actor enumerate another's grants. The consent boundary is therefore about *which scope* an operation holds **and** which Actor holds it (ADR-0001 D7).
 
 ## Error codes
 
@@ -138,8 +140,8 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 | `ACTOR_NOT_FOUND` | 404 | No such Actor |
 | `SUBJECT_NOT_FOUND` | 404 | No such Subject |
 | `CONSENT_REQUIRED` | 403 | A sensitive operation arrived without a consent reference |
-| `CONSENT_INVALID` | 403 | The consent reference is absent, revoked, another Subject's, or another scope |
-| `CONSENT_NOT_FOUND` | 404 | No such consent record |
+| `CONSENT_INVALID` | 403 | The caller's own consent, but revoked, for another Subject, or for another scope |
+| `CONSENT_NOT_FOUND` | 404 | No such consent for the calling Actor — an unknown id and another Actor's grant answer identically |
 
 The ingest, STT, and AI Core codes listed in ADR-0001 D11 arrive with Issue #1.
 
@@ -147,7 +149,7 @@ The ingest, STT, and AI Core codes listed in ADR-0001 D11 arrive with Issue #1.
 
 `Subject` is the modeled person; `Actor` is whoever currently operates the app. They are distinct records from the start so Creator Mode and Legacy Mode can move between actors around one subject.
 
-`Consent` ties a Subject to the Actor who granted it and carries a `scope`. Two scopes are registered — `RECORDING` (capturing the subject's audio and text) and `VOICE` (building and using a voice profile from it) — and they are separate grants: a voice operation is never satisfiable by a recording consent. Three things enforce that rather than describing it: the database refuses a scope this codebase does not register (`ck_consents_scope`), verification matches scope exactly, and the API boundary takes the scope as an explicit parameter. A sensitive operation must **verify** an active consent for the subject and scope it needs; a missing, revoked, or subject-mismatched reference is a validation error rather than a warning. [`services/voice/README.md`](../voice/README.md) documents the boundary, including the rule that third-party speech never enters a subject's voice data.
+`Consent` ties a Subject to the Actor who granted it and carries a `scope`. Two scopes are registered — `RECORDING` (capturing the subject's audio and text) and `VOICE` (building and using a voice profile from it) — and they are separate grants: a voice operation is never satisfiable by a recording consent. Three things enforce that rather than describing it: the database refuses a scope this codebase does not register (`ck_consents_scope`), verification matches scope exactly, and the API boundary takes the scope as an explicit parameter. A sensitive operation must **verify** an active consent for the subject and scope it needs, **granted by the calling Actor**; a missing reference, a revoked or subject-mismatched or scope-mismatched one, and a grant belonging to another Actor are all refusals rather than warnings. [`services/voice/README.md`](../voice/README.md) documents the boundary, including the rule that third-party speech never enters a subject's voice data.
 
 Timestamps are stored in UTC and returned with the offset restored (`as_utc` in `app/models.py`), because SQLite has no timezone-aware type and would otherwise return the same field differently from PostgreSQL.
 

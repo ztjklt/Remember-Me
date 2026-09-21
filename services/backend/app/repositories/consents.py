@@ -9,7 +9,13 @@ from ..models import Consent, ConsentScope, ConsentStatus, utcnow
 
 
 class ConsentRepository:
-    """Consent records and the verification rule that guards sensitive work."""
+    """Consent records and the verification rule that guards sensitive work.
+
+    Every method that answers a request is scoped to the actor making it: a grant
+    belongs to the actor that made it and to nobody else. A consent belonging to
+    another actor is reported exactly as one that does not exist, so no response
+    discloses that another actor's grant exists (ADR-0001 D7).
+    """
 
     def __init__(self, session: Session) -> None:
         self.session = session
@@ -18,12 +24,22 @@ class ConsentRepository:
         self.session.add(consent)
         return consent
 
-    def get(self, consent_id: str) -> Consent | None:
-        return self.session.get(Consent, consent_id)
+    def for_actor(self, consent_id: str, *, actor_id: str) -> Consent | None:
+        """The consent as this actor may see it, or None when it is not theirs."""
+        return self.session.scalars(
+            select(Consent).where(
+                Consent.consent_id == consent_id,
+                Consent.granted_by_actor_id == actor_id,
+            )
+        ).one_or_none()
 
-    def require(self, consent_id: str) -> Consent:
-        """Return the consent record or fail with CONSENT_NOT_FOUND."""
-        consent = self.get(consent_id)
+    def require_for(self, consent_id: str, *, actor_id: str) -> Consent:
+        """Return the caller's own consent record, or fail CONSENT_NOT_FOUND.
+
+        The scoping is the authorization rule rather than a convenience: there is
+        deliberately no unscoped lookup for a request handler to reach for.
+        """
+        consent = self.for_actor(consent_id, actor_id=actor_id)
         if consent is None:
             raise ConsentNotFound(f"No consent with id {consent_id}")
         return consent
@@ -53,44 +69,54 @@ class ConsentRepository:
         self.session.add(consent)
         return consent
 
-    def list_for_subject(
-        self, subject_id: str, *, scope: ConsentScope | None = None
+    def list_for_actor(
+        self,
+        subject_id: str,
+        *,
+        actor_id: str,
+        scope: ConsentScope | None = None,
     ) -> list[Consent]:
-        statement = select(Consent).where(Consent.subject_id == subject_id)
+        """The consents this actor granted for this subject, and only those.
+
+        Listing is filtered rather than refused: another actor's grants for the
+        same subject are not an error to report, they are simply not this
+        caller's business.
+        """
+        statement = select(Consent).where(
+            Consent.subject_id == subject_id,
+            Consent.granted_by_actor_id == actor_id,
+        )
         if scope is not None:
             statement = statement.where(Consent.scope == str(scope))
         return list(self.session.scalars(statement.order_by(Consent.created_at)))
 
-    def find_active(
-        self, consent_id: str, *, subject_id: str, scope: ConsentScope
-    ) -> Consent | None:
-        """Return the consent only if it is granted for this subject and scope."""
-        return self.session.scalars(
-            select(Consent).where(
-                Consent.consent_id == consent_id,
-                Consent.subject_id == subject_id,
-                Consent.scope == str(scope),
-                Consent.status == ConsentStatus.GRANTED,
-                Consent.revoked_at.is_(None),
-            )
-        ).one_or_none()
-
     def require_active(
-        self, consent_id: str | None, *, subject_id: str, scope: ConsentScope
+        self,
+        consent_id: str | None,
+        *,
+        subject_id: str,
+        scope: ConsentScope,
+        actor_id: str,
     ) -> Consent:
-        """Verify a granted consent for a subject and scope, or raise.
+        """Verify the caller's own granted consent for a subject and scope, or raise.
 
-        A missing reference is CONSENT_REQUIRED. A reference that exists but is
-        revoked, belongs to another subject, or covers another scope is
-        CONSENT_INVALID. Recording consent never satisfies another scope
-        (ADR-0001 D7).
+        A missing reference is CONSENT_REQUIRED. A reference the caller did not
+        grant is CONSENT_NOT_FOUND, whether or not it exists for someone else. A
+        reference the caller did grant, but which is revoked, covers another
+        scope, or names another subject, is CONSENT_INVALID. Recording consent
+        never satisfies another scope (ADR-0001 D7).
         """
         if not consent_id:
             raise ConsentRequired(
                 f"A {scope} consent reference is required for this operation"
             )
-        consent = self.find_active(consent_id, subject_id=subject_id, scope=scope)
-        if consent is None:
+        consent = self.require_for(consent_id, actor_id=actor_id)
+        if (
+            consent.subject_id != subject_id
+            or consent.scope != str(scope)
+            or consent.status != ConsentStatus.GRANTED
+            or consent.revoked_at is not None
+        ):
             raise ConsentInvalid(
                 f"Consent {consent_id} is not an active {scope} consent "
                 f"for subject {subject_id}"
