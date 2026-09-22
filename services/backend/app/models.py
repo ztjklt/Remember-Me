@@ -1,0 +1,93 @@
+from datetime import datetime, timezone
+from enum import StrEnum
+
+from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class ConsentScope(StrEnum):
+    """Consent scopes.
+
+    Phase 1 implements RECORDING only. The voice scope is introduced by Issue #9
+    as a separate grant, so that recording consent can never authorize a voice
+    operation (ADR-0001 D7).
+    """
+
+    RECORDING = "RECORDING"
+
+
+class ConsentStatus(StrEnum):
+    GRANTED = "granted"
+    REVOKED = "revoked"
+
+
+class Subject(Base):
+    """The modeled person. Durable across Actor changes."""
+
+    __tablename__ = "subjects"
+
+    subject_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+
+
+class Actor(Base):
+    """Whoever currently operates the app.
+
+    May be the Subject or another person. Kept distinct from Subject from the
+    start so Creator Mode and Legacy Mode can move between actors around one
+    subject (Issue #8 principle note).
+    """
+
+    __tablename__ = "actors"
+    __table_args__ = (Index("ix_actors_token_hash", "token_hash", unique=True),)
+
+    actor_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # Only the digest of an actor token is stored. See app/security.py.
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+
+
+class Consent(Base):
+    """A granted permission record tying a Subject to the Actor who granted it.
+
+    A sensitive operation must verify an active consent for the subject and the
+    required scope. Merely recording a consent reference is not enough
+    (ADR-0001 D7).
+    """
+
+    __tablename__ = "consents"
+    __table_args__ = (
+        Index("ix_consents_subject_scope_status", "subject_id", "scope", "status"),
+    )
+
+    consent_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    granted_by_actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    scope: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    evidence_ref: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
