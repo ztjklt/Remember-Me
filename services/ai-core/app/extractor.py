@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Any
+import json
+import logging
+from time import perf_counter
 
 from pydantic import ValidationError
 
 from .contracts import AICoreInput, AICoreOutput
-from .errors import AIOutputInvalid
+from .errors import AICoreError, AIOutputInvalid
 from .prompts import PROMPT_VERSION, SCHEMA_VERSION, build_system_prompt
 from .providers.base import ModelRequest, StructuredModelProvider
 from .validation import validate_output
+
+logger = logging.getLogger("remember_me.ai_core")
 
 
 class MemoryExtractor:
@@ -30,6 +34,28 @@ class MemoryExtractor:
         self.schema_version = schema_version
 
     def process(self, payload: AICoreInput) -> AICoreOutput:
+        started = perf_counter()
+        outcome = "internal_error"
+        try:
+            output = self._process(payload)
+            outcome = "ok"
+            return output
+        except AICoreError as exc:
+            outcome = exc.code
+            raise
+        finally:
+            logger.info(json.dumps({
+                "event": "extraction", "trace_id": payload.trace_id,
+                "outcome": outcome, "duration_ms": round((perf_counter() - started) * 1000, 3),
+            }, ensure_ascii=True))
+
+    def _process(self, payload: AICoreInput) -> AICoreOutput:
+        if not payload.transcript.strip():
+            return AICoreOutput(
+                memory_items=[], graph_updates=[], persona_updates=[], evidence=[],
+                model_version=self.model_version,
+            )
+
         request = ModelRequest(
             payload=payload,
             system_prompt=build_system_prompt(),
@@ -45,6 +71,12 @@ class MemoryExtractor:
         except ValidationError as exc:
             raise AIOutputInvalid("AI provider output failed the frozen schema") from exc
 
+        # Provenance describes this deployment, not a string guessed by the LLM.
+        output.model_version = self.model_version
+        for memory in output.memory_items:
+            memory.model_version = self.model_version
+            memory.prompt_version = self.prompt_version
+            memory.schema_version = self.schema_version
         return validate_output(payload, output)
 
 

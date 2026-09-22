@@ -3,6 +3,7 @@
 > Owner: 康欣（`centraler`）
 > Scope: Phase 1 Golden Path，覆盖 Issue #4、#2、#5 的 AI Core 最小闭环。
 > Branch: `feature/ai-core-phase1`；主题提交：`3c93231`、`096dbe4`、`bd6424c`、`4935b37`、`de971f1`、`7e168a3`
+> 2026-09-22 更新：本地 AI Core `0.2.0`；详见 [第二轮审查与优化记录](02_KANGXIN_AI_CORE_V2_REVIEW.md)。上面的提交是第一版历史基线。
 
 ## 1. 这部分负责什么
 
@@ -50,12 +51,15 @@ Backend 仍然是 Episode、Job、重试和用户可见失败状态的唯一负�
 - Evidence ID 必须唯一。
 - Memory 引用的每个 `evidence_id` 必须真实存在。
 - transcript span 必须在原文范围内。
+- Phase 1 的所有 Evidence 都必须给出 span、excerpt 和当前 Episode 引用；没有 span 不能跳过核验。
 - `excerpt` 必须等于 `transcript[start:end]`。
 - 当前 Episode 的 transcript 证据使用：
   `episode:<episode_id>#span:<start>-<end>`。
 - Phase 1 的 `graph_updates` 和 `persona_updates` 必须为空数组。
 - 每个 Memory 必须包含 `source_type`、`evidence_ids`、`confidence`、
   `model_version`、`prompt_version`、`schema_version`。
+- 推断/改写使用 `AI_INFERENCE`；直接来源标签要求逐字引用且与 Evidence 标签一致。该检查不证明说话人身份或推断内容正确。
+- model/prompt/schema 版本由服务写入，不接受模型自报版本；日期需带时区并输出为 UTC。
 
 ### Provider 和 Extractor
 
@@ -78,14 +82,14 @@ Backend 仍然是 Episode、Job、重试和用户可见失败状态的唯一负�
 uv run pytest -q
 ```
 
-当前本地结果：44 个测试通过；测试客户端依赖产生 2 条上游弃用警告，不影响结果。
+第二轮本地结果：113 个 AI Core 测试通过，共享 Contract 7 个测试通过；独立 wheel 布局检查通过。测试客户端依赖产生 2 条上游弃用警告。远端 CI 未运行。
 
 启动确定性本地服务：
 
 ```powershell
 $env:REMEMBER_ENVIRONMENT = "development"
 $env:AI_PROVIDER = "fixture"
-uv run uvicorn app.main:app --port 8100
+uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8100 --log-config app/logging.json
 ```
 
 另开一个 PowerShell 请求：
@@ -114,8 +118,11 @@ AI_MODEL=<provider-model>
 AI_API_KEY=<secret>
 AI_TIMEOUT_SECONDS=30
 AI_MODEL_VERSION=<model-version>
-AI_PROMPT_VERSION=memory-extractor-v1
+AI_PROMPT_VERSION=memory-extractor-v2
 AI_SCHEMA_VERSION=integration-contract-v0.1.2
+AI_MAX_CONCURRENT_REQUESTS=4
+AI_MAX_REQUEST_BYTES=1048576
+AI_MAX_RESPONSE_BYTES=1048576
 ```
 
 API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、日志、README 或 Git。
@@ -145,8 +152,8 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
       "source_type": "AI_INFERENCE",
       "evidence_ids": ["episode-123:evidence:0"],
       "confidence": 0.85,
-      "model_version": "fixture-ai-v1",
-      "prompt_version": "memory-extractor-v1",
+      "model_version": "fixture-ai-v2",
+      "prompt_version": "memory-extractor-v2",
       "schema_version": "integration-contract-v0.1.2"
     }
   ],
@@ -163,7 +170,7 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
       "confidence": 0.95
     }
   ],
-  "model_version": "fixture-ai-v1"
+  "model_version": "fixture-ai-v2"
 }
 ```
 
@@ -174,9 +181,10 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
 
 | HTTP 状态 | `error_code` | 含义 | Backend 建议 |
 | --- | --- | --- | --- |
-| 422 | FastAPI validation detail | 输入缺字段或格式不符合 Contract | 不重试，修正请求 |
-| 503 | `AI_UNAVAILABLE` | Provider 连接失败或 5xx | 可按 Backend 策略重试 |
-| 504 | `AI_TIMEOUT` | Provider 超时 | 可按 Backend 策略重试 |
+| 413 | 安全的 `detail` | 请求 JSON 超过配置字节上限 | 不原样重试，协调录音长度/容量 |
+| 422 | 脱敏的 validation detail | 输入缺字段或格式不符合 Contract；不回显输入 | 不重试，修正请求 |
+| 503 | `AI_UNAVAILABLE` | Provider 连接失败、429/5xx 或本服务并发满额 | Backend 有界退避重试 |
+| 504 | `AI_TIMEOUT` | 网络超时或 Provider 408/504 | 可按 Backend 策略重试 |
 | 502 | `AI_SCHEMA_INVALID` | Provider 返回坏 JSON/坏结构 | 通常不重试，记录失败 |
 | 502 | `EVIDENCE_INVALID` | Evidence 与 transcript 对不上 | 不重试，记录失败 |
 
@@ -191,14 +199,19 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
 3. 在调用 AI Core 前先持久化 Episode；AI Core 失败不能删除原始 Episode。
 4. Backend 自己负责 Job 状态、重试、幂等和最终结果持久化。
 5. 不把 `episode_id`、`job_id` 或数据库写入逻辑塞进 AI Core。
-6. 为 502、503、504 增加跨模块错误映射测试，明确哪些错误可重试。
+6. 为 413、422、502、503、504 增加跨模块错误映射测试，明确哪些错误可重试。AI Core 自身不自动重试，避免重复付费。
 7. 用真实 STT 文本和真实 Provider 再跑一次；Fixture 只能证明链路和 Contract，不满足 Phase 1 发布验收。
+8. 服务仅放在 Backend 可访问的内部网络。Actor/Subject/Consent 必须在 Backend 调用前核验；本接口没有用户身份鉴权或独立服务鉴权。
+9. span 是 Unicode 码点索引、右端不含；涉及 emoji 时不要直接当作 Kotlin/JavaScript 的 UTF-16 下标。
+10. 本轮 `subject_context`、`subject_id`、`trace_id` 不发送给模型；trace 仅用于本地结构化日志，context 暂无可验证证据解析器。
 
 ## 7. 当前未完成项和风险
 
 - 当前分支基于 `origin/develop` 的 Phase 1 readiness baseline；Backend #40–#42 尚未进入本分支，因此尚未修改昊宇的 Backend 文件。
 - 真实 Provider 还没有在本地验收，OpenAI-compatible Adapter 只完成了协议级测试。
 - FixtureProvider 是离线验证器，不是生产语义模型。
+- 原文逐字匹配只证明“引用存在”，不证明推断成立或说话人身份准确；真实中文质量、提示注入和多说话人归属需单独评测。
+- 并发上限按进程计算；HTTP 超时是网络操作超时。全局配额、慢客户端防护、任务总期限由部署层/Backend 负责。
 - Graph、Persona、Twin、Voice、Calibration 仍然是后续阶段，不能借此交接文档提前冻结。
 - Jev 如果只提供 Noul/Choice/Score 决策接口，不能直接替代当前的结构化 Transcript → Memory 生成器；它最多作为后续路由、筛选或评分组件，需另行验证。
 

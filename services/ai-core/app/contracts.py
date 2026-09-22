@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StrictFloat, field_validator
 
 
 MemoryType = Literal[
@@ -41,6 +42,13 @@ class AICoreInput(ContractModel):
     subject_context: dict[str, Any] | None = None
     existing_model_version: str = Field(min_length=1)
 
+    @field_validator("trace_id", "subject_context", mode="before")
+    @classmethod
+    def optional_but_not_nullable(cls, value: Any) -> Any:
+        if value is None:
+            raise ValueError("omit optional fields instead of sending null")
+        return value
+
 
 class Evidence(ContractModel):
     evidence_id: str = Field(min_length=1)
@@ -49,20 +57,44 @@ class Evidence(ContractModel):
     excerpt: str | None = None
     span_start: int | None = Field(default=None, ge=0)
     span_end: int | None = Field(default=None, ge=0)
-    confidence: float | None = Field(default=None, ge=0, le=1)
+    confidence: StrictFloat | None = Field(default=None, ge=0, le=1)
+
+    @field_validator("span_start", "span_end", mode="before")
+    @classmethod
+    def json_integer(cls, value: Any) -> Any:
+        # JSON Schema accepts 1.0 as an integer, but never true or "1".
+        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            raise ValueError("span offsets must be JSON integers")
+        return value
 
 
 class MemoryItem(ContractModel):
     memory_type: MemoryType
     content: str = Field(min_length=1)
     source_type: SourceType
-    evidence_ids: list[str] = Field(min_length=1)
-    confidence: float = Field(ge=0, le=1)
+    evidence_ids: list[Annotated[str, Field(min_length=1)]] = Field(min_length=1)
+    confidence: StrictFloat = Field(ge=0, le=1)
     model_version: str = Field(min_length=1)
     prompt_version: str = Field(min_length=1)
     schema_version: str = Field(min_length=1)
-    effective_at: datetime | None = None
+    effective_at: AwareDatetime | None = None
     metadata: dict[str, Any] | None = None
+
+    @field_validator("effective_at", mode="before")
+    @classmethod
+    def datetime_not_epoch(cls, value: Any) -> Any:
+        if value is not None and not isinstance(value, (str, datetime)):
+            raise ValueError("effective_at must be an RFC 3339 datetime")
+        if isinstance(value, str) and not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})", value,
+        ):
+            raise ValueError("effective_at must be an RFC 3339 datetime")
+        return value
+
+    @field_validator("effective_at")
+    @classmethod
+    def utc_datetime(cls, value: datetime | None) -> datetime | None:
+        return value.astimezone(timezone.utc) if value is not None else None
 
 
 class AICoreOutput(ContractModel):
@@ -73,7 +105,9 @@ class AICoreOutput(ContractModel):
     model_version: str = Field(min_length=1)
 
 
-_FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
+_FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
+if not _FIXTURE_DIR.is_dir():
+    _FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 def load_fixture(name: str) -> AICoreInput:

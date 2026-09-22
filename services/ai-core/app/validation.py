@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from .contracts import AICoreInput, AICoreOutput
+from .contracts import AICoreInput, AICoreOutput, Evidence
 from .errors import AIOutputInvalid, EvidenceInvalid
 
 
-def _validate_evidence(payload: AICoreInput, output: AICoreOutput) -> dict[str, object]:
-    evidence_by_id: dict[str, object] = {}
+def _validate_evidence(payload: AICoreInput, output: AICoreOutput) -> dict[str, Evidence]:
+    evidence_by_id: dict[str, Evidence] = {}
 
     for evidence in output.evidence:
         if evidence.evidence_id in evidence_by_id:
@@ -21,7 +21,9 @@ def _validate_evidence(payload: AICoreInput, output: AICoreOutput) -> dict[str, 
                 f"transcript span for {evidence.evidence_id} must include both start and end"
             )
         if not has_start:
-            continue
+            # Phase 1 has no resolver for external evidence. An opaque reference
+            # alone cannot establish that an AI-generated claim is grounded.
+            raise EvidenceInvalid("Phase 1 evidence must have a verified transcript span")
 
         assert evidence.span_start is not None
         assert evidence.span_end is not None
@@ -31,7 +33,7 @@ def _validate_evidence(payload: AICoreInput, output: AICoreOutput) -> dict[str, 
             )
 
         expected_excerpt = payload.transcript[evidence.span_start : evidence.span_end]
-        if evidence.excerpt != expected_excerpt:
+        if evidence.excerpt != expected_excerpt or not expected_excerpt.strip():
             raise EvidenceInvalid(
                 f"evidence {evidence.evidence_id} excerpt does not match its transcript span"
             )
@@ -58,6 +60,8 @@ def validate_output(payload: AICoreInput, output: AICoreOutput) -> AICoreOutput:
         raise AIOutputInvalid("persona_updates must be empty during Phase 1")
 
     for memory in output.memory_items:
+        if not memory.content.strip():
+            raise AIOutputInvalid("memory content must not be whitespace")
         if not memory.evidence_ids:
             raise AIOutputInvalid(f"memory {memory.content!r} needs evidence")
         if len(memory.evidence_ids) != len(set(memory.evidence_ids)):
@@ -68,6 +72,13 @@ def validate_output(payload: AICoreInput, output: AICoreOutput) -> AICoreOutput:
             raise AIOutputInvalid(
                 f"memory {memory.content!r} references missing evidence: {', '.join(missing)}"
             )
+
+        if memory.source_type != "AI_INFERENCE":
+            sources = [evidence_by_id[item] for item in memory.evidence_ids]
+            if any(item.source_type != memory.source_type for item in sources):
+                raise EvidenceInvalid("memory attribution does not match its evidence")
+            if memory.content not in {item.excerpt for item in sources}:
+                raise EvidenceInvalid("a paraphrase must be labelled AI_INFERENCE, not a direct source")
 
         for field_name in ("model_version", "prompt_version", "schema_version"):
             if not getattr(memory, field_name).strip():

@@ -162,3 +162,44 @@ def test_validate_output_rejects_evidence_for_a_different_episode() -> None:
 
     with pytest.raises(EvidenceInvalid, match="Episode"):
         validate_output(payload, output)
+
+
+@pytest.mark.parametrize("source_ref", ["episode:someone-else", "https://invented.test/evidence"])
+def test_evidence_cannot_skip_grounding_by_omitting_spans(source_ref: str) -> None:
+    payload, output = _valid_output()
+    output.evidence[0] = output.evidence[0].model_copy(
+        update={"span_start": None, "span_end": None, "source_ref": source_ref}
+    )
+    with pytest.raises(EvidenceInvalid):
+        validate_output(payload, output)
+
+
+def test_inference_cannot_be_relabelled_as_a_subject_quote() -> None:
+    payload, output = _valid_output()
+    output.memory_items[0].source_type = "SUBJECT"
+    output.memory_items[0].content = "我是一个完全不同的人。"
+    with pytest.raises(EvidenceInvalid):
+        validate_output(payload, output)
+
+
+def test_third_party_evidence_cannot_be_relabelled_as_subject_evidence() -> None:
+    payload, output = _valid_output()
+    output.evidence[0].source_type = "THIRD_PARTY"
+    output.memory_items[0].source_type = "SUBJECT"
+    output.memory_items[0].content = payload.transcript
+    with pytest.raises(EvidenceInvalid):
+        validate_output(payload, output)
+
+
+def test_whitespace_is_not_evidence_or_memory() -> None:
+    payload, output = _valid_output()
+    output.memory_items[0].content = " \n "
+    with pytest.raises(AIOutputInvalid):
+        validate_output(payload, output)
+
+
+def test_exact_subject_quote_is_accepted() -> None:
+    payload, output = _valid_output()
+    output.memory_items[0].source_type = "SUBJECT"
+    output.memory_items[0].content = payload.transcript
+    assert validate_output(payload, output) == output

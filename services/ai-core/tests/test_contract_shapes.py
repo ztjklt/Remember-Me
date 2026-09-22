@@ -102,3 +102,43 @@ def test_ai_core_output_mirrors_frozen_contract(frozen_schema: dict) -> None:
 def test_contract_models_reject_unknown_fields(model: type, payload: dict) -> None:
     with pytest.raises(ValidationError):
         model.model_validate(payload)
+
+
+@pytest.mark.parametrize("confidence", [True, "0.9", float("nan"), float("inf")])
+def test_confidence_cannot_be_coerced_from_non_json_numbers(confidence) -> None:
+    with pytest.raises(ValidationError):
+        Evidence(evidence_id="e", source_type="SUBJECT", source_ref="r", confidence=confidence)
+
+
+@pytest.mark.parametrize("span", [True, "0", 0.5])
+def test_span_cannot_be_coerced_from_boolean_or_string(span) -> None:
+    with pytest.raises(ValidationError):
+        Evidence(evidence_id="e", source_type="SUBJECT", source_ref="r", span_start=span)
+
+
+@pytest.mark.parametrize("field", ["trace_id", "subject_context"])
+def test_input_optional_fields_must_be_omitted_instead_of_null(field: str) -> None:
+    with pytest.raises(ValidationError):
+        AICoreInput.model_validate({
+            "episode_id": "e", "subject_id": "s", "transcript": "hello",
+            "existing_model_version": "v0", field: None,
+        })
+
+
+@pytest.mark.parametrize("timestamp", [1234567890, "1234567890", "2026-09-22T10:00:00", "2026-09-22"])
+def test_effective_at_requires_a_timezone_aware_datetime(timestamp) -> None:
+    with pytest.raises(ValidationError):
+        MemoryItem(
+            memory_type="EVENT", content="a memory", source_type="AI_INFERENCE",
+            evidence_ids=["e"], confidence=0.9, model_version="m",
+            prompt_version="p", schema_version="s", effective_at=timestamp,
+        )
+
+
+def test_effective_at_preserves_the_instant_as_utc():
+    memory = MemoryItem(
+        memory_type="EVENT", content="a memory", source_type="AI_INFERENCE",
+        evidence_ids=["e"], confidence=1, model_version="m", prompt_version="p",
+        schema_version="s", effective_at="2026-09-22T10:00:00+08:00",
+    )
+    assert memory.model_dump(mode="json")["effective_at"] == "2026-09-22T02:00:00Z"
