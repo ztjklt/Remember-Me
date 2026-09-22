@@ -15,7 +15,7 @@ def test_seed_persists_a_subject_an_actor_and_a_consent(session: Session):
 
     subject = SubjectRepository(session).require(seeded.subject_id)
     actor = ActorRepository(session).require(seeded.actor_id)
-    consent = ConsentRepository(session).get(seeded.consent_id)
+    consent = session.get(Consent, seeded.consent_id)
 
     assert subject.display_name == "Ada"
     assert actor.display_name == "Ada"
@@ -27,7 +27,10 @@ def test_the_seeded_record_satisfies_the_foundation_statement(session: Session):
     seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
 
     consent = ConsentRepository(session).require_active(
-        seeded.consent_id, subject_id=seeded.subject_id, scope=ConsentScope.RECORDING
+        seeded.consent_id,
+        subject_id=seeded.subject_id,
+        scope=ConsentScope.RECORDING,
+        actor_id=seeded.actor_id,
     )
 
     assert consent.subject_id == seeded.subject_id
@@ -70,7 +73,7 @@ def test_a_subject_with_a_consent_cannot_be_deleted(session: Session):
         session.commit()
     session.rollback()
 
-    assert ConsentRepository(session).get(seeded.consent_id) is not None
+    assert session.get(Consent, seeded.consent_id) is not None
 
 
 def test_an_unknown_subject_is_reported_as_not_found(session: Session):

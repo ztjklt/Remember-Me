@@ -64,5 +64,17 @@ def test_migrated_schema_matches_the_models(database_url):
                 index["name"] for index in inspector.get_indexes(table_name)
             }
             assert {index.name for index in table.indexes} <= migrated_indexes, table_name
+
+            migrated_checks = {
+                check["name"] for check in inspector.get_check_constraints(table_name)
+            }
+            for constraint in table.constraints:
+                if isinstance(constraint, sa.CheckConstraint):
+                    # The database must refuse what the model refuses: the
+                    # registered consent scopes are enforced in both places.
+                    assert constraint.name in migrated_checks, (
+                        f"{table_name} declares check constraint "
+                        f"{constraint.name!r} that the migration does not create"
+                    )
     finally:
         engine.dispose()

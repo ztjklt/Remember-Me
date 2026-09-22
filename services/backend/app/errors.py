@@ -7,8 +7,13 @@ renaming a code the client branches on is a compatibility concern.
 
 The ingest, STT, and AI Core codes in ADR-0001 D11 arrive with Issue #1. This
 module currently implements the identity, consent, and HTTP-layer codes that
-Issue #8's boundary needs.
+Issue #8's and Issue #9's boundaries need.
 """
+
+# Emitted for a malformed request rather than for a rejected operation, so it is
+# a constant rather than an exception class: FastAPI raises RequestValidationError
+# before any handler of ours runs.
+REQUEST_INVALID = "REQUEST_INVALID"
 
 
 class AppError(Exception):
@@ -58,3 +63,11 @@ class ConsentInvalid(AppError):
 
     code = "CONSENT_INVALID"
     http_status = 403
+
+
+class ConsentNotFound(AppError):
+    """No such consent record. Distinct from CONSENT_INVALID, which means it exists
+    but does not authorize the operation being attempted."""
+
+    code = "CONSENT_NOT_FOUND"
+    http_status = 404

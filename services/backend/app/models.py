@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -9,19 +9,47 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def as_utc(value: datetime) -> datetime:
+    """Restore the UTC offset on a stored timestamp.
+
+    SQLite has no timezone-aware datetime type, so a value written as UTC comes
+    back naive while PostgreSQL returns it with the offset. Everything this
+    application writes is UTC (see utcnow), so re-attaching UTC states what was
+    stored rather than guessing; without it the same field would serialize with
+    an offset from one backend and without one from the other (ADR-0001 D3).
+    """
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+
+
 class Base(DeclarativeBase):
     pass
 
 
 class ConsentScope(StrEnum):
-    """Consent scopes.
+    """Consent scopes. Each is a separate grant, never a label on another grant.
 
-    Phase 1 implements RECORDING only. The voice scope is introduced by Issue #9
-    as a separate grant, so that recording consent can never authorize a voice
-    operation (ADR-0001 D7).
+    RECORDING covers capturing the subject's audio and text. VOICE covers the
+    separate permission to build and use a voice profile from that audio. They are
+    distinct values in the same table so that the verification rule is one query
+    against one shape, and so that a recording consent can never satisfy a voice
+    operation (ADR-0001 D7, Issue #9).
+
+    A new scope is a deliberate act: it needs a value here, a migration extending
+    the database constraint, and — if it crosses a module boundary — the
+    Issue/proposal route CONTRIBUTING.md requires.
     """
 
     RECORDING = "RECORDING"
+    VOICE = "VOICE"
+
+
+# The database refuses a scope this codebase does not register, so a typo or a
+# hand-written row cannot create a grant that no verification rule will ever
+# match. Written as SQL rather than as a SQLAlchemy expression so the migration
+# can state the same list.
+CONSENT_SCOPE_CHECK = "scope IN ({})".format(
+    ", ".join(f"'{scope.value}'" for scope in ConsentScope)
+)
 
 
 class ConsentStatus(StrEnum):
@@ -72,6 +100,7 @@ class Consent(Base):
     __tablename__ = "consents"
     __table_args__ = (
         Index("ix_consents_subject_scope_status", "subject_id", "scope", "status"),
+        CheckConstraint(CONSENT_SCOPE_CHECK, name="ck_consents_scope"),
     )
 
     consent_id: Mapped[str] = mapped_column(String(64), primary_key=True)
