@@ -1,8 +1,8 @@
 # AI Core Phase 1 交接方案
 
-> Owner: 康欣（`centraler`）  
-> Scope: Phase 1 Golden Path，覆盖 Issue #4、#2、#5 的 AI Core 最小闭环。  
-> Branch: `feature/ai-core-phase1`  主题提交：`3c93231`、`096dbe4`、`bd6424c`、`4935b37`
+> Owner: 康欣（`centraler`）
+> Scope: Phase 1 Golden Path，覆盖 Issue #4、#2、#5 的 AI Core 最小闭环。
+> Branch: `feature/ai-core-phase1`；主题提交：`3c93231`、`096dbe4`、`bd6424c`、`4935b37`、`de971f1`、`7e168a3`
 
 ## 1. 这部分负责什么
 
@@ -78,7 +78,7 @@ Backend 仍然是 Episode、Job、重试和用户可见失败状态的唯一负�
 uv run pytest -q
 ```
 
-当前本地结果：43 个测试通过；测试客户端依赖产生 2 条上游弃用警告，不影响结果。
+当前本地结果：44 个测试通过；测试客户端依赖产生 2 条上游弃用警告，不影响结果。
 
 启动确定性本地服务：
 
