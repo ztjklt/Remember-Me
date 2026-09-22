@@ -1,7 +1,17 @@
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -52,9 +62,101 @@ CONSENT_SCOPE_CHECK = "scope IN ({})".format(
 )
 
 
+def _enum_check(column: str, values: type[StrEnum]) -> str:
+    """A CHECK constraint restricting one column to a registered set of values."""
+    return f"{column} IN ({', '.join(f'{member.value!r}' for member in values)})"
+
+
 class ConsentStatus(StrEnum):
     GRANTED = "granted"
     REVOKED = "revoked"
+
+
+class EpisodeStatus(StrEnum):
+    """Processing status of one Episode.
+
+    The values are the contract's processingStatus enum, in order: an Episode is
+    persisted as `uploaded` before any processing runs, and every later value
+    means the stage named is the one being worked on. `failed` is terminal and
+    the Episode stays readable (Issue #1's definition of done).
+    """
+
+    UPLOADED = "uploaded"
+    TRANSCRIBING = "transcribing"
+    EXTRACTING = "extracting"
+    MODELING = "modeling"
+    READY = "ready"
+    FAILED = "failed"
+
+
+EPISODE_STATUS_CHECK = _enum_check("status", EpisodeStatus)
+
+
+class CaptureSource(StrEnum):
+    """Where a recording came from (contract captureEpisode.source)."""
+
+    ANDROID_MIC = "ANDROID_MIC"
+    WORK_3200 = "WORK_3200"
+    RECORDING_DEVICE = "RECORDING_DEVICE"
+    IMPORT = "IMPORT"
+
+
+CAPTURE_SOURCE_CHECK = _enum_check("source", CaptureSource)
+
+
+class MemoryType(StrEnum):
+    """What kind of memory one item holds (contract memoryItem.memory_type)."""
+
+    EVENT = "EVENT"
+    PERSON = "PERSON"
+    RELATIONSHIP = "RELATIONSHIP"
+    PREFERENCE = "PREFERENCE"
+    VALUE = "VALUE"
+    EMOTION = "EMOTION"
+
+
+class SourceType(StrEnum):
+    """Where a memory item or evidence came from (contract source_type).
+
+    THIRD_PARTY is a first-class value here: recording that a memory rests on
+    someone else's words is a fact worth storing, not one worth losing.
+    """
+
+    SUBJECT = "SUBJECT"
+    THIRD_PARTY = "THIRD_PARTY"
+    AI_INFERENCE = "AI_INFERENCE"
+    OBJECTIVE = "OBJECTIVE"
+    CALIBRATION = "CALIBRATION"
+
+
+MEMORY_TYPE_CHECK = _enum_check("memory_type", MemoryType)
+SOURCE_TYPE_CHECK = _enum_check("source_type", SourceType)
+
+
+class JobState(StrEnum):
+    """Lifecycle of one unit of processing work.
+
+    `queued` and `running` are the only live states; a lease that expires returns
+    a job to `queued` rather than leaving it stuck, which is how a worker that
+    dies mid-stage is recovered (ADR-0001 D8).
+    """
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class JobStage(StrEnum):
+    """The processing stage a job is working on. One stage per worker tick."""
+
+    TRANSCRIBE = "transcribe"
+    EXTRACT = "extract"
+    MODEL = "model"
+
+
+JOB_STATE_CHECK = _enum_check("state", JobState)
+JOB_STAGE_CHECK = _enum_check("stage", JobStage)
 
 
 class Subject(Base):
@@ -117,6 +219,204 @@ class Consent(Base):
         DateTime(timezone=True), nullable=True
     )
     evidence_ref: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+
+
+class Episode(Base):
+    """One captured recording, from the moment it is uploaded.
+
+    The row is written **before** any speech-to-text or AI work runs, and it holds
+    a reference to the audio plus that object's metadata — never the bytes
+    (ADR-0001 D5). A downstream failure sets `status` to failed and leaves this
+    row and the object it points at untouched: the original life record is not
+    something a failing model gets to destroy (Issue #1's definition of done).
+
+    `idempotency_key` is unique per (subject, actor), which is what makes a
+    retried upload return the Episode that already exists rather than a second
+    one (ADR-0001 D12).
+    """
+
+    __tablename__ = "episodes"
+    __table_args__ = (
+        Index(
+            "ix_episodes_idempotency",
+            "subject_id",
+            "actor_id",
+            "idempotency_key",
+            unique=True,
+        ),
+        Index("ix_episodes_subject_created", "subject_id", "created_at"),
+        CheckConstraint(EPISODE_STATUS_CHECK, name="ck_episodes_status"),
+        CheckConstraint(CAPTURE_SOURCE_CHECK, name="ck_episodes_source"),
+    )
+
+    episode_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    recording_consent_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("consents.consent_id", ondelete="RESTRICT"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    capture_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    # What the client called this audio (contract captureEpisode.audio_ref). Kept
+    # beside the object key because they are different facts: the key is where
+    # Backend put the bytes, this is what the recording was called before it
+    # arrived, and that is worth not losing.
+    audio_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+
+    # The object reference and its metadata. The bytes live in object storage.
+    audio_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    audio_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    audio_content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    audio_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    # The trace id of the request that created this Episode, carried through
+    # processing so one identifier spans upload, STT, AI Core, and the result.
+    trace_id: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stt_backend: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    stt_model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+
+class Job(Base):
+    """One unit of processing work for one Episode.
+
+    A row in this table is the queue: there is no broker, and the worker claims
+    work by taking a lease on a queued row (ADR-0001 D8). `stage` advances one
+    step per tick, so the Episode's status is observable from outside the worker.
+
+    `attempts` counts attempts at the *current* stage and resets when the stage
+    advances, which is what bounds a poison pill without a transient failure in
+    one stage spending the next stage's budget.
+
+    The job id is internal and never appears in an API response: the contract's
+    job-id assertion is a hard rule, and clients address work by `episode_id`.
+    """
+
+    __tablename__ = "jobs"
+    __table_args__ = (
+        # Phase 1 has exactly one job per Episode, which holds the "exactly one
+        # Episode" guarantee end to end: a duplicate upload cannot queue a
+        # second run of the same recording.
+        Index("ix_jobs_episode", "episode_id", unique=True),
+        Index("ix_jobs_state_available", "state", "available_at"),
+        CheckConstraint(JOB_STATE_CHECK, name="ck_jobs_state"),
+        CheckConstraint(JOB_STAGE_CHECK, name="ck_jobs_stage"),
+    )
+
+    job_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    episode_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("episodes.episode_id", ondelete="RESTRICT"), nullable=False
+    )
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    stage: Mapped[str] = mapped_column(String(16), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    lease_owner: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+
+class Evidence(Base):
+    """One source an AI Core memory item rests on.
+
+    Stored rather than discarded because a memory whose evidence is gone cannot
+    be traced back to what the subject actually said, and re-deriving it later is
+    impossible: the model that produced it may be gone too. `source_type` records
+    whether the words were the subject's or a third party's.
+    """
+
+    __tablename__ = "evidence"
+    __table_args__ = (
+        Index("ix_evidence_episode", "episode_id"),
+        CheckConstraint(SOURCE_TYPE_CHECK, name="ck_evidence_source_type"),
+    )
+
+    evidence_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    episode_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("episodes.episode_id", ondelete="RESTRICT"), nullable=False
+    )
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    span_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    span_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+
+
+class MemoryItem(Base):
+    """One extracted memory, stored with the provenance and versions it carries.
+
+    Every field the contract requires is required here too, including
+    `model_version`, `prompt_version`, and `schema_version`: a memory whose origin
+    is unrecorded cannot be re-evaluated when the model or the schema changes.
+
+    `evidence_ids` is the set of `Evidence.evidence_id` values this item rests on.
+    """
+
+    __tablename__ = "memory_items"
+    __table_args__ = (
+        Index("ix_memory_items_episode", "episode_id", "ordinal"),
+        CheckConstraint(MEMORY_TYPE_CHECK, name="ck_memory_items_memory_type"),
+        CheckConstraint(SOURCE_TYPE_CHECK, name="ck_memory_items_source_type"),
+    )
+
+    memory_item_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    episode_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("episodes.episode_id", ondelete="RESTRICT"), nullable=False
+    )
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    memory_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    model_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    schema_version: Mapped[str] = mapped_column(String(32), nullable=False)
+
+    effective_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    item_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
