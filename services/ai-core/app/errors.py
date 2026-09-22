@@ -25,9 +25,14 @@ class ProviderUnavailable(AICoreError):
     code = "AI_UNAVAILABLE"
 
 
+class ProviderTimeout(AICoreError):
+    code = "AI_TIMEOUT"
+
+
 __all__ = [
     "AICoreError",
     "AIOutputInvalid",
     "EvidenceInvalid",
     "ProviderUnavailable",
+    "ProviderTimeout",
 ]
