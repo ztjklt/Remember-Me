@@ -62,6 +62,8 @@ def test_process_returns_contract_valid_output_without_backend_identifiers() -> 
     assert set(body) == {"memory_items", "graph_updates", "persona_updates", "evidence", "model_version"}
     assert "episode_id" not in body
     assert "job_id" not in body
+    assert "effective_at" not in body["memory_items"][0]
+    assert "metadata" not in body["memory_items"][0]
 
 
 def test_process_rejects_missing_input_with_422() -> None:

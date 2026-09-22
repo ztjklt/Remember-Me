@@ -1,10 +1,23 @@
+import json
+from pathlib import Path
+
 import pytest
+from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from app.contracts import AICoreOutput, Evidence, MemoryItem, load_fixture
 from app.errors import AIOutputInvalid, EvidenceInvalid
 from app.provenance import build_transcript_evidence
 from app.validation import validate_output
+
+
+SCHEMA_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "packages"
+    / "contracts"
+    / "schemas"
+    / "integration-contract-v0.1.schema.json"
+)
 
 
 def _valid_output() -> tuple[object, AICoreOutput]:
@@ -39,6 +52,14 @@ def test_validate_output_accepts_resolved_transcript_evidence() -> None:
     payload, output = _valid_output()
 
     assert validate_output(payload, output) == output
+
+
+def test_valid_output_matches_the_frozen_json_schema() -> None:
+    payload, output = _valid_output()
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+    validate_output(payload, output)
+    Draft202012Validator(schema).validate(output.model_dump(mode="json", exclude_none=True))
 
 
 def test_validate_output_rejects_duplicate_evidence_ids() -> None:

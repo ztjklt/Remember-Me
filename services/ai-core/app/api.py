@@ -70,7 +70,7 @@ def create_app(
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    @app.post("/process", response_model=AICoreOutput)
+    @app.post("/process", response_model=AICoreOutput, response_model_exclude_none=True)
     async def process(payload: AICoreInput) -> AICoreOutput:
         return active_extractor.process(payload)
 
