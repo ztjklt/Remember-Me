@@ -10,7 +10,7 @@ import java.io.File
 import java.time.Instant
 import java.util.UUID
 
-class AndroidAudioCaptureService(private val context: Context) : AudioCaptureService {
+class PhoneMicrophoneCaptureAdapter(private val context: Context) : HardwareCaptureAdapter {
     private val recordingsDir = File(context.filesDir, "recordings").apply { mkdirs() }
     private var recorder: MediaRecorder? = null
     private var activeAudioFile: File? = null
@@ -18,8 +18,19 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
     private var activeStartedAt = 0L
     private var elapsedBeforeResume = 0L
     private var player: MediaPlayer? = null
+    override var deviceState: CaptureDeviceState = CaptureDeviceState.Ready
+        private set
 
-    override suspend fun start(): AudioRecording {
+    override val isAvailable: Boolean = true
+    override val capabilityProfile = CaptureCapabilityProfile(
+        setOf(
+            CaptureCapability.PauseResume,
+            CaptureCapability.RecordingRetrieval,
+            CaptureCapability.LocalPlayback
+        )
+    )
+
+    override suspend fun startRecording(): AudioRecording {
         check(recorder == null) { "A recording is already active." }
         check(recordingsDir.isDirectory) { "App storage is unavailable." }
 
@@ -32,6 +43,7 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             MediaRecorder()
         }
 
+        deviceState = CaptureDeviceState.Starting
         try {
             newRecorder.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -47,6 +59,7 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
         } catch (error: Exception) {
             runCatching { newRecorder.release() }
             audioFile.delete()
+            deviceState = CaptureDeviceState.Failed
             throw IllegalStateException("Could not start microphone recording: ${error.message ?: "unknown error"}", error)
         }
 
@@ -56,10 +69,11 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
         activeCreatedAt = createdAt
         activeStartedAt = SystemClock.elapsedRealtime()
         elapsedBeforeResume = 0L
+        deviceState = CaptureDeviceState.Recording
         return AudioRecording(audioFile.absolutePath, 0L, MIME_TYPE, 0L, SAMPLE_RATE, CHANNEL_COUNT, createdAt)
     }
 
-    override suspend fun pause() {
+    override suspend fun pauseRecording() {
         val active = checkNotNull(recorder) { "No recording is active." }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             throw IllegalStateException("Pause and resume require Android 7.0 or newer.")
@@ -68,16 +82,18 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             active.pause()
             elapsedBeforeResume += SystemClock.elapsedRealtime() - activeStartedAt
             activeStartedAt = 0L
+            deviceState = CaptureDeviceState.Paused
         } catch (error: Exception) {
             throw IllegalStateException("Could not pause recording: ${error.message ?: "unknown error"}", error)
         }
     }
 
-    override suspend fun resume() {
+    override suspend fun resumeRecording() {
         val active = checkNotNull(recorder) { "No recording is active." }
         try {
             active.resume()
             activeStartedAt = SystemClock.elapsedRealtime()
+            deviceState = CaptureDeviceState.Recording
         } catch (error: Exception) {
             throw IllegalStateException("Could not resume recording: ${error.message ?: "unknown error"}", error)
         }
@@ -87,7 +103,7 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
         SystemClock.elapsedRealtime() - activeStartedAt
     } else 0L
 
-    override suspend fun stop(): AudioRecording {
+    override suspend fun stopRecording(): AudioRecording {
         val active = checkNotNull(recorder) { "No recording is active." }
         val audioFile = checkNotNull(activeAudioFile)
         val createdAt = checkNotNull(activeCreatedAt)
@@ -106,6 +122,7 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             activeCreatedAt = null
             activeStartedAt = 0L
             elapsedBeforeResume = 0L
+            deviceState = CaptureDeviceState.Ready
         }
 
         if (!audioFile.isFile || audioFile.length() == 0L) {
@@ -137,8 +154,11 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             runCatching {
                 val recording = sidecar.readText().let(::JSONObject).toRecording()
                 recording.takeIf { File(it.audioPath).isFile }
-            }.getOrNull()
-        }
+        }.getOrNull()
+    }
+
+    override fun isRecordingAvailable(recording: AudioRecording?): Boolean =
+        if (recording == null) latestRecording() != null else File(recording.audioPath).isFile
 
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
         stopPlayback()

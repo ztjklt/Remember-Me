@@ -29,4 +29,38 @@ interface AudioCaptureService {
 interface SpeechToTextService { suspend fun transcribe(audioRef:String):String }
 interface TwinService { suspend fun respond(question:String):TwinReply }
 interface VoiceCloneService { suspend fun preview():Result<Unit> }
-interface HardwareCaptureAdapter { val isAvailable:Boolean; suspend fun startRecording(); suspend fun stopRecording() }
+
+enum class CaptureDeviceState {
+    Unavailable,
+    Ready,
+    Starting,
+    Recording,
+    Paused,
+    Failed
+}
+
+enum class CaptureCapability {
+    PauseResume,
+    RecordingRetrieval,
+    LocalPlayback
+}
+
+data class CaptureCapabilityProfile(val supported: Set<CaptureCapability>) {
+    fun supports(capability: CaptureCapability): Boolean = capability in supported
+}
+
+interface HardwareCaptureAdapter {
+    val isAvailable: Boolean
+    val deviceState: CaptureDeviceState
+    val capabilityProfile: CaptureCapabilityProfile
+
+    suspend fun startRecording(): AudioRecording
+    suspend fun pauseRecording()
+    suspend fun resumeRecording()
+    suspend fun stopRecording(): AudioRecording
+    fun elapsedMillis(): Long
+    fun latestRecording(): AudioRecording?
+    fun isRecordingAvailable(recording: AudioRecording? = null): Boolean
+    fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit)
+    fun stopPlayback()
+}
