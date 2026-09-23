@@ -192,14 +192,14 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
 
 ## 6. Backend 接入清单
 
-等 Backend #39–#42 合并并同步到最新 `develop` 后，Backend 负责人需要：
+Backend #39–#42 已合并到 `develop`。当前分支已同步该版本；联调时由 Backend 负责人核对：
 
 1. 使用 `POST http://127.0.0.1:8100/process`，路径和地址通过配置覆盖。
 2. 发送 `episode_id`、`subject_id`、`transcript`、`existing_model_version`，并透传 `trace_id`。
 3. 在调用 AI Core 前先持久化 Episode；AI Core 失败不能删除原始 Episode。
 4. Backend 自己负责 Job 状态、重试、幂等和最终结果持久化。
 5. 不把 `episode_id`、`job_id` 或数据库写入逻辑塞进 AI Core。
-6. 为 413、422、502、503、504 增加跨模块错误映射测试，明确哪些错误可重试。AI Core 自身不自动重试，避免重复付费。
+6. 为 413、422、502、503、504 增加跨模块错误映射测试，明确哪些错误可重试。当前 `services/backend/app/ai_core.py` 把 AI Core 的所有 HTTP 4xx/5xx 都映射成不可重试的 `AI_FAILED`，因此 AI Core 的暂时性 503/504 会直接耗尽本次处理机会；需由 Backend 负责人将暂时性错误映射到可重试分类并验证任务状态。AI Core 自身不自动重试，避免重复付费。
 7. 用真实 STT 文本和真实 Provider 再跑一次；Fixture 只能证明链路和 Contract，不满足 Phase 1 发布验收。
 8. 服务仅放在 Backend 可访问的内部网络。Actor/Subject/Consent 必须在 Backend 调用前核验；本接口没有用户身份鉴权或独立服务鉴权。
 9. span 是 Unicode 码点索引、右端不含；涉及 emoji 时不要直接当作 Kotlin/JavaScript 的 UTF-16 下标。
@@ -207,7 +207,7 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
 
 ## 7. 当前未完成项和风险
 
-- 当前分支基于 `origin/develop` 的 Phase 1 readiness baseline；Backend #40–#42 尚未进入本分支，因此尚未修改昊宇的 Backend 文件。
+- 当前分支已合并包含 Backend #39–#42 的 `develop`；AI Core 提交只修改本模块、对应文档和 CI。Backend 的 HTTP 错误映射仍需其负责人修正。
 - 真实 Provider 还没有在本地验收，OpenAI-compatible Adapter 只完成了协议级测试。
 - FixtureProvider 是离线验证器，不是生产语义模型。
 - 原文逐字匹配只证明“引用存在”，不证明推断成立或说话人身份准确；真实中文质量、提示注入和多说话人归属需单独评测。
@@ -223,5 +223,5 @@ API Key 只能存在 AI Core 运行环境，不得写入 Android、Fixtures、�
 - 用 fixture 模式启动 `/health` 和 `/process`；
 - 看到输出中每个 Memory 都能通过 `evidence_ids` 找到原文证据；
 - 知道 AI Core 不负责数据库和 Episode 状态；
-- 在 Backend 合并后补跑跨服务联调和真实 Provider 验收；
+- 补跑 Backend 到 AI Core 的跨服务联调和真实 Provider 验收；
 - 不把 Phase 2–4 的 Graph、Twin、Voice、Legacy 代码提前放进 Phase 1。
