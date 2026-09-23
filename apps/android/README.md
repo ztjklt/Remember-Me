@@ -14,6 +14,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n me.remember.app/.MainActivity
 ```
 
+## Local audio capture
+
+Capture requests `RECORD_AUDIO` at runtime after explaining that microphone audio is stored in app-private storage. Recordings use AAC in an MPEG-4 container (`audio/mp4`, `.m4a`), 44.1 kHz, mono. Each recording has a JSON sidecar in `files/recordings` with `durationMillis`, `mimeType`, `byteSize`, `sampleRate`, `channelCount`, and `created_at`. The Capture screen can pause, resume, stop, and play the saved file locally. Upload and backend processing are not part of this local capture path. See [录音权限与本地存储](docs/CAPTURE_PERMISSION_AND_STORAGE.md) for permission denial, file lifecycle, and backup behavior.
+
 ## 产品评审路径
 
 启动后依次完成 Welcome → Explanation → Consent → Introduce → Recording → Processing → Twin Birth → Voice Seed → Creator Home。Creator Home 右上角 `•••` 打开 Demo Menu，可直达 Calibration、Handover 和 Legacy Mode。
