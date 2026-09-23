@@ -2,17 +2,21 @@ package me.remember.app.navigation
 
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
+import me.remember.app.data.repository.AudioCaptureService
 import me.remember.app.feature.*
 
-@Composable fun RememberMeApp(){
+@Composable fun RememberMeApp(audioCaptureService: AudioCaptureService){
     val nav=rememberNavController()
-    NavHost(nav,Routes.Splash){
+    val startDestination = remember(audioCaptureService) {
+        if (audioCaptureService.latestRecording() != null) Routes.Recording else Routes.Splash
+    }
+    NavHost(nav,startDestination){
         composable(Routes.Splash){SplashScreen{nav.navigate(Routes.Welcome){popUpTo(Routes.Splash){inclusive=true}}}}
         composable(Routes.Welcome){WelcomeScreen{nav.navigate(Routes.Explain)}}
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
-        composable(Routes.Recording){RecordingScreen{nav.navigate(Routes.Processing)}}
+        composable(Routes.Recording){RecordingScreen(audioCaptureService)}
         composable(Routes.Processing){ProcessingScreen{nav.navigate(Routes.Birth)}}
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}

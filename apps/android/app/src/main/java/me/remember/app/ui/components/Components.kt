@@ -18,7 +18,8 @@ import kotlin.math.sin
 
 @Composable fun RmPage(content:@Composable ColumnScope.()->Unit){ Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(horizontal=24.dp,vertical=28.dp),verticalArrangement=Arrangement.spacedBy(20.dp),content=content) }
 @Composable fun RmPrimaryButton(text:String,onClick:()->Unit,modifier:Modifier=Modifier){ Button(onClick,modifier.heightIn(min=52.dp),shape=MaterialTheme.shapes.medium){Text(text)} }
-@Composable fun RmSecondaryButton(text:String,onClick:()->Unit){ OutlinedButton(onClick,Modifier.heightIn(min=52.dp),shape=MaterialTheme.shapes.medium){Text(text)} }
+@Composable fun RmSecondaryButton(text:String,onClick:()->Unit){ RmSecondaryButton(text,Modifier,onClick) }
+@Composable fun RmSecondaryButton(text:String,modifier:Modifier,onClick:()->Unit){ OutlinedButton(onClick,modifier.heightIn(min=52.dp),shape=MaterialTheme.shapes.medium){Text(text)} }
 @Composable fun RmSectionHeader(title:String,meta:String?=null){ Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.Bottom){Text(title,style=MaterialTheme.typography.titleLarge); meta?.let{Text(it,style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)}} }
 @Composable fun RmCaptureOrb(active:Boolean=false,onClick:()->Unit={}){
     val t=rememberInfiniteTransition(label="breath"); val scale by t.animateFloat(0.94f,1.04f,infiniteRepeatable(tween(1800,easing=FastOutSlowInEasing),RepeatMode.Reverse),label="scale")
