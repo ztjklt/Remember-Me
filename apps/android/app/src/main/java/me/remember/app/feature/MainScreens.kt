@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.remember.app.core.designsystem.RememberMeColors
 import me.remember.app.BuildConfig
-import me.remember.app.data.mock.MockRememberMeRepository
+import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.model.*
 import me.remember.app.navigation.Routes
 import me.remember.app.ui.components.*
@@ -24,7 +24,7 @@ import me.remember.app.ui.components.*
 }
 @Composable private fun NavigationRow(go:(String)->Unit){Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.SpaceAround){listOf("Home" to Routes.Home,"Memories" to Routes.Memories,"Capture" to Routes.Recording,"Twin" to Routes.Twin).forEach{(label,r)->Text(label,Modifier.clickable{go(r)}.padding(10.dp),style=MaterialTheme.typography.labelMedium)}}}
 
-@Composable fun MemoriesScreen(back:()->Unit){val repo=remember{MockRememberMeRepository()};val state by repo.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("Memory Archive",style=MaterialTheme.typography.headlineLarge);Text("不是一份清单，是你留下的人生切片。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有记忆");is Loadable.Error->Text(s.message)}}}
+@Composable fun MemoriesScreen(memoryRepository:MemoryRepository,back:()->Unit){val state by memoryRepository.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("Memory Archive",style=MaterialTheme.typography.headlineLarge);Text("不是一份清单，是你留下的人生切片。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有记忆");is Loadable.Error->Text(s.message)}}}
 @Composable private fun MemoryItem(m:Memory){Column(Modifier.padding(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){Text("${m.date} · ${m.place}",color=RememberMeColors.Muted);Text("“${m.story}”",style=MaterialTheme.typography.titleLarge);Text((m.people+m.tags).joinToString("   "),style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted);RmVoicePlayer(m.duration);RmDivider()}}
 
 @Composable fun TwinScreen(back:()->Unit){var asked by remember{mutableStateOf(false)};RmPage{TextButton(back){Text("← 返回")};Text("我还在慢慢认识你。",style=MaterialTheme.typography.headlineLarge);Text("回答会区分你的原话与 AI Simulation。",color=RememberMeColors.Muted);OutlinedTextField("我小时候最喜欢什么？",{},Modifier.fillMaxWidth(),readOnly=true,label={Text("问一个问题")});RmPrimaryButton("问问 Twin",{asked=true},Modifier.fillMaxWidth());if(asked){RmSectionHeader("你曾经说过","ORIGINAL");RmVoicePlayer("外婆家窗边那只旧收音机","2012 · 襄阳 · 原始录音");RmDivider();RmSectionHeader("Based on what you’ve told me…","AI SIMULATION");Text("你珍惜的也许不是那台收音机本身，而是它让一家人安静地待在一起。",style=MaterialTheme.typography.bodyLarge)}}}
