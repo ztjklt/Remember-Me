@@ -165,6 +165,17 @@ class CaptureInstrumentedTest {
         composeRule.onNodeWithTag("capture.play").assertExists()
         composeRule.onNodeWithTag("capture.start").assertDoesNotExist()
     }
+
+    @Test
+    fun deviceWithoutPauseCapabilityStillOffersStopAndSave() {
+        audioService.canPause = false
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.onNodeWithTag("capture.stop").assertExists()
+        composeRule.onNodeWithTag("capture.pause").assertDoesNotExist()
+        composeRule.onNodeWithTag("capture.stop").performClick()
+        composeRule.onNodeWithTag("capture.play").assertExists()
+        assertEquals(0, audioService.pauseCalls)
+    }
 }
 
 private class FakeAudioCaptureService : AudioCaptureService {
@@ -174,6 +185,7 @@ private class FakeAudioCaptureService : AudioCaptureService {
     var stopCalls = 0
     var playCalls = 0
     var failStart = false
+    var canPause = true
     var startGate: CompletableDeferred<Unit>? = null
     private var active = false
     private var saved = false
@@ -196,6 +208,7 @@ private class FakeAudioCaptureService : AudioCaptureService {
         stopCalls++
         return savedRecording
     }
+    override fun supportsPauseResume(): Boolean = canPause
     override fun elapsedMillis(): Long = savedRecording.durationMillis
     override fun latestRecording(): AudioRecording? = if (saved) savedRecording else null
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {

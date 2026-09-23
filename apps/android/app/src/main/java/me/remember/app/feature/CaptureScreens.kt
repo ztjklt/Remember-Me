@@ -149,11 +149,13 @@ fun RecordingScreen(
             }
             CaptureState.Recording -> {
                 Text("正在录制真实麦克风音频。", color = RememberMeColors.Muted)
-                RmSecondaryButton("暂停录音", Modifier.testTag("capture.pause")) {
-                    scope.launch {
-                        runCatching { audioCaptureService.pause() }
-                            .onSuccess { transition(CaptureEvent.Pause) }
-                            .onFailure { errorMessage = it.message ?: "Could not pause recording." }
+                if (audioCaptureService.supportsPauseResume()) {
+                    RmSecondaryButton("暂停录音", Modifier.testTag("capture.pause")) {
+                        scope.launch {
+                            runCatching { audioCaptureService.pause() }
+                                .onSuccess { transition(CaptureEvent.Pause) }
+                                .onFailure { errorMessage = it.message ?: "Could not pause recording." }
+                        }
                     }
                 }
                 RmPrimaryButton("停止并保存", {

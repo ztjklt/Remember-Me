@@ -23,6 +23,14 @@ Definition of Done: no composable directly constructs a repository. Switching be
 
 The boundary rule was already present in the repository architecture baseline; this change clarifies where implementations are selected and how the no-screen-change replacement requirement is verified.
 
+### Capability-based capture adapter
+
+`AudioCaptureService` is the app-facing capture boundary. `SelectingAudioCaptureService` selects an available external `HardwareCaptureAdapter` for a complete recording session and otherwise routes the whole session through the phone-microphone fallback. The selected adapter is pinned from start through pause, resume, and stop, so a device disconnect cannot silently switch an in-progress recording to another source.
+
+Each adapter reports `CaptureDeviceState` and a `CaptureCapabilityProfile`; the app checks advertised capabilities before optional pause/resume, recording retrieval, and local playback operations. It also exposes the latest saved recording and whether a specific recording is available. The phone fallback uses Android's microphone and app-private `filesDir/recordings` storage and reports the capabilities it implements. With no external device present, recording, pause/resume, save, retrieval, and playback continue through this fallback.
+
+The adapter API contains only app-owned Kotlin types. No Work 3200 or vendor SDK types, and no assumptions about markers, live audio, or background recording, cross this boundary. A future hardware implementation can be supplied at the application assembly point without changing `RecordingScreen` or the phone fallback.
+
 客户端只消费 Backend Contract，跨模块 payload 以 `packages/contracts` 的 schema 为准；Android 不直接绑定 DeepSeek、STT、Voice、Supabase 或 Work 3200，也不持有 provider secret。硬件一律经 capability profile，无设备时手机录音路径必须完整可用。
 
 `Subject` 表示被记录的人，`Actor` 表示当前操作产品的人，两者是不同类型。Creator Mode 与 Legacy Mode 因此可以围绕同一 Subject 切换不同 Actor，而不把 Subject 等同于 Current User。

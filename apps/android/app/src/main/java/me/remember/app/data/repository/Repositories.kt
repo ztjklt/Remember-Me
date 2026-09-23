@@ -23,6 +23,8 @@ interface AudioCaptureService {
     suspend fun stop(): AudioRecording
     /** Finalize an active capture when its screen or activity stops; no-op after a save. */
     fun stopIfActive(): AudioRecording?
+    /** Capabilities of the source selected for the current recording. */
+    fun supportsPauseResume(): Boolean = true
     fun elapsedMillis(): Long
     fun latestRecording(): AudioRecording?
     fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit)
@@ -31,4 +33,40 @@ interface AudioCaptureService {
 interface SpeechToTextService { suspend fun transcribe(audioRef:String):String }
 interface TwinService { suspend fun respond(question:String):TwinReply }
 interface VoiceCloneService { suspend fun preview():Result<Unit> }
-interface HardwareCaptureAdapter { val isAvailable:Boolean; suspend fun startRecording(); suspend fun stopRecording() }
+
+enum class CaptureDeviceState {
+    Unavailable,
+    Ready,
+    Starting,
+    Recording,
+    Paused,
+    Failed
+}
+
+enum class CaptureCapability {
+    PauseResume,
+    RecordingRetrieval,
+    LocalPlayback
+}
+
+data class CaptureCapabilityProfile(val supported: Set<CaptureCapability>) {
+    fun supports(capability: CaptureCapability): Boolean = capability in supported
+}
+
+interface HardwareCaptureAdapter {
+    val isAvailable: Boolean
+    val deviceState: CaptureDeviceState
+    val capabilityProfile: CaptureCapabilityProfile
+
+    suspend fun startRecording(): AudioRecording
+    suspend fun pauseRecording()
+    suspend fun resumeRecording()
+    suspend fun stopRecording(): AudioRecording
+    /** Synchronously finalize an active capture during lifecycle teardown. */
+    fun stopRecordingIfActive(): AudioRecording?
+    fun elapsedMillis(): Long
+    fun latestRecording(): AudioRecording?
+    fun isRecordingAvailable(recording: AudioRecording? = null): Boolean
+    fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit)
+    fun stopPlayback()
+}
