@@ -39,6 +39,14 @@ Real recording writes to app-scoped storage. Permission denial, offline, upload 
 
 Every external provider — STT, LLM, vector/graph store, voice clone, hardware — sits behind an adapter. Android holds no provider secrets and calls only the Backend contract. Hardware uses a capability profile, and the microphone path stays fully functional with no device present.
 
+## Decision records
+
+| ADR | Decision | Status |
+| --- | --- | --- |
+| [ADR-0001 — Backend platform, data, storage, auth, and failure model](backend-adr.md) | Language, deployment shape, data layer, migrations, object storage, upload transport, auth boundary, job model, provider boundaries, client security, failure model, idempotency, observability, local verification | Proposed — awaiting ratification (Issue #13) |
+
+An ADR records a decision and its rejected alternatives so modules cannot each bind to a different assumed architecture. An ADR does not override `packages/contracts`.
+
 ## Relationship to contracts
 
 `packages/contracts` is the integration source of truth and outranks this document. Architecture records added here must not silently override it; a conflict is resolved by a contract proposal, not by an architecture note.
