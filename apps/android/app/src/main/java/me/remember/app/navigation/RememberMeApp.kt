@@ -3,9 +3,10 @@ package me.remember.app.navigation
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
 import me.remember.app.data.repository.AudioCaptureService
+import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.feature.*
 
-@Composable fun RememberMeApp(audioCaptureService: AudioCaptureService){
+@Composable fun RememberMeApp(audioCaptureService: AudioCaptureService, memoryRepository: MemoryRepository){
     val nav=rememberNavController()
     val startDestination = remember(audioCaptureService) {
         if (audioCaptureService.latestRecording() != null) Routes.Recording else Routes.Splash
@@ -21,7 +22,7 @@ import me.remember.app.feature.*
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
         composable(Routes.Home){CreatorHomeScreen(nav::navigate)}
-        composable(Routes.Memories){MemoriesScreen{nav.popBackStack()}}
+        composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
         composable(Routes.Twin){TwinScreen{nav.popBackStack()}}
         composable(Routes.Calibration){CalibrationScreen{nav.popBackStack()}}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
