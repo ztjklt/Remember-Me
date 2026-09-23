@@ -34,6 +34,7 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
     var elapsedMillis by remember { mutableLongStateOf(savedRecording?.durationMillis ?: 0L) }
     var playing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var recordingConsentGranted by remember { mutableStateOf(false) }
     var permissionGranted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
@@ -43,6 +44,8 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
     }
 
     fun startCapture() {
+        if (!recordingConsentGranted || (captureState != CaptureState.Idle && captureState != CaptureState.Failed)) return
+        transition(CaptureEvent.BeginStart)
         scope.launch {
             try {
                 errorMessage = null
@@ -84,17 +87,33 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
         Text(formatDuration(elapsedMillis), color = RememberMeColors.Muted, style = MaterialTheme.typography.titleLarge)
 
         when (captureState) {
+            CaptureState.Starting -> {
+                Text("正在启动麦克风…", color = RememberMeColors.Muted)
+                CircularProgressIndicator(Modifier.testTag("capture.starting"))
+            }
             CaptureState.Idle, CaptureState.Failed, CaptureState.PermissionDenied -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = recordingConsentGranted,
+                        onCheckedChange = { recordingConsentGranted = it },
+                        modifier = Modifier.testTag("capture.recordingConsent")
+                    )
+                    Text("我同意在此设备录制并保存这段音频。")
+                }
                 if (!permissionGranted) {
                     Text("录音需要麦克风权限。音频只会保存到此应用的私有存储。", color = RememberMeColors.Muted)
                     if (captureState == CaptureState.PermissionDenied) {
                         Text("麦克风权限被拒绝，尚未开始录音。你可以重试，或在系统设置中允许 Remember Me 使用麦克风。", color = MaterialTheme.colorScheme.error)
                     }
-                    RmPrimaryButton("允许麦克风并开始录音", {
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }, Modifier.fillMaxWidth().testTag("capture.requestPermission"))
+                    if (recordingConsentGranted) {
+                        RmPrimaryButton("允许麦克风并开始录音", {
+                            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }, Modifier.fillMaxWidth().testTag("capture.requestPermission"))
+                    }
                 } else {
-                    RmPrimaryButton("开始录音", ::startCapture, Modifier.fillMaxWidth().testTag("capture.start"))
+                    if (recordingConsentGranted) {
+                        RmPrimaryButton("开始录音", ::startCapture, Modifier.fillMaxWidth().testTag("capture.start"))
+                    }
                 }
             }
             CaptureState.Recording -> {
@@ -189,5 +208,5 @@ private fun formatDuration(durationMillis: Long): String {
 }
 
 @Composable fun ProcessingScreen(done:()->Unit){var n by remember{mutableIntStateOf(0)};LaunchedEffect(Unit){repeat(3){delay(650);n++};delay(600);done()};RmPage{Spacer(Modifier.height(80.dp));Text("我正在认识你。",style=MaterialTheme.typography.headlineLarge);Text("不是为了给你下定义，只是把你说过的话慢慢放在一起。",color=RememberMeColors.Muted);Spacer(Modifier.height(30.dp));listOf("我听到了你的名字。","我知道了一些对你重要的人。","我开始记住你的声音了。").forEachIndexed{i,t->if(n>i){Text("✓ $t",style=MaterialTheme.typography.bodyLarge)}};Spacer(Modifier.weight(1f));Text("Identity Seed  ·  Memory Seed  ·  Voice Seed",style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)}}
-@Composable fun TwinBirthScreen(next:()->Unit)=RmPage{Spacer(Modifier.height(24.dp));Text("我开始认识你了。",style=MaterialTheme.typography.headlineLarge);Text("陈笨",style=MaterialTheme.typography.displayLarge);Text("独立纪录片剪辑师  ·  杭州",color=RememberMeColors.Muted);RmDivider();Text("你很重视",style=MaterialTheme.typography.titleLarge);Text("创造   家人   诚实地生活",style=MaterialTheme.typography.headlineMedium);RmDivider();Text("我目前知道",style=MaterialTheme.typography.titleLarge);Text("3 个重要的人\n4 段经历\n2 个长期兴趣",style=MaterialTheme.typography.bodyLarge);Spacer(Modifier.weight(1f));Text("我才刚刚开始认识你。",color=RememberMeColors.Muted);RmPrimaryButton("继续",next,Modifier.fillMaxWidth())}
+@Composable fun TwinBirthScreen(next:()->Unit)=RmPage{Spacer(Modifier.height(24.dp));Text("我开始认识你了。",style=MaterialTheme.typography.headlineLarge);Text("陈屿",style=MaterialTheme.typography.displayLarge);Text("独立纪录片剪辑师  ·  杭州",color=RememberMeColors.Muted);RmDivider();Text("你很重视",style=MaterialTheme.typography.titleLarge);Text("创造   家人   诚实地生活",style=MaterialTheme.typography.headlineMedium);RmDivider();Text("我目前知道",style=MaterialTheme.typography.titleLarge);Text("3 个重要的人\n4 段经历\n2 个长期兴趣",style=MaterialTheme.typography.bodyLarge);Spacer(Modifier.weight(1f));Text("我才刚刚开始认识你。",color=RememberMeColors.Muted);RmPrimaryButton("继续",next,Modifier.fillMaxWidth())}
 @Composable fun VoiceSeedScreen(next:()->Unit){var playing by remember{mutableStateOf(false)};RmPage{Text("我也开始记住你的声音了。",style=MaterialTheme.typography.headlineLarge);Text("VOICE SEED",color=RememberMeColors.Muted);Text("Ready for preview",style=MaterialTheme.typography.titleLarge);RmVoicePlayer("听听现在的我","声音模拟 · Preview",playing){playing=!playing};if(playing)RmWaveform();Spacer(Modifier.weight(1f));RmSecondaryButton("重新录一点"){};TextButton(onClick={}){Text("这个声音还不像我")};RmPrimaryButton("进入 Remember Me",next,Modifier.fillMaxWidth())}}

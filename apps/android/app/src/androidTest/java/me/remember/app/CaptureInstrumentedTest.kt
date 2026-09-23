@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.CompletableDeferred
 import me.remember.app.core.designsystem.RememberMeTheme
 import me.remember.app.data.repository.AudioCaptureService
 import me.remember.app.data.repository.AudioRecording
@@ -37,6 +38,7 @@ class CaptureInstrumentedTest {
             RememberMeTheme { RecordingScreen(audioService) }
         }
         composeRule.waitForIdle()
+        composeRule.onNodeWithTag("capture.recordingConsent").performClick()
     }
 
     @Test
@@ -84,8 +86,38 @@ class CaptureInstrumentedTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("录音需要麦克风权限。音频只会保存到此应用的私有存储。").assertExists()
+        composeRule.onNodeWithTag("capture.recordingConsent").performClick()
         composeRule.onNodeWithTag("capture.requestPermission").assertExists()
         assertEquals(0, audioService.startCalls)
+    }
+
+    @Test
+    fun recordingConsentIsRequiredBeforeStarting() {
+        composeRule.activity.setContent {
+            RememberMeTheme { RecordingScreen(audioService) }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithTag("capture.start").assertDoesNotExist()
+        assertEquals(0, audioService.startCalls)
+        composeRule.onNodeWithTag("capture.recordingConsent").performClick()
+        composeRule.onNodeWithTag("capture.start").assertExists()
+    }
+
+    @Test
+    fun anotherStartIsUnavailableWhileMicrophoneStartIsPending() {
+        val startGate = CompletableDeferred<Unit>()
+        audioService.startGate = startGate
+
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.waitUntil(timeoutMillis = 3_000) { audioService.startCalls == 1 }
+
+        composeRule.onNodeWithTag("capture.starting").assertExists()
+        composeRule.onNodeWithTag("capture.start").assertDoesNotExist()
+        assertEquals(1, audioService.startCalls)
+
+        startGate.complete(Unit)
+        composeRule.onNodeWithTag("capture.pause").assertExists()
     }
 }
 
@@ -96,9 +128,11 @@ private class FakeAudioCaptureService : AudioCaptureService {
     var stopCalls = 0
     var playCalls = 0
     var failStart = false
+    var startGate: CompletableDeferred<Unit>? = null
 
     override suspend fun start(): AudioRecording {
         startCalls++
+        startGate?.await()
         check(!failStart) { "test microphone failure" }
         return savedRecording
     }

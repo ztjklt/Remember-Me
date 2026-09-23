@@ -2,6 +2,7 @@ package me.remember.app.feature
 
 internal enum class CaptureState {
     Idle,
+    Starting,
     Recording,
     Paused,
     Saved,
@@ -10,6 +11,7 @@ internal enum class CaptureState {
 }
 
 internal sealed interface CaptureEvent {
+    data object BeginStart : CaptureEvent
     data object Start : CaptureEvent
     data object Pause : CaptureEvent
     data object Resume : CaptureEvent
@@ -20,13 +22,14 @@ internal sealed interface CaptureEvent {
 }
 
 internal fun reduceCaptureState(state: CaptureState, event: CaptureEvent): CaptureState = when (event) {
-    CaptureEvent.Start -> state.requireOneOf(CaptureState.Idle, CaptureState.Failed).let { CaptureState.Recording }
+    CaptureEvent.BeginStart -> state.requireOneOf(CaptureState.Idle, CaptureState.Failed).let { CaptureState.Starting }
+    CaptureEvent.Start -> state.requireOneOf(CaptureState.Starting).let { CaptureState.Recording }
     CaptureEvent.Pause -> state.requireOneOf(CaptureState.Recording).let { CaptureState.Paused }
     CaptureEvent.Resume -> state.requireOneOf(CaptureState.Paused).let { CaptureState.Recording }
     CaptureEvent.Save -> state.requireOneOf(CaptureState.Recording, CaptureState.Paused).let { CaptureState.Saved }
-    CaptureEvent.DenyPermission -> state.requireOneOf(CaptureState.Idle, CaptureState.PermissionDenied).let { CaptureState.PermissionDenied }
+    CaptureEvent.DenyPermission -> state.requireOneOf(CaptureState.Idle, CaptureState.Failed, CaptureState.PermissionDenied).let { CaptureState.PermissionDenied }
     CaptureEvent.Reset -> state.requireOneOf(CaptureState.Saved, CaptureState.PermissionDenied, CaptureState.Failed).let { CaptureState.Idle }
-    CaptureEvent.Fail -> state.requireOneOf(CaptureState.Idle, CaptureState.Recording, CaptureState.Paused, CaptureState.Failed).let { CaptureState.Failed }
+    CaptureEvent.Fail -> state.requireOneOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused, CaptureState.Failed).let { CaptureState.Failed }
 }
 
 private fun CaptureState.requireOneOf(vararg allowed: CaptureState): CaptureState {
