@@ -2,12 +2,14 @@ package me.remember.app
 
 import android.Manifest
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.CompletableDeferred
 import me.remember.app.core.designsystem.RememberMeTheme
 import me.remember.app.data.repository.AudioCaptureService
@@ -75,13 +77,8 @@ class CaptureInstrumentedTest {
 
     @Test
     fun missingPermissionShowsStorageRationaleBeforeRequest() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        instrumentation.uiAutomation.revokeRuntimePermission(
-            instrumentation.targetContext.packageName,
-            Manifest.permission.RECORD_AUDIO
-        )
         composeRule.activity.setContent {
-            RememberMeTheme { RecordingScreen(audioService) }
+            RememberMeTheme { RecordingScreen(audioService, hasMicrophonePermission = { false }) }
         }
         composeRule.waitForIdle()
 
@@ -119,6 +116,39 @@ class CaptureInstrumentedTest {
         startGate.complete(Unit)
         composeRule.onNodeWithTag("capture.pause").assertExists()
     }
+
+    @Test
+    fun leavingAndReenteringCaptureFinalizesAndRestoresTheSavedFile() {
+        val showCapture = mutableStateOf(true)
+        composeRule.activity.setContent {
+            RememberMeTheme { if (showCapture.value) RecordingScreen(audioService) }
+        }
+        composeRule.onNodeWithTag("capture.recordingConsent").performClick()
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.onNodeWithTag("capture.pause").assertExists()
+
+        composeRule.runOnUiThread { showCapture.value = false }
+        composeRule.waitForIdle()
+        assertEquals(1, audioService.stopCalls)
+
+        composeRule.runOnUiThread { showCapture.value = true }
+        composeRule.onNodeWithTag("capture.play").assertExists()
+        composeRule.onNodeWithTag("capture.start").assertDoesNotExist()
+        assertEquals(1, audioService.startCalls)
+    }
+
+    @Test
+    fun backgroundingActivityFinalizesCaptureBeforeReturning() {
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.onNodeWithTag("capture.pause").assertExists()
+
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.CREATED)
+        assertEquals(1, audioService.stopCalls)
+        composeRule.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
+
+        composeRule.onNodeWithTag("capture.play").assertExists()
+        composeRule.onNodeWithTag("capture.start").assertDoesNotExist()
+    }
 }
 
 private class FakeAudioCaptureService : AudioCaptureService {
@@ -129,19 +159,29 @@ private class FakeAudioCaptureService : AudioCaptureService {
     var playCalls = 0
     var failStart = false
     var startGate: CompletableDeferred<Unit>? = null
+    private var active = false
+    private var saved = false
 
     override suspend fun start(): AudioRecording {
         startCalls++
         startGate?.await()
         check(!failStart) { "test microphone failure" }
+        active = true
         return savedRecording
     }
 
     override suspend fun pause() { pauseCalls++ }
     override suspend fun resume() { resumeCalls++ }
-    override suspend fun stop(): AudioRecording { stopCalls++; return savedRecording }
+    override suspend fun stop(): AudioRecording = checkNotNull(stopIfActive())
+    override fun stopIfActive(): AudioRecording? {
+        if (!active) return null
+        active = false
+        saved = true
+        stopCalls++
+        return savedRecording
+    }
     override fun elapsedMillis(): Long = savedRecording.durationMillis
-    override fun latestRecording(): AudioRecording? = null
+    override fun latestRecording(): AudioRecording? = if (saved) savedRecording else null
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
         playCalls++
         onComplete()

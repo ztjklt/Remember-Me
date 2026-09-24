@@ -43,6 +43,7 @@ private class OnboardingAudioCaptureService : AudioCaptureService {
     override suspend fun pause() = error("Onboarding must not pause a recording")
     override suspend fun resume() = error("Onboarding must not resume a recording")
     override suspend fun stop(): AudioRecording = error("Onboarding must not stop a recording")
+    override fun stopIfActive(): AudioRecording? = null
     override fun elapsedMillis(): Long = 0L
     override fun latestRecording(): AudioRecording? = null
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) =

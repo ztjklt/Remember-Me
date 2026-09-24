@@ -21,6 +21,8 @@ interface AudioCaptureService {
     suspend fun pause()
     suspend fun resume()
     suspend fun stop(): AudioRecording
+    /** Finalize an active capture when its screen or activity stops; no-op after a save. */
+    fun stopIfActive(): AudioRecording?
     fun elapsedMillis(): Long
     fun latestRecording(): AudioRecording?
     fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit)
