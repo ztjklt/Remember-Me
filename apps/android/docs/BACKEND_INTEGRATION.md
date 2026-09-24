@@ -36,4 +36,4 @@ With fake STT or fixture AI, this demonstrates wiring only. The Phase 1 gate sti
 
 ## Code boundaries
 
-`MainActivity` assembles `AndroidAudioCaptureService`, `HttpEpisodeGateway`, `EpisodeFlow`, and `EpisodeMemoryRepository`. Composables receive those interfaces or state; they never instantiate a Mock Repository. `HttpEpisodeGateway` owns multipart upload, bearer authentication, bounded HTTP reads, and contract-shaped parsing. `EpisodeFlow` retains the Episode ID across in-session status retries. The Mock Repository remains for previews and tests only.
+`MainActivity` assembles `PhoneMicrophoneCaptureAdapter` through `SelectingAudioCaptureService`, plus `HttpEpisodeGateway`, `EpisodeFlow`, and `EpisodeMemoryRepository`. Composables receive those interfaces or state; they never instantiate a Mock Repository. `HttpEpisodeGateway` owns multipart upload, bearer authentication, bounded HTTP reads, and contract-shaped parsing. `EpisodeFlow` retains the Episode ID across in-session status retries. The Mock Repository remains for previews and tests only.

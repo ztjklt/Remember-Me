@@ -61,11 +61,16 @@ class SelectingAudioCaptureService(
     override fun latestRecording(): AudioRecording? =
         allAdapters().firstNotNullOfOrNull { adapter ->
             if (adapter.capabilityProfile.supports(CaptureCapability.RecordingRetrieval)) {
-                adapter.latestRecording()
+                adapter.latestRecording()?.takeIf(adapter::isRecordingAvailable)
             } else {
                 null
             }
         }
+
+    override fun canPlay(recording: AudioRecording): Boolean = allAdapters().any { adapter ->
+        adapter.capabilityProfile.supports(CaptureCapability.LocalPlayback) &&
+            adapter.isRecordingAvailable(recording)
+    }
 
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
         val selected = allAdapters().firstOrNull { adapter ->

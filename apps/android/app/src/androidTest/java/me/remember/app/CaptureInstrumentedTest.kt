@@ -176,6 +176,17 @@ class CaptureInstrumentedTest {
         composeRule.onNodeWithTag("capture.play").assertExists()
         assertEquals(0, audioService.pauseCalls)
     }
+
+    @Test
+    fun deviceWithoutPlaybackCapabilityKeepsUploadAvailable() {
+        audioService.canPlayAudio = false
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.onNodeWithTag("capture.stop").performClick()
+
+        composeRule.onNodeWithTag("capture.play").assertDoesNotExist()
+        composeRule.onNodeWithTag("capture.upload").assertExists()
+        composeRule.onNodeWithText("当前录音源不支持在此设备播放。").assertExists()
+    }
 }
 
 private class FakeAudioCaptureService : AudioCaptureService {
@@ -186,6 +197,7 @@ private class FakeAudioCaptureService : AudioCaptureService {
     var playCalls = 0
     var failStart = false
     var canPause = true
+    var canPlayAudio = true
     var startGate: CompletableDeferred<Unit>? = null
     private var active = false
     private var saved = false
@@ -209,6 +221,7 @@ private class FakeAudioCaptureService : AudioCaptureService {
         return savedRecording
     }
     override fun supportsPauseResume(): Boolean = canPause
+    override fun canPlay(recording: AudioRecording): Boolean = canPlayAudio
     override fun elapsedMillis(): Long = savedRecording.durationMillis
     override fun latestRecording(): AudioRecording? = if (saved) savedRecording else null
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {

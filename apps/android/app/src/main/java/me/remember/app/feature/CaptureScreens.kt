@@ -199,22 +199,26 @@ fun RecordingScreen(
                     Text("时长 ${formatDuration(saved.durationMillis)} · ${saved.byteSize} bytes", style = MaterialTheme.typography.bodyMedium)
                     Text("${saved.mimeType} · ${saved.sampleRate} Hz · ${saved.channelCount} ch", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
                     Text("${File(saved.audioPath).name}\n${saved.createdAt}", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
-                    RmPrimaryButton(if (playing) "正在播放" else "播放刚才的录音", {
-                        try {
-                            playing = true
-                            audioCaptureService.play(
-                                saved,
-                                onComplete = { playing = false },
-                                onError = { message ->
-                                    playing = false
-                                    errorMessage = message
-                                }
-                            )
-                        } catch (error: Exception) {
-                            playing = false
-                            errorMessage = error.message ?: "Could not play the saved recording."
-                        }
-                    }, Modifier.fillMaxWidth().testTag("capture.play"))
+                    if (audioCaptureService.canPlay(saved)) {
+                        RmPrimaryButton(if (playing) "正在播放" else "播放刚才的录音", {
+                            try {
+                                playing = true
+                                audioCaptureService.play(
+                                    saved,
+                                    onComplete = { playing = false },
+                                    onError = { message ->
+                                        playing = false
+                                        errorMessage = message
+                                    }
+                                )
+                            } catch (error: Exception) {
+                                playing = false
+                                errorMessage = error.message ?: "Could not play the saved recording."
+                            }
+                        }, Modifier.fillMaxWidth().testTag("capture.play"))
+                    } else {
+                        Text("当前录音源不支持在此设备播放。", color = RememberMeColors.Muted)
+                    }
                     RmPrimaryButton("上传并处理这段录音", { onUpload(saved) }, Modifier.fillMaxWidth().testTag("capture.upload"))
                 }
                 RmSecondaryButton("重新录制", Modifier.testTag("capture.retake")) {

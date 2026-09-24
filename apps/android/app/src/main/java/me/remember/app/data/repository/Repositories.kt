@@ -27,6 +27,7 @@ interface AudioCaptureService {
     fun supportsPauseResume(): Boolean = true
     fun elapsedMillis(): Long
     fun latestRecording(): AudioRecording?
+    fun canPlay(recording: AudioRecording): Boolean = true
     fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit)
     fun stopPlayback()
 }

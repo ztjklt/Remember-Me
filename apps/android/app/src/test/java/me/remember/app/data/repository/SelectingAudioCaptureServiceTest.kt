@@ -100,6 +100,20 @@ class SelectingAudioCaptureServiceTest {
         service.start()
         assertEquals(listOf("start", "stop", "start"), external.calls)
     }
+
+    @Test
+    fun playbackCapabilityUsesAnAdapterThatCanOpenTheSavedRecording() = runBlocking {
+        val external = FakeCaptureAdapter(
+            recordingPath = "/external/device.m4a",
+            capabilityProfile = CaptureCapabilityProfile(setOf(CaptureCapability.RecordingRetrieval))
+        )
+        val service = SelectingAudioCaptureService(FakeCaptureAdapter(), external)
+
+        service.start()
+        val saved = service.stop()
+
+        assertFalse(service.canPlay(saved))
+    }
 }
 
 private class FakeCaptureAdapter(
