@@ -1,0 +1,96 @@
+{
+  "fixture_id": "phase3-calibration-voice-v0",
+  "notice": "Synthetic acceptance scenario only; not an approved API, schema, provider, or Phase 3 activation",
+  "subject_id": "subj_demo_ada",
+  "calibration": {
+    "calibration_id": "cal_help_friend",
+    "question": "A long-time friend needs help tonight, but you have a work deadline. What would you do?",
+    "locked_twin_answer": {
+      "text": "I would finish my work first and tell my friend I cannot help tonight.",
+      "locked_at": "2024-05-01T10:00:00Z",
+      "model_version": "before-calibration",
+      "evidence_refs": ["ep_work_values"]
+    },
+    "human_answer": {
+      "text": "I would call my friend, find out whether it is urgent, and negotiate my deadline if they need me. I would feel worried leaving them alone.",
+      "recorded_at": "2024-05-01T10:05:00Z",
+      "source_type": "CALIBRATION"
+    },
+    "dimension_expectations": {
+      "Decision": "The locked answer declines; the human answer first checks urgency and may help.",
+      "Reasoning": "The human weighs urgency and a negotiable deadline, which the locked answer omitted.",
+      "Value Priority": "The human gives the friend's urgent need more weight than the locked answer did.",
+      "Emotional Reaction": "The human reports worry; the locked answer contained no such evidence.",
+      "Expression": "The human offers a call and explanation rather than a flat refusal."
+    },
+    "acceptance_checks": [
+      {
+        "check_id": "answer_locked_first",
+        "expectation": "Persist the answer, model version, evidence, and lock time before accepting the human answer; later edits to that locked record fail and are auditable."
+      },
+      {
+        "check_id": "missing_human_answer",
+        "expectation": "No calibration diff or model update is produced without a human answer."
+      },
+      {
+        "check_id": "five_dimensions_and_provenance",
+        "expectation": "Report all five dimensions, label model error versus context dependence or insufficient evidence, and cite the locked answer and human answer separately."
+      },
+      {
+        "check_id": "changed_later_answer",
+        "expectation": "The same question asked later reflects the human answer with a new model version and calibration provenance; the old evidence is retained."
+      }
+    ]
+  },
+  "voice": {
+    "recording_consent_id": "consent_recording_ada",
+    "independent_voice_consent_id": "consent_voice_ada",
+    "authorized_twin_text": "I would call my friend and find out how urgent it is.",
+    "sample_segments": [
+      {
+        "segment_id": "seg_ada_clean",
+        "speaker": "SUBJECT",
+        "quality": "ADEQUATE",
+        "eligible_for_subject_dataset": true
+      },
+      {
+        "segment_id": "seg_friend",
+        "speaker": "THIRD_PARTY",
+        "quality": "ADEQUATE",
+        "eligible_for_subject_dataset": false
+      },
+      {
+        "segment_id": "seg_ada_noisy",
+        "speaker": "SUBJECT",
+        "quality": "INSUFFICIENT",
+        "eligible_for_subject_dataset": false
+      }
+    ],
+    "acceptance_checks": [
+      {
+        "check_id": "authorized_profile_and_playback",
+        "expectation": "With active independent Voice consent, verified subject-only clean samples, a confirmed profile, and authorized Twin text, a selected real provider returns playable audio through a server-side adapter. Android receives no provider secret."
+      },
+      {
+        "check_id": "recording_consent_is_not_voice_consent",
+        "expectation": "Recording consent alone cannot create a Voice dataset, profile, or synthesis request."
+      },
+      {
+        "check_id": "third_party_and_low_quality_excluded",
+        "expectation": "Third-party and insufficient-quality segments never enter the Subject Voice dataset; an insufficient clean sample set cannot produce a confirmed profile."
+      },
+      {
+        "check_id": "authorized_text_only",
+        "expectation": "A caller cannot replace approved Twin text with arbitrary text for synthesis."
+      },
+      {
+        "check_id": "revocation_propagates",
+        "expectation": "After Voice consent revocation, derived Voice assets become unavailable, new synthesis and app-managed cached playback are denied, and the action is auditable."
+      },
+      {
+        "check_id": "provider_failure_visible",
+        "expectation": "Provider failure produces an explicit failed state and audit reference; it does not return fabricated audio or leak provider secrets."
+      }
+    ]
+  }
+}
