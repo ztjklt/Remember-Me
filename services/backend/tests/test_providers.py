@@ -12,9 +12,11 @@ visible in the test rather than described in a comment.
 """
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
+from jsonschema import Draft202012Validator, FormatChecker
 
 from app.ai_core import (
     FAKE_MODEL_VERSION,
@@ -76,6 +78,21 @@ VALID_OUTPUT = {
     ],
     "model_version": "ai-core-v1",
 }
+
+CONTRACT_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "packages"
+    / "contracts"
+    / "schemas"
+    / "integration-contract-v0.1.schema.json"
+)
+
+
+@pytest.fixture(scope="module")
+def contract_validator() -> Draft202012Validator:
+    schema = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    return Draft202012Validator(schema, format_checker=FormatChecker())
 
 
 @pytest.fixture
@@ -192,16 +209,40 @@ def test_a_transcript_with_no_lines_yields_no_memories():
     assert output.model_version == FAKE_MODEL_VERSION
 
 
-def test_the_request_that_is_sent_is_the_contract_shape(http_post):
+def test_the_request_that_is_sent_is_the_contract_shape(http_post, contract_validator):
     sent = http_post(lambda request: httpx.Response(200, json=VALID_OUTPUT))
 
     client_for().process(INPUT)
 
     body = sent[0].read()
     assert sent[0].url == httpx.URL("http://ai-core.internal/process")
-    assert json.loads(body) == INPUT.model_dump(mode="json")
+    request = json.loads(body)
+    assert request == {
+        "episode_id": "ep_0000000000000001",
+        "subject_id": "subj_ada",
+        "transcript": "We walked by the river.\n\nShe said the water was cold.",
+        "existing_model_version": "none",
+        "trace_id": "trace-0001",
+    }
+    contract_validator.validate(request)
     # The job id is internal and never leaves this process.
-    assert "job_id" not in INPUT.model_dump(mode="json")
+    assert "job_id" not in request
+
+
+def test_optional_ai_context_is_sent_only_when_present(http_post, contract_validator):
+    sent = http_post(lambda request: httpx.Response(200, json=VALID_OUTPUT))
+    payload = INPUT.model_copy(update={
+        "trace_id": None,
+        "subject_context": {"language": "en"},
+    })
+
+    client_for().process(payload)
+
+    body = json.loads(sent[0].read())
+    assert "trace_id" not in body
+    assert body["subject_context"] == {"language": "en"}
+    assert all(value is not None for value in body.values())
+    contract_validator.validate(body)
 
 
 def test_a_valid_answer_is_parsed_into_the_contract_shape(http_post):

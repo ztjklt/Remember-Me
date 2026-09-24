@@ -185,6 +185,8 @@ URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Pro
 
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 
+The HTTP AI Core adapter applies the same rule to outbound `aiCoreInput`: absent `trace_id` or `subject_context` is omitted, while a present value is sent unchanged. The provider tests validate both wire shapes against the frozen Contract v0.1 schema.
+
 Every response carries an `X-Request-ID`. The value is generated at the request boundary and is the identifier Issue #1 propagates as the contract's `trace_id`.
 
 ## Configuration
