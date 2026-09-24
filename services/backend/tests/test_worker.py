@@ -15,11 +15,12 @@ than reasoning about it.
 import time
 from datetime import timedelta
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 
-from app.ai_core import FakeAiCoreClient
+from app.ai_core import FakeAiCoreClient, HttpAiCoreClient
 from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
 from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
 from app.seed import seed_development_data
@@ -272,6 +273,46 @@ def test_a_retryable_failure_is_retried_until_the_budget_is_gone(app, session, u
     assert job.attempts == 3
     assert Unreachable.calls == 3
     assert episode_of(session, uploaded).error_code == "AI_UNAVAILABLE"
+
+
+@pytest.mark.parametrize(
+    ("status_code", "error_code", "attempts"),
+    [
+        (413, "AI_FAILED", 1),
+        (422, "AI_FAILED", 1),
+        (502, "AI_FAILED", 1),
+        (503, "AI_UNAVAILABLE", 3),
+        (504, "AI_TIMEOUT", 3),
+    ],
+)
+def test_ai_core_http_failure_persists_with_the_right_retry_budget(
+    app, session, uploaded, monkeypatch, status_code, error_code, attempts
+):
+    calls = []
+
+    def post(url, **kwargs):  # noqa: ANN001, ANN003, ANN202 - mirrors httpx.post
+        calls.append((url, kwargs))
+        return httpx.Response(status_code, text="provider error")
+
+    monkeypatch.setattr(httpx, "post", post)
+    ai = HttpAiCoreClient("http://ai-core.internal", "/process", 5.0)
+    worker = build_worker(app, ai=ai, max_attempts=3)
+
+    assert worker.run_once() == uploaded  # Transcription is committed first.
+    assert episode_of(session, uploaded).transcript
+    for _ in range(attempts):
+        worker.run_once()
+
+    job = job_of(session, uploaded)
+    episode = episode_of(session, uploaded)
+    assert job.state == str(JobState.FAILED)
+    assert job.attempts == attempts
+    assert job.last_error_code == error_code
+    assert episode.status == "failed"
+    assert episode.error_code == error_code
+    assert episode.transcript  # The failed AI step cannot discard the source.
+    assert app.state.object_store.get(episode.audio_object_key) == AUDIO
+    assert len(calls) == attempts
 
 
 def test_a_retryable_failure_leaves_the_episode_on_the_stage_it_is_stuck_on(
