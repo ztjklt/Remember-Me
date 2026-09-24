@@ -258,13 +258,15 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 | `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio |
 | `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time |
 | `STT_EMPTY_TRANSCRIPT` | 422 | The provider returned no text, so there is nothing to extract |
-| `AI_UNAVAILABLE` | 503 | AI Core could not be reached |
-| `AI_FAILED` | 502 | AI Core ran and refused the request |
-| `AI_TIMEOUT` | 504 | AI Core did not answer in time |
+| `AI_UNAVAILABLE` | 503 | AI Core could not be reached or answered HTTP 503 |
+| `AI_FAILED` | 502 | AI Core refused the request, including HTTP 413, 422, and 502 |
+| `AI_TIMEOUT` | 504 | AI Core did not answer in time or answered HTTP 504 |
 | `AI_SCHEMA_INVALID` | 502 | AI Core answered with something that is not a valid `aiCoreOutput`, including a field v0.1 does not define |
 | `INTERNAL` | 500 | A stage raised something outside this taxonomy. Recorded on the Episode like any other failure |
 
 A processing failure is not a request failure: it is recorded **on the Episode** as `error_code` and `error_message`, and the Episode stays readable. The codes that a stage can fail with are also the ones the worker decides about, and `retryable` is part of the code rather than a decision each call site makes: `AUDIO_UNAVAILABLE`, `STORAGE_UNAVAILABLE`, `STT_UNAVAILABLE`, `STT_TIMEOUT`, `AI_UNAVAILABLE`, `AI_TIMEOUT`, and `INTERNAL` are worth asking again, while `STT_EMPTY_TRANSCRIPT`, `STT_FAILED`, `AI_FAILED`, and `AI_SCHEMA_INVALID` would fail the same way twice and end the Episode immediately.
+
+The AI Core HTTP adapter makes one request per worker attempt. Its 503 and 504 responses use the worker's bounded retry and backoff; 413, 422, and 502 end the AI stage without retrying. The original audio and transcript remain on the Episode when extraction fails.
 
 The codes are Backend-owned: the contract types `error_code` and `error_message` as free strings, so adding one is not a contract change, while renaming one a client branches on is a compatibility concern. ADR-0001 D11 is the decision record for this taxonomy.
 

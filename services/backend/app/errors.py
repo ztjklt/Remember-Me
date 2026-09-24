@@ -190,7 +190,7 @@ class SttEmptyTranscript(AppError):
 
 
 class AiUnavailable(AppError):
-    """AI Core could not be reached. Retrying may work."""
+    """AI Core could not be reached or answered 503. Retrying may work."""
 
     code = "AI_UNAVAILABLE"
     http_status = 503

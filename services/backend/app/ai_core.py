@@ -126,10 +126,15 @@ class HttpAiCoreClient:
             raise AiUnavailable(f"AI Core is unreachable at {url}: {error}") from error
 
         if response.status_code >= 400:
-            raise AiFailed(
+            message = (
                 f"AI Core answered {response.status_code}: "
                 f"{response.text[:_ERROR_EXCERPT]}"
             )
+            if response.status_code == 503:
+                raise AiUnavailable(message)
+            if response.status_code == 504:
+                raise AiTimeout(message)
+            raise AiFailed(message)
 
         try:
             body = response.json()
