@@ -21,14 +21,32 @@ Episode and reads the persisted fixture Memory. All data and local credentials
 are discarded at exit. The script prints status codes and the fixture model
 version, never the Actor token or transcript.
 
-Expected after Backend Issue #48 is fixed:
+Expected after Backend Issues #48 and #47 are integrated:
 
 ```text
 upload=201 duplicate=200 episode=ready result=200 error=none
 model=fixture-ai-v2 memories=1 (fixture wiring only)
 ```
 
-## Current result (2026-09-23)
+## Latest candidate verification (2026-09-25)
+
+On `develop` commit `03720d8`, temporarily cherry-pick the exact Backend PR
+commits [#53](https://github.com/ztjklt/Remember-Me/pull/53) (`01f94de`)
+and [#54](https://github.com/ztjklt/Remember-Me/pull/54) (`2eb9848`) in that
+order, then copy this script unchanged into the disposable checkout and run
+the command above. The result was:
+
+```text
+upload=201 duplicate=200 episode=ready result=200 error=none
+model=fixture-ai-v2 memories=1 (fixture wiring only)
+```
+
+This verifies the candidate integration, including the same Episode ID on
+replay and a persisted fixture Memory. The fixes are still open PRs, so this
+is not a passing result on merged `develop`. Rerun the unchanged script after
+#53 and #54 merge before treating Issue #14's fixture path as integrated.
+
+## Original failure (2026-09-23)
 
 On merged Backend PR #42 and AI Core PR #45, the check currently reports:
 
@@ -40,8 +58,9 @@ RuntimeError: Fixture Golden Path did not reach a readable Memory
 AI Core refuses the request with HTTP 422: Backend sends an absent optional
 `subject_context` as JSON `null`, while Contract v0.1 permits that field to be
 omitted but does not permit null. The module fix is [Issue #48](https://github.com/ztjklt/Remember-Me/issues/48).
-AI Core HTTP 503/504 currently becomes a terminal `AI_FAILED` in Backend;
-transient error mapping and retry coverage are [Issue #47](https://github.com/ztjklt/Remember-Me/issues/47).
+At that point AI Core HTTP 503/504 also became a terminal `AI_FAILED` in
+Backend; [Issue #47](https://github.com/ztjklt/Remember-Me/issues/47) tracks
+the transient error mapping and retry coverage now proposed in PR #54.
 
 As a diagnostic only, a temporary local forwarding proxy omitted null fields
 without changing either module. The same upload then reached `ready` and the
@@ -51,9 +70,11 @@ first integration blocker; the repository check intentionally does not hide it.
 ## Phase 1 gate still to verify
 
 - Android Issue #6: real-device recording, consent, persistent audio and local
-  owner verification; draft integration PR #46 only proves CI build and tests.
+  verification. Draft PR #46 now includes lifecycle fix #60 and a passing
+  emulator suite; physical capture and full playback remain unverified.
 - Android Issue #7: upload, status/error handling, and a real Memory rendered on
-  the device from the Backend result for the same `episode_id`.
+  the device from the Backend result for the same `episode_id`. Draft stacked
+  PR #59 has passing local and CI tests, but not physical-device acceptance.
 - AI Core Issues #4/#2/#5: representative long/messy transcript fixtures and
   evidence-backed extraction with an actual provider and provenance checks.
 - Backend Issues #47/#48: actual AI Core HTTP happy path and bounded transient
