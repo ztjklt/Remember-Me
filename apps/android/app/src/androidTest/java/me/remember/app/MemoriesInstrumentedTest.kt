@@ -6,8 +6,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import me.remember.app.data.mock.MockRememberMeRepository
+import me.remember.app.data.repository.EpisodeMemoryRepository
+import me.remember.app.data.repository.EpisodeResult
 import me.remember.app.core.designsystem.RememberMeTheme
 import me.remember.app.feature.MemoriesScreen
+import me.remember.app.model.Memory
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -29,12 +32,36 @@ class MemoriesInstrumentedTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("Memory Archive").assertExists()
-        composeRule.onNodeWithText("不是一份清单，是你留下的人生切片。").assertExists()
+        composeRule.onNodeWithText("这里只展示 Backend 返回的提取结果。").assertExists()
         composeRule.onNodeWithText("“那年夏天，我第一次帮外婆整理老照片。她记得每个人拍照时的心情。”").assertExists()
         composeRule.onNodeWithText("“第一次独立完成一部短片以后，我才承认自己真的想做影像。”").assertExists()
         composeRule.onNodeWithText("“搬来杭州不是为了更安稳，而是想把生活过得更诚实一点。”").assertExists()
         composeRule.onNodeWithText("← 返回").performClick()
 
         assertEquals(1, backCalls)
+    }
+
+    @Test
+    fun backendMemoryShowsProvenanceWithoutFakeAudioPlayer() {
+        val repository = EpisodeMemoryRepository().apply {
+            show(EpisodeResult("episode-1", "fixture-ai-v2", listOf(
+                Memory(
+                    id = "episode-1:0", date = "", place = "", story = "真实提取的记忆",
+                    people = emptyList(), tags = emptyList(), duration = "",
+                    episodeId = "episode-1", memoryType = "EVENT", sourceType = "AI_INFERENCE",
+                    evidenceIds = listOf("ev-1"), confidence = 0.75,
+                    modelVersion = "fixture-ai-v2", hasPlayableAudio = false
+                )
+            )))
+        }
+        composeRule.activity.setContent {
+            RememberMeTheme { MemoriesScreen(repository) {} }
+        }
+
+        composeRule.onNodeWithText("“真实提取的记忆”").assertExists()
+        composeRule.onNodeWithText("Episode：episode-1").assertExists()
+        composeRule.onNodeWithText("证据：ev-1").assertExists()
+        composeRule.onNodeWithText("2012 · 襄阳").assertDoesNotExist()
+        composeRule.onNodeWithText("00:42").assertDoesNotExist()
     }
 }
