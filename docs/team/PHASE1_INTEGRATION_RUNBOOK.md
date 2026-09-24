@@ -1,7 +1,8 @@
-# Phase 1 fixture integration runbook
+# Phase 1 integration runbook
 
-Owner: Product / Integration (`@ztjklt`). Tracks Issue #14. This checks wiring
-on `develop`; it does not satisfy the real-device Phase 1 exit gate.
+Owner: Product / Integration (`@ztjklt`). Tracks Issues #14 and #21. The
+fixture check verifies wiring on `develop`; the live check verifies the service
+path. Neither alone satisfies the real-device Phase 1 exit gate.
 
 ## Run the cross-service check
 
@@ -48,7 +49,7 @@ is not a passing result on merged `develop`. Rerun the unchanged script after
 
 ## Original failure (2026-09-23)
 
-On merged Backend PR #42 and AI Core PR #45, the check currently reports:
+On merged Backend PR #42 and AI Core PR #45, the check reported:
 
 ```text
 upload=201 duplicate=200 episode=failed result=409 error=AI_FAILED
@@ -67,6 +68,51 @@ without changing either module. The same upload then reached `ready` and the
 result API returned HTTP 200 with one `fixture-ai-v2` Memory. This isolates the
 first integration blocker; the repository check intentionally does not hide it.
 
+## Verify the real service path
+
+When Backend #53/#54 are integrated and the module owners have configured a
+real HTTP STT service and AI Core's non-fixture provider, use a consented,
+representative audio recording. Start the Backend API, worker, STT service, and
+AI Core; apply the Backend migrations and create an Actor, Subject, and active
+RECORDING consent for that Actor. Use the same Backend database URL as the
+running worker. Set these environment variables in the local shell or a secret
+manager, without committing their values:
+
+| Variable | Value |
+| --- | --- |
+| `PHASE1_BACKEND_URL` | Reachable Backend API base URL |
+| `PHASE1_ACTOR_TOKEN` | Token of the Actor who granted RECORDING consent |
+| `PHASE1_SUBJECT_ID` | Subject being recorded |
+| `PHASE1_RECORDING_CONSENT_ID` | That Actor's active RECORDING consent ID |
+| `PHASE1_AUDIO_PATH` | Path to the real `.m4a`, `.wav`, or other recognized audio file |
+| `PHASE1_RECORDED_AT` | Actual capture time in RFC 3339 form with UTC offset |
+| `PHASE1_DATABASE_URL` | Backend database URL for readback verification |
+| `PHASE1_TIMEOUT_SECONDS` | Optional processing deadline; default 180 |
+
+From the repository checkout:
+
+```bash
+cd services/backend
+uv run --locked python ../../scripts/verify_phase1_live.py
+uv run --locked python ../../scripts/test_verify_phase1_live.py
+```
+
+This creates a new Episode with a unique idempotency key, polls until ready,
+validates the typed result, and reads the persisted Episode, Memory, and
+Evidence. It checks the uploaded file's checksum and size, recording consent,
+Subject isolation, STT transcript and model version, and exact Memory row
+contents. Fake STT and fixture AI results fail the check. The output contains
+only the Episode ID, status, row count, and provider model versions; it does
+not print the token, transcript, Memory contents, or database URL. A failed
+run may leave an Episode for diagnosis. Record the command, its safe output,
+the tested provider configuration and service revisions in Issue #21.
+
+This verifies the service path from real audio to persisted Memory. Complete
+the separate real Android device check with the same `episode_id`: record,
+pause/resume, save, re-enter, play the full audio, upload, and show the real
+Memory returned by Backend. Capture the device and API evidence in Issue #21
+before declaring the Phase 1 gate complete.
+
 ## Phase 1 gate still to verify
 
 - Android Issue #6: real-device recording, consent, persistent audio and local
@@ -83,6 +129,6 @@ first integration blocker; the repository check intentionally does not hide it.
 - Product / Integration Issue #21: record the real-device path and then make
   the Phase 1 gate decision. Phase 2 remains planned until that decision.
 
-The check here covers only the fixture-backed cross-service subset of Issue
-#14. Issue #14 additionally needs Android to render the Backend result on
-`develop`; a green script alone does not close that Issue.
+The fixture check covers only the cross-service subset of Issue #14. Issue #14
+additionally needs Android to render the Backend result on `develop`; passing
+either script alone does not close that Issue.
