@@ -6,6 +6,9 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var lastEpisodeID: String?
     @Published private(set) var stage = "idle"
     @Published private(set) var memories: [MemoryItem] = []
+    @Published private(set) var subjectMemories: [SubjectMemory] = []
+    @Published private(set) var domainCounts: [String: Int] = [:]
+    @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var modelVersion: String?
     @Published private(set) var isBusy = false
     @Published var message: String?
@@ -37,6 +40,53 @@ final class EpisodeFlow: ObservableObject {
             settings.recordingConsentID = consent.consentId
             try SettingsStore.save(settings)
             message = "录音同意已登记。撤销同意后请勿继续上传。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func grantCloudTwinConsent() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let consent = try await api.grantCloudTwinConsent(settings: settings)
+            guard consent.status == "granted" else { throw EpisodeAPIError.invalidResponse }
+            settings.cloudTwinConsentID = consent.consentId
+            try SettingsStore.save(settings)
+            message = "Cloud Twin 同意已登记，与录音及 Voice 同意分开。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func loadSubjectMemories() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let result = try await api.memories(settings: settings)
+            guard result.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
+            subjectMemories = result.items
+            domainCounts = result.domainCounts
+            message = "已读取 \(result.items.count) 条有来源的 Memory。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func askTwin(_ question: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        twinAnswer = nil
+        defer { isBusy = false }
+        do {
+            let response = try await api.twin(question: question, settings: settings)
+            guard response.subjectId == settings.subjectID, response.question == question else {
+                throw EpisodeAPIError.invalidResponse
+            }
+            twinAnswer = response
+            message = nil
         } catch {
             message = error.localizedDescription
         }
@@ -103,6 +153,11 @@ final class EpisodeFlow: ObservableObject {
                 memories = result.memoryItems
                 modelVersion = result.modelVersion
                 message = memories.isEmpty ? "处理完成，但没有提取出 Memory。" : "已收到同一 Episode 的 \(memories.count) 条 Memory。"
+                if let acrossEpisodes = try? await api.memories(settings: settings),
+                   acrossEpisodes.subjectId == settings.subjectID {
+                    subjectMemories = acrossEpisodes.items
+                    domainCounts = acrossEpisodes.domainCounts
+                }
                 return
             }
             try await Task.sleep(nanoseconds: 2_000_000_000)

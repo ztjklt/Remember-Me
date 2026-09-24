@@ -36,7 +36,16 @@ Episode ID can be recovered. The upload uses `source=IMPORT` because Contract
 v0.1.2 has no iOS microphone enum; the app first saves a local file and then
 imports it. A versioned Contract proposal is needed before adding `IOS_MIC`.
 
+The iOS branch also has a provisional Phase 2 read path. Its Memories tab reads
+all Actor-owned, ready Episodes and shows evidence and conservative domain clue
+counts (unclassified items stay unclassified). The
+Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerpt
+only for a conservative direct match; otherwise it reports insufficient evidence
+as SIMULATION with zero confidence. This is a deterministic evidence router, not
+a full semantic Person Model or generative Twin. The shared Contract is unchanged.
+
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
-record are needed for the former. Phase 2–4 endpoints and providers remain
-separate planned work on this branch.
+record are needed for Phase 1. Phase 2 still needs temporal graph, corrections,
+deletion propagation, and a semantically evaluated Twin. Phase 3–4 endpoints
+and providers remain separate work on this branch.

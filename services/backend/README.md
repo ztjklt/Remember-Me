@@ -1,5 +1,13 @@
 # Backend Service
 
+> On the isolated `ios` branch, migration `0004_cloud_twin_consent` adds an
+> independent `CLOUD_TWIN` scope. The provisional `/api/v1/subjects/{id}/memories`
+> and `/api/v1/subjects/{id}/twin/query` routes are implemented in
+> `app/api/core_twin.py`. The latter requires an active Cloud Twin consent from
+> the calling Actor, never RECORDING or VOICE consent. It only quotes a matching
+> Subject evidence excerpt as ORIGINAL; otherwise it returns explicit
+> uncertainty. These Backend-owned shapes are not yet a frozen Phase 2 Contract.
+
 Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.

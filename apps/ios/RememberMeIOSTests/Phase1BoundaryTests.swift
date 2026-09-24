@@ -21,7 +21,7 @@ final class Phase1BoundaryTests: XCTestCase {
     }
 
     func testSettingsRejectCredentialBearingAndNonHTTPURLs() {
-        let base = ServerSettings(baseURL: "http://127.0.0.1:8000", token: "secret", subjectID: "s", recordingConsentID: "c")
+        let base = ServerSettings(baseURL: "http://127.0.0.1:8000", token: "secret", subjectID: "s", recordingConsentID: "c", cloudTwinConsentID: "")
         XCTAssertTrue(base.isReady)
         for bad in ["ftp://example.test", "https://user:secret@example.test", "https://example.test?key=secret", "http://127.0.0.1:8000/other"] {
             var settings = base

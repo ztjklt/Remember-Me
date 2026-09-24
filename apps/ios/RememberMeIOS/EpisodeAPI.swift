@@ -38,6 +38,47 @@ struct RecordingConsent: Decodable {
     let status: String
 }
 
+struct EvidenceView: Decodable, Identifiable {
+    let evidenceId: String
+    let sourceType: String
+    let sourceRef: String
+    let excerpt: String?
+    let confidence: Double?
+
+    var id: String { evidenceId }
+}
+
+struct SubjectMemory: Decodable, Identifiable {
+    let memoryItemId: String
+    let episodeId: String
+    let recordedAt: String
+    let memoryType: String
+    let domain: String
+    let content: String
+    let sourceType: String
+    let confidence: Double
+    let evidence: [EvidenceView]
+    let modelVersion: String
+
+    var id: String { memoryItemId }
+}
+
+struct SubjectMemories: Decodable {
+    let subjectId: String
+    let items: [SubjectMemory]
+    let domainCounts: [String: Int]
+}
+
+struct TwinAnswer: Decodable {
+    let subjectId: String
+    let question: String
+    let answer: String
+    let responseType: String
+    let confidence: Double
+    let evidence: [EvidenceView]
+    let modelVersion: String?
+}
+
 enum EpisodeAPIError: LocalizedError {
     case invalidServerURL
     case missingCredentials
@@ -99,6 +140,14 @@ struct EpisodeAPI {
     }
 
     func grantRecordingConsent(settings: ServerSettings) async throws -> RecordingConsent {
+        try await grantConsent(scope: "RECORDING", settings: settings)
+    }
+
+    func grantCloudTwinConsent(settings: ServerSettings) async throws -> RecordingConsent {
+        try await grantConsent(scope: "CLOUD_TWIN", settings: settings)
+    }
+
+    private func grantConsent(scope: String, settings: ServerSettings) async throws -> RecordingConsent {
         guard !settings.subjectID.isEmpty, !settings.token.isEmpty else {
             throw EpisodeAPIError.missingCredentials
         }
@@ -106,10 +155,31 @@ struct EpisodeAPI {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "subject_id": settings.subjectID,
-            "scope": "RECORDING",
-            "evidence_ref": "iOS in-app explicit recording consent"
+            "scope": scope,
+            "evidence_ref": "iOS in-app explicit \(scope) consent"
         ])
         return try await decode(RecordingConsent.self, request: request)
+    }
+
+    func memories(settings: ServerSettings) async throws -> SubjectMemories {
+        guard !settings.subjectID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let request = try authorizedRequest(path: "api/v1/subjects/\(id)/memories", method: "GET", settings: settings)
+        return try await decode(SubjectMemories.self, request: request)
+    }
+
+    func twin(question: String, settings: ServerSettings) async throws -> TwinAnswer {
+        guard !settings.subjectID.isEmpty, !settings.cloudTwinConsentID.isEmpty else {
+            throw EpisodeAPIError.missingCredentials
+        }
+        let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        var request = try authorizedRequest(path: "api/v1/subjects/\(id)/twin/query", method: "POST", settings: settings)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "question": question,
+            "cloud_twin_consent_id": settings.cloudTwinConsentID
+        ])
+        return try await decode(TwinAnswer.self, request: request)
     }
 
     func upload(

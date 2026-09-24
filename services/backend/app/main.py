@@ -11,7 +11,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
 from .ai_core import build_ai_client
-from .api import consents, episodes, health, session
+from .api import consents, core_twin, episodes, health, session
 from .config import Settings, get_settings
 from .db import Database
 from .errors import REQUEST_INVALID, AppError
@@ -152,6 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(session.router)
     app.include_router(consents.router)
     app.include_router(episodes.router)
+    app.include_router(core_twin.router)
     return app
 
 

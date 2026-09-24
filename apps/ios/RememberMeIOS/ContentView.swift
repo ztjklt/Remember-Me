@@ -7,6 +7,8 @@ struct ContentView: View {
                 .tabItem { Label("录音", systemImage: "mic") }
             MemoriesView()
                 .tabItem { Label("记忆", systemImage: "books.vertical") }
+            TwinView()
+                .tabItem { Label("Twin", systemImage: "bubble.left.and.text.bubble.right") }
             ConnectionView()
                 .tabItem { Label("连接", systemImage: "server.rack") }
         }
@@ -119,11 +121,40 @@ private struct MemoriesView: View {
                     }
                 }
                 if flow.memories.isEmpty {
-                    ContentUnavailableView(
-                        "暂无记忆", systemImage: "books.vertical",
-                        description: Text("录音上传并完成处理后，这里显示 Backend 返回的真实 Memory。")
-                    )
-                } else {
+                    if flow.subjectMemories.isEmpty {
+                        ContentUnavailableView(
+                            "暂无记忆", systemImage: "books.vertical",
+                            description: Text("录音上传并完成处理后，这里显示 Backend 返回的真实 Memory。")
+                        )
+                    }
+                }
+                if !flow.domainCounts.isEmpty {
+                    Section("领域线索数（预览）") {
+                        ForEach(flow.domainCounts.keys.sorted(), id: \.self) { domain in
+                            LabeledContent(domain, value: "\(flow.domainCounts[domain] ?? 0)")
+                        }
+                    }
+                }
+                if !flow.subjectMemories.isEmpty {
+                    Section("跨 Episode 记忆") {
+                        ForEach(flow.subjectMemories) { item in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(item.content)
+                                Text("\(item.domain) · \(item.sourceType) · \(Int(item.confidence * 100))%")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                Text("Episode \(item.episodeId)")
+                                    .font(.caption2).textSelection(.enabled)
+                                ForEach(item.evidence) { evidence in
+                                    if let excerpt = evidence.excerpt {
+                                        Text("证据：\(excerpt)")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                } else if !flow.memories.isEmpty {
                     Section("提取结果") {
                         ForEach(flow.memories) { item in
                             VStack(alignment: .leading, spacing: 8) {
@@ -144,11 +175,49 @@ private struct MemoriesView: View {
             }
             .navigationTitle("我的记忆")
             .toolbar {
-                if flow.lastEpisodeID != nil {
-                    Button("刷新") { Task { await flow.refreshLastEpisode() } }
-                        .disabled(flow.isBusy)
+                Button("刷新") { Task { await flow.loadSubjectMemories() } }
+                    .disabled(flow.isBusy)
+            }
+        }
+    }
+}
+
+private struct TwinView: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var question = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("询问") {
+                    TextField("输入一个可由本人原话回答的问题", text: $question, axis: .vertical)
+                        .lineLimit(2...4)
+                    Button("查询证据") { Task { await flow.askTwin(question) } }
+                        .disabled(flow.isBusy || question.trimmingCharacters(in: .whitespacesAndNewlines).count < 2)
+                    if flow.isBusy { ProgressView() }
+                    Text("此分支目前实现的是保守证据路由：有相关本人原话才标 ORIGINAL；证据不足时明确说明，不编造回答。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                if let answer = flow.twinAnswer {
+                    Section(answer.responseType == "ORIGINAL" ? "本人原话" : "证据不足") {
+                        Text(answer.answer).font(.body)
+                        LabeledContent("类型", value: answer.responseType)
+                        LabeledContent("置信度", value: "\(Int(answer.confidence * 100))%")
+                        if let version = answer.modelVersion { LabeledContent("模型版本", value: version) }
+                        ForEach(answer.evidence) { evidence in
+                            VStack(alignment: .leading) {
+                                Text(evidence.excerpt ?? "无摘录")
+                                Text("\(evidence.sourceType) · \(evidence.sourceRef)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                if let message = flow.message {
+                    Section { Text(message).font(.footnote) }
                 }
             }
+            .navigationTitle("证据 Twin")
         }
     }
 }
@@ -172,6 +241,9 @@ private struct ConnectionView: View {
                     TextField("录音同意 ID", text: $flow.settings.recordingConsentID)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    TextField("Cloud Twin 同意 ID", text: $flow.settings.cloudTwinConsentID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     Button("保存连接设置") { flow.saveSettings() }
                         .disabled(flow.isBusy)
                     Text("令牌保存在 iOS 钥匙串。模拟器可用 127.0.0.1；真机需要能访问 Mac 的私有网络地址或 HTTPS 服务。")
@@ -182,6 +254,10 @@ private struct ConnectionView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                     Button("我确认并登记录音同意") {
                         Task { await flow.grantRecordingConsent() }
+                    }
+                    .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
+                    Button("我确认并登记 Cloud Twin 同意") {
+                        Task { await flow.grantCloudTwinConsent() }
                     }
                     .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
                 }
