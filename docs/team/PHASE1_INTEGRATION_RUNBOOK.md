@@ -47,6 +47,30 @@ replay and a persisted fixture Memory. The fixes are still open PRs, so this
 is not a passing result on merged `develop`. Rerun the unchanged script after
 #53 and #54 merge before treating Issue #14's fixture path as integrated.
 
+## Full PR-stack candidate verification (2026-09-25)
+
+In a disposable worktree starting at `develop` `03720d8`, merge these exact
+heads in order: #53 `01f94de`, #54 `2eb9848`, #46 `46d777e`, #59 `04ac595`,
+#61 `c35ede0`, #49 `c85a6bf`, and the documentation PR #52 `04380bb`.
+All seven merged locally without conflicts. This is a composition test, not a
+merge into the protected `develop` branch.
+
+| Check on the combined tree | Result |
+| --- | --- |
+| Backend `uv run --locked pytest -q` | Passed |
+| AI Core `uv run --locked pytest -q` | 119 passed |
+| Contract `npm ci && npm test` | 7 passed |
+| `verify_phase1_fixture.py` | `upload=201 duplicate=200 episode=ready result=200 error=none`; one fixture Memory |
+| `test_verify_phase1_live.py` | 5 passed |
+| Android `./gradlew --no-daemon test assembleDebug compileDebugAndroidTestKotlin` | Build successful |
+
+The Android build used JDK 17 and Android SDK 35. Instrumentation tests were
+compiled but not executed in this worktree because no emulator or physical
+device was connected. Real STT, real AI extraction, and real-device capture
+were not exercised. After the individual PRs pass their required reviews and
+merge, repeat these checks on the actual `develop` head; the candidate cannot
+stand in for that result or the Phase 1 gate.
+
 ## Original failure (2026-09-23)
 
 On merged Backend PR #42 and AI Core PR #45, the check reported:
