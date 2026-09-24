@@ -1,0 +1,35 @@
+name: RememberMeIOS
+options:
+  bundleIdPrefix: me.remember
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  RememberMeIOS:
+    type: application
+    platform: iOS
+    sources:
+      - RememberMeIOS
+    info:
+      path: RememberMeIOS/Info.plist
+      properties:
+        CFBundleDisplayName: Remember Me
+        NSMicrophoneUsageDescription: 录制你的生活片段并生成有来源的记忆。
+        NSLocalNetworkUsageDescription: 连接你自己运行的 Remember Me Backend。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.ios
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+  RememberMeIOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - RememberMeIOSTests
+    dependencies:
+      - target: RememberMeIOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.ios.tests
+        SWIFT_VERSION: "5.0"

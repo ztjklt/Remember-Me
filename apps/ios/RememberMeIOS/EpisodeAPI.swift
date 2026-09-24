@@ -1,0 +1,180 @@
+import Foundation
+
+struct EpisodeCreated: Decodable {
+    let episodeId: String
+    let uploadStatus: String
+}
+
+struct EpisodeStatus: Decodable {
+    let episodeId: String
+    let status: String
+    let progress: Double?
+    let errorCode: String?
+    let errorMessage: String?
+}
+
+struct MemoryItem: Decodable, Identifiable {
+    let memoryType: String
+    let content: String
+    let sourceType: String
+    let evidenceIds: [String]
+    let confidence: Double
+    let modelVersion: String
+    let promptVersion: String
+    let schemaVersion: String
+
+    var id: String { "\(memoryType):\(evidenceIds.joined(separator: ",")):\(content)" }
+}
+
+struct EpisodeResult: Decodable {
+    let episodeId: String
+    let status: String
+    let memoryItems: [MemoryItem]
+    let modelVersion: String
+}
+
+struct RecordingConsent: Decodable {
+    let consentId: String
+    let status: String
+}
+
+enum EpisodeAPIError: LocalizedError {
+    case invalidServerURL
+    case missingCredentials
+    case oversizedAudio
+    case invalidResponse
+    case http(Int, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidServerURL: return "Backend 地址必须是有效的 http(s) 根地址。"
+        case .missingCredentials: return "请先填写 Actor 令牌和 Subject ID。"
+        case .oversizedAudio: return "录音超过 Backend 的 25 MiB 上传限制。"
+        case .invalidResponse: return "Backend 返回了无法识别的数据。"
+        case .http(let status, let message): return "Backend \(status)：\(message)"
+        }
+    }
+}
+
+enum MultipartCapture {
+    // Contract v0.1.2 has no IOS_MIC source. An iOS recording is uploaded as a
+    // local file through IMPORT until a versioned source-enum proposal is approved.
+    static func body(
+        audio: Data,
+        fileName: String,
+        subjectID: String,
+        recordingConsentID: String,
+        recordedAt: Date,
+        idempotencyKey: String,
+        boundary: String
+    ) -> Data {
+        var result = Data()
+        let date = ISO8601DateFormatter().string(from: recordedAt)
+        let fields = [
+            ("subject_id", subjectID),
+            ("source", "IMPORT"),
+            ("recorded_at", date),
+            ("audio_ref", fileName),
+            ("idempotency_key", idempotencyKey),
+            ("recording_consent_id", recordingConsentID)
+        ]
+        for (name, value) in fields {
+            result.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        let safeName = fileName.replacingOccurrences(of: "\"", with: "_")
+            .replacingOccurrences(of: "\r", with: "_")
+            .replacingOccurrences(of: "\n", with: "_")
+        result.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(safeName)\"\r\nContent-Type: audio/mp4\r\n\r\n".utf8))
+        result.append(audio)
+        result.append(Data("\r\n--\(boundary)--\r\n".utf8))
+        return result
+    }
+}
+
+struct EpisodeAPI {
+    let session: URLSession
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
+
+    func grantRecordingConsent(settings: ServerSettings) async throws -> RecordingConsent {
+        guard !settings.subjectID.isEmpty, !settings.token.isEmpty else {
+            throw EpisodeAPIError.missingCredentials
+        }
+        var request = try authorizedRequest(path: "api/v1/consents", method: "POST", settings: settings)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "subject_id": settings.subjectID,
+            "scope": "RECORDING",
+            "evidence_ref": "iOS in-app explicit recording consent"
+        ])
+        return try await decode(RecordingConsent.self, request: request)
+    }
+
+    func upload(
+        fileURL: URL,
+        recordedAt: Date,
+        idempotencyKey: String,
+        settings: ServerSettings
+    ) async throws -> EpisodeCreated {
+        guard settings.isReady else { throw EpisodeAPIError.missingCredentials }
+        let data = try Data(contentsOf: fileURL)
+        guard data.count <= 25 * 1024 * 1024 else { throw EpisodeAPIError.oversizedAudio }
+        let boundary = "RememberMe-\(UUID().uuidString)"
+        var request = try authorizedRequest(path: "api/v1/episodes", method: "POST", settings: settings)
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = MultipartCapture.body(
+            audio: data,
+            fileName: fileURL.lastPathComponent,
+            subjectID: settings.subjectID,
+            recordingConsentID: settings.recordingConsentID,
+            recordedAt: recordedAt,
+            idempotencyKey: idempotencyKey,
+            boundary: boundary
+        )
+        return try await decode(EpisodeCreated.self, request: request)
+    }
+
+    func status(episodeID: String, settings: ServerSettings) async throws -> EpisodeStatus {
+        let request = try authorizedRequest(
+            path: "api/v1/episodes/\(episodeID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? episodeID)",
+            method: "GET", settings: settings
+        )
+        return try await decode(EpisodeStatus.self, request: request)
+    }
+
+    func result(episodeID: String, settings: ServerSettings) async throws -> EpisodeResult {
+        let encoded = episodeID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? episodeID
+        let request = try authorizedRequest(path: "api/v1/episodes/\(encoded)/result", method: "GET", settings: settings)
+        return try await decode(EpisodeResult.self, request: request)
+    }
+
+    private func authorizedRequest(path: String, method: String, settings: ServerSettings) throws -> URLRequest {
+        guard let base = settings.validatedURL else { throw EpisodeAPIError.invalidServerURL }
+        guard !settings.token.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        var request = URLRequest(url: base.appending(path: path))
+        request.httpMethod = method
+        request.timeoutInterval = 30
+        request.setValue("Bearer \(settings.token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        return request
+    }
+
+    private func decode<T: Decodable>(_ type: T.Type, request: URLRequest) async throws -> T {
+        let (data, response) = try await session.data(for: request)
+        guard let response = response as? HTTPURLResponse else { throw EpisodeAPIError.invalidResponse }
+        guard (200..<300).contains(response.statusCode) else {
+            let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let message = object?["error_message"] as? String
+                ?? object?["detail"] as? String
+                ?? object?["error_code"] as? String
+                ?? "请求失败"
+            throw EpisodeAPIError.http(response.statusCode, message)
+        }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        do { return try decoder.decode(type, from: data) }
+        catch { throw EpisodeAPIError.invalidResponse }
+    }
+}
