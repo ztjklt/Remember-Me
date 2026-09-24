@@ -65,6 +65,22 @@ class CaptureInstrumentedTest {
     }
 
     @Test
+    fun savedRecordingCanBeHandedToUploadWithoutStartingAnotherCapture() {
+        var handedOff: AudioRecording? = null
+        composeRule.activity.setContent {
+            RememberMeTheme { RecordingScreen(audioService) { handedOff = it } }
+        }
+        composeRule.onNodeWithTag("capture.recordingConsent").performClick()
+        composeRule.onNodeWithTag("capture.start").performClick()
+        composeRule.onNodeWithTag("capture.stop").performClick()
+        composeRule.onNodeWithTag("capture.upload").performClick()
+
+        assertEquals("/app-private/recordings/test.m4a", handedOff?.audioPath)
+        assertEquals(1, audioService.startCalls)
+        assertEquals(1, audioService.stopCalls)
+    }
+
+    @Test
     fun startFailureIsShownAndCanBeRetried() {
         audioService.failStart = true
 

@@ -3,11 +3,20 @@ package me.remember.app.navigation
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
 import me.remember.app.data.repository.AudioCaptureService
+import me.remember.app.data.repository.AudioRecording
+import me.remember.app.data.repository.EpisodeFlow
 import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.feature.*
+import kotlinx.coroutines.launch
 
-@Composable fun RememberMeApp(audioCaptureService: AudioCaptureService, memoryRepository: MemoryRepository){
+@Composable fun RememberMeApp(
+    audioCaptureService: AudioCaptureService,
+    memoryRepository: MemoryRepository,
+    episodeFlow: EpisodeFlow
+){
     val nav=rememberNavController()
+    val scope=rememberCoroutineScope()
+    var recordingForUpload by remember { mutableStateOf<AudioRecording?>(null) }
     val startDestination = remember(audioCaptureService) {
         if (audioCaptureService.latestRecording() != null) Routes.Recording else Routes.Splash
     }
@@ -17,11 +26,29 @@ import me.remember.app.feature.*
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
-        composable(Routes.Recording){RecordingScreen(audioCaptureService)}
-        composable(Routes.Processing){ProcessingScreen{nav.navigate(Routes.Birth)}}
+        composable(Routes.Recording){RecordingScreen(audioCaptureService) { recording ->
+            recordingForUpload = recording
+            nav.navigate(Routes.Connection)
+        }}
+        composable(Routes.Connection){
+            val recording = recordingForUpload
+            if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }) { settings ->
+                nav.navigate(Routes.Processing)
+                scope.launch { episodeFlow.submit(recording, settings) }
+            }
+        }
+        composable(Routes.Processing){
+            val state by episodeFlow.state.collectAsState()
+            ProcessingScreen(
+                state = state,
+                back = { nav.popBackStack() },
+                retry = { scope.launch { episodeFlow.retry() } },
+                showMemories = { nav.navigate(Routes.Memories) }
+            )
+        }
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
-        composable(Routes.Home){CreatorHomeScreen(nav::navigate)}
+        composable(Routes.Home){CreatorHomeScreen(memoryRepository,nav::navigate)}
         composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
         composable(Routes.Twin){TwinScreen{nav.popBackStack()}}
         composable(Routes.Calibration){CalibrationScreen{nav.popBackStack()}}
