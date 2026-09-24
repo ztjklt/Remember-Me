@@ -1,0 +1,127 @@
+{
+  "fixture_id": "phase2-core-twin-two-episodes-v0",
+  "purpose": "Synthetic acceptance scenario; not a service payload or approved Contract",
+  "subject_id": "subj_demo_ada",
+  "actors": [
+    { "actor_id": "actor_ada", "role": "SUBJECT" },
+    { "actor_id": "actor_friend", "role": "THIRD_PARTY" },
+    { "actor_id": "actor_stranger", "role": "UNRELATED" }
+  ],
+  "episodes": [
+    {
+      "episode_id": "ep_tea_2020",
+      "actor_id": "actor_ada",
+      "source_type": "SUBJECT",
+      "recorded_at": "2020-06-01T10:00:00Z",
+      "transcript": "In 2020 I drink tea with breakfast. I have preferred tea since 2018.",
+      "direct_claims": [
+        {
+          "claim_id": "claim_tea_2020",
+          "text": "Tea with breakfast in 2020",
+          "effective_from": "2018-01-01",
+          "effective_to": null,
+          "context": "breakfast"
+        }
+      ]
+    },
+    {
+      "episode_id": "ep_coffee_2024",
+      "actor_id": "actor_ada",
+      "source_type": "SUBJECT",
+      "recorded_at": "2024-03-01T10:00:00Z",
+      "transcript": "Since 2022 I have coffee at breakfast on weekdays, but I still have tea on weekends.",
+      "direct_claims": [
+        {
+          "claim_id": "claim_weekday_coffee",
+          "text": "Coffee at breakfast on weekdays since 2022",
+          "effective_from": "2022-01-01",
+          "effective_to": null,
+          "context": "weekday breakfast"
+        },
+        {
+          "claim_id": "claim_weekend_tea",
+          "text": "Tea at breakfast on weekends since 2022",
+          "effective_from": "2022-01-01",
+          "effective_to": null,
+          "context": "weekend breakfast"
+        }
+      ]
+    },
+    {
+      "episode_id": "ep_friend_2024",
+      "actor_id": "actor_friend",
+      "source_type": "THIRD_PARTY",
+      "recorded_at": "2024-04-01T10:00:00Z",
+      "transcript": "I think Ada always drinks tea. I have never seen her drink coffee.",
+      "direct_claims": [
+        {
+          "claim_id": "claim_friend_tea",
+          "text": "Friend believes Ada always drinks tea",
+          "effective_from": null,
+          "effective_to": null,
+          "context": "friend observation"
+        }
+      ]
+    }
+  ],
+  "acceptance_checks": [
+    {
+      "check_id": "historical_original",
+      "question": "What did I say I drank with breakfast in 2020?",
+      "expected_route": "ORIGINAL",
+      "must_cite_episode_ids": ["ep_tea_2020"],
+      "must_not_use_as_support_episode_ids": ["ep_friend_2024"],
+      "expectation": "Quote or point to the direct subject statement. The later Episode can bound the historical tea period, but the 2020 recording alone does not state when it ended."
+    },
+    {
+      "check_id": "current_context_original",
+      "question": "What did I say I drink at breakfast on weekdays now?",
+      "expected_route": "ORIGINAL",
+      "must_cite_episode_ids": ["ep_coffee_2024"],
+      "must_not_use_as_support_episode_ids": ["ep_friend_2024"],
+      "expectation": "Answer coffee for weekdays, retain weekend tea, and do not flatten the change over time."
+    },
+    {
+      "check_id": "future_prediction",
+      "question": "What would I order at a new cafe tomorrow?",
+      "expected_route": "SIMULATION_OR_UNCERTAIN",
+      "must_cite_episode_ids": [],
+      "must_not_use_as_support_episode_ids": [],
+      "expectation": "No recording directly answers this future choice; label any prediction as simulation or uncertainty."
+    },
+    {
+      "check_id": "third_party_boundary",
+      "question": "What does Ada prefer on weekday mornings?",
+      "expected_route": "ORIGINAL",
+      "must_cite_episode_ids": ["ep_coffee_2024"],
+      "must_not_use_as_support_episode_ids": ["ep_friend_2024"],
+      "expectation": "A friend's contrary observation remains attributed to that friend and cannot overwrite Ada's own statement."
+    },
+    {
+      "check_id": "unrelated_actor_denied",
+      "actor_id": "actor_stranger",
+      "question": "What does Ada prefer at breakfast?",
+      "expected_route": "DENIED",
+      "must_cite_episode_ids": [],
+      "must_not_use_as_support_episode_ids": ["ep_tea_2020", "ep_coffee_2024", "ep_friend_2024"],
+      "expectation": "No subject Memory, evidence, or Twin answer is disclosed to an unrelated Actor."
+    }
+  ],
+  "mutations": [
+    {
+      "mutation_id": "correct_weekday_scope",
+      "kind": "CORRECT_DERIVED_MEMORY",
+      "target_episode_id": "ep_coffee_2024",
+      "seed_error": "The derived Memory incorrectly says Ada always drinks coffee.",
+      "correction": "Coffee on weekdays, tea on weekends.",
+      "expectation": "Preserve the raw Episode and correction provenance; recompute dependent graph, persona, retrieval, coverage, and cached Twin answers before showing the updated answer."
+    },
+    {
+      "mutation_id": "delete_coffee_episode",
+      "kind": "DELETE_SOURCE_EPISODE",
+      "target_episode_id": "ep_coffee_2024",
+      "after": "correct_weekday_scope",
+      "expectation": "Invalidate all derived claims and answers supported only by this Episode. Historical tea evidence from ep_tea_2020 remains. Do not use the friend's statement as a replacement subject fact; the current weekday preference becomes uncertain."
+    }
+  ]
+}
