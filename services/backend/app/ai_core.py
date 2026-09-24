@@ -117,7 +117,8 @@ class HttpAiCoreClient:
         try:
             response = httpx.post(
                 url,
-                json=payload.model_dump(mode="json"),
+                # Contract v0.1 permits these fields to be absent, not null.
+                json=payload.model_dump(mode="json", exclude_none=True),
                 timeout=httpx.Timeout(self.timeout_seconds),
             )
         except httpx.TimeoutException as error:
