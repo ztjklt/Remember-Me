@@ -87,7 +87,11 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
         SystemClock.elapsedRealtime() - activeStartedAt
     } else 0L
 
-    override suspend fun stop(): AudioRecording {
+    override suspend fun stop(): AudioRecording =
+        checkNotNull(stopIfActive()) { "No recording is active." }
+
+    override fun stopIfActive(): AudioRecording? {
+        if (recorder == null) return null
         val active = checkNotNull(recorder) { "No recording is active." }
         val audioFile = checkNotNull(activeAudioFile)
         val createdAt = checkNotNull(activeCreatedAt)

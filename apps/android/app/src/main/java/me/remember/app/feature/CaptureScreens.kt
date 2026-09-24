@@ -16,6 +16,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.remember.app.core.designsystem.RememberMeColors
@@ -25,8 +28,14 @@ import me.remember.app.ui.components.*
 import java.io.File
 
 @Composable
-fun RecordingScreen(audioCaptureService: AudioCaptureService) {
+fun RecordingScreen(
+    audioCaptureService: AudioCaptureService,
+    hasMicrophonePermission: (android.content.Context) -> Boolean = { appContext ->
+        ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    }
+) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val savedRecording = remember(audioCaptureService) { audioCaptureService.latestRecording() }
     var captureState by remember { mutableStateOf(if (savedRecording == null) CaptureState.Idle else CaptureState.Saved) }
@@ -36,7 +45,7 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var recordingConsentGranted by remember { mutableStateOf(false) }
     var permissionGranted by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+        mutableStateOf(hasMicrophonePermission(context))
     }
 
     fun transition(event: CaptureEvent) {
@@ -75,8 +84,29 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
         }
     }
 
-    DisposableEffect(audioCaptureService) {
-        onDispose { audioCaptureService.stopPlayback() }
+    fun finishCaptureIfActive() {
+        try {
+            audioCaptureService.stopIfActive()?.let { saved ->
+                recording = saved
+                elapsedMillis = saved.durationMillis
+                transition(CaptureEvent.Save)
+            }
+        } catch (error: Exception) {
+            errorMessage = error.message ?: "Recording could not be saved."
+            transition(CaptureEvent.Fail)
+        }
+    }
+
+    DisposableEffect(audioCaptureService, lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) finishCaptureIfActive()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            finishCaptureIfActive()
+            audioCaptureService.stopPlayback()
+        }
     }
 
     Column(
