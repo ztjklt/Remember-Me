@@ -15,6 +15,7 @@ from zipfile import ZipFile
 
 SMOKE = """
 import sys
+import json
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
 import app
@@ -30,10 +31,13 @@ settings = Settings(
 )
 with TestClient(create_app(settings)) as client:
     assert client.get('/health').status_code == 200
-    for name in ('phase1-happy', 'phase1-messy', 'phase1-adversarial'):
+    for name in ('phase1-happy', 'phase1-messy', 'phase1-adversarial', 'phase1-long-messy'):
         payload = load_fixture(name)
         response = client.post('/process', json=payload.model_dump(exclude_none=True))
         assert response.status_code == 200, response.status_code
+capture_path = Path(app.__file__).parent / 'fixtures' / 'capture' / 'phase1-long-messy.json'
+capture = json.loads(capture_path.read_text(encoding='utf-8'))
+assert capture['subject_id'] == load_fixture('phase1-long-messy').subject_id
 print('Wheel smoke passed: packaged fixtures, extraction and HTTP boundary')
 """
 
