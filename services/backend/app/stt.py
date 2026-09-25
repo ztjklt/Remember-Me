@@ -129,6 +129,12 @@ class HttpSttProvider:
             ) from error
 
         if response.status_code >= 400:
+            if response.status_code == 504:
+                raise SttTimeout("The speech-to-text provider answered 504")
+            if response.status_code in (429, 503):
+                raise SttUnavailable(
+                    f"The speech-to-text provider answered {response.status_code}"
+                )
             raise SttFailed(
                 f"The speech-to-text provider answered {response.status_code}: "
                 f"{response.text[:_ERROR_EXCERPT]}"

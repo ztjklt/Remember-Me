@@ -503,6 +503,18 @@ def test_a_refusal_from_the_provider_is_a_failed_call(http_post):
     assert not raised.value.retryable
 
 
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [(429, SttUnavailable), (503, SttUnavailable), (504, SttTimeout)],
+)
+def test_transient_stt_http_status_is_retryable(http_post, status, expected):
+    http_post(lambda request: httpx.Response(status, text="temporary failure"))
+    with pytest.raises(expected) as raised:
+        stt_for().transcribe(AUDIO, "audio/mp4")
+    assert raised.value.retryable
+    assert str(status) in raised.value.message
+
+
 def test_a_response_that_is_not_json_is_a_failed_call(http_post):
     http_post(lambda request: httpx.Response(200, text="<html>proxy</html>"))
 
