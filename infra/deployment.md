@@ -156,6 +156,7 @@ What exists:
 - **Structured logs.** Application, access, and migration logs are one JSON object per line with a timestamp, level, logger, and message. Nothing parses prose.
 - **Request identification.** Every response carries `X-Request-ID`, generated at the request boundary. The same value is in the access log for that request and comes back in every error body as `request_id`, so a user-reported failure and a log line are the same identifier. It is also the value the capture boundary stores on the Episode and propagates to AI Core as the contract's `trace_id`, so one identifier spans the upload, the worker's stages, and the result a client reads back.
 - **One access line per request** with method, path, status code, and duration.
+- **One line per worker stage** with the Episode, the stage, its duration, the provider and `model_version` that produced it, and the trace id — so a healthy run is legible, not only a failing one, and a client's `episode_id` becomes a `trace_id` (from the status endpoint) and then a set of log lines. Nothing in those lines is the transcript: a log line is written to disk, a transcript is the subject's speech.
 - **Environment and level as configuration**, so staging can be more verbose than development without a code change.
 - **Errors with a stable code.** A failure is a code from a fixed list (`app/errors.py`), not a sentence to be pattern-matched.
 
