@@ -325,7 +325,7 @@ private struct TwinView: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let answer = flow.twinAnswer {
-                    Section(answer.responseType == "ORIGINAL" ? "本人原话" : "证据不足") {
+                    Section(answer.responseType == "ORIGINAL" ? "本人原话" : (answer.evidence.isEmpty ? "证据不足" : "未核实的相关线索")) {
                         Text(answer.answer).font(.body)
                         LabeledContent("类型", value: answer.responseType)
                         LabeledContent("置信度", value: "\(Int(answer.confidence * 100))%")

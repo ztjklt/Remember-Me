@@ -308,20 +308,26 @@ def query_twin(
         raise SubjectNotFound("No accessible Subject")
     words = _tokens(payload.question)
     matches: list[tuple[int, MemoryView, EvidenceView]] = []
+    inferred_matches: list[tuple[int, MemoryView, EvidenceView]] = []
     for item in _memories(session, subject_id=subject_id, actor_id=actor.actor_id):
         if item.correction is not None:
-            continue
-        if item.source_type != "SUBJECT":
             continue
         # A shared verb such as 喜欢 does not mean that a statement about coffee
         # answers a question about cities. Route to ORIGINAL only when a more
         # specific phrase is shared; otherwise admit uncertainty.
-        overlap = len((words & _tokens(item.content)) - GENERIC_QUERY_TOKENS)
-        if overlap == 0:
-            continue
         for evidence in item.evidence:
-            if evidence.source_type == "SUBJECT" and evidence.excerpt:
+            if not evidence.excerpt:
+                continue
+            overlap = len(
+                (words & (_tokens(item.content) | _tokens(evidence.excerpt)))
+                - GENERIC_QUERY_TOKENS
+            )
+            if overlap == 0:
+                continue
+            if item.source_type == "SUBJECT" and evidence.source_type == "SUBJECT":
                 matches.append((overlap, item, evidence))
+            elif evidence.source_type == "AI_INFERENCE":
+                inferred_matches.append((overlap, item, evidence))
     if matches:
         overlap, item, evidence = max(
             matches, key=lambda candidate: (
@@ -334,7 +340,23 @@ def query_twin(
             question=payload.question,
             answer=evidence.excerpt or item.content,
             response_type="ORIGINAL",
-            confidence=round(min(item.confidence, evidence.confidence or 1.0), 3),
+            confidence=round(min(item.confidence, evidence.confidence if evidence.confidence is not None else 1.0), 3),
+            evidence=[evidence],
+            model_version=item.model_version,
+        )
+    if inferred_matches:
+        _, item, evidence = max(
+            inferred_matches, key=lambda candidate: (
+                candidate[0], candidate[1].confidence,
+                candidate[1].recorded_at,
+            )
+        )
+        return TwinAnswer(
+            subject_id=subject_id,
+            question=payload.question,
+            answer=f"录音中有相关片段，但尚未确认说话人：{evidence.excerpt}",
+            response_type="SIMULATION",
+            confidence=round(min(item.confidence, evidence.confidence if evidence.confidence is not None else 1.0, 0.5), 3),
             evidence=[evidence],
             model_version=item.model_version,
         )

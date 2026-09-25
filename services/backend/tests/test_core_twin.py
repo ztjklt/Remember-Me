@@ -1,7 +1,7 @@
 """The iOS branch's provisional Phase 2 read and Original Router boundary."""
 
 from app.contracts import AICoreOutput, Evidence, MemoryItem
-from app.models import Episode, EpisodeStatus
+from app.models import Episode, EpisodeStatus, Evidence as EvidenceRow, MemoryItem as MemoryRow
 from app.repositories.memory import MemoryRepository
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
@@ -156,3 +156,29 @@ def test_correction_suppresses_original_and_deletion_propagates(client, session)
     result = client.get(f"/api/v1/episodes/{episode.episode_id}/result", headers=auth)
     assert result.status_code == 200
     assert result.json()["memory_items"] == []
+
+
+def test_inference_returns_cited_simulation_without_impersonating_subject(client, session):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    episode = _ready_episode(client, session, seeded, auth)
+    memory = session.query(MemoryRow).filter_by(episode_id=episode.episode_id).one()
+    source = session.get(EvidenceRow, "ev_ios_1")
+    memory.source_type = "AI_INFERENCE"
+    memory.content = "The user likes coffee."
+    source.source_type = "AI_INFERENCE"
+    source.excerpt = "我喜歡咖啡。"
+    session.commit()
+    grant = client.post(
+        "/api/v1/consents", headers=auth,
+        json={"subject_id": seeded.subject_id, "scope": "CLOUD_TWIN"},
+    )
+    question = {"question": "我喜欢咖啡吗？", "cloud_twin_consent_id": grant.json()["consent_id"]}
+    response = client.post(
+        f"/api/v1/subjects/{seeded.subject_id}/twin/query", headers=auth, json=question,
+    )
+    assert response.status_code == 200
+    assert response.json()["response_type"] == "SIMULATION"
+    assert response.json()["confidence"] <= 0.5
+    assert response.json()["evidence"][0]["excerpt"] == "我喜歡咖啡。"
+    assert "尚未确认说话人" in response.json()["answer"]

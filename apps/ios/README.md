@@ -61,8 +61,10 @@ The iOS branch also has a provisional Phase 2 read path. Its Memories tab reads
 all Actor-owned, ready Episodes and shows evidence and conservative domain clue
 counts (unclassified items stay unclassified). The
 Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerpt
-only for a conservative direct match; otherwise it reports insufficient evidence
-as SIMULATION with zero confidence. This is a deterministic evidence router, not
+only for a conservative direct Subject match. Related AI-inferred excerpts are
+shown as SIMULATION with explicit speaker uncertainty and confidence capped at
+0.5; unrelated questions return insufficient evidence with zero confidence.
+This is a deterministic evidence router, not
 a full semantic Person Model or generative Twin. The shared Contract is unchanged.
 
 The Memories tab can now submit an Actor correction proposal for a Memory.
