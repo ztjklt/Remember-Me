@@ -1,0 +1,129 @@
+{
+  "schema_version": "local-asr-batch-v1",
+  "synthetic_source_audio": true,
+  "transcript_status": "raw_asr_unverified",
+  "transcribed_at_utc": "2026-09-25T05:33:28.389Z",
+  "model": {
+    "name": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120",
+    "model_bin_sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+    "engine": "faster-whisper 1.2.1",
+    "device": "cpu",
+    "compute_type": "int8",
+    "language": "zh",
+    "beam_size": 5,
+    "vad_filter": true,
+    "condition_on_previous_text": false,
+    "initial_prompt": "林岚、小雨、阿琴、社区图书馆、阅览室、苏州、卷帘门、备用伞。"
+  },
+  "episodes": [
+    {
+      "id": "E01",
+      "source_audio_sha256": "e2eebb375d8e89a06239af7ad6b3555664be68374ad601eb26fb34abf13275c8",
+      "raw_transcript_chars": 350,
+      "segments": 15,
+      "elapsed_seconds": 11.89,
+      "transcript_path": "transcripts/asr_local/E01.txt",
+      "detail_path": "transcripts/asr_local/E01.json"
+    },
+    {
+      "id": "E02",
+      "source_audio_sha256": "eda731aaef2f1653b95aa3642f0cc096ff608695ea53d6ee95b250288e8f936e",
+      "raw_transcript_chars": 350,
+      "segments": 18,
+      "elapsed_seconds": 10.94,
+      "transcript_path": "transcripts/asr_local/E02.txt",
+      "detail_path": "transcripts/asr_local/E02.json"
+    },
+    {
+      "id": "E03",
+      "source_audio_sha256": "f5bea57fd0cc9239a53b4c1d267ca8191bb52f46292c062c7a5cb8f451b9d233",
+      "raw_transcript_chars": 335,
+      "segments": 16,
+      "elapsed_seconds": 11.23,
+      "transcript_path": "transcripts/asr_local/E03.txt",
+      "detail_path": "transcripts/asr_local/E03.json"
+    },
+    {
+      "id": "E04",
+      "source_audio_sha256": "30b26e5970e48ad35c98c773926d4bef753c303394da8a23b3cbd2695f25f876",
+      "raw_transcript_chars": 330,
+      "segments": 15,
+      "elapsed_seconds": 12.04,
+      "transcript_path": "transcripts/asr_local/E04.txt",
+      "detail_path": "transcripts/asr_local/E04.json"
+    },
+    {
+      "id": "E05",
+      "source_audio_sha256": "4e487a15f24fab351e9f07051a5d802782894fa4dae9b95f9ca86d4a3629da2a",
+      "raw_transcript_chars": 342,
+      "segments": 16,
+      "elapsed_seconds": 11.83,
+      "transcript_path": "transcripts/asr_local/E05.txt",
+      "detail_path": "transcripts/asr_local/E05.json"
+    },
+    {
+      "id": "E06",
+      "source_audio_sha256": "053f8cd0e6b300005f5618f177d0a47e17dcadbc909aac12be638c05a5fae7dd",
+      "raw_transcript_chars": 342,
+      "segments": 9,
+      "elapsed_seconds": 11.46,
+      "transcript_path": "transcripts/asr_local/E06.txt",
+      "detail_path": "transcripts/asr_local/E06.json"
+    },
+    {
+      "id": "E07",
+      "source_audio_sha256": "01695f47fa7b94eef4eb05dfbdf41ff4a4dee656372e5535d3ae9d2e8fe9805c",
+      "raw_transcript_chars": 337,
+      "segments": 16,
+      "elapsed_seconds": 11.7,
+      "transcript_path": "transcripts/asr_local/E07.txt",
+      "detail_path": "transcripts/asr_local/E07.json"
+    },
+    {
+      "id": "E08",
+      "source_audio_sha256": "d57e8ff82f88c6639331c6e21124d7b427675ee987771208af48dd5c3c151d4f",
+      "raw_transcript_chars": 339,
+      "segments": 14,
+      "elapsed_seconds": 10.31,
+      "transcript_path": "transcripts/asr_local/E08.txt",
+      "detail_path": "transcripts/asr_local/E08.json"
+    },
+    {
+      "id": "E09",
+      "source_audio_sha256": "0b0e0666e359fe1b8962d31145b5e185a89dff48ab51b0a17ba096ba10d815fc",
+      "raw_transcript_chars": 343,
+      "segments": 18,
+      "elapsed_seconds": 12.87,
+      "transcript_path": "transcripts/asr_local/E09.txt",
+      "detail_path": "transcripts/asr_local/E09.json"
+    },
+    {
+      "id": "E10",
+      "source_audio_sha256": "7d36739a62c954eb1b9d659330dec404c4a6d76353442d01c7c9554068913bc9",
+      "raw_transcript_chars": 329,
+      "segments": 13,
+      "elapsed_seconds": 10.27,
+      "transcript_path": "transcripts/asr_local/E10.txt",
+      "detail_path": "transcripts/asr_local/E10.json"
+    },
+    {
+      "id": "E11",
+      "source_audio_sha256": "ec29b8d5f8500a19e1a264f89db4f2bf57888b754b87e8696596fd1be76c8927",
+      "raw_transcript_chars": 304,
+      "segments": 27,
+      "elapsed_seconds": 11.23,
+      "transcript_path": "transcripts/asr_local/E11.txt",
+      "detail_path": "transcripts/asr_local/E11.json"
+    },
+    {
+      "id": "E12",
+      "source_audio_sha256": "57360a3bdfc31c25886e950bfcf2f200a449301009fb2ccb18e0b0a7c86ef1d2",
+      "raw_transcript_chars": 332,
+      "segments": 12,
+      "elapsed_seconds": 10.04,
+      "transcript_path": "transcripts/asr_local/E12.txt",
+      "detail_path": "transcripts/asr_local/E12.json"
+    }
+  ]
+}
