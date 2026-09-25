@@ -1,6 +1,6 @@
 """Guided questions react to model coverage and calibration gaps."""
 
-from app.models import Actor
+from app.models import Actor, CalibrationSession
 from app.person_model import rebuild_person_model
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
@@ -22,7 +22,7 @@ def test_capture_plan_reorders_after_model_and_calibration(client, session):
     session.commit()
     with_memory = client.get(path, headers=auth).json()
     assert with_memory["model_version"] == "person-preview-r1"
-    assert with_memory["planning_method"] == "heuristic-v1"
+    assert with_memory["planning_method"] == "heuristic-v2"
     assert all(
         item["score"] == round(
             item["information_gain"] * item["importance"]
@@ -55,6 +55,17 @@ def test_capture_plan_reorders_after_model_and_calibration(client, session):
     assert updated["questions"][0]["domain"] == "Values & Beliefs"
     assert updated["questions"][0]["time_urgency"] == 1.5
     assert client.get(path + "?limit=5", headers=auth).status_code == 422
+
+    calibration = session.get(CalibrationSession, calibration_id)
+    calibration.dimension_gaps = {key: False for key in calibration.dimension_gaps}
+    calibration.ai_assessment = {"expression": {"verdict": "DIFFERENT"}}
+    session.commit()
+    ai_guided = client.get(path, headers=auth).json()
+    assert ai_guided["questions"][0]["domain"] == "Expression"
+    assert ai_guided["questions"][0]["time_urgency"] == 1.5
+    assert next(
+        item for item in ai_guided["questions"] if item["domain"] == "Values & Beliefs"
+    )["time_urgency"] == 1.0
 
     other_token = generate_actor_token()
     session.add(Actor(actor_id="capture_other", display_name="Other", token_hash=hash_actor_token(other_token)))

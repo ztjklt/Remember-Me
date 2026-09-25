@@ -345,6 +345,10 @@ final class EpisodeFlow: ObservableObject {
                 id: calibration.calibrationId, settings: settings
             )
             message = "AI 差异分析已保存。它是辅助判断，不会自动改写本人事实。"
+            if let plan = try? await api.capturePlan(settings: settings),
+               plan.subjectId == settings.subjectID {
+                capturePlan = plan
+            }
         } catch {
             message = error.localizedDescription
         }

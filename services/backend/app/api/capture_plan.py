@@ -81,6 +81,11 @@ def capture_plan(
     urgent_domains = {
         domain for gap, domain in GAP_DOMAINS.items() if gaps.get(gap)
     }
+    comparison = latest.ai_assessment if latest and latest.ai_assessment else {}
+    urgent_domains.update(
+        domain for gap, domain in GAP_DOMAINS.items()
+        if comparison.get(gap, {}).get("verdict") == "DIFFERENT"
+    )
     options: list[CaptureQuestion] = []
     for domain in DOMAINS:
         facts = snapshot.domains.get(domain, []) if snapshot else []
@@ -109,6 +114,6 @@ def capture_plan(
     return CapturePlan(
         subject_id=subject_id,
         model_version=f"person-preview-r{snapshot.revision if snapshot else 0}",
-        planning_method="heuristic-v1",
+        planning_method="heuristic-v2",
         questions=options[:limit],
     )

@@ -108,7 +108,9 @@ is created by this fallback.
 Capture offers a guided preview of up to four questions. Backend ranks seven
 fixed-domain prompts by a documented heuristic score based on estimated
 information gain, importance, uncertainty, recent calibration gaps and
-interaction cost. The questions update after new Episodes or calibration
+interaction cost. A saved AI comparison can also raise a domain's priority
+when its verdict is explicitly `DIFFERENT`; `UNCERTAIN` adds no urgency. The
+questions update after new Episodes or calibration
 feedback. This is not an automatic interviewing agent or an empirical measure
 of information gain.
 
