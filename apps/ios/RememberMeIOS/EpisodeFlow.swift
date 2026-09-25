@@ -24,6 +24,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var recipientMemories: [SubjectMemory] = []
     @Published private(set) var modelVersion: String?
     @Published private(set) var isBusy = false
+    @Published private(set) var canRetryAccountConnection = false
     @Published var message: String?
 
     private let api: EpisodeAPI
@@ -72,9 +73,11 @@ final class EpisodeFlow: ObservableObject {
     }
 
     func restoreAccount() async {
-        guard isAuthenticated, let base = settings.validatedURL else { return }
+        guard !isBusy, isAuthenticated, let base = settings.validatedURL else { return }
         let revision = identityRevision
         let refreshToken = SettingsStore.refreshToken
+        isBusy = true
+        defer { if revision == identityRevision { isBusy = false } }
         do {
             let result = try await api.refreshAccount(baseURL: base, refreshToken: refreshToken)
             guard revision == identityRevision else { return }
@@ -86,17 +89,33 @@ final class EpisodeFlow: ObservableObject {
             accountEmail = result.email
             restoreScopedState()
             await loadCurrentConsents()
+            guard revision == identityRevision else { return }
+            canRetryAccountConnection = false
+            message = nil
         } catch {
             guard revision == identityRevision else { return }
+            let failure = error as NSError
             if case EpisodeAPIError.http(let code, _) = error, code == 401 {
                 try? SettingsStore.clearAccount()
                 settings = SettingsStore.load()
                 accountEmail = ""
                 identityRevision += 1
                 clearScopedState()
+                isBusy = false
+                canRetryAccountConnection = false
                 message = "登录已过期，请重新登录。"
+            } else if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorNotConnectedToInternet {
+                canRetryAccountConnection = true
+                message = "无法连接服务。请检查 Wi-Fi 或蜂窝网络；如果使用局域网服务，请在 iPhone 设置中允许 Remember Me 使用本地网络，然后重试。"
+            } else if failure.domain == NSURLErrorDomain {
+                canRetryAccountConnection = true
+                message = "暂时无法连接服务，请检查网络后重试。本机录音已保留。"
+            } else if case EpisodeAPIError.http(let code, _) = error, code >= 500 {
+                canRetryAccountConnection = true
+                message = "服务暂时不可用，请稍后重试。本机录音已保留。"
             } else {
-                message = "连接中断；已保留本机录音，请重试连接。"
+                canRetryAccountConnection = false
+                message = error.localizedDescription
             }
         }
     }
@@ -128,6 +147,7 @@ final class EpisodeFlow: ObservableObject {
         let wasAuthenticated = isAuthenticated
         identityRevision += 1
         isBusy = false
+        canRetryAccountConnection = false
         do {
             try SettingsStore.clearAccount()
             message = nil

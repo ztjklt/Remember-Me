@@ -120,7 +120,13 @@ private struct RecordingConsentScreen: View {
                 Button("同意并开始记录") { Task { await flow.grantRecordingConsent() } }
                     .buttonStyle(.borderedProminent)
                     .disabled(!agreed || flow.isBusy)
-                if let message = flow.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                if let message = flow.message {
+                    Text(message).font(.footnote).foregroundStyle(.secondary)
+                    if flow.canRetryAccountConnection {
+                        Button("重试连接") { Task { await flow.restoreAccount() } }
+                            .disabled(flow.isBusy)
+                    }
+                }
                 Spacer()
             }
             .padding(28)
