@@ -17,7 +17,7 @@ Reading Phase 2–4 does not authorize starting them. Phase 1 Golden Path is the
 
 The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`.
 
-Android and iOS are the two active client tracks. The Product / Integration Owner leads both; two contributors help on bounded Issues when available. The shared path is built in runnable slices: phone recording and local file; upload and durable Episode; STT and structured Memory extraction; status/result readback on the same client. Backend, AI Core, and Voice name logical capabilities and existing code areas, not permanent people or mandatory separate deployments. Neither client waits for the other to finish an intermediate slice.
+Android and iOS are the two active client tracks. 刘修贤 leads Android; 张天霁 leads iOS. 康欣 and 王昊宇 have no standing queue and help only through an explicitly assigned small Issue when available. The shared path is built in runnable slices: phone recording and local file; upload and durable Episode; STT and structured Memory extraction; status/result readback on the same client. Backend, AI Core, and Voice name logical capabilities and existing code areas, not permanent people or mandatory separate deployments. Neither client waits for the other to finish an intermediate slice.
 
 Phase 1 is not complete until one real device records, uploads, and reads back a real extracted Memory — not a Mock or stubbed response. The other client track does not repeat this gate merely to release the first demo.
 

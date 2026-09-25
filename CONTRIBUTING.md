@@ -4,19 +4,19 @@ Baseline: [PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx), the [current delivery 
 
 ## Branches
 
-- `main` contains stable demonstrable releases and accepts changes only through reviewed Pull Requests.
-- `develop` is the continuous integration branch.
+- `main` holds usable demo snapshots. Neither a PR review nor CI pass is a required gate, although both can be used when helpful.
+- `develop` is the ongoing integration branch, with CI as feedback rather than a merge blocker.
 - Use a descriptive `feature/*` branch named for the change, such as `feature/android-real-capture`, `feature/ios-capture`, or `feature/episode-ingestion`. A prefix describes the work, not a permanent owner.
 
-Create feature branches from `develop` and open Pull Requests back to `develop`. The mainline lead may batch related product slices in one PR rather than opening a PR per module. Delegated Issues use their own small PRs. Release Pull Requests go from `develop` to `main`.
+Start feature work from current `develop`. 张天霁 leads iOS and 刘修贤 leads Android; each can batch related work and merge without waiting for routine cross-team sign-off. Delegated Issues use their own small PRs into `develop` so the lead can pull the result locally. Move a usable demo snapshot from `develop` to `main` when ready.
 
 The [Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md) records the original assignments for historical Issues and PRs. New work follows the current delivery model.
 
 ## Pull Request contract
 
-Every Pull Request must state what changed, how it was tested, whether `packages/contracts` changed, and any consent, privacy, migration, or rollback impact. Cross-module contract changes require an Issue or proposal before implementation.
+Every delegated PR briefly states what changed, what was actually checked, whether `packages/contracts` changed, and any real consent, privacy, or migration impact. A mainline lead may use the same concise format. Cross-module Contract changes still require an Issue or proposal and Product Owner approval before implementation.
 
-While the known Hosted Runner dependency-resolution failure is tracked in Issue #17, it is not a Phase 1 product gate. `develop` requires its CI `test` check, but no longer requires a second person's approval for routine PRs. Record one relevant command or device observation and its result; link existing evidence rather than rerunning unchanged checks. Device checks are focused on changed native behavior and the chosen end-to-end demo, not repeated across every PR or both clients. Do not use a skipped, placeholder, or no-op check as successful verification. `main` retains required review and CI for release.
+CI and review are optional feedback on both `develop` and `main`; neither is a required merge gate. Record one relevant command or observation when it helps explain the result, and report failures honestly. Device checks focus on changed native behavior and the chosen end-to-end demo, not every PR or both clients. Do not present a skipped, placeholder, or no-op check as successful verification. Force pushes and branch deletion remain disabled.
 
 ## Scope
 
@@ -24,8 +24,8 @@ Phase 1 — Golden Path is the only committed workstream. Phase 2–4 issues are
 
 ## Issues and milestones
 
-Open an Issue when a bounded task is worth handing off. Give it one temporary owner, a concrete outcome, inputs, scope, and the shortest useful acceptance check. Area labels — `ios`, `android`, `ai-core`, `backend`, `voice`, `hardware`, `integration`, `blocked` — are search aids, not staffing assignments. Attach the Issue to the matching Phase milestone.
+Open an Issue only when either lead wants to hand off a bounded task. Assign one available contributor for that Issue, with a concrete outcome, inputs, scope, and a short completion check. No Backend, AI Core, or Voice queue is permanently assigned. Area labels — `ios`, `android`, `ai-core`, `backend`, `voice`, `hardware`, `integration`, `on-hold` — are search aids, not staffing assignments.
 
 ## Definition of done
 
-The changed path has been checked once with a relevant local command or focused device action, with the result recorded in the PR. Failure and empty states are handled where relevant, documentation matches behavior, and no secrets or local environment files are committed. The full Phase 1 gate is assessed on one integrated real-device path, not on every intermediate slice or both client tracks.
+The person doing the work knows what changed, records the relevant result without unnecessary repeat runs, handles meaningful failure states, and commits no secrets or local environment files. A failed CI run is visible feedback, not a merge veto. A complete Phase 1 product claim still requires one real integrated recording-to-Memory demonstration.

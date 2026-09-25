@@ -1,30 +1,26 @@
-# Single-path delivery and task delegation
+# Two client tracks and on-demand help
 
-Product / Integration Owner decision, 2026-09-26. This is the current execution model and a platform-scope amendment: iOS and Android are the two active client tracks. It supersedes the standing person-to-module assignments in the Team Development Guide v1.0, the original Phase 1 kickoff, and the individual task briefs. Those documents remain useful history for work already in progress; they do not assign future work automatically. PRD v3.0 remains the source of product behavior and consent rules; `packages/contracts` remains the shared interface source of truth.
+Product Owner decision, 2026-09-26. This is the current delivery model and the platform amendment to PRD v3.0: iOS and Android are both active client tracks. PRD v3.0 still defines product behavior and consent; `packages/contracts` remains the shared interface source of truth. The former person-to-Backend, AI Core, and Voice assignments in the Team Development Guide, kickoff, and individual briefs are historical.
 
-## Two client tracks, one mainline lead
+## Leads
 
-张天霁 (`@ztjklt`) drives both iOS and Android tracks and the shared processing path: chooses the next user-visible slice, integrates it, and decides when to ask for help. Two other contributors form an on-demand pool for bounded Issues when available. Nobody receives a permanent Backend, AI Core, or Voice queue. A directory or service name describes a code responsibility, not a permanent person or a requirement to deploy another service.
+| Track | Lead | Current starting point |
+| --- | --- | --- |
+| iOS | 张天霁 (`@ztjklt`) | Authorized client track; no iOS app project is committed yet |
+| Android | 刘修贤 (`@shuziyuxingxing-stack`) | Existing Kotlin / Jetpack Compose app and recording work |
 
-Phase 1 remains the only committed workstream: `real phone recording → upload → Episode persistence → STT → Memory extraction → the same client displays the real Memory`. Android has the existing runnable prototype; iOS is now an authorized parallel client track against the same Backend Contract. The first end-to-end demo may use either platform. The other track does not block it or require a duplicate device acceptance run. An intermediate demo may show a smaller slice, but must say which steps are real and which are fixtures. Phase 2–4 features still require a Product Owner decision.
+These are the two main product routes. Backend, AI Core, and Voice are shared capabilities, not standing people, queues, or mandatory independent deployments. The two leads can move their client work forward independently against the shared Backend Contract. They coordinate only a concrete shared-interface change or integration conflict, rather than waiting for repeated cross-team acceptance.
 
-## When to delegate
+康欣 (`@centraler`) and 王昊宇 (`@qingtian-4`) have no standing task queue. When a lead encounters a bounded design or implementation problem that would take too long alone, either available contributor may take a new, explicit Issue. As of this decision, no new small task is assigned to them. Closing the old execution queues and pausing unstarted Issues does not erase past commits or PRs.
 
-The mainline developer works across the repository. Open a separate Issue when a bounded task needs specialist design, independent investigation, or enough time that handing it off will speed the main path. Do not create an Issue merely to preserve a module boundary.
+## Small Issue handoff
 
-Each delegated Issue names one temporary task owner and states:
+An on-demand Issue states the concrete outcome, code or Contract to reuse, scope, and one observable completion check. Assign one available contributor for that Issue only. The contributor works from current `develop`, opens a focused PR, and includes setup notes so either lead can use the result locally. The leads can continue their own routes while the Issue is in flight. Existing open PRs retain their authors and can be triaged separately; they do not recreate permanent module ownership.
 
-1. The concrete outcome and why the main path needs it.
-2. Inputs, existing code or contract to reuse, and files or interface boundaries the task may change.
-3. One observable acceptance result and the shortest relevant verification command or device step.
-4. The expected handoff: a reviewable PR into `develop`, with setup notes if another machine must run it.
+No cross-module Contract change happens silently: put the proposal in the Issue and get Product Owner approval first. Avoid duplicate implementations of the same shared capability. Neither mobile client holds provider secrets; STT, LLM, and Voice providers stay behind server-side adapters. Recording and voice-clone consent remain separate, and Episode provenance and Subject/Actor isolation remain intact.
 
-The contributor branches from current `develop`, works within that Issue, and opens a PR. The `develop` CI check must pass before merge; a second person's approval is not required for routine slices. The mainline lead can continue on both client tracks while the Issue is in flight, then pull `develop` after its PR merges. Shared Contract changes still need an Issue or proposal and Product / Integration Owner approval before implementation. Avoid parallel implementations of the same capability. `main` keeps its release review and CI checks.
+## Fast verification and repository access
 
-Existing Issues and PRs keep their authors and review history. This decision does not silently cancel work already underway or turn a historical task brief into a new standing assignment. The Product / Integration Owner coordinates any explicit handoff that changes an active task.
+CI and peer review are useful signals but are not required merge gates on `develop` or `main`. A lead or contributor records the shortest relevant result, including a failure if one remains; do not call an unrun check successful. Check a real device when changed native behavior needs it and once for the selected end-to-end demo. Do not repeat the same device test across people, PRs, or both platforms solely for sign-off. The Phase 1 product claim still requires a real recording to pass through upload, STT, Memory extraction, and readback on one client.
 
-## Keep verification proportional
-
-For each PR, record the shortest relevant command or observed action and its result, plus any actual Contract or data impact. Reuse existing evidence; do not demand a long checklist, repeated cross-team sign-off, or another device run solely to reformat a report. Run a focused device check when native recording, permissions, storage, or lifecycle behavior changes, and once for the chosen end-to-end demo path. One person records that result; other contributors do not need to repeat it. A build, fixture, or emulator result is labeled as such.
-
-The mainline lead checks the current end-to-end path at meaningful milestones and records the first failing step. A slice can move forward while another dependency is unfinished; the Phase 1 gate is met only after the complete real path works on one client. Keep recording consent, subject isolation, raw Episode preservation, provenance, model versions, explicit failures, and provider secrets behind server-side adapters. Voice cloning still needs consent separate from recording.
+All three collaborators have Write access to this personal repository, including the ability to create Issues, push branches, open PRs, and merge where GitHub permits. `main` and `develop` have no required review or status check; force pushes and branch deletion remain disabled. Mainline leads may batch related work rather than open and wait on one PR per module. Delegated Issues still use a PR for handoff. Keep `main` as a usable demo snapshot and use `develop` for ongoing integration.

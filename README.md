@@ -19,7 +19,7 @@ The Android prototype is runnable. The iOS track is authorized but has no app pr
 
 - [Remember Me PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx) — product behavior source of truth; the current delivery model amends its client scope to iOS and Android
 - [PRD v3.0 Summary](docs/PRD/PRD_V3_SUMMARY.md) — agent-readable orientation
-- [Current delivery model](docs/team/00_TEAM_OWNERSHIP.md) — iOS and Android tracks led along one product path, with bounded Issue delegation
+- [Current delivery model](docs/team/00_TEAM_OWNERSHIP.md) — 张天霁 leads iOS, 刘修贤 leads Android; other work is delegated only through small Issues
 - [Team Development Guide v1.0](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx) — historical engineering guide; fixed staffing assignments are superseded
 - [Roadmap](docs/roadmap/ROADMAP.md) — phases and exit gates
 - [Phase 1 Team Kickoff](docs/team/PHASE1_KICKOFF.md) — historical first assignments and PR context

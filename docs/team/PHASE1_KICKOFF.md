@@ -1,6 +1,6 @@
 # Phase 1 Golden Path — Team Kickoff
 
-Historical kickoff record. Its initial person-to-module assignments and dependency order were superseded by the [2026-09-26 delivery model](00_TEAM_OWNERSHIP.md). It remains here to explain existing Issues and PRs. Product scope and exit criteria remain defined by PRD v3.0 and the roadmap. CI health is tracked independently in Issue #17.
+Historical kickoff record. Its initial person-to-module assignments, dependency order, and mandatory per-PR verification rules were superseded by the [2026-09-26 delivery model](00_TEAM_OWNERSHIP.md). It remains here to explain existing Issues and PRs. Product scope and exit criteria remain defined by PRD v3.0 and the roadmap. CI health is tracked independently in Issue #17.
 
 ## Original before-start checklist
 
