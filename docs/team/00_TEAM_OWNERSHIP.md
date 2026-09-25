@@ -1,46 +1,26 @@
-# Remember Me Team Ownership
+# Two client tracks and on-demand help
 
-This document is the engineering ownership baseline for [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) under the [Team Development Guide v1.0](Remember_Me_Team_Development_Guide_v1.0.docx). The current Android prototype is a runnable product-flow prototype, not a completed product. The team extends it rather than rewrites it.
+Product Owner decision, 2026-09-26. This is the current delivery model and the platform amendment to PRD v3.0: iOS and Android are both active client tracks. PRD v3.0 still defines product behavior and consent; `packages/contracts` remains the shared interface source of truth. The former person-to-Backend, AI Core, and Voice assignments in the Team Development Guide, kickoff, and individual briefs are historical.
 
-## Ownership
+## Leads
 
-| Member | GitHub | Role | Sole ownership domain | Primary deliverables |
-| --- | --- | --- | --- | --- |
-| 张天霁 | `ztjklt` | Product / Repo / Integration | PRD, priority, contract freeze, acceptance, PR and integration, demo | PRD v3.0 and product principles, contract approval, Golden Path integration on `develop`, Phase Gate acceptance, demo script and scope control |
-| 刘修贤 | `shuziyuxingxing-stack` | Android / Hardware | Android client, Capture, Local Audio, Upload, Hardware Adapter | Compose client, real recording, audio persistence, upload and processing states, capability-based device adapter |
-| 康欣 | `centraler` | AI Core / Person Model | Memory, Graph, Person Model, Twin, Calibration, Capture Planner | Schema-validated extraction, temporal graph, seven person domains, evidence retrieval, Original Router, calibration |
-| 王昊宇 | `qingtian-4` | Backend / Voice / Infrastructure | API/Auth/DB/Storage/Jobs, STT plumbing, Voice pipeline, deployment and observability | Upload and Episode API, async jobs and status, consent and subject isolation, voice pipeline and provider adapters |
+| Track | Lead | Current starting point |
+| --- | --- | --- |
+| iOS | 张天霁 (`@ztjklt`) | Authorized client track; no iOS app project is committed yet |
+| Android | 刘修贤 (`@shuziyuxingxing-stack`) | Existing Kotlin / Jetpack Compose app and recording work |
 
-Each module has one final owner. Members may help across boundaries but must not create duplicate interfaces or competing implementations.
+These are the two main product routes. Backend, AI Core, and Voice are shared capabilities, not standing people, queues, or mandatory independent deployments. The two leads can move their client work forward independently against the shared Backend Contract. They coordinate only a concrete shared-interface change or integration conflict, rather than waiting for repeated cross-team acceptance.
 
-**Boundary rule:** 刘修贤 does not own Person Model algorithms. 康欣 does not own Android pages or account/storage. 王昊宇 does not decide Person Model product logic. Cross-module contracts are coordinated and frozen by 张天霁. Covering for each other is allowed; a second owner is not.
+康欣 (`@centraler`) and 王昊宇 (`@qingtian-4`) have no standing task queue. When a lead encounters a bounded design or implementation problem that would take too long alone, either available contributor may take a new, explicit Issue. As of this decision, no new small task is assigned to them. Closing the old execution queues and pausing unstarted Issues does not erase past commits or PRs.
 
-## Phase responsibility boundaries
+## Small Issue handoff
 
-| Phase | Status | 刘修贤 | 康欣 | 王昊宇 | 张天霁 |
-| --- | --- | --- | --- | --- | --- |
-| 1 — Golden Path | COMMITTED / NOW | Real capture, file persistence, upload, Episode and Processing states | Schema-validated Memory Extractor, provenance, fixtures | Upload API, Episode persistence, STT plumbing, async jobs, result API | Contract freeze, integration on `develop`, Phase 1 acceptance |
-| 2 — Core Twin | PLANNED / NEXT | Memories on real data, Person Model and Coverage UI, Twin client, correction/deletion UI | Temporal graph, seven domains, Conflict Detector, Evidence Retrieval, Twin Agent, Original Router | Memory/Graph/Persona API, Twin Query API, recompute and cache invalidation | Evidence Twin acceptance, UX review of Memories and Twin |
-| 3 — Calibration + Voice | PLANNED | Calibration UI, Voice Seed/Confirmation UI, Twin Voice player | Calibration Agent, follow-up questions, Capture Planner | Voice consent, speaker verification, dataset, profile, clone/TTS adapter, audit | Calibration and Voice acceptance, consent-scope review |
-| 4 — Hardware + Legacy | BACKLOG / CONDITIONAL | Work 3200 adapter, capability probe, Hardware fallback, Handover/Legacy client pages | Legacy Mode evidence and Original Router behaviour, baseline freeze | Trusted People, grant scope, activation state, audit, Legacy policy gate | Legacy acceptance, competition scope control |
+An on-demand Issue states the concrete outcome, code or Contract to reuse, scope, and one observable completion check. Assign one available contributor for that Issue only. The contributor works from current `develop`, opens a focused PR, and includes setup notes so either lead can use the result locally. The leads can continue their own routes while the Issue is in flight. Existing open PRs retain their authors and can be triaged separately; they do not recreate permanent module ownership.
 
-## Integration path
+No cross-module Contract change happens silently: put the proposal in the Issue and get Product Owner approval first. Avoid duplicate implementations of the same shared capability. Neither mobile client holds provider secrets; STT, LLM, and Voice providers stay behind server-side adapters. Recording and voice-clone consent remain separate, and Episode provenance and Subject/Actor isolation remain intact.
 
-`Android and Hardware → Backend Ingestion → STT and AI Core → Memory and Person Model → Twin → Voice → Backend → Android`
+## Fast verification and repository access
 
-The Phase 1 Golden Path is real Android recording, backend upload, Episode creation, STT, memory extraction, and display of a real Memory in Android. Each completed segment is integrated and accepted immediately rather than deferred to the end.
+CI and peer review are useful signals but are not required merge gates on `develop` or `main`. A lead or contributor records the shortest relevant result, including a failure if one remains; do not call an unrun check successful. Check a real device when changed native behavior needs it and once for the selected end-to-end demo. Do not repeat the same device test across people, PRs, or both platforms solely for sign-off. The Phase 1 product claim still requires a real recording to pass through upload, STT, Memory extraction, and readback on one client.
 
-## Product and engineering rules
-
-- Freeze the minimum shared contract before feature work. Extend fields deliberately; do not create incompatible private data models.
-- Keep heavy processing asynchronous with explicit progress and failure states.
-- Distinguish subject statements, third-party observations, AI inference, and calibration evidence.
-- Twin answers must include evidence and provenance. Use Original before Simulation when direct source material exists.
-- Voice clone consent is separate from recording consent. Third-party speech is excluded from subject voice datasets.
-- No hardware is required for the core app path; device capabilities enhance rather than block it.
-
-## Required first instruction for module owners
-
-You are the sole Owner of this module in the Remember Me team. First read the root PRD summary, TEAM OWNERSHIP, the Team Development Guide, CONTRACTS, and existing code. Do not rewrite another member's module or change a cross-module Contract without approval. Complete your Phase 1 minimum loop first, verify it locally, then submit it through a feature branch and Pull Request.
-
-Phase status, owners, and exit gates are tracked in [docs/roadmap/ROADMAP.md](../roadmap/ROADMAP.md).
+All three collaborators have Write access to this personal repository, including the ability to create Issues, push branches, open PRs, and merge where GitHub permits. `main` and `develop` have no required review or status check; force pushes and branch deletion remain disabled. Mainline leads may batch related work rather than open and wait on one PR per module. Delegated Issues still use a PR for handoff. Keep `main` as a usable demo snapshot and use `develop` for ongoing integration.

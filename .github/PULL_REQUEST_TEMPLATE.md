@@ -1,16 +1,9 @@
 ## What changed
 
-## How it was tested
+## Quick check
 
-Exact local command(s):
+What did you actually run or observe? A short result, including a known failure or "not run," is enough. CI and a second device run are not required merge gates.
 
-Result and relevant output:
+## Shared impact
 
-CI status (if the known Issue #17 failure applies, link the run and state why local evidence is trustworthy):
-
-## Contract impact
-
-- [ ] No cross-module contract change
-- [ ] Contract change has a linked Issue or proposal and approval
-
-## Consent privacy migration and rollback impact
+Contract, consent, privacy, or data migration impact: none, or briefly describe it. Link the approved Issue or proposal before changing `packages/contracts`.
