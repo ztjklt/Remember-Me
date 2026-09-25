@@ -80,6 +80,29 @@ struct TwinAnswer: Decodable {
     let modelVersion: String?
 }
 
+struct CalibrationGaps: Codable {
+    var decision = false
+    var reasoning = false
+    var valuePriority = false
+    var emotionalReaction = false
+    var expression = false
+}
+
+struct CalibrationRecord: Decodable, Identifiable {
+    let calibrationId: String
+    let subjectId: String
+    let question: String
+    let lockedAnswer: String
+    let responseType: String
+    let confidence: Double
+    let modelVersion: String?
+    let evidenceIds: [String]
+    let humanAnswer: String?
+    let gaps: CalibrationGaps?
+
+    var id: String { calibrationId }
+}
+
 enum EpisodeAPIError: LocalizedError {
     case invalidServerURL
     case missingCredentials
@@ -208,6 +231,47 @@ struct EpisodeAPI {
         try await requireNoContent(request)
     }
 
+    func startCalibration(question: String, settings: ServerSettings) async throws -> CalibrationRecord {
+        guard !settings.cloudTwinConsentID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        var request = try authorizedRequest(
+            path: calibrationPath(settings: settings), method: "POST", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "question": question,
+            "cloud_twin_consent_id": settings.cloudTwinConsentID
+        ])
+        return try await decode(CalibrationRecord.self, request: request)
+    }
+
+    func submitCalibration(
+        id: String, humanAnswer: String, gaps: CalibrationGaps,
+        settings: ServerSettings
+    ) async throws -> CalibrationRecord {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        var request = try authorizedRequest(
+            path: calibrationPath(settings: settings) + "/\(encoded)/answer",
+            method: "POST", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        request.httpBody = try encoder.encode(CalibrationSubmission(humanAnswer: humanAnswer, gaps: gaps))
+        return try await decode(CalibrationRecord.self, request: request)
+    }
+
+    func calibrations(settings: ServerSettings) async throws -> [CalibrationRecord] {
+        let request = try authorizedRequest(
+            path: calibrationPath(settings: settings), method: "GET", settings: settings
+        )
+        return try await decode([CalibrationRecord].self, request: request)
+    }
+
+    private func calibrationPath(settings: ServerSettings) -> String {
+        let subject = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        return "api/v1/subjects/\(subject)/calibrations"
+    }
+
     private func memoryPath(id: String, settings: ServerSettings) -> String {
         let subject = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
         let memory = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
@@ -291,4 +355,9 @@ struct EpisodeAPI {
 
 private struct CorrectionReceipt: Decodable {
     let memoryItemId: String
+}
+
+private struct CalibrationSubmission: Encodable {
+    let humanAnswer: String
+    let gaps: CalibrationGaps
 }

@@ -447,3 +447,35 @@ class MemoryFeedback(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
     )
+
+
+class CalibrationSession(Base):
+    """A locked Twin answer followed by Actor-submitted human feedback."""
+
+    __tablename__ = "calibration_sessions"
+    __table_args__ = (
+        Index("ix_calibration_subject_actor", "subject_id", "actor_id", "created_at"),
+    )
+
+    calibration_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    cloud_twin_consent_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("consents.consent_id", ondelete="RESTRICT"), nullable=False
+    )
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    locked_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    response_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    human_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dimension_gaps: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

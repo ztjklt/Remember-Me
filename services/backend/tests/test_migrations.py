@@ -14,6 +14,7 @@ EXPECTED_TABLES = {
     "evidence",
     "memory_items",
     "memory_feedback",
+    "calibration_sessions",
 }
 
 

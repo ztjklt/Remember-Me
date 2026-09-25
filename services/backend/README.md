@@ -193,6 +193,9 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Withdraw that correction proposal. |
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}` | Remove one derived Memory from Episode results and Twin retrieval. Source Episode and raw Evidence remain. |
 | `POST /api/v1/subjects/{subject_id}/twin/query` | Provisional evidence router requiring a separate active `CLOUD_TWIN` consent. |
+| `POST /api/v1/subjects/{subject_id}/calibrations` | Lock a Twin answer and evidence before the Actor can submit a human answer. Requires active `CLOUD_TWIN` consent. |
+| `GET /api/v1/subjects/{subject_id}/calibrations` | List this Actor's calibration records. |
+| `POST /api/v1/subjects/{subject_id}/calibrations/{calibration_id}/answer` | Submit immutable Actor-provided human answer and five manual gap marks. |
 
 URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Processing Status, and Episode Result are the `captureEpisode`, `processingStatus`, and `episodeResult` shapes, and the AI Core request and answer are `aiCoreInput` and `aiCoreOutput`.
 
@@ -200,6 +203,9 @@ The provisional Phase 2 paths above are Backend-owned additions on `ios` and
 do not change the frozen Contract. A correction is feedback, not a verified
 replacement of the Subject's words. Deleting a derived Memory does not erase
 the source recording or transcript.
+Calibration records are Actor-submitted observations. The current account model
+cannot prove the Actor is the Subject, so the Backend does not turn them into
+verified Subject evidence or automatically update the Person Model.
 
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 

@@ -67,8 +67,17 @@ item from Episode results, the cross-Episode list and Twin retrieval. Its source
 Episode, transcript and raw Evidence remain for provenance; this operation is
 not an Episode or account erasure request.
 
+The Calibration tab starts by persisting a locked Twin answer and its evidence
+IDs under the Actor's active `CLOUD_TWIN` consent. Only after that does it
+accept a human answer and manual gap marks for decision, reasoning, value
+priority, emotional reaction, and expression. Completed records are immutable
+and Actor-isolated. This is a Phase 3 calibration capture loop; it does not yet
+verify that the Actor is the Subject, automatically compare the answers, or
+update the Person Model.
+
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
 record are needed for Phase 1. Phase 2 still needs a temporal graph, verified
-correction promotion, and a semantically evaluated Twin. Phase 3–4 endpoints
+correction promotion, and a semantically evaluated Twin. Phase 3 still needs
+automatic comparison, Capture Planner and real Voice; Phase 4 endpoints
 and providers remain separate work on this branch.

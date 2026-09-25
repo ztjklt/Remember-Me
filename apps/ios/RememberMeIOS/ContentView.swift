@@ -9,8 +9,69 @@ struct ContentView: View {
                 .tabItem { Label("记忆", systemImage: "books.vertical") }
             TwinView()
                 .tabItem { Label("Twin", systemImage: "bubble.left.and.text.bubble.right") }
+            CalibrationScreen()
+                .tabItem { Label("校准", systemImage: "checkmark.bubble") }
             ConnectionView()
                 .tabItem { Label("连接", systemImage: "server.rack") }
+        }
+    }
+}
+
+private struct CalibrationScreen: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var question = ""
+    @State private var humanAnswer = ""
+    @State private var gaps = CalibrationGaps()
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("先锁定 Twin") {
+                    TextField("想校准的问题", text: $question, axis: .vertical)
+                        .lineLimit(2...4)
+                    Button("锁定当前 Twin 回答") {
+                        Task { await flow.startCalibration(question) }
+                    }
+                    .disabled(flow.isBusy || question.trimmingCharacters(in: .whitespacesAndNewlines).count < 2)
+                    Text("锁定后再填写人的回答；之后的 Memory 变化不会改写这次对照。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                if let record = flow.calibration {
+                    Section("已锁定的 Twin 回答") {
+                        Text(record.question).font(.headline)
+                        Text(record.lockedAnswer)
+                        LabeledContent("回答类型", value: record.responseType)
+                        LabeledContent("证据数", value: "\(record.evidenceIds.count)")
+                        if let version = record.modelVersion {
+                            LabeledContent("模型版本", value: version)
+                        }
+                    }
+                    Section("人的回答与差异") {
+                        if let submitted = record.humanAnswer {
+                            Text(submitted)
+                            Text("已提交；这条记录不可覆盖。")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        } else {
+                            TextField("输入人的真实回答", text: $humanAnswer, axis: .vertical)
+                                .lineLimit(3...8)
+                            Toggle("决策不同", isOn: $gaps.decision)
+                            Toggle("推理不同", isOn: $gaps.reasoning)
+                            Toggle("价值优先级不同", isOn: $gaps.valuePriority)
+                            Toggle("情绪反应不同", isOn: $gaps.emotionalReaction)
+                            Toggle("表达方式不同", isOn: $gaps.expression)
+                            Button("提交校准反馈") {
+                                Task { await flow.submitCalibration(humanAnswer: humanAnswer, gaps: gaps) }
+                            }
+                            .disabled(flow.isBusy || humanAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
+                }
+                if let message = flow.message {
+                    Section { Text(message).font(.footnote) }
+                }
+            }
+            .navigationTitle("Twin 校准")
+            .task { await flow.loadLatestCalibration() }
         }
     }
 }

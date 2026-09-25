@@ -136,6 +136,16 @@ class MemoryNotFound(AppError):
     http_status = 404
 
 
+class CalibrationNotFound(AppError):
+    code = "CALIBRATION_NOT_FOUND"
+    http_status = 404
+
+
+class CalibrationConflict(AppError):
+    code = "CALIBRATION_CONFLICT"
+    http_status = 409
+
+
 class EpisodeNotReady(AppError):
     """The result was requested before the Episode finished processing.
 

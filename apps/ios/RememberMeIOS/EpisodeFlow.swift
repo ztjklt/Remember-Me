@@ -9,6 +9,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var subjectMemories: [SubjectMemory] = []
     @Published private(set) var domainCounts: [String: Int] = [:]
     @Published private(set) var twinAnswer: TwinAnswer?
+    @Published private(set) var calibration: CalibrationRecord?
     @Published private(set) var modelVersion: String?
     @Published private(set) var isBusy = false
     @Published var message: String?
@@ -141,6 +142,44 @@ final class EpisodeFlow: ObservableObject {
             }
             twinAnswer = response
             message = nil
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func loadLatestCalibration() async {
+        guard !isBusy, !settings.subjectID.isEmpty, !settings.token.isEmpty else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            calibration = try await api.calibrations(settings: settings).first
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func startCalibration(_ question: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            calibration = try await api.startCalibration(question: question, settings: settings)
+            message = "Twin 回答已锁定。现在请填写人的真实回答和差异。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func submitCalibration(humanAnswer: String, gaps: CalibrationGaps) async {
+        guard !isBusy, let calibration else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            self.calibration = try await api.submitCalibration(
+                id: calibration.calibrationId, humanAnswer: humanAnswer,
+                gaps: gaps, settings: settings
+            )
+            message = "校准反馈已保存，按 Actor 提交记录；不会自动改写本人事实。"
         } catch {
             message = error.localizedDescription
         }
