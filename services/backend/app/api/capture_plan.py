@@ -1,14 +1,16 @@
-"""Heuristic guided-capture question ranking over the Person Model preview."""
+"""Guided capture from the real temporal model, with an offline fixture path."""
 
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+import httpx
+from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..domains import DOMAINS
-from ..errors import SubjectNotFound
-from ..models import Actor, CalibrationSession, PersonModelSnapshot
+from ..errors import AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable, SubjectNotFound
+from ..models import Actor, CalibrationSession, Consent, PersonModelSnapshot
+from ..person_model import rebuild_person_model
 from ..security import current_actor
 from .core_twin import _can_read_subject
 
@@ -51,6 +53,8 @@ class CaptureQuestion(BaseModel):
     time_urgency: float
     interaction_cost: float
     score: float
+    followups: list[str] = []
+    rationale: str | None = None
 
 
 class CapturePlan(BaseModel):
@@ -60,9 +64,107 @@ class CapturePlan(BaseModel):
     questions: list[CaptureQuestion]
 
 
+class _GeneratedQuestion(BaseModel):
+    domain: str
+    question: str = Field(min_length=5)
+    followups: list[str] = Field(min_length=1, max_length=2)
+    rationale: str
+    information_gain: float = Field(ge=0.1, le=2)
+    importance: float = Field(ge=0.1, le=2)
+    uncertainty: float = Field(ge=0.1, le=2)
+    time_urgency: float = Field(ge=0.1, le=2)
+    interaction_cost: float = Field(ge=0.1, le=2)
+
+
+class _GeneratedPlan(BaseModel):
+    questions: list[_GeneratedQuestion] = Field(min_length=2, max_length=4)
+    model_version: str = Field(min_length=1)
+    planning_version: str = Field(min_length=1)
+
+
+def _real_plan(
+    subject_id: str, snapshot: PersonModelSnapshot | None,
+    latest: CalibrationSession | None, limit: int, settings,
+) -> CapturePlan:
+    domains = snapshot.domains if snapshot else {}
+    traits = [{
+        "domain": domain, "statement": fact["content"],
+        "confidence": fact["confidence"], "status": fact.get("status", "current"),
+        "conflict_type": fact.get("conflict_type"),
+    } for domain, facts in domains.items() if domain in DOMAINS for fact in facts]
+    calibrations = [{
+        "question": row["question"], "human_answer": row["human_answer"],
+        "domains": [domain for domain in row["domains"] if domain in DOMAINS],
+    } for row in (snapshot.calibration_updates if snapshot else [])[-10:]]
+    if latest and latest.human_answer and not any(
+        row["question"] == latest.question for row in calibrations
+    ):
+        gaps = latest.dimension_gaps or {}
+        assessment = latest.ai_assessment or {}
+        gap_domains = sorted({
+            domain for dimension, domain in GAP_DOMAINS.items()
+            if gaps.get(dimension) or assessment.get(dimension, {}).get("verdict") == "DIFFERENT"
+        })
+        calibrations.append({"question": latest.question,
+                             "human_answer": latest.human_answer,
+                             "domains": gap_domains})
+    payload = {
+        "coverage": {domain: len(domains.get(domain, [])) for domain in DOMAINS},
+        "traits": traits[:100], "calibrations": calibrations, "limit": limit,
+    }
+    if len(traits) > 100:
+        raise AiUnavailable("Capture Planner trait corpus exceeds its semantic window")
+    try:
+        response = httpx.post(
+            settings.ai_core_url.rstrip("/") + "/capture/plan",
+            json=payload, timeout=httpx.Timeout(settings.ai_timeout_seconds),
+            follow_redirects=False,
+        )
+    except httpx.TimeoutException as exc:
+        raise AiTimeout("Capture Planner timed out") from exc
+    except httpx.TransportError as exc:
+        raise AiUnavailable("Capture Planner unavailable") from exc
+    if response.status_code in {408, 504}:
+        raise AiTimeout("Capture Planner timed out")
+    if response.status_code in {429, 503}:
+        raise AiUnavailable("Capture Planner unavailable")
+    if not response.is_success:
+        raise AiFailed("Capture Planner failed")
+    try:
+        generated = _GeneratedPlan.model_validate(response.json())
+    except (ValueError, TypeError) as exc:
+        raise AiSchemaInvalid("Capture Planner violated its response schema") from exc
+    if (generated.model_version.startswith(("fixture-", "fake-"))
+            or generated.planning_version != "capture-planner-llm-v1"
+            or len(generated.questions) > limit):
+        raise AiSchemaInvalid("Capture Planner returned an unversioned or oversized plan")
+    questions = []
+    seen = set()
+    for item in generated.questions:
+        if item.domain not in DOMAINS or item.question.strip().casefold() in seen:
+            raise AiSchemaInvalid("Capture Planner repeated a question or invented a domain")
+        seen.add(item.question.strip().casefold())
+        questions.append(CaptureQuestion(
+            domain=item.domain, question=item.question,
+            existing_facts=len(domains.get(item.domain, [])),
+            information_gain=item.information_gain, importance=item.importance,
+            uncertainty=item.uncertainty, time_urgency=item.time_urgency,
+            interaction_cost=item.interaction_cost,
+            score=round(item.information_gain * item.importance * item.uncertainty
+                        * item.time_urgency / item.interaction_cost, 3),
+            followups=item.followups, rationale=item.rationale,
+        ))
+    questions.sort(key=lambda item: -item.score)
+    return CapturePlan(
+        subject_id=subject_id, model_version=generated.model_version,
+        planning_method=generated.planning_version, questions=questions,
+    )
+
+
 @router.get("/{subject_id}/capture-plan", response_model=CapturePlan)
 def capture_plan(
     subject_id: str,
+    request: Request,
     limit: int = Query(default=4, ge=2, le=4),
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
@@ -70,13 +172,25 @@ def capture_plan(
     if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
         raise SubjectNotFound("No accessible Subject")
     snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    if (request.app.state.settings.ai_backend == "http"
+            and (snapshot is None or snapshot.synthesis_model_version is None)):
+        snapshot = rebuild_person_model(
+            session, subject_id=subject_id, actor_id=actor.actor_id,
+            settings=request.app.state.settings,
+        )
+        session.commit()
     latest = session.scalar(
-        select(CalibrationSession).where(
+        select(CalibrationSession).join(
+            Consent, CalibrationSession.cloud_twin_consent_id == Consent.consent_id
+        ).where(
             CalibrationSession.subject_id == subject_id,
             CalibrationSession.actor_id == actor.actor_id,
             CalibrationSession.confirmed_at.is_not(None),
+            Consent.status == "granted",
         ).order_by(CalibrationSession.completed_at.desc()).limit(1)
     )
+    if request.app.state.settings.ai_backend == "http":
+        return _real_plan(subject_id, snapshot, latest, limit, request.app.state.settings)
     gaps = latest.dimension_gaps if latest and latest.dimension_gaps else {}
     urgent_domains = {
         domain for gap, domain in GAP_DOMAINS.items() if gaps.get(gap)

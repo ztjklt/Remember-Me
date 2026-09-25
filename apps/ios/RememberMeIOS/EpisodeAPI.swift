@@ -208,6 +208,7 @@ struct RecipientMemoryList: Decodable {
 }
 
 struct PersonModelFact: Decodable, Identifiable {
+    let traitId: String?
     let memoryItemId: String
     let episodeId: String
     let content: String
@@ -215,8 +216,14 @@ struct PersonModelFact: Decodable, Identifiable {
     let evidenceIds: [String]
     let confidence: Double
     let modelVersion: String
+    let context: String?
+    let counterEvidenceIds: [String]?
+    let validFrom: String?
+    let validTo: String?
+    let status: String?
+    let conflictType: String?
 
-    var id: String { memoryItemId }
+    var id: String { traitId ?? memoryItemId }
 }
 
 struct PersonModelPreview: Decodable {
@@ -225,6 +232,7 @@ struct PersonModelPreview: Decodable {
     let modelVersion: String
     let sourceMemoryIds: [String]
     let domains: [String: [PersonModelFact]]
+    let processingState: String?
 }
 
 struct GuidedQuestion: Decodable, Identifiable {
@@ -232,8 +240,9 @@ struct GuidedQuestion: Decodable, Identifiable {
     let question: String
     let existingFacts: Int
     let score: Double
+    let followups: [String]?
 
-    var id: String { domain }
+    var id: String { "\(domain):\(question)" }
 }
 
 struct CapturePlan: Decodable {

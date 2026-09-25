@@ -20,7 +20,7 @@ from ..errors import (
     CalibrationConflict, CalibrationNotFound, RequestInvalid,
 )
 from ..models import Account, Actor, CalibrationSession, ConsentScope, as_utc, utcnow
-from ..person_model import rebuild_person_model
+from ..person_model import refresh_after_mutation
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
 from .core_twin import TwinQuestion, query_twin
@@ -248,6 +248,7 @@ def assess_calibration(
 def confirm_calibration(
     subject_id: str,
     calibration_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> CalibrationView:
@@ -268,6 +269,7 @@ def confirm_calibration(
     if row.confirmed_at is None:
         row.confirmed_at = utcnow()
         session.flush()
-        rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+        refresh_after_mutation(session, subject_id=subject_id, actor_id=actor.actor_id,
+                               settings=request.app.state.settings)
         session.commit()
     return CalibrationView.of(row)

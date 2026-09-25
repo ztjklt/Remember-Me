@@ -384,6 +384,7 @@ private struct CaptureView: View {
     @State private var showImporter = false
     @State private var showGuidance = false
     @State private var selectedQuestion: String?
+    @State private var selectedFollowups: [String] = []
 
     var body: some View {
         NavigationStack {
@@ -422,9 +423,19 @@ private struct CaptureView: View {
                             }
                         }
                         if let selectedQuestion {
-                            Text("引导问题：\(selectedQuestion)")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 9) {
+                                Text(selectedQuestion).font(.subheadline.weight(.semibold))
+                                ForEach(selectedFollowups, id: \.self) { followup in
+                                    Button(followup) {
+                                        self.selectedQuestion = followup
+                                        selectedFollowups = []
+                                    }
+                                    .font(.footnote)
+                                }
+                            }
+                            .padding(14)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 17))
                         }
                     }
                     .padding(16)
@@ -461,6 +472,7 @@ private struct CaptureView: View {
                             ForEach(questions) { item in
                                 Button {
                                     selectedQuestion = item.question
+                                    selectedFollowups = item.followups ?? []
                                     showGuidance = false
                                 } label: {
                                     Text(item.question)
@@ -690,6 +702,13 @@ private struct MemoriesView: View {
                 }
             }
             .navigationTitle("记忆文库")
+            .toolbar {
+                NavigationLink {
+                    ModelDetailView()
+                } label: {
+                    Label("画像", systemImage: "person.text.rectangle")
+                }
+            }
             .searchable(text: $query, prompt: "搜索记忆")
             .refreshable { await flow.loadSubjectMemories() }
             .task { await flow.loadSubjectMemories() }
@@ -729,6 +748,143 @@ private struct MemoriesView: View {
         case "OBJECTIVE": "客观资料"
         case "CALIBRATION": "校准反馈"
         default: "AI 整理"
+        }
+    }
+}
+
+private struct ModelDetailView: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+
+    private let domains: [(key: String, title: String)] = [
+        ("Identity", "身份"), ("Episodic Memory", "人生经历"),
+        ("Relationships", "关系"), ("Preferences", "偏好"),
+        ("Values & Beliefs", "价值观"), ("Decision Patterns", "决策方式"),
+        ("Expression", "表达方式"),
+    ]
+
+    private var entityRelations: [MemoryGraphEdge] {
+        guard let graph = flow.memoryGraph else { return [] }
+        let entityIDs = Set(graph.nodes.filter {
+            ["PERSON", "PLACE", "EVENT", "TOPIC"].contains($0.kind)
+        }.map(\.nodeId))
+        return graph.edges.filter {
+            entityIDs.contains($0.sourceId) && entityIDs.contains($0.targetId)
+        }
+    }
+
+    var body: some View {
+        List {
+            if flow.personModel?.processingState == "rebuilding" {
+                Section {
+                    Label("画像正在根据最新记忆重建，请稍后刷新。", systemImage: "arrow.triangle.2.circlepath")
+                }
+            } else if flow.personModel == nil {
+                Section { Text("画像尚未加载。请刷新重试。") }
+            } else if flow.personModel?.sourceMemoryIds.isEmpty == true {
+                Section { Text("记录更多生活后，画像会逐步形成。") }
+            }
+
+            ForEach(domains.indices, id: \.self) { index in
+                let domain = domains[index]
+                if let facts = flow.personModel?.domains[domain.key], !facts.isEmpty {
+                    Section(domain.title) {
+                        ForEach(facts) { fact in
+                            DisclosureGroup {
+                                if let context = fact.context, !context.isEmpty {
+                                    Text("情境：\(context)")
+                                }
+                                if let from = fact.validFrom, !from.isEmpty {
+                                    Text("起始：\(dateLabel(from))")
+                                }
+                                if let until = fact.validTo, !until.isEmpty {
+                                    Text("截至：\(dateLabel(until))")
+                                }
+                                let counterIDs = fact.counterEvidenceIds ?? []
+                                if !counterIDs.isEmpty {
+                                    Text("反证").font(.subheadline.weight(.semibold))
+                                    ForEach(counterIDs, id: \.self) { id in
+                                        Text(evidenceExcerpt(id) ?? "关联片段暂不可用")
+                                            .font(.subheadline).foregroundStyle(.secondary)
+                                    }
+                                }
+                                Text("\(sourceLabel(fact.sourceType)) · 可信度 \(Int(fact.confidence * 100))%")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(fact.content)
+                                    Text(statusLabel(fact.status))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let graph = flow.memoryGraph {
+                let entities = graph.nodes.filter { ["PERSON", "PLACE", "EVENT", "TOPIC"].contains($0.kind) }
+                if !entities.isEmpty {
+                    Section("人物与事件") {
+                        ForEach(entities) { node in
+                            LabeledContent(entityKind(node.kind), value: node.label)
+                        }
+                    }
+                }
+                if !entityRelations.isEmpty {
+                    Section("关系线索") {
+                        ForEach(entityRelations.indices, id: \.self) { index in
+                            let edge = entityRelations[index]
+                            let source = graph.nodes.first { $0.nodeId == edge.sourceId }?.label ?? ""
+                            let target = graph.nodes.first { $0.nodeId == edge.targetId }?.label ?? ""
+                            Text("\(source) · \(edge.relation) · \(target)")
+                        }
+                    }
+                }
+            }
+            Section {
+                Text("画像由录音证据推断；有争议或已经变化的说法会保留来源，不代表本人当前意愿。")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+        .navigationTitle("我的画像")
+        .refreshable { await flow.loadSubjectMemories() }
+    }
+
+    private func evidenceExcerpt(_ id: String) -> String? {
+        flow.subjectMemories.lazy.flatMap(\.evidence).first { $0.evidenceId == id }?.excerpt
+    }
+
+    private func dateLabel(_ value: String) -> String {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plain = ISO8601DateFormatter()
+        guard let date = fractional.date(from: value) ?? plain.date(from: value) else { return value }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func statusLabel(_ status: String?) -> String {
+        switch status {
+        case "superseded": "已改变"
+        case "disputed": "有争议 · 待核实"
+        default: "当前线索"
+        }
+    }
+
+    private func sourceLabel(_ source: String) -> String {
+        switch source {
+        case "SUBJECT": "本人原话"
+        case "THIRD_PARTY": "他人描述"
+        case "OBJECTIVE": "客观资料"
+        default: "AI 推断"
+        }
+    }
+
+    private func entityKind(_ kind: String) -> String {
+        switch kind {
+        case "PERSON": "人物"
+        case "PLACE": "地点"
+        case "EVENT": "事件"
+        default: "主题"
         }
     }
 }

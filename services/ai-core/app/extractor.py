@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import replace
 from time import perf_counter
 
 from pydantic import ValidationError
 
 from .contracts import AICoreInput, AICoreOutput
-from .errors import AICoreError, AIOutputInvalid
+from .errors import AICoreError, AIOutputInvalid, EvidenceInvalid
 from .prompts import PROMPT_VERSION, SCHEMA_VERSION, build_system_prompt
 from .providers.base import ModelRequest, StructuredModelProvider
 from .validation import validate_output
@@ -65,19 +66,33 @@ class MemoryExtractor:
             prompt_version=self.prompt_version,
             schema_version=self.schema_version,
         )
-        raw_output = self.provider.generate(request)
-        try:
-            output = AICoreOutput.model_validate(raw_output)
-        except ValidationError as exc:
-            raise AIOutputInvalid("AI provider output failed the frozen schema") from exc
+        for attempt in range(2):
+            try:
+                raw_output = self.provider.generate(request)
+                try:
+                    output = AICoreOutput.model_validate(raw_output)
+                except ValidationError as exc:
+                    raise AIOutputInvalid("AI provider output failed the frozen schema") from exc
 
-        # Provenance describes this deployment, not a string guessed by the LLM.
-        output.model_version = self.model_version
-        for memory in output.memory_items:
-            memory.model_version = self.model_version
-            memory.prompt_version = self.prompt_version
-            memory.schema_version = self.schema_version
-        return validate_output(payload, output)
+                # Provenance describes this deployment, not a string guessed by the LLM.
+                output.model_version = self.model_version
+                for memory in output.memory_items:
+                    memory.model_version = self.model_version
+                    memory.prompt_version = self.prompt_version
+                    memory.schema_version = self.schema_version
+                return validate_output(payload, output)
+            except (AIOutputInvalid, EvidenceInvalid):
+                if attempt:
+                    raise
+                # One bounded regeneration is valuable with JSON-object providers.
+                # Never weaken validation or persist a partially valid response.
+                request = replace(request, system_prompt=request.system_prompt + (
+                    " The previous response was rejected. Generate a fresh complete JSON "
+                    "object. Recalculate every evidence span from the original transcript, "
+                    "copy its exact substring, keep only supported memory claims, and "
+                    "omit any item you cannot cite exactly."
+                ))
+        raise AIOutputInvalid("AI provider did not produce a valid extraction")
 
 
 __all__ = ["MemoryExtractor"]

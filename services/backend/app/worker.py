@@ -40,9 +40,10 @@ from .errors import (
     SttEmptyTranscript,
     SttUnavailable,
 )
-from .models import Episode, JobStage, JobState
+from .models import ConsentScope, Episode, JobStage, JobState
 from .person_model import rebuild_person_model
 from .repositories.episodes import EpisodeRepository
+from .repositories.consents import ConsentRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
 from .stt import SttProvider, build_stt_provider
@@ -171,6 +172,7 @@ class ProcessingWorker:
         stt: SttProvider,
         ai: AiCoreClient,
         *,
+        settings: Settings | None = None,
         max_attempts: int = 3,
         backoff_seconds: int = 5,
         lease_seconds: int = 60,
@@ -181,6 +183,7 @@ class ProcessingWorker:
         self.object_store = object_store
         self.stt = stt
         self.ai = ai
+        self.settings = settings
         self.max_attempts = max_attempts
         self.backoff_seconds = backoff_seconds
         self.lease_seconds = lease_seconds
@@ -263,12 +266,33 @@ class ProcessingWorker:
 
             stage = JobStage(job.stage)
             with self._heartbeat(job_id):
+                # Upload authorization is not a perpetual permission to begin
+                # another cloud-processing stage after its grant is revoked.
+                ConsentRepository(session).require_active(
+                    episode.recording_consent_id,
+                    subject_id=episode.subject_id,
+                    scope=ConsentScope.RECORDING,
+                    actor_id=episode.actor_id,
+                )
                 if stage is JobStage.TRANSCRIBE:
                     self._transcribe(episode)
                 elif stage is JobStage.EXTRACT:
                     self._extract(session, episode)
                 else:
                     self._model(session, episode)
+
+                # A grant can be withdrawn while STT or AI is in flight. Check
+                # through a fresh session before committing any derived result.
+                check_session = self.database.session()
+                try:
+                    ConsentRepository(check_session).require_active(
+                        episode.recording_consent_id,
+                        subject_id=episode.subject_id,
+                        scope=ConsentScope.RECORDING,
+                        actor_id=episode.actor_id,
+                    )
+                finally:
+                    check_session.close()
 
                 if not jobs.complete_stage(job, self.owner, episode):
                     # The lease lapsed while the stage ran and another worker has
@@ -362,19 +386,14 @@ class ProcessingWorker:
         MemoryRepository(session).store_result(episode, output)
 
     def _model(self, session, episode: Episode) -> None:  # type: ignore[no-untyped-def]
-        """The last stage: an Episode becomes ready only past this point.
-
-        `ready` is reachable only after a stored extraction result. On this
-        isolated branch the stage also materializes a conservative seven-domain
-        preview from the Actor's evidence-linked Memory rows. This is not a
-        generative personality synthesis or the future temporal graph.
-        """
+        """The last stage reconciles evidence into the temporal Person Model."""
         if episode.model_version is None:
             raise UnexpectedFailure(
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
         rebuild_person_model(
-            session, subject_id=episode.subject_id, actor_id=episode.actor_id
+            session, subject_id=episode.subject_id, actor_id=episode.actor_id,
+            settings=self.settings,
         )
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
@@ -419,6 +438,7 @@ def build_worker(database: Database, settings: Settings) -> ProcessingWorker:
         build_object_store(settings),
         build_stt_provider(settings),
         build_ai_client(settings),
+        settings=settings,
         max_attempts=settings.job_max_attempts,
         backoff_seconds=settings.job_retry_backoff_seconds,
         lease_seconds=settings.job_lease_seconds,

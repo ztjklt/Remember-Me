@@ -131,6 +131,62 @@ def test_one_tick_runs_one_stage_and_commits_it(worker, session, uploaded):
     assert job.lease_expires_at is None
 
 
+def test_revoking_recording_consent_stops_queued_stt_without_deleting_audio(
+    app, client, session, uploaded, seeded, auth,
+):
+    assert client.post(f"/api/v1/consents/{seeded.consent_id}/revoke", headers=auth).status_code == 200
+
+    class ForbiddenSTT:
+        def transcribe(self, *_args):
+            pytest.fail("STT must not run after recording consent is revoked")
+
+    assert build_worker(app, stt=ForbiddenSTT()).run_once() is None
+    episode = episode_of(session, uploaded)
+    assert episode.status == "failed"
+    assert episode.error_code == "CONSENT_INVALID"
+    assert episode.transcript is None
+    assert episode.audio_object_key
+    assert job_of(session, uploaded).state == str(JobState.FAILED)
+
+
+def test_revoking_recording_consent_between_stages_stops_ai(
+    app, client, session, uploaded, seeded, auth,
+):
+    worker = build_worker(app)
+    assert worker.run_once() == uploaded
+    assert episode_of(session, uploaded).transcript
+    assert client.post(f"/api/v1/consents/{seeded.consent_id}/revoke", headers=auth).status_code == 200
+
+    class ForbiddenAI:
+        def process(self, *_args):
+            pytest.fail("AI extraction must not run after recording consent is revoked")
+
+    assert build_worker(app, ai=ForbiddenAI()).run_once() is None
+    episode = episode_of(session, uploaded)
+    assert episode.status == "failed"
+    assert episode.error_code == "CONSENT_INVALID"
+    assert episode.transcript
+    assert session.scalars(select(MemoryItem).where(MemoryItem.episode_id == uploaded)).all() == []
+
+
+def test_revocation_during_stt_discards_uncommitted_transcript(
+    app, client, session, uploaded, seeded, auth,
+):
+    class RevokingSTT:
+        def transcribe(self, audio, content_type):
+            revoked = client.post(
+                f"/api/v1/consents/{seeded.consent_id}/revoke", headers=auth
+            )
+            assert revoked.status_code == 200
+            return FakeSttProvider().transcribe(audio, content_type)
+
+    assert build_worker(app, stt=RevokingSTT()).run_once() is None
+    episode = episode_of(session, uploaded)
+    assert episode.status == "failed"
+    assert episode.error_code == "CONSENT_INVALID"
+    assert episode.transcript is None
+
+
 def test_processing_runs_to_a_readable_result(client, worker, session, uploaded, auth):
     advance(worker)
 

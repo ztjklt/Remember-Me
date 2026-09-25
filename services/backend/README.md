@@ -1,12 +1,11 @@
 # Backend Service
 
 > On the isolated `ios` branch, migration `0004_cloud_twin_consent` adds an
-> independent `CLOUD_TWIN` scope. The provisional `/api/v1/subjects/{id}/memories`
-> and `/api/v1/subjects/{id}/twin/query` routes are implemented in
-> `app/api/core_twin.py`. The latter requires an active Cloud Twin consent from
-> the calling Actor, never RECORDING or VOICE consent. It only quotes a matching
-> Subject evidence excerpt as ORIGINAL; otherwise it returns explicit
-> uncertainty. These Backend-owned shapes are not yet a frozen Phase 2 Contract.
+> independent `CLOUD_TWIN` scope. The Backend-owned `/memories`, `/person-model`,
+> `/memory-graph`, `/twin/query` and `/capture-plan` shapes are not a frozen
+> Phase 2 Contract. Real-provider mode calls the AI Core Persona, Twin Agent
+> and Capture Planner endpoints. Fixture mode stays deterministic for tests.
+> Twin requires an active Cloud Twin consent from the calling Actor.
 
 > On `ios`, Calibration locks the Twin answer before the human answer is
 > submitted. `POST /api/v1/subjects/{id}/calibrations/{calibration_id}/assess`
@@ -16,10 +15,9 @@
 > is kept as provisional calibration input separate from source-grounded facts
 > and influences the next Capture Plan. A legacy Actor cannot confirm.
 
-> `GET /api/v1/subjects/{id}/memory-graph` is a provisional Actor-isolated
-> provenance timeline. It links current undisputed Memory rows to their
-> Episodes and Evidence and orders records within a domain by capture time.
-> It does not infer causality or relationships from similar wording.
+> `GET /api/v1/subjects/{id}/memory-graph` combines Actor-isolated Episode and
+> Evidence provenance with real-provider Persona entities and cited relations.
+> Entity relations are model interpretations, not verified causal facts.
 
 > The isolated iOS stack wrapper can run a temporary real-provider cross-phase
 > check with `IOS_VERIFY_EXTENDED=1 PHASE1_AUDIO_PATH=/path/to/audio.m4a uv run
@@ -27,18 +25,15 @@
 > It checks provenance, Twin labelling, calibration persistence and revocable
 > recipient preview after the Phase 1 upload/STT/AI path succeeds.
 
-> Capture Planner `heuristic-v2` uses the latest account-confirmed manual gaps and
-> explicit `DIFFERENT` verdicts in a saved AI calibration assessment to rank
-> follow-up questions. `UNCERTAIN` verdicts do not increase urgency. Planning
-> affects question order only and never promotes unverified facts into the
-> Person Model.
+> In real-provider mode, Capture Planner uses seven-domain coverage, current
+> traits, contradictions and confirmed calibration answers to generate two to
+> four Chinese questions with follow-ups. Scores are estimates. Fixture mode
+> keeps the `heuristic-v2` path for offline tests.
 
-> With a real AI Core provider, the iOS Twin route first checks for a direct
-> Subject excerpt. If none matches, `/twin/simulate` can select relevant
-> evidence from at most 20 current, undisputed Actor-visible candidates. Backend
-> rejects foreign citation IDs and displays a low-confidence, evidence-bounded
-> `SIMULATION` with explicit uncertainty about speaker and answer completeness.
-> The returned wording is still provisional and needs semantic evaluation.
+> In real-provider mode, the Twin Agent semantically routes current evidence to
+> one exact Subject ORIGINAL quote, a cited SIMULATION, or a refusal. Backend
+> rejects foreign citations. This needs human answer-quality evaluation and
+> currently has a bounded 100-evidence retrieval window.
 
 > Personal email-code sign-in is available at `/api/v1/auth/email/start`,
 > `/email/verify`, `/refresh`, and `/logout`. Each new account owns an Actor and
@@ -48,6 +43,10 @@
 > for actual delivery. A one-time, audited development claim can move data from
 > an exclusive legacy token into the new account. Actor-scoped Episode list,
 > transcript, and failed-job retry endpoints support the iOS capture timeline.
+
+> Each worker stage checks the Episode's active `RECORDING` consent before
+> calling STT, extraction or Persona. A revoked grant stops pending processing
+> with `CONSENT_INVALID`; it does not retroactively erase a completed Episode.
 
 > Handover preview activation records the current Actor-partitioned Person
 > Model revision. Grant creation, activation, successful recipient reads and
@@ -236,12 +235,12 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `GET /api/v1/episodes/{episode_id}` | **Processing status.** The contract's `processingStatus`, polled by a client that wants to know where an Episode is. Readable only by the Actor that captured it. |
 | `GET /api/v1/episodes/{episode_id}/result` | **Episode result.** The contract's `episodeResult`, once the Episode is `ready`. Before that it is `409 EPISODE_NOT_READY`, which a poller can tell apart from `404`. Readable only by the Actor that captured it. |
 | `GET /api/v1/subjects/{subject_id}/memories` | Isolated iOS branch's provisional Phase 2 cross-Episode Memory list with evidence. Actor-owned Episodes only. |
-| `GET /api/v1/subjects/{subject_id}/person-model` | Actor-partitioned, versioned seven-domain preview built in the worker model stage from evidence-linked Memory. |
-| `GET /api/v1/subjects/{subject_id}/capture-plan` | Two to four guided-capture questions ranked by coverage, confidence and latest manual calibration gaps. |
+| `GET /api/v1/subjects/{subject_id}/person-model` | Actor-partitioned seven-domain model with cited traits, time and conflicts; real mode uses Persona synthesis. |
+| `GET /api/v1/subjects/{subject_id}/capture-plan` | Real-provider contextual questions and follow-ups, or an explicit fixture heuristic. |
 | `PUT /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Record an Actor's proposed correction; the disputed source claim is immediately excluded from Twin retrieval. |
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Withdraw that correction proposal. |
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}` | Remove one derived Memory from Episode results and Twin retrieval. Source Episode and raw Evidence remain. |
-| `POST /api/v1/subjects/{subject_id}/twin/query` | Provisional evidence router requiring a separate active `CLOUD_TWIN` consent. |
+| `POST /api/v1/subjects/{subject_id}/twin/query` | Real-provider semantic Twin Agent or fixture router; separate `CLOUD_TWIN` consent required. |
 | `POST /api/v1/subjects/{subject_id}/calibrations` | Lock a Twin answer and evidence before the Actor can submit a human answer. Requires active `CLOUD_TWIN` consent. |
 | `GET /api/v1/subjects/{subject_id}/calibrations` | List this Actor's calibration records. |
 | `POST /api/v1/subjects/{subject_id}/calibrations/{calibration_id}/answer` | Submit immutable Actor-provided human answer and five manual gap marks. |
@@ -257,14 +256,14 @@ The provisional Phase 2 paths above are Backend-owned additions on `ios` and
 do not change the frozen Contract. A correction is feedback, not a verified
 replacement of the Subject's words. Deleting a derived Memory does not erase
 the source recording or transcript.
-Person Model preview revisions change when usable Memory changes. Disputed
-claims are excluded until correction withdrawal or verified replacement. This
-snapshot is a source-linked aggregate, not an inferred personality or semantic
-relationship graph.
-The capture planner uses a fixed heuristic approximation of
-`information_gain × importance × uncertainty × time_urgency ÷ interaction_cost`.
-Its factors are shown in the response; they are not learned probabilities or a
-validated measure of question value.
+Person Model revisions change when usable Memory changes. Disputed claims are
+excluded until correction withdrawal or verified replacement. Real mode builds
+semantic traits and entity relationships from cited sources. Correction,
+deletion and consent mutation first invalidate the snapshot; later reads rebuild
+it, and an unavailable provider leaves it visibly `rebuilding` rather than
+serving stale traits. The real Capture Planner estimates
+`information_gain × importance × uncertainty × time_urgency ÷ interaction_cost`;
+these are not learned probabilities or validated measures of question value.
 Calibration records are Actor-submitted observations. The current account model
 cannot prove the Actor is the Subject, so the Backend does not turn them into
 verified Subject evidence or automatically update the Person Model.

@@ -588,7 +588,7 @@ class LegacyAuditEvent(Base):
 
 
 class PersonModelSnapshot(Base):
-    """Actor-partitioned, evidence-linked structured preview, rebuilt on change."""
+    """Actor-partitioned, evidence-linked temporal model and entity graph."""
 
     __tablename__ = "person_model_snapshots"
 
@@ -602,4 +602,6 @@ class PersonModelSnapshot(Base):
     source_memory_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     domains: Mapped[dict] = mapped_column(JSON, nullable=False)
     calibration_updates: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    semantic_graph: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    synthesis_model_version: Mapped[str | None] = mapped_column(String(100), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

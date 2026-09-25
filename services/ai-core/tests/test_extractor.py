@@ -149,3 +149,22 @@ def test_fixture_does_not_turn_instructions_or_english_uncertainty_into_memories
     payload = load_fixture("phase1-happy").model_copy(update={"transcript": transcript})
     output = MemoryExtractor(provider=FixtureProvider(), model="fixture", model_version="fixture-v2").process(payload)
     assert output.memory_items == []
+
+
+def test_invalid_first_generation_is_regenerated_once_without_relaxing_provenance():
+    class FlakyProvider:
+        calls = 0
+
+        def generate(self, request):
+            self.calls += 1
+            if self.calls == 1:
+                return InvalidProvider().generate(request)
+            assert "previous response was rejected" in request.system_prompt
+            return FixtureProvider().generate(request)
+
+    provider = FlakyProvider()
+    result = MemoryExtractor(provider=provider, model="real", model_version="real-v1").process(
+        load_fixture("phase1-happy")
+    )
+    assert provider.calls == 2
+    assert result.evidence and result.memory_items

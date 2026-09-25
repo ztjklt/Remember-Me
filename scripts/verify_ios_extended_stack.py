@@ -1,4 +1,4 @@
-"""Exercise provisional Phase 2–4 paths after the real local audio service check.
+"""Exercise real-model Phase 2–4 paths after the local audio service check.
 
 The database and both Actor tokens are disposable and created by the wrapper.
 This does not certify real-device, voice-clone, hardware or formal Legacy gates.
@@ -55,6 +55,10 @@ def run() -> None:
         model = checked(client.get(subject_path + "/person-model", headers=owner))
         if item["memory_item_id"] not in model["source_memory_ids"]:
             raise ValueError("The persisted Memory is absent from the Person Model")
+        if model["processing_state"] != "ready" or model["model_version"].startswith(("person-preview", "fixture-")):
+            raise ValueError("The Person Model did not use the real Persona worker")
+        if not any(model["domains"].values()):
+            raise ValueError("The Persona worker did not synthesize a grounded trait")
         graph = checked(client.get(subject_path + "/memory-graph", headers=owner))
         memory_node = f"memory:{item['memory_item_id']}"
         if not any(
@@ -80,6 +84,8 @@ def run() -> None:
             raise ValueError("Twin response lacks an explicit Original/Simulation label")
         if twin["response_type"] == "ORIGINAL" and not twin["evidence"]:
             raise ValueError("An ORIGINAL Twin answer has no cited evidence")
+        if not twin["model_version"] or twin["model_version"].startswith(("fixture-", "fake-")):
+            raise ValueError("Twin did not use the real Twin Agent")
 
         started = checked(client.post(
             subject_path + "/calibrations", headers=owner,
@@ -106,7 +112,11 @@ def run() -> None:
         comparison = assessed.get("ai_assessment")
         if not comparison or comparison["model_version"].startswith("fixture-"):
             raise ValueError("Calibration did not persist a real, versioned assessment")
-        checked(client.get(subject_path + "/capture-plan", headers=owner))
+        plan = checked(client.get(subject_path + "/capture-plan", headers=owner))
+        if plan["planning_method"] != "capture-planner-llm-v1":
+            raise ValueError("Capture Plan did not use the real model")
+        if not all(question.get("followups") for question in plan["questions"]):
+            raise ValueError("Capture Plan omitted guided follow-up questions")
 
         handover_consent = checked(client.post(
             base + "/api/v1/consents", headers=owner,
@@ -142,8 +152,8 @@ def run() -> None:
             raise ValueError("Legacy preview audit missed a grant or access event")
 
     print(
-        "ios-extended=verified person-model=source-linked graph=provenance "
-        "twin=evidence-labelled calibration=real-model capture-plan=ready "
+        "ios-extended=verified person-model=real-persona graph=provenance "
+        "twin=real-agent calibration=real-model capture-plan=real-planner "
         "legacy-preview=revocable-audited"
     )
 

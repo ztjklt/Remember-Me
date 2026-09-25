@@ -2,7 +2,10 @@
 
 Owner: 康欣 (`centraler`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/02_KANGXIN_AI_CORE.md).
 
-This directory contains the Phase 1 boundary for schema-validated memory extraction. Temporal graph and person model updates, evidence-backed Twin responses, calibration, and capture planning remain future work. The domain layer stays provider-neutral; the real HTTP adapter is OpenAI-compatible but does not select a vendor.
+This directory contains schema-validated Memory extraction and, on the isolated
+`ios` branch, real-provider Persona synthesis, semantic Twin routing, calibration
+comparison and guided Capture planning. The domain layer stays provider-neutral;
+the HTTP adapter is OpenAI-compatible and does not select a vendor.
 
 Phase 1 scope: the Episode/Transcript → Memory Extractor schema, structured output that is validated before persistence, preserved provenance fields, and a minimum AI processing interface callable by Backend with deterministic fixtures.
 
@@ -45,6 +48,16 @@ The service exposes:
   supplied, bounded candidate set. It does not generate an answer. Backend
   validates citations and shows the source excerpts with a simulation caveat.
   The fixture provider refuses this operation.
+- `POST /persona/reconcile` synthesizing evidence-cited seven-domain traits,
+  temporal conflict states, entities and relations from current Memory sources.
+- `POST /twin/answer` retrieving relevant excerpts semantically and returning
+  an exact ORIGINAL quote, a cited SIMULATION, or a refusal.
+- `POST /capture/plan` proposing two to four Chinese questions with contextual
+  follow-ups from current traits, coverage and confirmed calibration gaps.
+
+The three new model endpoints require a real provider. Their closed schemas and
+source-ID checks reject invented citations. A bounded regeneration attempt is
+used for malformed extraction output; it never relaxes provenance validation.
 
 For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,
 `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, and the version settings. Provider
@@ -88,9 +101,11 @@ timeouts return `504`; invalid structured output or provenance returns `502`.
 The response contains stable `error_code` values and safe messages only.
 An oversized HTTP request returns `413` with a safe `detail` message. A provider
 `429` or local extraction saturation maps to `503 / AI_UNAVAILABLE`; upstream
-`408`/`504` map to `504 / AI_TIMEOUT`. Retries belong to Backend; AI Core never
-silently retries a paid request. Refusals, unfinished completions and oversized
-provider responses are rejected with `502 / AI_SCHEMA_INVALID`.
+`408`/`504` map to `504 / AI_TIMEOUT`. Transport retries belong to Backend.
+The extractor may make one bounded regeneration request after malformed schema
+or provenance; persistent invalid output fails closed. Refusals, unfinished
+completions and oversized provider responses are rejected with
+`502 / AI_SCHEMA_INVALID`.
 
 ## Evidence and extraction behavior
 

@@ -241,11 +241,25 @@ def test_real_provider_semantic_twin_stays_cited_and_rejects_foreign_ids(
     client.app.state.settings.ai_backend = "http"
     sent = {}
 
-    def generated(_url, *, json, **_kwargs):
+    def generated(url, *, json, **_kwargs):
+        if url.endswith("/persona/reconcile"):
+            memory_id = json["memories"][0]["memory_item_id"]
+            return httpx.Response(200, json={
+                "traits": [{
+                    "domain": "Preferences", "statement": "喜欢咖啡",
+                    "support_memory_ids": [memory_id], "counter_memory_ids": [],
+                    "context": None, "confidence": 0.8, "status": "current",
+                    "conflict_type": None,
+                }],
+                "entities": [{"name": "咖啡", "kind": "TOPIC", "support_memory_ids": [memory_id]}],
+                "relations": [], "model_version": "real-persona-model",
+                "schema_version": "persona-temporal-v1",
+            })
         sent.update(json)
         return httpx.Response(200, json={
-            "supported": True,
-            "evidence_ids": ["ev_ios_1"], "model_version": "real-twin-model",
+            "route": "SIMULATION", "answer": "根据本人录音，他喜欢咖啡。",
+            "evidence_ids": ["ev_ios_1"], "confidence": 0.76,
+            "model_version": "real-twin-model",
         })
 
     monkeypatch.setattr("app.api.core_twin.httpx.post", generated)
@@ -254,16 +268,16 @@ def test_real_provider_semantic_twin_stays_cited_and_rejects_foreign_ids(
     response = client.post(path, headers=auth, json=query)
     assert response.status_code == 200, response.text
     assert response.json()["response_type"] == "SIMULATION"
-    assert response.json()["confidence"] <= 0.25
+    assert response.json()["confidence"] <= 0.8
     assert response.json()["evidence"][0]["evidence_id"] == "ev_ios_1"
-    assert "我喜欢咖啡。" in response.json()["answer"]
-    assert "平时喝咖啡" not in response.json()["answer"]
+    assert response.json()["answer"] == "根据本人录音，他喜欢咖啡。"
     assert "subject_id" not in sent
 
     def foreign(_url, *, json, **_kwargs):
         return httpx.Response(200, json={
-            "supported": True,
-            "evidence_ids": ["ev_foreign"], "model_version": "real-twin-model",
+            "route": "SIMULATION", "answer": "不可信的回答",
+            "evidence_ids": ["ev_foreign"], "confidence": 0.7,
+            "model_version": "real-twin-model",
         })
 
     monkeypatch.setattr("app.api.core_twin.httpx.post", foreign)

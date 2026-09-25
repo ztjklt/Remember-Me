@@ -30,7 +30,7 @@ grant would leave no way to obtain the authority the rest of this file enforces
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
@@ -181,6 +181,7 @@ def read_consent(
 @router.post("/{consent_id}/revoke", response_model=ConsentResponse)
 def revoke_consent(
     consent_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> ConsentResponse:
@@ -196,7 +197,8 @@ def revoke_consent(
         repository.require_for(consent_id, actor_id=actor.actor_id)
     )
     if consent.scope == str(ConsentScope.CLOUD_TWIN):
-        from ..person_model import rebuild_person_model
-        rebuild_person_model(session, subject_id=consent.subject_id, actor_id=actor.actor_id)
+        from ..person_model import refresh_after_mutation
+        refresh_after_mutation(session, subject_id=consent.subject_id, actor_id=actor.actor_id,
+                               settings=request.app.state.settings)
     session.commit()
     return ConsentResponse.of(consent)

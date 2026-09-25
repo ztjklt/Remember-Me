@@ -140,4 +140,39 @@ final class Phase1BoundaryTests: XCTestCase {
         )
         XCTAssertTrue(String(decoding: body, as: UTF8.self).contains("Content-Type: audio/wav"))
     }
+
+    func testTemporalPersonaAndEntityRelationsDecodeForReadOnlyView() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let model = try decoder.decode(PersonModelPreview.self, from: Data(#"""
+        {
+            "subject_id":"subject-1","revision":3,"model_version":"real-persona-v1",
+            "processing_state":"ready","source_memory_ids":["m-old","m-new"],
+            "domains":{"Preferences":[{
+                "trait_id":"trait-1","memory_item_id":"m-old","episode_id":"ep-1",
+                "content":"以前喜欢咖啡","source_type":"SUBJECT",
+                "evidence_ids":["ev-old"],"counter_evidence_ids":["ev-new"],
+                "confidence":0.8,"model_version":"real-persona-v1","context":"以前",
+                "valid_from":"2026-09-23T08:00:00+00:00","valid_to":"2026-09-25T08:00:00+00:00",
+                "status":"superseded","conflict_type":"changed"
+            }]}
+        }
+        """#.utf8))
+        let fact = try XCTUnwrap(model.domains["Preferences"]?.first)
+        XCTAssertEqual(model.processingState, "ready")
+        XCTAssertEqual(fact.status, "superseded")
+        XCTAssertEqual(fact.counterEvidenceIds, ["ev-new"])
+        XCTAssertEqual(fact.validTo, "2026-09-25T08:00:00+00:00")
+
+        let graph = try decoder.decode(MemoryGraph.self, from: Data(#"""
+        {
+            "subject_id":"subject-1",
+            "nodes":[{"node_id":"entity:a","kind":"PERSON","label":"阿明"},
+                     {"node_id":"entity:b","kind":"PLACE","label":"北京"}],
+            "edges":[{"source_id":"entity:a","target_id":"entity:b","relation":"居住于"}]
+        }
+        """#.utf8))
+        XCTAssertEqual(graph.nodes.count, 2)
+        XCTAssertEqual(graph.edges.first?.relation, "居住于")
+    }
 }

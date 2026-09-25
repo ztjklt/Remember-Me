@@ -503,6 +503,8 @@ final class EpisodeFlow: ObservableObject {
         guard result.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
         subjectMemories = result.items
         domainCounts = result.domainCounts
+        personModel = nil
+        memoryGraph = nil
         if let preview = try? await api.personModel(settings: settings),
            preview.subjectId == settings.subjectID {
             personModel = preview

@@ -53,7 +53,7 @@ PHASE1_AUDIO_PATH=/absolute/path/to/consented-recording.m4a \
 ```
 
 Set `IOS_VERIFY_EXTENDED=1` on the same command to continue after Phase 1 with
-the provisional Person Model, provenance graph, evidence-labelled Twin,
+the real-provider Persona synthesis and temporal graph, Twin Agent,
 real-model calibration comparison, Capture Planner, and recipient grant/revoke
 checks. The wrapper creates disposable Actor tokens and a temporary database.
 The extended result remains a service check, not a real-device, clone-voice,
@@ -71,27 +71,19 @@ Episode ID can be recovered. The upload uses `source=IMPORT` because Contract
 v0.1.2 has no iOS microphone enum; the app first saves a local file and then
 imports it. A versioned Contract proposal is needed before adding `IOS_MIC`.
 
-The iOS branch also has a provisional Phase 2 read path. Its Memories tab reads
-all Actor-owned, ready Episodes and shows evidence and conservative domain clue
-counts (unclassified items stay unclassified). The Backend's model stage now
-materializes an Actor-partitioned, versioned Person Model preview from these
-provenance-linked items. Corrections and deletions rebuild the preview and bump
-its revision; the app shows the version, domain coverage and latest source fact.
-An Actor-isolated graph read path also links each undisputed Memory to its
-Episode and Evidence, with chronological edges inside each domain. Corrections
-and deletions disappear from this derived graph on the next read. It is a
-provenance timeline, not a learned entity or causal graph. The model does not
-synthesize unsupported traits. The
-Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerpt
-only for a conservative direct Subject match. Related AI-inferred excerpts are
-shown as SIMULATION with explicit speaker uncertainty and confidence capped at
-0.5; unrelated questions return insufficient evidence with zero confidence.
-The direct path is a deterministic evidence router. With a real AI Core
-provider, an unmatched question can retrieve related evidence semantically;
-Backend returns a low-confidence, evidence-bounded SIMULATION answer and
-rejects citations outside the permitted evidence set. This is still a
-provisional Twin and has not passed semantic answer evaluation. The shared
-Contract is unchanged.
+The Memories tab reads Actor-owned ready Episodes with evidence. With a real
+AI Core provider, the worker calls Persona to synthesize versioned seven-domain
+traits, temporal validity, conflict state, entities and relationships. Each
+trait and graph link must cite a current Memory. The graph also preserves
+Episode and Evidence provenance. Corrections, deletions and consent changes
+invalidate derived traits in the same transaction; a subsequent read or Twin
+query rebuilds them. During provider failure, the model reports `rebuilding`
+and Twin cannot use stale traits. The Twin Agent searches current evidence
+semantically, returns one exact Subject excerpt as ORIGINAL when it answers the
+question, otherwise returns a cited SIMULATION or refuses. The Backend verifies
+citations and keeps the shared Contract unchanged. Fixture mode remains an
+explicit deterministic test path. Semantic quality still needs human evaluation
+on real recordings.
 
 The Memories tab can now submit an Actor correction proposal for a Memory.
 Corrected items remain visible with the original evidence, but Twin immediately
@@ -125,14 +117,12 @@ playback. This is on-device playback, not a Voice profile built from Remember Me
 Episodes. The current account model cannot verify that the device's Personal
 Voice belongs to the selected Subject, so the UI labels that limitation.
 
-Capture offers a guided preview of up to four questions. Backend ranks seven
-fixed-domain prompts by a documented heuristic score based on estimated
-information gain, importance, uncertainty, recent calibration gaps and
-interaction cost. A saved AI comparison can also raise a domain's priority
-when its verdict is explicitly `DIFFERENT`; `UNCERTAIN` adds no urgency. The
-questions update after new Episodes or confirmed calibration
-feedback. This is not an automatic interviewing agent or an empirical measure
-of information gain.
+Capture offers two to four model-planned Chinese questions with one or two
+follow-ups each. The real Capture Planner uses seven-domain coverage, current
+traits, contradictions and confirmed calibration answers. Its priority factors
+are estimates, not measured information gain. Fixture mode keeps a documented
+heuristic for offline tests. Questions update after new Episodes or confirmed
+calibration feedback.
 
 The Handover tab provides a manual Legacy **preview**: the capturing Actor must
 grant separate `DIGITAL_HANDOVER` consent, name an existing Recipient Actor, and

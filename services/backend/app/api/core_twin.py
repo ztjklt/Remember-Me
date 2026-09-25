@@ -22,7 +22,7 @@ from ..errors import (
     MemoryNotFound, RequestInvalid, SubjectNotFound,
 )
 from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, PersonModelSnapshot, as_utc, utcnow
-from ..person_model import rebuild_person_model
+from ..person_model import rebuild_person_model, refresh_after_mutation
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor, require_subject_owner
 
@@ -59,6 +59,7 @@ class SubjectMemories(BaseModel):
 
 
 class PersonFact(BaseModel):
+    trait_id: str | None = None
     memory_item_id: str
     episode_id: str
     content: str
@@ -74,6 +75,8 @@ class PersonFact(BaseModel):
     valid_to: datetime | None = None
     status: str = "current"
     conflict_type: str | None = None
+    support_memory_ids: list[str] = []
+    counter_memory_ids: list[str] = []
 
 
 class PersonModelView(BaseModel):
@@ -84,6 +87,7 @@ class PersonModelView(BaseModel):
     domains: dict[str, list[PersonFact]]
     calibration_updates: list[dict] = []
     updated_at: datetime | None
+    processing_state: str = "ready"
 
 
 class GraphNode(BaseModel):
@@ -93,12 +97,14 @@ class GraphNode(BaseModel):
     recorded_at: datetime | None = None
     domain: str | None = None
     source_type: str | None = None
+    support_memory_ids: list[str] = []
 
 
 class GraphEdge(BaseModel):
     source_id: str
     target_id: str
     relation: str
+    support_memory_ids: list[str] = []
 
 
 class MemoryGraphView(BaseModel):
@@ -130,6 +136,16 @@ class TwinSimulation(BaseModel):
     supported: bool
     evidence_ids: list[str] = Field(max_length=3)
     answer: str | None = Field(default=None, max_length=1000)
+    model_version: str = Field(min_length=1)
+
+
+class TwinAgentResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    route: str
+    answer: str | None
+    evidence_ids: list[str]
+    confidence: float = Field(ge=0, le=1)
     model_version: str = Field(min_length=1)
 
 
@@ -236,27 +252,47 @@ def list_memories(
 @router.get("/{subject_id}/person-model", response_model=PersonModelView)
 def get_person_model(
     subject_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> PersonModelView:
     if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
         raise SubjectNotFound("No accessible Subject")
     snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    if (request.app.state.settings.ai_backend == "http"
+            and (snapshot is None or snapshot.synthesis_model_version is None)):
+        try:
+            snapshot = rebuild_person_model(
+                session, subject_id=subject_id, actor_id=actor.actor_id,
+                settings=request.app.state.settings,
+            )
+            session.commit()
+        except (AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable):
+            # The source mutation already committed. Keep the invalidated
+            # snapshot visible and retry synthesis on a later read.
+            session.rollback()
+            snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
     if snapshot is None:
         return PersonModelView(
-            subject_id=subject_id, revision=0, model_version="person-preview-r0",
+            subject_id=subject_id, revision=0,
+            model_version="person-empty-r0" if request.app.state.settings.ai_backend == "http" else "person-preview-r0",
             source_memory_ids=[],
             domains={domain: [] for domain in (*DOMAINS, "Unclassified")},
             calibration_updates=[],
             updated_at=None,
+            processing_state="empty",
         )
+    stale = request.app.state.settings.ai_backend == "http" and snapshot.synthesis_model_version is None
     return PersonModelView(
         subject_id=subject_id, revision=snapshot.revision,
-        model_version=f"person-preview-r{snapshot.revision}",
+        model_version=snapshot.synthesis_model_version or (
+            f"person-rebuilding-r{snapshot.revision}" if stale else f"person-preview-r{snapshot.revision}"
+        ),
         source_memory_ids=snapshot.source_memory_ids,
         domains=snapshot.domains,
         calibration_updates=snapshot.calibration_updates,
         updated_at=as_utc(snapshot.updated_at),
+        processing_state="rebuilding" if stale else "ready",
     )
 
 
@@ -319,6 +355,7 @@ def get_memory_graph(
                 ))
     snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
     if snapshot is not None:
+        node_ids = {node.node_id for node in nodes}
         for facts in snapshot.domains.values():
             for fact in facts:
                 for counter_id in fact.get("counter_evidence_ids", []):
@@ -326,8 +363,18 @@ def get_memory_graph(
                         source_id=f"memory:{fact['memory_item_id']}",
                         target_id=f"evidence:{counter_id}", relation="CONTRADICTED_BY",
                     )
-                    if edge.source_id in {node.node_id for node in nodes}:
+                    if edge.source_id in node_ids and edge.target_id in node_ids:
                         edges.append(edge)
+        graph = snapshot.semantic_graph or {}
+        active_memory_ids = {item.memory_item_id for item in items}
+        for raw in graph.get("nodes", []):
+            if set(raw.get("support_memory_ids", [])) <= active_memory_ids:
+                nodes.append(GraphNode.model_validate(raw))
+        node_ids = {node.node_id for node in nodes}
+        for raw in graph.get("edges", []):
+            if (raw.get("source_id") in node_ids and raw.get("target_id") in node_ids
+                    and set(raw.get("support_memory_ids", [])) <= active_memory_ids):
+                edges.append(GraphEdge.model_validate(raw))
     return MemoryGraphView(subject_id=subject_id, nodes=nodes, edges=edges)
 
 
@@ -353,6 +400,7 @@ def correct_memory(
     subject_id: str,
     memory_item_id: str,
     payload: CorrectionRequest,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> CorrectionView:
@@ -377,7 +425,8 @@ def correct_memory(
         feedback.proposed_content = proposed
         feedback.updated_at = utcnow()
     session.flush()
-    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+    refresh_after_mutation(session, subject_id=subject_id, actor_id=actor.actor_id,
+                           settings=request.app.state.settings)
     session.commit()
     return CorrectionView(
         memory_item_id=memory_item_id, proposed_content=proposed, status="CORRECT"
@@ -388,6 +437,7 @@ def correct_memory(
 def remove_correction(
     subject_id: str,
     memory_item_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> Response:
@@ -396,7 +446,8 @@ def remove_correction(
         actor_id=actor.actor_id,
     )
     session.execute(delete(MemoryFeedback).where(MemoryFeedback.memory_item_id == memory_item_id))
-    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+    refresh_after_mutation(session, subject_id=subject_id, actor_id=actor.actor_id,
+                           settings=request.app.state.settings)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -405,6 +456,7 @@ def remove_correction(
 def delete_memory(
     subject_id: str,
     memory_item_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> Response:
@@ -422,7 +474,8 @@ def delete_memory(
     ).all()
     for ordinal, item in enumerate(remaining):
         item.ordinal = ordinal
-    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+    refresh_after_mutation(session, subject_id=subject_id, actor_id=actor.actor_id,
+                           settings=request.app.state.settings)
     session.commit()
     # The original Episode and source Evidence remain as the provenance record.
     # All derived Memory/Twin surfaces read current MemoryItem rows, so deletion
@@ -449,6 +502,122 @@ GENERIC_QUERY_TOKENS = {
 }
 
 
+def _real_twin(
+    session: Session, *, subject_id: str, actor_id: str,
+    question: str, settings,
+) -> TwinAnswer:
+    snapshot = session.get(PersonModelSnapshot, (subject_id, actor_id))
+    if snapshot is None or snapshot.synthesis_model_version is None:
+        snapshot = rebuild_person_model(
+            session, subject_id=subject_id, actor_id=actor_id, settings=settings,
+        )
+        session.commit()
+    blocked = {
+        memory_id for facts in snapshot.domains.values() for fact in facts
+        if fact.get("status") in {"superseded", "disputed"}
+        for memory_id in fact.get("support_memory_ids", [fact["memory_item_id"]])
+    }
+    items = [item for item in _memories(session, subject_id=subject_id, actor_id=actor_id)
+             if item.correction is None and item.memory_item_id not in blocked]
+    candidates = []
+    evidence_by_id: dict[str, EvidenceView] = {}
+    for item in items:
+        for evidence in item.evidence:
+            if not evidence.excerpt or evidence.evidence_id in evidence_by_id:
+                continue
+            evidence_by_id[evidence.evidence_id] = evidence
+            candidates.append({
+                "evidence_id": evidence.evidence_id,
+                "memory_item_id": item.memory_item_id,
+                "excerpt": evidence.excerpt[:1000],
+                "memory_content": item.content[:1000],
+                "source_type": evidence.source_type,
+                "recorded_at": item.recorded_at.isoformat(),
+                "confidence": min(item.confidence, evidence.confidence or 1.0),
+            })
+    for feedback in snapshot.calibration_updates:
+        if not feedback.get("human_answer"):
+            continue
+        evidence_id = f"calibration:{feedback['calibration_id']}"
+        view = EvidenceView(
+            evidence_id=evidence_id, source_type="CALIBRATION",
+            source_ref=evidence_id, excerpt=feedback["human_answer"], confidence=0.7,
+        )
+        evidence_by_id[evidence_id] = view
+        candidates.append({
+            "evidence_id": evidence_id, "memory_item_id": evidence_id,
+            "excerpt": feedback["human_answer"][:1000],
+            "memory_content": feedback["question"][:1000],
+            "source_type": "CALIBRATION", "recorded_at": feedback["confirmed_at"],
+            "confidence": 0.7,
+        })
+    if len(candidates) > 100:
+        raise AiUnavailable("Twin evidence corpus exceeds the semantic retrieval window")
+    traits = [{
+        "trait_id": fact.get("trait_id") or fact["memory_item_id"],
+        "domain": domain, "statement": fact["content"],
+        "evidence_ids": fact["evidence_ids"], "context": fact.get("context"),
+        "confidence": fact["confidence"],
+    } for domain, facts in snapshot.domains.items() for fact in facts
+        if fact.get("status", "current") == "current"]
+    if len(traits) > 100:
+        raise AiUnavailable("Twin trait corpus exceeds the semantic retrieval window")
+    if not candidates:
+        return TwinAnswer(
+            subject_id=subject_id, question=question,
+            answer="目前没有足够证据，无法可靠回答。", response_type="SIMULATION",
+            confidence=0, evidence=[], model_version=snapshot.synthesis_model_version,
+        )
+    try:
+        response = httpx.post(
+            settings.ai_core_url.rstrip("/") + "/twin/answer",
+            json={"question": question, "evidence": candidates, "traits": traits},
+            timeout=httpx.Timeout(settings.ai_timeout_seconds), follow_redirects=False,
+        )
+    except httpx.TimeoutException as exc:
+        raise AiTimeout("Twin Agent timed out") from exc
+    except httpx.TransportError as exc:
+        raise AiUnavailable("Twin Agent unavailable") from exc
+    if response.status_code in {408, 504}:
+        raise AiTimeout("Twin Agent timed out")
+    if response.status_code in {429, 503}:
+        raise AiUnavailable("Twin Agent unavailable")
+    if not response.is_success:
+        raise AiFailed("Twin Agent failed")
+    try:
+        generated = TwinAgentResult.model_validate(response.json())
+    except (ValueError, TypeError) as exc:
+        raise AiSchemaInvalid("Twin Agent violated its response schema") from exc
+    if generated.model_version.startswith(("fixture-", "fake-")):
+        raise AiSchemaInvalid("Twin Agent returned a fixture model")
+    if len(generated.evidence_ids) != len(set(generated.evidence_ids)) or not set(generated.evidence_ids) <= evidence_by_id.keys():
+        raise AiSchemaInvalid("Twin Agent cited inaccessible evidence")
+    cited = [evidence_by_id[eid] for eid in generated.evidence_ids]
+    if generated.route == "ORIGINAL":
+        if len(cited) != 1 or cited[0].source_type != "SUBJECT":
+            raise AiSchemaInvalid("ORIGINAL requires one direct Subject excerpt")
+        return TwinAnswer(
+            subject_id=subject_id, question=question, answer=cited[0].excerpt or "",
+            response_type="ORIGINAL", confidence=min(generated.confidence, cited[0].confidence or 1.0),
+            evidence=cited, model_version=generated.model_version,
+        )
+    if generated.route == "SIMULATION":
+        if not cited or not generated.answer or not generated.answer.strip():
+            raise AiSchemaInvalid("SIMULATION requires text and citations")
+        return TwinAnswer(
+            subject_id=subject_id, question=question, answer=generated.answer.strip(),
+            response_type="SIMULATION", confidence=min(generated.confidence, 0.8),
+            evidence=cited, model_version=generated.model_version,
+        )
+    if generated.route != "REFUSE" or cited:
+        raise AiSchemaInvalid("Twin Agent returned an invalid refusal")
+    return TwinAnswer(
+        subject_id=subject_id, question=question,
+        answer="目前没有足够证据，无法可靠回答。", response_type="SIMULATION",
+        confidence=0, evidence=[], model_version=generated.model_version,
+    )
+
+
 @router.post("/{subject_id}/twin/query", response_model=TwinAnswer)
 def query_twin(
     subject_id: str,
@@ -465,6 +634,12 @@ def query_twin(
     )
     if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
         raise SubjectNotFound("No accessible Subject")
+    settings = request.app.state.settings
+    if settings.ai_backend == "http":
+        return _real_twin(
+            session, subject_id=subject_id, actor_id=actor.actor_id,
+            question=payload.question, settings=settings,
+        )
     words = _tokens(payload.question)
     snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
     statuses = {
