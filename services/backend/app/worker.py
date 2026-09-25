@@ -41,6 +41,7 @@ from .errors import (
     SttUnavailable,
 )
 from .models import Episode, JobStage, JobState
+from .person_model import rebuild_person_model
 from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
@@ -267,7 +268,7 @@ class ProcessingWorker:
                 elif stage is JobStage.EXTRACT:
                     self._extract(session, episode)
                 else:
-                    self._model(episode)
+                    self._model(session, episode)
 
                 if not jobs.complete_stage(job, self.owner, episode):
                     # The lease lapsed while the stage ran and another worker has
@@ -360,19 +361,21 @@ class ProcessingWorker:
         output = self.ai.process(payload)
         MemoryRepository(session).store_result(episode, output)
 
-    def _model(self, episode: Episode) -> None:
+    def _model(self, session, episode: Episode) -> None:  # type: ignore[no-untyped-def]
         """The last stage: an Episode becomes ready only past this point.
 
-        Thin in Phase 1 on purpose. The graph and persona updates this stage will
-        own are Phase 2 shapes and are not committed yet, so what it does now is
-        hold the boundary: `ready` is reachable only from a stage that requires a
-        stored result, which is why an Episode cannot be reported ready while its
-        memories are still missing.
+        `ready` is reachable only after a stored extraction result. On this
+        isolated branch the stage also materializes a conservative seven-domain
+        preview from the Actor's evidence-linked Memory rows. This is not a
+        generative personality synthesis or the future temporal graph.
         """
         if episode.model_version is None:
             raise UnexpectedFailure(
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
+        rebuild_person_model(
+            session, subject_id=episode.subject_id, actor_id=episode.actor_id
+        )
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
         """Retry the stage or give up, in its own transaction.

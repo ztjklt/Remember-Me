@@ -125,6 +125,26 @@ struct RecipientMemoryList: Decodable {
     let items: [SubjectMemory]
 }
 
+struct PersonModelFact: Decodable, Identifiable {
+    let memoryItemId: String
+    let episodeId: String
+    let content: String
+    let sourceType: String
+    let evidenceIds: [String]
+    let confidence: Double
+    let modelVersion: String
+
+    var id: String { memoryItemId }
+}
+
+struct PersonModelPreview: Decodable {
+    let subjectId: String
+    let revision: Int
+    let modelVersion: String
+    let sourceMemoryIds: [String]
+    let domains: [String: [PersonModelFact]]
+}
+
 enum EpisodeAPIError: LocalizedError {
     case invalidServerURL
     case missingCredentials
@@ -236,6 +256,15 @@ struct EpisodeAPI {
         let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
         let request = try authorizedRequest(path: "api/v1/subjects/\(id)/memories", method: "GET", settings: settings)
         return try await decode(SubjectMemories.self, request: request)
+    }
+
+    func personModel(settings: ServerSettings) async throws -> PersonModelPreview {
+        guard !settings.subjectID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let request = try authorizedRequest(
+            path: "api/v1/subjects/\(id)/person-model", method: "GET", settings: settings
+        )
+        return try await decode(PersonModelPreview.self, request: request)
     }
 
     func twin(question: String, settings: ServerSettings) async throws -> TwinAnswer {

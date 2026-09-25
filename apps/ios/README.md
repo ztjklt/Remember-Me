@@ -59,7 +59,11 @@ imports it. A versioned Contract proposal is needed before adding `IOS_MIC`.
 
 The iOS branch also has a provisional Phase 2 read path. Its Memories tab reads
 all Actor-owned, ready Episodes and shows evidence and conservative domain clue
-counts (unclassified items stay unclassified). The
+counts (unclassified items stay unclassified). The Backend's model stage now
+materializes an Actor-partitioned, versioned Person Model preview from these
+provenance-linked items. Corrections and deletions rebuild the preview and bump
+its revision; the app shows the version, domain coverage and latest source fact.
+It does not synthesize unsupported traits or a semantic temporal graph. The
 Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerpt
 only for a conservative direct Subject match. Related AI-inferred excerpts are
 shown as SIMULATION with explicit speaker uncertainty and confidence capped at
@@ -101,7 +105,7 @@ legal authority check in this branch.
 
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
-record are needed for Phase 1. Phase 2 still needs a temporal graph, verified
-correction promotion, and a semantically evaluated Twin. Phase 3 still needs
+record are needed for Phase 1. Phase 2 still needs a semantic temporal graph,
+verified correction promotion, and a semantically evaluated Twin. Phase 3 still needs
 automatic comparison, Capture Planner and real Voice. Phase 4 still needs
 formal activation and verified hardware integration.

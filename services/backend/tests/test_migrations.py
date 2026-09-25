@@ -16,6 +16,7 @@ EXPECTED_TABLES = {
     "memory_feedback",
     "calibration_sessions",
     "legacy_grants",
+    "person_model_snapshots",
 }
 
 

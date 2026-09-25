@@ -15,24 +15,14 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..db import get_session
+from ..domains import DOMAINS, MEMORY_DOMAIN
 from ..errors import MemoryNotFound, RequestInvalid, SubjectNotFound
-from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, as_utc, utcnow
+from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, PersonModelSnapshot, as_utc, utcnow
+from ..person_model import rebuild_person_model
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
 
 router = APIRouter(prefix="/api/v1/subjects", tags=["core-twin"])
-
-DOMAINS = (
-    "Identity", "Episodic Memory", "Relationships", "Preferences",
-    "Values & Beliefs", "Decision Patterns", "Expression",
-)
-MEMORY_DOMAIN = {
-    "EVENT": "Episodic Memory",
-    "RELATIONSHIP": "Relationships",
-    "PREFERENCE": "Preferences",
-    "VALUE": "Values & Beliefs",
-}
-
 
 class EvidenceView(BaseModel):
     evidence_id: str
@@ -62,6 +52,27 @@ class SubjectMemories(BaseModel):
     subject_id: str
     items: list[MemoryView]
     domain_counts: dict[str, int]
+
+
+class PersonFact(BaseModel):
+    memory_item_id: str
+    episode_id: str
+    content: str
+    source_type: str
+    evidence_ids: list[str]
+    confidence: float
+    recorded_at: datetime
+    effective_at: datetime | None
+    model_version: str
+
+
+class PersonModelView(BaseModel):
+    subject_id: str
+    revision: int
+    model_version: str
+    source_memory_ids: list[str]
+    domains: dict[str, list[PersonFact]]
+    updated_at: datetime | None
 
 
 class TwinQuestion(BaseModel):
@@ -177,6 +188,31 @@ def list_memories(
     return SubjectMemories(subject_id=subject_id, items=items, domain_counts=counts)
 
 
+@router.get("/{subject_id}/person-model", response_model=PersonModelView)
+def get_person_model(
+    subject_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> PersonModelView:
+    if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
+        raise SubjectNotFound("No accessible Subject")
+    snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    if snapshot is None:
+        return PersonModelView(
+            subject_id=subject_id, revision=0, model_version="person-preview-r0",
+            source_memory_ids=[],
+            domains={domain: [] for domain in (*DOMAINS, "Unclassified")},
+            updated_at=None,
+        )
+    return PersonModelView(
+        subject_id=subject_id, revision=snapshot.revision,
+        model_version=f"person-preview-r{snapshot.revision}",
+        source_memory_ids=snapshot.source_memory_ids,
+        domains=snapshot.domains,
+        updated_at=as_utc(snapshot.updated_at),
+    )
+
+
 def _owned_memory(
     session: Session, *, subject_id: str, memory_item_id: str, actor_id: str
 ) -> MemoryItem:
@@ -222,6 +258,8 @@ def correct_memory(
     else:
         feedback.proposed_content = proposed
         feedback.updated_at = utcnow()
+    session.flush()
+    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
     session.commit()
     return CorrectionView(
         memory_item_id=memory_item_id, proposed_content=proposed, status="CORRECT"
@@ -240,6 +278,7 @@ def remove_correction(
         actor_id=actor.actor_id,
     )
     session.execute(delete(MemoryFeedback).where(MemoryFeedback.memory_item_id == memory_item_id))
+    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
     session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -265,6 +304,7 @@ def delete_memory(
     ).all()
     for ordinal, item in enumerate(remaining):
         item.ordinal = ordinal
+    rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
     session.commit()
     # The original Episode and source Evidence remain as the provenance record.
     # All derived Memory/Twin surfaces read current MemoryItem rows, so deletion

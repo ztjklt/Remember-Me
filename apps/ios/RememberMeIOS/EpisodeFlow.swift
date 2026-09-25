@@ -8,6 +8,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var memories: [MemoryItem] = []
     @Published private(set) var subjectMemories: [SubjectMemory] = []
     @Published private(set) var domainCounts: [String: Int] = [:]
+    @Published private(set) var personModel: PersonModelPreview?
     @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var calibration: CalibrationRecord?
     @Published private(set) var legacyGrant: LegacyGrantRecord?
@@ -185,6 +186,10 @@ final class EpisodeFlow: ObservableObject {
             guard result.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
             subjectMemories = result.items
             domainCounts = result.domainCounts
+            if let preview = try? await api.personModel(settings: settings),
+               preview.subjectId == settings.subjectID {
+                personModel = preview
+            }
             message = "已读取 \(result.items.count) 条有来源的 Memory。"
         } catch {
             message = error.localizedDescription
@@ -238,6 +243,10 @@ final class EpisodeFlow: ObservableObject {
         guard result.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
         subjectMemories = result.items
         domainCounts = result.domainCounts
+        if let preview = try? await api.personModel(settings: settings),
+           preview.subjectId == settings.subjectID {
+            personModel = preview
+        }
         if let lastEpisodeID {
             if let episode = try? await api.result(episodeID: lastEpisodeID, settings: settings) {
                 memories = episode.memoryItems
@@ -365,6 +374,10 @@ final class EpisodeFlow: ObservableObject {
                    acrossEpisodes.subjectId == settings.subjectID {
                     subjectMemories = acrossEpisodes.items
                     domainCounts = acrossEpisodes.domainCounts
+                    if let preview = try? await api.personModel(settings: settings),
+                       preview.subjectId == settings.subjectID {
+                        personModel = preview
+                    }
                 }
                 return
             }

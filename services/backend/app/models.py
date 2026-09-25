@@ -512,3 +512,20 @@ class LegacyGrant(Base):
     )
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PersonModelSnapshot(Base):
+    """Actor-partitioned, evidence-linked structured preview, rebuilt on change."""
+
+    __tablename__ = "person_model_snapshots"
+
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), primary_key=True
+    )
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), primary_key=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_memory_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    domains: Mapped[dict] = mapped_column(JSON, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

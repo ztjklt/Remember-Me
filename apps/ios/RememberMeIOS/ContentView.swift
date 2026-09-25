@@ -304,6 +304,26 @@ private struct MemoriesView: View {
                         )
                     }
                 }
+                if let model = flow.personModel {
+                    Section("Person Model · 有来源预览") {
+                        LabeledContent("版本", value: model.modelVersion)
+                        LabeledContent("来源 Memory", value: "\(model.sourceMemoryIds.count)")
+                        ForEach(model.domains.keys.sorted(), id: \.self) { domain in
+                            if let facts = model.domains[domain], !facts.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("\(domain) · \(facts.count) 条")
+                                        .font(.subheadline).bold()
+                                    if let latest = facts.last {
+                                        Text(latest.content)
+                                            .font(.caption).foregroundStyle(.secondary)
+                                        Text("证据 \(latest.evidenceIds.count) 项 · \(latest.sourceType)")
+                                            .font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 if !flow.domainCounts.isEmpty {
                     Section("领域线索数（预览）") {
                         ForEach(flow.domainCounts.keys.sorted(), id: \.self) { domain in
