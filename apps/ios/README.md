@@ -45,6 +45,13 @@ PHASE1_AUDIO_PATH=/absolute/path/to/consented-recording.m4a \
   uv run --locked python ../../scripts/verify_ios_local_stack.py
 ```
 
+Set `IOS_VERIFY_EXTENDED=1` on the same command to continue after Phase 1 with
+the provisional Person Model, provenance graph, evidence-labelled Twin,
+real-model calibration comparison, Capture Planner, and recipient grant/revoke
+checks. The wrapper creates disposable Actor tokens and a temporary database.
+The extended result remains a service check, not a real-device, clone-voice,
+hardware, or formal Legacy acceptance result.
+
 The script applies Backend migrations to a temporary SQLite database, seeds a
 private Actor token, starts the API and worker, uploads with `source=IMPORT`,
 and verifies that real STT and non-fixture AI produced persisted Memory and

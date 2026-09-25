@@ -23,6 +23,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "services" / "backend"
 VERIFY = ROOT / "scripts" / "verify_phase1_live.py"
+VERIFY_EXTENDED = ROOT / "scripts" / "verify_ios_extended_stack.py"
 
 
 def free_port() -> int:
@@ -50,6 +51,7 @@ def run() -> None:
     if not audio.is_file():
         raise ValueError("PHASE1_AUDIO_PATH must be a local audio file")
     port = free_port()
+    extended = os.environ.get("IOS_VERIFY_EXTENDED") == "1"
     with tempfile.TemporaryDirectory(prefix="remember-me-ios-stack-") as temp:
         root = Path(temp)
         database_url = f"sqlite:///{root / 'remember.db'}"
@@ -75,14 +77,25 @@ def run() -> None:
         os.environ.update({key: value for key, value in env.items() if key.startswith("REMEMBER_")})
         sys.path.insert(0, str(BACKEND))
         from app.db import Database
+        from app.models import Actor
         from app.seed import seed_development_data
+        from app.tokens import generate_actor_token, hash_actor_token
 
         db = Database(database_url)
+        recipient_token = None
+        recipient_id = "actor_ios_recipient_verify"
         with db.session() as session:
             seed = seed_development_data(
                 session, subject_name="Local iOS Verification",
                 actor_name="Local iOS Verification",
             )
+            if extended:
+                recipient_token = generate_actor_token()
+                session.add(Actor(
+                    actor_id=recipient_id, display_name="Local Recipient Verification",
+                    token_hash=hash_actor_token(recipient_token),
+                ))
+                session.commit()
         db.dispose()
 
         verify_env = env.copy()
@@ -99,6 +112,9 @@ def run() -> None:
             "PHASE1_CAPTURE_SOURCE": "IMPORT",
             "PHASE1_TIMEOUT_SECONDS": "300",
         })
+        if extended:
+            verify_env["IOS_RECIPIENT_TOKEN"] = recipient_token
+            verify_env["IOS_RECIPIENT_ACTOR_ID"] = recipient_id
         with (root / "backend.log").open("w") as backend_log, (
             root / "worker.log"
         ).open("w") as worker_log:
@@ -118,6 +134,11 @@ def run() -> None:
                     ["uv", "run", "--locked", "python", str(VERIFY)],
                     cwd=BACKEND, env=verify_env, check=True,
                 )
+                if extended:
+                    subprocess.run(
+                        ["uv", "run", "--locked", "python", str(VERIFY_EXTENDED)],
+                        cwd=BACKEND, env=verify_env, check=True,
+                    )
             finally:
                 for process in (worker, api):
                     if process is not None:

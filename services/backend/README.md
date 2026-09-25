@@ -20,6 +20,12 @@
 > Episodes and Evidence and orders records within a domain by capture time.
 > It does not infer causality or relationships from similar wording.
 
+> The isolated iOS stack wrapper can run a temporary real-provider cross-phase
+> check with `IOS_VERIFY_EXTENDED=1 PHASE1_AUDIO_PATH=/path/to/audio.m4a uv run
+> --locked python ../../scripts/verify_ios_local_stack.py` from this directory.
+> It checks provenance, Twin labelling, calibration persistence and revocable
+> recipient preview after the Phase 1 upload/STT/AI path succeeds.
+
 Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.
