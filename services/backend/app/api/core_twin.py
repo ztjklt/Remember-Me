@@ -9,14 +9,14 @@ invents a statement and calls it the original person.
 import re
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..db import get_session
-from ..errors import SubjectNotFound
-from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryItem, as_utc
+from ..errors import MemoryNotFound, RequestInvalid, SubjectNotFound
+from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, as_utc, utcnow
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
 
@@ -55,6 +55,7 @@ class MemoryView(BaseModel):
     model_version: str
     prompt_version: str
     schema_version: str
+    correction: str | None = None
 
 
 class SubjectMemories(BaseModel):
@@ -78,6 +79,18 @@ class TwinAnswer(BaseModel):
     confidence: float
     evidence: list[EvidenceView]
     model_version: str | None
+
+
+class CorrectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    proposed_content: str = Field(min_length=1, max_length=5000)
+
+
+class CorrectionView(BaseModel):
+    memory_item_id: str
+    proposed_content: str
+    status: str
 
 
 def _can_read_subject(session: Session, *, subject_id: str, actor_id: str) -> bool:
@@ -111,6 +124,7 @@ def _memories(session: Session, *, subject_id: str, actor_id: str) -> list[Memor
     ).all()
     items: list[MemoryView] = []
     for memory, episode in pairs:
+        feedback = session.get(MemoryFeedback, memory.memory_item_id)
         sources = session.scalars(
             select(Evidence).where(
                 Evidence.episode_id == episode.episode_id,
@@ -141,6 +155,7 @@ def _memories(session: Session, *, subject_id: str, actor_id: str) -> list[Memor
                 model_version=memory.model_version,
                 prompt_version=memory.prompt_version,
                 schema_version=memory.schema_version,
+                correction=feedback.proposed_content if feedback else None,
             )
         )
     return items
@@ -160,6 +175,101 @@ def list_memories(
     for item in items:
         counts[item.domain] += 1
     return SubjectMemories(subject_id=subject_id, items=items, domain_counts=counts)
+
+
+def _owned_memory(
+    session: Session, *, subject_id: str, memory_item_id: str, actor_id: str
+) -> MemoryItem:
+    memory = session.scalar(
+        select(MemoryItem).join(Episode, MemoryItem.episode_id == Episode.episode_id)
+        .where(
+            MemoryItem.memory_item_id == memory_item_id,
+            Episode.subject_id == subject_id,
+            Episode.actor_id == actor_id,
+            Episode.status == "ready",
+        )
+    )
+    if memory is None:
+        raise MemoryNotFound("No accessible Memory")
+    return memory
+
+
+@router.put("/{subject_id}/memories/{memory_item_id}/correction", response_model=CorrectionView)
+def correct_memory(
+    subject_id: str,
+    memory_item_id: str,
+    payload: CorrectionRequest,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> CorrectionView:
+    _owned_memory(
+        session, subject_id=subject_id, memory_item_id=memory_item_id,
+        actor_id=actor.actor_id,
+    )
+    proposed = payload.proposed_content.strip()
+    if not proposed:
+        raise RequestInvalid("proposed_content must contain text")
+    feedback = session.get(MemoryFeedback, memory_item_id)
+    if feedback is None:
+        feedback = MemoryFeedback(
+            memory_item_id=memory_item_id,
+            actor_id=actor.actor_id,
+            status="CORRECT",
+            proposed_content=proposed,
+            updated_at=utcnow(),
+        )
+        session.add(feedback)
+    else:
+        feedback.proposed_content = proposed
+        feedback.updated_at = utcnow()
+    session.commit()
+    return CorrectionView(
+        memory_item_id=memory_item_id, proposed_content=proposed, status="CORRECT"
+    )
+
+
+@router.delete("/{subject_id}/memories/{memory_item_id}/correction", status_code=status.HTTP_204_NO_CONTENT)
+def remove_correction(
+    subject_id: str,
+    memory_item_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> Response:
+    _owned_memory(
+        session, subject_id=subject_id, memory_item_id=memory_item_id,
+        actor_id=actor.actor_id,
+    )
+    session.execute(delete(MemoryFeedback).where(MemoryFeedback.memory_item_id == memory_item_id))
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{subject_id}/memories/{memory_item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_memory(
+    subject_id: str,
+    memory_item_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> Response:
+    memory = _owned_memory(
+        session, subject_id=subject_id, memory_item_id=memory_item_id,
+        actor_id=actor.actor_id,
+    )
+    session.execute(delete(MemoryFeedback).where(MemoryFeedback.memory_item_id == memory_item_id))
+    episode_id = memory.episode_id
+    session.delete(memory)
+    session.flush()
+    remaining = session.scalars(
+        select(MemoryItem).where(MemoryItem.episode_id == episode_id)
+        .order_by(MemoryItem.ordinal)
+    ).all()
+    for ordinal, item in enumerate(remaining):
+        item.ordinal = ordinal
+    session.commit()
+    # The original Episode and source Evidence remain as the provenance record.
+    # All derived Memory/Twin surfaces read current MemoryItem rows, so deletion
+    # stops this claim from being returned immediately.
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _tokens(value: str) -> set[str]:
@@ -199,6 +309,8 @@ def query_twin(
     words = _tokens(payload.question)
     matches: list[tuple[int, MemoryView, EvidenceView]] = []
     for item in _memories(session, subject_id=subject_id, actor_id=actor.actor_id):
+        if item.correction is not None:
+            continue
         if item.source_type != "SUBJECT":
             continue
         # A shared verb such as 喜欢 does not mean that a statement about coffee

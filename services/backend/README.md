@@ -188,8 +188,18 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `POST /api/v1/episodes` | **Capture.** Takes the audio as multipart, verifies an active `RECORDING` consent this Actor granted, stores the bytes, and commits the Episode before any processing runs. `201` for a new Episode, `200` with the same body for a retried one. |
 | `GET /api/v1/episodes/{episode_id}` | **Processing status.** The contract's `processingStatus`, polled by a client that wants to know where an Episode is. Readable only by the Actor that captured it. |
 | `GET /api/v1/episodes/{episode_id}/result` | **Episode result.** The contract's `episodeResult`, once the Episode is `ready`. Before that it is `409 EPISODE_NOT_READY`, which a poller can tell apart from `404`. Readable only by the Actor that captured it. |
+| `GET /api/v1/subjects/{subject_id}/memories` | Isolated iOS branch's provisional Phase 2 cross-Episode Memory list with evidence. Actor-owned Episodes only. |
+| `PUT /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Record an Actor's proposed correction; the disputed source claim is immediately excluded from Twin retrieval. |
+| `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Withdraw that correction proposal. |
+| `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}` | Remove one derived Memory from Episode results and Twin retrieval. Source Episode and raw Evidence remain. |
+| `POST /api/v1/subjects/{subject_id}/twin/query` | Provisional evidence router requiring a separate active `CLOUD_TWIN` consent. |
 
 URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Processing Status, and Episode Result are the `captureEpisode`, `processingStatus`, and `episodeResult` shapes, and the AI Core request and answer are `aiCoreInput` and `aiCoreOutput`.
+
+The provisional Phase 2 paths above are Backend-owned additions on `ios` and
+do not change the frozen Contract. A correction is feedback, not a verified
+replacement of the Subject's words. Deleting a derived Memory does not erase
+the source recording or transcript.
 
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 

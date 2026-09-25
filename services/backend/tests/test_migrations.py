@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "jobs",
     "evidence",
     "memory_items",
+    "memory_feedback",
 }
 
 

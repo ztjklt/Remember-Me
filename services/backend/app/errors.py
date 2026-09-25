@@ -131,6 +131,11 @@ class EpisodeNotFound(AppError):
     http_status = 404
 
 
+class MemoryNotFound(AppError):
+    code = "MEMORY_NOT_FOUND"
+    http_status = 404
+
+
 class EpisodeNotReady(AppError):
     """The result was requested before the Episode finished processing.
 

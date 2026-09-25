@@ -75,6 +75,60 @@ final class EpisodeFlow: ObservableObject {
         }
     }
 
+    func correctMemory(_ id: String, proposedContent: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await api.correctMemory(id: id, proposedContent: proposedContent, settings: settings)
+            try await refreshMemoryViews()
+            twinAnswer = nil
+            message = "纠错建议已记录；该原始说法已退出 Twin 引用。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func removeMemoryCorrection(_ id: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await api.removeCorrection(id: id, settings: settings)
+            try await refreshMemoryViews()
+            twinAnswer = nil
+            message = "纠错建议已撤回。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func deleteMemory(_ id: String) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await api.deleteMemory(id: id, settings: settings)
+            try await refreshMemoryViews()
+            twinAnswer = nil
+            message = "这条 Memory 已从结果与 Twin 检索中删除；原始 Episode 仍保留。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func refreshMemoryViews() async throws {
+        let result = try await api.memories(settings: settings)
+        guard result.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
+        subjectMemories = result.items
+        domainCounts = result.domainCounts
+        if let lastEpisodeID {
+            if let episode = try? await api.result(episodeID: lastEpisodeID, settings: settings) {
+                memories = episode.memoryItems
+            }
+        }
+    }
+
     func askTwin(_ question: String) async {
         guard !isBusy else { return }
         isBusy = true

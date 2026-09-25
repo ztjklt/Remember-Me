@@ -421,3 +421,29 @@ class MemoryItem(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
+
+
+class MemoryFeedback(Base):
+    """Actor correction proposal; the original AI claim remains auditable.
+
+    A proposed correction is never silently promoted to a Subject quote. Twin
+    retrieval suppresses the disputed AI claim until a future verified update.
+    """
+
+    __tablename__ = "memory_feedback"
+    __table_args__ = (
+        CheckConstraint("status = 'CORRECT'", name="ck_memory_feedback_status"),
+    )
+
+    memory_item_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("memory_items.memory_item_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    proposed_content: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )

@@ -113,3 +113,46 @@ def test_memories_and_twin_require_actor_isolation_and_independent_consent(clien
     assert revoked.status_code == 200
     after_revoke = client.post(query_path, headers=auth, json=question)
     assert after_revoke.status_code == 403
+
+
+def test_correction_suppresses_original_and_deletion_propagates(client, session):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    episode = _ready_episode(client, session, seeded, auth)
+    base = f"/api/v1/subjects/{seeded.subject_id}/memories"
+    item = client.get(base, headers=auth).json()["items"][0]
+    item_path = f"{base}/{item['memory_item_id']}"
+    grant = client.post(
+        "/api/v1/consents", headers=auth,
+        json={"subject_id": seeded.subject_id, "scope": "CLOUD_TWIN"},
+    )
+    consent_id = grant.json()["consent_id"]
+    query = f"/api/v1/subjects/{seeded.subject_id}/twin/query"
+    question = {"question": "我喜欢咖啡吗？", "cloud_twin_consent_id": consent_id}
+
+    corrected = client.put(
+        item_path + "/correction", headers=auth,
+        json={"proposed_content": "我不喜欢咖啡。"},
+    )
+    assert corrected.status_code == 200
+    assert client.get(base, headers=auth).json()["items"][0]["correction"] == "我不喜欢咖啡。"
+    assert client.post(query, headers=auth, json=question).json()["response_type"] == "SIMULATION"
+
+    other_token = generate_actor_token()
+    session.add(Actor(actor_id="actor_correction_other", display_name="Other", token_hash=hash_actor_token(other_token)))
+    session.commit()
+    other_auth = {"Authorization": f"Bearer {other_token}"}
+    assert client.put(
+        item_path + "/correction", headers=other_auth,
+        json={"proposed_content": "secret"},
+    ).status_code == 404
+    assert client.delete(item_path, headers=other_auth).status_code == 404
+
+    assert client.delete(item_path + "/correction", headers=auth).status_code == 204
+    assert client.post(query, headers=auth, json=question).json()["response_type"] == "ORIGINAL"
+    assert client.delete(item_path, headers=auth).status_code == 204
+    assert client.get(base, headers=auth).json()["items"] == []
+    assert client.post(query, headers=auth, json=question).json()["response_type"] == "SIMULATION"
+    result = client.get(f"/api/v1/episodes/{episode.episode_id}/result", headers=auth)
+    assert result.status_code == 200
+    assert result.json()["memory_items"] == []

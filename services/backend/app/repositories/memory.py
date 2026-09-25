@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..contracts import AICoreOutput
-from ..models import Episode, Evidence, MemoryItem
+from ..models import Episode, Evidence, MemoryFeedback, MemoryItem
 
 
 class MemoryRepository:
@@ -61,6 +61,11 @@ class MemoryRepository:
         episode.model_version = output.model_version
 
     def clear_result(self, episode_id: str) -> None:
+        self.session.execute(
+            delete(MemoryFeedback).where(MemoryFeedback.memory_item_id.in_(
+                select(MemoryItem.memory_item_id).where(MemoryItem.episode_id == episode_id)
+            ))
+        )
         self.session.execute(
             delete(MemoryItem).where(MemoryItem.episode_id == episode_id)
         )

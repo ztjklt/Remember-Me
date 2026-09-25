@@ -59,6 +59,7 @@ struct SubjectMemory: Decodable, Identifiable {
     let confidence: Double
     let evidence: [EvidenceView]
     let modelVersion: String
+    let correction: String?
 
     var id: String { memoryItemId }
 }
@@ -182,6 +183,45 @@ struct EpisodeAPI {
         return try await decode(TwinAnswer.self, request: request)
     }
 
+    func correctMemory(id: String, proposedContent: String, settings: ServerSettings) async throws {
+        var request = try authorizedRequest(
+            path: memoryPath(id: id, settings: settings) + "/correction",
+            method: "PUT", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["proposed_content": proposedContent])
+        _ = try await decode(CorrectionReceipt.self, request: request)
+    }
+
+    func removeCorrection(id: String, settings: ServerSettings) async throws {
+        let request = try authorizedRequest(
+            path: memoryPath(id: id, settings: settings) + "/correction",
+            method: "DELETE", settings: settings
+        )
+        try await requireNoContent(request)
+    }
+
+    func deleteMemory(id: String, settings: ServerSettings) async throws {
+        let request = try authorizedRequest(
+            path: memoryPath(id: id, settings: settings), method: "DELETE", settings: settings
+        )
+        try await requireNoContent(request)
+    }
+
+    private func memoryPath(id: String, settings: ServerSettings) -> String {
+        let subject = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let memory = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        return "api/v1/subjects/\(subject)/memories/\(memory)"
+    }
+
+    private func requireNoContent(_ request: URLRequest) async throws {
+        let (_, response) = try await session.data(for: request)
+        guard let response = response as? HTTPURLResponse else { throw EpisodeAPIError.invalidResponse }
+        guard response.statusCode == 204 else {
+            throw EpisodeAPIError.http(response.statusCode, "记忆操作失败")
+        }
+    }
+
     func upload(
         fileURL: URL,
         recordedAt: Date,
@@ -247,4 +287,8 @@ struct EpisodeAPI {
         do { return try decoder.decode(type, from: data) }
         catch { throw EpisodeAPIError.invalidResponse }
     }
+}
+
+private struct CorrectionReceipt: Decodable {
+    let memoryItemId: String
 }

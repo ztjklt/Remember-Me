@@ -59,8 +59,16 @@ only for a conservative direct match; otherwise it reports insufficient evidence
 as SIMULATION with zero confidence. This is a deterministic evidence router, not
 a full semantic Person Model or generative Twin. The shared Contract is unchanged.
 
+The Memories tab can now submit an Actor correction proposal for a Memory.
+Corrected items remain visible with the original evidence, but Twin immediately
+stops using the disputed claim until the proposal is withdrawn or a future
+verified reprocessing path resolves it. Deleting a Memory removes the derived
+item from Episode results, the cross-Episode list and Twin retrieval. Its source
+Episode, transcript and raw Evidence remain for provenance; this operation is
+not an Episode or account erasure request.
+
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
-record are needed for Phase 1. Phase 2 still needs temporal graph, corrections,
-deletion propagation, and a semantically evaluated Twin. Phase 3–4 endpoints
+record are needed for Phase 1. Phase 2 still needs a temporal graph, verified
+correction promotion, and a semantically evaluated Twin. Phase 3–4 endpoints
 and providers remain separate work on this branch.

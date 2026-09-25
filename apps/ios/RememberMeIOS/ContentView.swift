@@ -107,6 +107,10 @@ private struct CaptureView: View {
 
 private struct MemoriesView: View {
     @EnvironmentObject private var flow: EpisodeFlow
+    @State private var selectedMemoryID: String?
+    @State private var correctionDraft = ""
+    @State private var showCorrection = false
+    @State private var showDeletion = false
 
     var body: some View {
         NavigationStack {
@@ -140,6 +144,12 @@ private struct MemoriesView: View {
                         ForEach(flow.subjectMemories) { item in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(item.content)
+                                if let correction = item.correction {
+                                    Text("纠错建议：\(correction)")
+                                        .font(.subheadline).foregroundStyle(.orange)
+                                    Text("原说法已暂停用于 Twin 回答，等待核实。")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
                                 Text("\(item.domain) · \(item.sourceType) · \(Int(item.confidence * 100))%")
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text("Episode \(item.episodeId)")
@@ -150,6 +160,23 @@ private struct MemoriesView: View {
                                             .font(.caption).foregroundStyle(.secondary)
                                     }
                                 }
+                                Menu("管理这条记忆") {
+                                    Button("提出纠错") {
+                                        selectedMemoryID = item.memoryItemId
+                                        correctionDraft = item.correction ?? ""
+                                        showCorrection = true
+                                    }
+                                    if item.correction != nil {
+                                        Button("撤回纠错") {
+                                            Task { await flow.removeMemoryCorrection(item.memoryItemId) }
+                                        }
+                                    }
+                                    Button("删除这条 Memory", role: .destructive) {
+                                        selectedMemoryID = item.memoryItemId
+                                        showDeletion = true
+                                    }
+                                }
+                                .disabled(flow.isBusy)
                             }
                             .padding(.vertical, 4)
                         }
@@ -177,6 +204,24 @@ private struct MemoriesView: View {
             .toolbar {
                 Button("刷新") { Task { await flow.loadSubjectMemories() } }
                     .disabled(flow.isBusy)
+            }
+            .alert("纠正 Memory", isPresented: $showCorrection) {
+                TextField("写下正确内容", text: $correctionDraft)
+                Button("保存") {
+                    guard let selectedMemoryID else { return }
+                    Task { await flow.correctMemory(selectedMemoryID, proposedContent: correctionDraft) }
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("纠错建议会暂停原说法用于 Twin 回答，原始证据仍可核查。")
+            }
+            .confirmationDialog("删除这条 Memory？", isPresented: $showDeletion) {
+                Button("删除 Memory", role: .destructive) {
+                    guard let selectedMemoryID else { return }
+                    Task { await flow.deleteMemory(selectedMemoryID) }
+                }
+            } message: {
+                Text("这会从 Memory 结果和 Twin 检索中移除该条目。原始录音与 Episode 仍保留。")
             }
         }
     }
