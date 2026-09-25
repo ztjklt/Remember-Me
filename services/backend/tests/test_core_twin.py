@@ -8,7 +8,11 @@ from app.tokens import generate_actor_token, hash_actor_token
 from app.models import Actor
 
 
-def _ready_episode(client, session, seeded, auth):
+def _ready_episode(
+    client, session, seeded, auth, *,
+    key="ios-phase2-test", recorded_at="2026-09-25T08:00:00Z",
+    evidence_id="ev_ios_1", content="我喜欢咖啡。",
+):
     response = client.post(
         "/api/v1/episodes",
         headers=auth,
@@ -16,9 +20,9 @@ def _ready_episode(client, session, seeded, auth):
             "subject_id": seeded.subject_id,
             "recording_consent_id": seeded.consent_id,
             "source": "IMPORT",
-            "recorded_at": "2026-09-25T08:00:00Z",
+            "recorded_at": recorded_at,
             "audio_ref": "subject.m4a",
-            "idempotency_key": "ios-phase2-test",
+            "idempotency_key": key,
         },
         files={"file": ("subject.m4a", b"recording", "audio/mp4")},
     )
@@ -30,9 +34,9 @@ def _ready_episode(client, session, seeded, auth):
             memory_items=[
                 MemoryItem(
                     memory_type="PREFERENCE",
-                    content="我喜欢咖啡。",
+                    content=content,
                     source_type="SUBJECT",
-                    evidence_ids=["ev_ios_1"],
+                    evidence_ids=[evidence_id],
                     confidence=0.9,
                     model_version="real-model-1",
                     prompt_version="memory-extractor-v2",
@@ -43,10 +47,10 @@ def _ready_episode(client, session, seeded, auth):
             persona_updates=[],
             evidence=[
                 Evidence(
-                    evidence_id="ev_ios_1",
+                    evidence_id=evidence_id,
                     source_type="SUBJECT",
                     source_ref=episode.episode_id,
-                    excerpt="我喜欢咖啡。",
+                    excerpt=content,
                     confidence=0.95,
                 )
             ],
@@ -56,6 +60,44 @@ def _ready_episode(client, session, seeded, auth):
     episode.status = EpisodeStatus.READY
     session.commit()
     return episode
+
+
+def test_memory_graph_preserves_provenance_order_and_suppresses_disputes(client, session):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    first = _ready_episode(client, session, seeded, auth)
+    second = _ready_episode(
+        client, session, seeded, auth,
+        key="ios-phase2-second", recorded_at="2026-09-25T09:00:00Z",
+        evidence_id="ev_ios_2", content="我现在不喜欢咖啡。",
+    )
+    path = f"/api/v1/subjects/{seeded.subject_id}/memory-graph"
+    response = client.get(path, headers=auth)
+    assert response.status_code == 200, response.text
+    graph = response.json()
+    memories = {node["label"]: node["node_id"] for node in graph["nodes"] if node["kind"] == "MEMORY"}
+    assert set(memories) == {"我喜欢咖啡。", "我现在不喜欢咖啡。"}
+    relations = {(edge["source_id"], edge["target_id"], edge["relation"]) for edge in graph["edges"]}
+    assert (memories["我喜欢咖啡。"], f"episode:{first.episode_id}", "CAPTURED_IN") in relations
+    assert (memories["我现在不喜欢咖啡。"], "evidence:ev_ios_2", "SUPPORTED_BY") in relations
+    assert (memories["我喜欢咖啡。"], memories["我现在不喜欢咖啡。"], "PRECEDES_IN_DOMAIN") in relations
+
+    other_token = generate_actor_token()
+    session.add(Actor(actor_id="actor_graph_other", display_name="Other", token_hash=hash_actor_token(other_token)))
+    session.commit()
+    assert client.get(path, headers={"Authorization": f"Bearer {other_token}"}).status_code == 404
+
+    memory_id = memories["我喜欢咖啡。"].split(":", 1)[1]
+    base = f"/api/v1/subjects/{seeded.subject_id}/memories/{memory_id}"
+    assert client.put(base + "/correction", headers=auth, json={"proposed_content": "我不喝咖啡。"}).status_code == 200
+    after_correction = client.get(path, headers=auth).json()
+    assert memories["我喜欢咖啡。"] not in {node["node_id"] for node in after_correction["nodes"]}
+    assert not any(edge["relation"] == "PRECEDES_IN_DOMAIN" for edge in after_correction["edges"])
+    assert client.delete(base + "/correction", headers=auth).status_code == 204
+    assert client.delete(base, headers=auth).status_code == 204
+    after_delete = client.get(path, headers=auth).json()
+    assert memories["我喜欢咖啡。"] not in {node["node_id"] for node in after_delete["nodes"]}
+    assert f"episode:{second.episode_id}" in {node["node_id"] for node in after_delete["nodes"]}
 
 
 def test_memories_and_twin_require_actor_isolation_and_independent_consent(client, session):

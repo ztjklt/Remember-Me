@@ -75,6 +75,27 @@ class PersonModelView(BaseModel):
     updated_at: datetime | None
 
 
+class GraphNode(BaseModel):
+    node_id: str
+    kind: str
+    label: str
+    recorded_at: datetime | None = None
+    domain: str | None = None
+    source_type: str | None = None
+
+
+class GraphEdge(BaseModel):
+    source_id: str
+    target_id: str
+    relation: str
+
+
+class MemoryGraphView(BaseModel):
+    subject_id: str
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
 class TwinQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -211,6 +232,66 @@ def get_person_model(
         domains=snapshot.domains,
         updated_at=as_utc(snapshot.updated_at),
     )
+
+
+@router.get("/{subject_id}/memory-graph", response_model=MemoryGraphView)
+def get_memory_graph(
+    subject_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> MemoryGraphView:
+    """Build a bounded provenance/timeline graph from current, undisputed claims."""
+    if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
+        raise SubjectNotFound("No accessible Subject")
+    items = [
+        item for item in _memories(session, subject_id=subject_id, actor_id=actor.actor_id)
+        if item.correction is None
+    ][:200]
+    nodes: list[GraphNode] = []
+    edges: list[GraphEdge] = []
+    seen_episodes: set[str] = set()
+    seen_evidence: set[str] = set()
+    by_domain: dict[str, list[MemoryView]] = {}
+    for item in items:
+        memory_id = f"memory:{item.memory_item_id}"
+        episode_id = f"episode:{item.episode_id}"
+        nodes.append(GraphNode(
+            node_id=memory_id, kind="MEMORY", label=item.content,
+            recorded_at=item.recorded_at, domain=item.domain,
+            source_type=item.source_type,
+        ))
+        if episode_id not in seen_episodes:
+            nodes.append(GraphNode(
+                node_id=episode_id, kind="EPISODE", label=item.episode_id,
+                recorded_at=item.recorded_at,
+            ))
+            seen_episodes.add(episode_id)
+        edges.append(GraphEdge(
+            source_id=memory_id, target_id=episode_id, relation="CAPTURED_IN"
+        ))
+        for source in item.evidence:
+            evidence_id = f"evidence:{source.evidence_id}"
+            if evidence_id not in seen_evidence:
+                nodes.append(GraphNode(
+                    node_id=evidence_id, kind="EVIDENCE",
+                    label=source.excerpt or source.source_ref,
+                    source_type=source.source_type,
+                ))
+                seen_evidence.add(evidence_id)
+            edges.append(GraphEdge(
+                source_id=memory_id, target_id=evidence_id, relation="SUPPORTED_BY"
+            ))
+        by_domain.setdefault(item.domain, []).append(item)
+    for domain_items in by_domain.values():
+        ordered = sorted(domain_items, key=lambda item: (item.recorded_at, item.memory_item_id))
+        for earlier, later in zip(ordered, ordered[1:]):
+            if earlier.recorded_at < later.recorded_at:
+                edges.append(GraphEdge(
+                    source_id=f"memory:{earlier.memory_item_id}",
+                    target_id=f"memory:{later.memory_item_id}",
+                    relation="PRECEDES_IN_DOMAIN",
+                ))
+    return MemoryGraphView(subject_id=subject_id, nodes=nodes, edges=edges)
 
 
 def _owned_memory(

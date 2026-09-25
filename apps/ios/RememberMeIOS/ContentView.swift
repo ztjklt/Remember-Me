@@ -380,6 +380,29 @@ private struct MemoriesView: View {
                         }
                     }
                 }
+                if let graph = flow.memoryGraph {
+                    let timeline = graph.nodes
+                        .filter { $0.kind == "MEMORY" }
+                        .sorted { ($0.recordedAt ?? "") < ($1.recordedAt ?? "") }
+                    if !timeline.isEmpty {
+                        Section("来源与时间图 · 预览") {
+                            Text("按领域连接先后记录；每条 Memory 可追溯到 Episode 和证据。争议或已删除的条目不参与。")
+                                .font(.footnote).foregroundStyle(.secondary)
+                            ForEach(timeline) { node in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(node.label)
+                                    Text("\(node.domain ?? "Unclassified") · \(node.sourceType ?? "未知来源") · \(node.recordedAt ?? "时间未知")")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                    let evidenceCount = graph.edges.filter {
+                                        $0.sourceId == node.nodeId && $0.relation == "SUPPORTED_BY"
+                                    }.count
+                                    Text("来源证据 \(evidenceCount) 项")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
                 if !flow.domainCounts.isEmpty {
                     Section("领域线索数（预览）") {
                         ForEach(flow.domainCounts.keys.sorted(), id: \.self) { domain in

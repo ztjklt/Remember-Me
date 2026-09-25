@@ -63,7 +63,11 @@ counts (unclassified items stay unclassified). The Backend's model stage now
 materializes an Actor-partitioned, versioned Person Model preview from these
 provenance-linked items. Corrections and deletions rebuild the preview and bump
 its revision; the app shows the version, domain coverage and latest source fact.
-It does not synthesize unsupported traits or a semantic temporal graph. The
+An Actor-isolated graph read path also links each undisputed Memory to its
+Episode and Evidence, with chronological edges inside each domain. Corrections
+and deletions disappear from this derived graph on the next read. It is a
+provenance timeline, not a learned entity or causal graph. The model does not
+synthesize unsupported traits. The
 Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerpt
 only for a conservative direct Subject match. Related AI-inferred excerpts are
 shown as SIMULATION with explicit speaker uncertainty and confidence capped at
@@ -113,7 +117,7 @@ legal authority check in this branch.
 
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
-record are needed for Phase 1. Phase 2 still needs a semantic temporal graph,
+record are needed for Phase 1. Phase 2 still needs evaluated semantic links,
 verified correction promotion, and a semantically evaluated Twin. Phase 3 still needs
 verified Subject feedback, empirical calibration evaluation, and real Voice. Phase 4 still needs
 formal activation and verified hardware integration.

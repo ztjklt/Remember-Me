@@ -75,6 +75,29 @@ struct SubjectMemories: Decodable {
     let domainCounts: [String: Int]
 }
 
+struct MemoryGraphNode: Decodable, Identifiable {
+    let nodeId: String
+    let kind: String
+    let label: String
+    let recordedAt: String?
+    let domain: String?
+    let sourceType: String?
+
+    var id: String { nodeId }
+}
+
+struct MemoryGraphEdge: Decodable {
+    let sourceId: String
+    let targetId: String
+    let relation: String
+}
+
+struct MemoryGraph: Decodable {
+    let subjectId: String
+    let nodes: [MemoryGraphNode]
+    let edges: [MemoryGraphEdge]
+}
+
 struct TwinAnswer: Decodable {
     let subjectId: String
     let question: String
@@ -298,6 +321,15 @@ struct EpisodeAPI {
             path: "api/v1/subjects/\(id)/person-model", method: "GET", settings: settings
         )
         return try await decode(PersonModelPreview.self, request: request)
+    }
+
+    func memoryGraph(settings: ServerSettings) async throws -> MemoryGraph {
+        guard !settings.subjectID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let request = try authorizedRequest(
+            path: "api/v1/subjects/\(id)/memory-graph", method: "GET", settings: settings
+        )
+        return try await decode(MemoryGraph.self, request: request)
     }
 
     func capturePlan(settings: ServerSettings) async throws -> CapturePlan {

@@ -15,6 +15,11 @@
 > once and remains advisory; it does not update Subject facts or prove the
 > Actor's identity.
 
+> `GET /api/v1/subjects/{id}/memory-graph` is a provisional Actor-isolated
+> provenance timeline. It links current undisputed Memory rows to their
+> Episodes and Evidence and orders records within a domain by capture time.
+> It does not infer causality or relationships from similar wording.
+
 Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.

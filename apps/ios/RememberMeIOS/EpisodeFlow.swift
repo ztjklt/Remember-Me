@@ -9,6 +9,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var subjectMemories: [SubjectMemory] = []
     @Published private(set) var domainCounts: [String: Int] = [:]
     @Published private(set) var personModel: PersonModelPreview?
+    @Published private(set) var memoryGraph: MemoryGraph?
     @Published private(set) var capturePlan: CapturePlan?
     @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var calibration: CalibrationRecord?
@@ -191,6 +192,10 @@ final class EpisodeFlow: ObservableObject {
                preview.subjectId == settings.subjectID {
                 personModel = preview
             }
+            if let graph = try? await api.memoryGraph(settings: settings),
+               graph.subjectId == settings.subjectID {
+                memoryGraph = graph
+            }
             message = "已读取 \(result.items.count) 条有来源的 Memory。"
         } catch {
             message = error.localizedDescription
@@ -261,6 +266,10 @@ final class EpisodeFlow: ObservableObject {
         if let preview = try? await api.personModel(settings: settings),
            preview.subjectId == settings.subjectID {
             personModel = preview
+        }
+        if let graph = try? await api.memoryGraph(settings: settings),
+           graph.subjectId == settings.subjectID {
+            memoryGraph = graph
         }
         if let lastEpisodeID {
             if let episode = try? await api.result(episodeID: lastEpisodeID, settings: settings) {
@@ -409,6 +418,10 @@ final class EpisodeFlow: ObservableObject {
                     if let preview = try? await api.personModel(settings: settings),
                        preview.subjectId == settings.subjectID {
                         personModel = preview
+                    }
+                    if let graph = try? await api.memoryGraph(settings: settings),
+                       graph.subjectId == settings.subjectID {
+                        memoryGraph = graph
                     }
                 }
                 if let plan = try? await api.capturePlan(settings: settings),
