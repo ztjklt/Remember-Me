@@ -11,16 +11,19 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
     @Published private(set) var isPaused = false
     @Published private(set) var isPlaying = false
     @Published private(set) var isSpeaking = false
+    @Published private(set) var personalVoiceName: String?
     @Published var message: String?
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
     private let synthesizer = AVSpeechSynthesizer()
+    private var personalVoice: AVSpeechSynthesisVoice?
     private var timer: Timer?
 
     override init() {
         super.init()
         synthesizer.delegate = self
+        refreshPersonalVoice()
         loadLatestRecording()
         NotificationCenter.default.addObserver(
             self, selector: #selector(saveWhenBackgrounded),
@@ -196,6 +199,62 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
             isSpeaking = false
             message = "系统朗读失败：\(error.localizedDescription)"
         }
+    }
+
+    func requestPersonalVoiceAccess() async {
+        let status = await AVSpeechSynthesizer.requestPersonalVoiceAuthorization()
+        guard status == .authorized else {
+            personalVoice = nil
+            personalVoiceName = nil
+            switch status {
+            case .denied:
+                message = "设备未授权此 App 使用个人声音。可在 iOS 设置中调整。"
+            case .unsupported:
+                message = "此设备不支持个人声音。仍可使用普通系统朗读。"
+            default:
+                message = "尚未获得个人声音授权。"
+            }
+            return
+        }
+        refreshPersonalVoice()
+        message = personalVoiceName.map {
+            "已找到设备个人声音：\($0)。播放前仍需独立 VOICE 同意。"
+        } ?? "已授权，但设备尚无可用的个人声音。请先在 iOS 辅助功能中创建。"
+    }
+
+    func speakPersonalText(_ text: String) {
+        guard let voice = personalVoice,
+              !isRecording,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            message = "设备个人声音不可用；请先授权并检查。"
+            return
+        }
+        do {
+            stopPlayback()
+            stopSystemSpeech()
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+            try AVAudioSession.sharedInstance().setActive(true)
+            let utterance = AVSpeechUtterance(string: text)
+            utterance.voice = voice
+            isSpeaking = true
+            synthesizer.speak(utterance)
+            message = "设备个人声音朗读中；尚未核实它是否属于当前 Subject。"
+        } catch {
+            isSpeaking = false
+            message = "个人声音朗读失败：\(error.localizedDescription)"
+        }
+    }
+
+    private func refreshPersonalVoice() {
+        guard AVSpeechSynthesizer.personalVoiceAuthorizationStatus == .authorized else {
+            personalVoice = nil
+            personalVoiceName = nil
+            return
+        }
+        personalVoice = AVSpeechSynthesisVoice.speechVoices().first {
+            $0.voiceTraits.contains(.isPersonalVoice)
+        }
+        personalVoiceName = personalVoice?.name
     }
 
     func stopSystemSpeech() {

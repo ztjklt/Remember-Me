@@ -532,7 +532,26 @@ private struct TwinView: View {
                             }
                         }
                         .disabled(flow.isBusy || capture.isRecording)
-                        Text("每次朗读前验证独立 VOICE 同意；当前仅用 iOS 系统声音，不使用录音训练或克隆。")
+                        Button("授权并检查设备个人声音") {
+                            Task { await capture.requestPersonalVoiceAccess() }
+                        }
+                        .disabled(flow.isBusy || capture.isRecording)
+                        if let voiceName = capture.personalVoiceName {
+                            LabeledContent("设备个人声音", value: voiceName)
+                            Button(capture.isSpeaking ? "停止朗读" : "用设备个人声音朗读") {
+                                if capture.isSpeaking {
+                                    capture.stopSystemSpeech()
+                                } else {
+                                    Task {
+                                        if await flow.authorizeVoicePlayback() {
+                                            capture.speakPersonalText(answer.answer)
+                                        }
+                                    }
+                                }
+                            }
+                            .disabled(flow.isBusy || capture.isRecording)
+                        }
+                        Text("每次播放前验证独立 VOICE 同意。设备个人声音还需 iOS 授权和本机预先创建；此处尚未核实它与 Subject 的身份关系，也不训练或上传声音模型。")
                             .font(.caption).foregroundStyle(.secondary)
                         if let version = answer.modelVersion { LabeledContent("模型版本", value: version) }
                         ForEach(answer.evidence) { evidence in
