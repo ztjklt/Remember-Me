@@ -1,5 +1,7 @@
 """The iOS branch's provisional Phase 2 read and Original Router boundary."""
 
+import httpx
+
 from app.contracts import AICoreOutput, Evidence, MemoryItem
 from app.models import Episode, EpisodeStatus, Evidence as EvidenceRow, MemoryItem as MemoryRow
 from app.repositories.memory import MemoryRepository
@@ -224,3 +226,46 @@ def test_inference_returns_cited_simulation_without_impersonating_subject(client
     assert response.json()["confidence"] <= 0.5
     assert response.json()["evidence"][0]["excerpt"] == "我喜歡咖啡。"
     assert "尚未确认说话人" in response.json()["answer"]
+
+
+def test_real_provider_semantic_twin_stays_cited_and_rejects_foreign_ids(
+    client, session, monkeypatch,
+):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    _ready_episode(client, session, seeded, auth)
+    consent_id = client.post(
+        "/api/v1/consents", headers=auth,
+        json={"subject_id": seeded.subject_id, "scope": "CLOUD_TWIN"},
+    ).json()["consent_id"]
+    client.app.state.settings.ai_backend = "http"
+    sent = {}
+
+    def generated(_url, *, json, **_kwargs):
+        sent.update(json)
+        return httpx.Response(200, json={
+            "supported": True,
+            "evidence_ids": ["ev_ios_1"], "model_version": "real-twin-model",
+        })
+
+    monkeypatch.setattr("app.api.core_twin.httpx.post", generated)
+    path = f"/api/v1/subjects/{seeded.subject_id}/twin/query"
+    query = {"question": "我平时喝什么饮品？", "cloud_twin_consent_id": consent_id}
+    response = client.post(path, headers=auth, json=query)
+    assert response.status_code == 200, response.text
+    assert response.json()["response_type"] == "SIMULATION"
+    assert response.json()["confidence"] <= 0.25
+    assert response.json()["evidence"][0]["evidence_id"] == "ev_ios_1"
+    assert "我喜欢咖啡。" in response.json()["answer"]
+    assert "平时喝咖啡" not in response.json()["answer"]
+    assert "subject_id" not in sent
+
+    def foreign(_url, *, json, **_kwargs):
+        return httpx.Response(200, json={
+            "supported": True,
+            "evidence_ids": ["ev_foreign"], "model_version": "real-twin-model",
+        })
+
+    monkeypatch.setattr("app.api.core_twin.httpx.post", foreign)
+    denied = client.post(path, headers=auth, json=query)
+    assert denied.status_code == 502

@@ -347,6 +347,7 @@ struct EpisodeAPI {
         }
         let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
         var request = try authorizedRequest(path: "api/v1/subjects/\(id)/twin/query", method: "POST", settings: settings)
+        request.timeoutInterval = 140
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "question": question,

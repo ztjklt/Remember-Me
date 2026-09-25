@@ -42,9 +42,18 @@ class HttpComparisonProvider:
             self._client.close()
 
     def compare(self, payload: CalibrationInput, schema: dict[str, Any]) -> dict[str, Any]:
+        return self.complete(
+            payload.model_dump(), schema, SYSTEM_PROMPT,
+            "remember_me_calibration_assessment",
+        )
+
+    def complete(
+        self, payload: dict[str, Any], schema: dict[str, Any],
+        system_prompt: str, schema_name: str,
+    ) -> dict[str, Any]:
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(payload.model_dump(), ensure_ascii=True)},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=True)},
         ]
         strict = _strict_schema(schema)
         if self.kind == "ollama_local":
@@ -62,7 +71,7 @@ class HttpComparisonProvider:
                 "response_format": {
                     "type": "json_schema",
                     "json_schema": {
-                        "name": "remember_me_calibration_assessment",
+                        "name": schema_name,
                         "strict": True, "schema": strict,
                     },
                 },

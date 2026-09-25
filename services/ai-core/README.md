@@ -41,6 +41,10 @@ The service exposes:
 - `POST /calibrate` comparing a locked Twin answer with a later human answer.
   It returns a versioned, advisory five-dimension assessment. The fixture
   provider refuses this operation; a configured real provider is required.
+- `POST /twin/simulate` selecting at most three relevant evidence IDs from a
+  supplied, bounded candidate set. It does not generate an answer. Backend
+  validates citations and shows the source excerpts with a simulation caveat.
+  The fixture provider refuses this operation.
 
 For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,
 `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, and the version settings. Provider

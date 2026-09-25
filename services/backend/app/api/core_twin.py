@@ -9,14 +9,18 @@ invents a statement and calls it the original person.
 import re
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Response, status
+import httpx
+from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..domains import DOMAINS, MEMORY_DOMAIN
-from ..errors import MemoryNotFound, RequestInvalid, SubjectNotFound
+from ..errors import (
+    AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable,
+    MemoryNotFound, RequestInvalid, SubjectNotFound,
+)
 from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, PersonModelSnapshot, as_utc, utcnow
 from ..person_model import rebuild_person_model
 from ..repositories.consents import ConsentRepository
@@ -111,6 +115,14 @@ class TwinAnswer(BaseModel):
     confidence: float
     evidence: list[EvidenceView]
     model_version: str | None
+
+
+class TwinSimulation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    supported: bool
+    evidence_ids: list[str] = Field(max_length=3)
+    model_version: str = Field(min_length=1)
 
 
 class CorrectionRequest(BaseModel):
@@ -416,6 +428,7 @@ GENERIC_QUERY_TOKENS = {
 def query_twin(
     subject_id: str,
     payload: TwinQuestion,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> TwinAnswer:
@@ -430,6 +443,8 @@ def query_twin(
     words = _tokens(payload.question)
     matches: list[tuple[int, MemoryView, EvidenceView]] = []
     inferred_matches: list[tuple[int, MemoryView, EvidenceView]] = []
+    candidates: list[dict[str, str]] = []
+    candidate_evidence: dict[str, EvidenceView] = {}
     for item in _memories(session, subject_id=subject_id, actor_id=actor.actor_id):
         if item.correction is not None:
             continue
@@ -439,6 +454,18 @@ def query_twin(
         for evidence in item.evidence:
             if not evidence.excerpt:
                 continue
+            if (
+                evidence.source_type in {"SUBJECT", "AI_INFERENCE"}
+                and evidence.evidence_id not in candidate_evidence
+                and len(candidates) < 20
+            ):
+                candidates.append({
+                    "evidence_id": evidence.evidence_id,
+                    "excerpt": evidence.excerpt[:1000],
+                    "memory_content": item.content[:1000],
+                    "source_type": evidence.source_type,
+                })
+                candidate_evidence[evidence.evidence_id] = evidence
             overlap = len(
                 (words & (_tokens(item.content) | _tokens(evidence.excerpt)))
                 - GENERIC_QUERY_TOKENS
@@ -465,6 +492,45 @@ def query_twin(
             evidence=[evidence],
             model_version=item.model_version,
         )
+    settings = request.app.state.settings
+    if settings.ai_backend == "http" and candidates:
+        try:
+            response = httpx.post(
+                settings.ai_core_url.rstrip("/") + "/twin/simulate",
+                json={"question": payload.question, "candidates": candidates},
+                timeout=httpx.Timeout(settings.ai_timeout_seconds),
+                follow_redirects=False,
+            )
+        except httpx.TimeoutException as exc:
+            raise AiTimeout("Twin simulation timed out") from exc
+        except httpx.TransportError as exc:
+            raise AiUnavailable("Twin simulation unavailable") from exc
+        if response.status_code in {408, 504}:
+            raise AiTimeout("Twin simulation timed out")
+        if response.status_code in {429, 503}:
+            raise AiUnavailable("Twin simulation unavailable")
+        if not response.is_success:
+            raise AiFailed("Twin simulation failed")
+        try:
+            generated = TwinSimulation.model_validate(response.json())
+        except (ValueError, TypeError) as exc:
+            raise AiSchemaInvalid("Twin simulation violated its schema") from exc
+        if generated.model_version.startswith("fixture-"):
+            raise AiSchemaInvalid("Twin simulation used a fixture model")
+        cited = [candidate_evidence[evidence_id] for evidence_id in generated.evidence_ids
+                 if evidence_id in candidate_evidence]
+        if len(cited) != len(generated.evidence_ids) or len(set(generated.evidence_ids)) != len(cited):
+            raise AiSchemaInvalid("Twin simulation cited inaccessible evidence")
+        if generated.supported:
+            if not cited:
+                raise AiSchemaInvalid("Twin retrieval omitted evidence")
+            excerpts = " / ".join((evidence.excerpt or "")[:180] for evidence in cited)
+            return TwinAnswer(
+                subject_id=subject_id, question=payload.question,
+                answer=f"模型检索到可能相关的录音片段；这不一定完整回答问题，且尚未核实说话人：{excerpts}",
+                response_type="SIMULATION", confidence=0.25,
+                evidence=cited, model_version=generated.model_version,
+            )
     if inferred_matches:
         _, item, evidence = max(
             inferred_matches, key=lambda candidate: (

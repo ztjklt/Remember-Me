@@ -119,11 +119,12 @@ def _owned(
 def start_calibration(
     subject_id: str,
     payload: TwinQuestion,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> CalibrationView:
     # Query verifies this Actor's active independent CLOUD_TWIN consent.
-    locked = query_twin(subject_id, payload, actor, session)
+    locked = query_twin(subject_id, payload, request, actor, session)
     row = CalibrationSession(
         calibration_id=f"cal_{uuid4().hex[:16]}",
         subject_id=subject_id,

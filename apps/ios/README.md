@@ -79,8 +79,11 @@ Twin tab requires a separate `CLOUD_TWIN` consent. It returns an ORIGINAL excerp
 only for a conservative direct Subject match. Related AI-inferred excerpts are
 shown as SIMULATION with explicit speaker uncertainty and confidence capped at
 0.5; unrelated questions return insufficient evidence with zero confidence.
-This is a deterministic evidence router, not
-a full semantic Person Model or generative Twin. The shared Contract is unchanged.
+The direct path is a deterministic evidence router. With a real AI Core
+provider, an unmatched question can retrieve related evidence semantically;
+Backend quotes the source excerpts with a low-confidence SIMULATION caveat
+instead of using the model's paraphrase as a new fact. This is not a full
+semantic Person Model or generative Twin. The shared Contract is unchanged.
 
 The Memories tab can now submit an Actor correction proposal for a Memory.
 Corrected items remain visible with the original evidence, but Twin immediately
