@@ -1,0 +1,251 @@
+{
+  "schema_version": "ai-core-fixture-asr-small-v1",
+  "status": "offline_fixture_not_real_llm",
+  "source_audio": "synthetic MiMo TTS",
+  "transcript_source": "local faster-whisper small raw ASR, unverified",
+  "ai_core_checkout_commit": "6ef7d559cac42cf97ed8c585ecaf65a7da5c1ea2",
+  "prompt_version": "memory-extractor-v2",
+  "schema_version_ai_core": "integration-contract-v0.1.2",
+  "rows": [
+    {
+      "id": "E01",
+      "episode_id": "demo-E01-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "268e825d8aa35ac1b420ad7d06ea21d448bd61800f4a484141e29d3c1df81e31",
+      "input_chars": 350,
+      "latency_ms": 4.19,
+      "memory_count": 14,
+      "evidence_count": 14,
+      "memory_types": {
+        "EVENT": 14,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E02",
+      "episode_id": "demo-E02-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "5eecc81ccbd689dd58aebac443319f87c46af12940e68094355c85a50faade4a",
+      "input_chars": 350,
+      "latency_ms": 2.47,
+      "memory_count": 12,
+      "evidence_count": 12,
+      "memory_types": {
+        "EVENT": 12,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E03",
+      "episode_id": "demo-E03-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "46b751ac8a717c4a9f7800ebf19b3121cdae8eb61a78ca8496f858b275dedbfd",
+      "input_chars": 335,
+      "latency_ms": 3.91,
+      "memory_count": 10,
+      "evidence_count": 10,
+      "memory_types": {
+        "EVENT": 9,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 1,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E04",
+      "episode_id": "demo-E04-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "f9fa6841e0516dee8e29d2d7fb5d5590ad2c9034539d81027a027cd7e1f4b640",
+      "input_chars": 330,
+      "latency_ms": 2.58,
+      "memory_count": 15,
+      "evidence_count": 15,
+      "memory_types": {
+        "EVENT": 14,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 1,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E05",
+      "episode_id": "demo-E05-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "71d8c706c6f39f8aee7daa93141d9d61027e251b6ed21dabc6d8295491db0e4d",
+      "input_chars": 342,
+      "latency_ms": 2.66,
+      "memory_count": 16,
+      "evidence_count": 16,
+      "memory_types": {
+        "EVENT": 14,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 2,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E06",
+      "episode_id": "demo-E06-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "06bf6919ad9dc0e89747d2552be60bb7e3083a5cf0c291cea2d7619b8802732c",
+      "input_chars": 342,
+      "latency_ms": 2.27,
+      "memory_count": 9,
+      "evidence_count": 9,
+      "memory_types": {
+        "EVENT": 9,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E07",
+      "episode_id": "demo-E07-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "e3979aa8f9d04c282eaaf5ec403bdd92571faa05c25675657b2b68ec11dcc30b",
+      "input_chars": 337,
+      "latency_ms": 2.22,
+      "memory_count": 14,
+      "evidence_count": 14,
+      "memory_types": {
+        "EVENT": 13,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 1,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E08",
+      "episode_id": "demo-E08-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "410ffabc62f6d3c2689b78795e1140784e1cb7b67a27db736ca99dd13c0b00de",
+      "input_chars": 339,
+      "latency_ms": 2.51,
+      "memory_count": 14,
+      "evidence_count": 14,
+      "memory_types": {
+        "EVENT": 14,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E09",
+      "episode_id": "demo-E09-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "e573a03b5d9a61f274167c868fefaabec06ec455339c7347ac6c79989ff15d45",
+      "input_chars": 343,
+      "latency_ms": 2.19,
+      "memory_count": 14,
+      "evidence_count": 14,
+      "memory_types": {
+        "EVENT": 14,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E10",
+      "episode_id": "demo-E10-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "1411d4586ca3c4ba201fa2bdfbaf1ee0433e92ef6e54d472ccf67b175b503420",
+      "input_chars": 329,
+      "latency_ms": 2.8,
+      "memory_count": 10,
+      "evidence_count": 10,
+      "memory_types": {
+        "EVENT": 9,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 1,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E11",
+      "episode_id": "demo-E11-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "8937050721fb52036239fbb0345886637900b90fff7a43f25f47967fffd0050a",
+      "input_chars": 304,
+      "latency_ms": 2.19,
+      "memory_count": 5,
+      "evidence_count": 5,
+      "memory_types": {
+        "EVENT": 5,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    },
+    {
+      "id": "E12",
+      "episode_id": "demo-E12-local-asr",
+      "http_status": 200,
+      "input_transcript_sha256": "5378836519cbf98b664f928507d1a72a2e6bf0c1be8467158559b8d36bceb398",
+      "input_chars": 332,
+      "latency_ms": 3.05,
+      "memory_count": 11,
+      "evidence_count": 11,
+      "memory_types": {
+        "EVENT": 11,
+        "PERSON": 0,
+        "RELATIONSHIP": 0,
+        "PREFERENCE": 0,
+        "VALUE": 0,
+        "EMOTION": 0
+      },
+      "evidence_spans_valid": true,
+      "model_version": "fixture-ai-v2"
+    }
+  ]
+}

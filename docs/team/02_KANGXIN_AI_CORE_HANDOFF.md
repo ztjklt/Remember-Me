@@ -1,5 +1,7 @@
 # AI Core Phase 1 交接方案
 
+> 2026-09-25 阶段更新：新增[中文合成音频→原始 ASR→AI Core fixture 的评估包](../../services/ai-core/evaluations/zh-life-review-v1/README.md)，用于 #56 的真实输入准备。12 段音频已跑本地识别，原始文本进入 `/process`；真实 Provider、获授权真人录音和真机 Golden Path **仍未验收**。本更新不改下面的 Phase 1 责任边界，也不启动 Phase 2–4。
+
 > Owner: 康欣（`centraler`）
 > Scope: Phase 1 Golden Path，覆盖 Issue #4、#2、#5 的 AI Core 最小闭环。
 > Branch: `feature/ai-core-phase1`；主题提交：`3c93231`、`096dbe4`、`bd6424c`、`4935b37`、`de971f1`、`7e168a3`

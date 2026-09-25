@@ -1,0 +1,104 @@
+{
+  "schema_version": "story-rubric-v1",
+  "subject_id": "fictional-linlan-001",
+  "synthetic": true,
+  "notes": "candidate_evidence_quote 为原稿中的原句。真实 AI Core span 必须以实际传入的转录为准。",
+  "episodes": [
+    {
+      "id": "E01",
+      "event_year": 2016,
+      "memory_types": ["PERSON", "EVENT", "RELATIONSHIP"],
+      "must_extract": ["林岚长期在社区图书馆工作", "2016 年秋天晚班借伞给一位读者", "小雨等林岚回家"],
+      "must_not_infer": ["那位读者是林岚的亲属", "林岚永远把工作放在家人之前"],
+      "candidate_evidence_quote": ["我叫林岚，在社区图书馆工作了很多年。", "我把柜台后面那把备用伞借给他"]
+    },
+    {
+      "id": "E02",
+      "event_year": 2017,
+      "memory_types": ["EVENT", "RELATIONSHIP", "EMOTION"],
+      "must_extract": ["林岚因加班错过和女儿小雨约好的晚饭", "林岚对此感到难过并道歉", "母女约定未来一起看画展"],
+      "must_not_infer": ["小雨已与林岚断绝来往", "林岚此后再也没有失约"],
+      "candidate_evidence_quote": ["我赶到店里时，她已经吃完了", "我后来向她道歉"]
+    },
+    {
+      "id": "E03",
+      "event_year": 2018,
+      "memory_types": ["EVENT", "PERSON", "RELATIONSHIP"],
+      "must_extract": ["林岚照着母亲手写的菜谱做萝卜汤", "母亲说过火别太急", "小雨来吃饭并表示喜欢"],
+      "must_not_infer": ["林岚发明了火别太急的说法", "林岚的母亲已经去世", "菜谱是客观认证的祖传秘方"],
+      "candidate_evidence_quote": ["火别太急，等汤自己变甜", "这是妈妈的话，不是我发明的做菜道理。"]
+    },
+    {
+      "id": "E04",
+      "event_year": 2019,
+      "memory_types": ["EVENT", "RELATIONSHIP", "PREFERENCE"],
+      "must_extract": ["阿琴是林岚多年的朋友", "阿琴喜欢登顶而林岚更喜欢平缓的路", "两人曾去西山散步"],
+      "must_not_infer": ["林岚认同不登顶就不算来过", "阿琴不再和林岚一起出门"],
+      "candidate_evidence_quote": ["这是她的说法，我可不这么想。", "我还是更喜欢平缓一点、能边走边看的路。"]
+    },
+    {
+      "id": "E05",
+      "event_year": 2020,
+      "memory_types": ["EVENT", "PREFERENCE"],
+      "must_extract": ["图书馆装修期间林岚发现自己喜欢清晨独处", "她也仍喜欢在图书馆与人打交道"],
+      "must_not_infer": ["林岚从此讨厌热闹", "图书馆永久关闭"],
+      "candidate_evidence_quote": ["我开始喜欢每天给自己留十几分钟", "我照样乐意和人打交道"]
+    },
+    {
+      "id": "E06",
+      "event_year": 2021,
+      "memory_types": ["EVENT", "VALUE", "RELATIONSHIP"],
+      "must_extract": ["林岚主动调整了部分周末值班", "她想认真保留与女儿相处的时间", "她仍愿意承担部分工作"],
+      "must_not_infer": ["林岚拒绝所有周末值班", "主管强迫林岚辞职"],
+      "candidate_evidence_quote": ["把其中两个星期六换成工作日的晚班", "另外一个周末仍然留下来帮忙。"]
+    },
+    {
+      "id": "E07",
+      "event_year": 2022,
+      "memory_types": ["EVENT", "PERSON", "EMOTION"],
+      "must_extract": ["林岚于 2022 年从社区图书馆退休", "退休后仍偶尔参与儿童阅读活动", "她仍喜欢原来的工作"],
+      "must_not_infer": ["退休说明林岚讨厌书", "林岚退休后仍是正式值班员工"],
+      "candidate_evidence_quote": ["二〇二二年，我从社区图书馆退休。", "我喜欢那份工作"]
+    },
+    {
+      "id": "E08",
+      "event_year": 2023,
+      "memory_types": ["EVENT", "RELATIONSHIP", "EMOTION"],
+      "must_extract": ["林岚与小雨在 2023 年一起看画展", "林岚仍为 2017 年的失约感到抱歉", "两人关系有改善但仍会争论"],
+      "must_not_infer": ["母女从此再也不吵架", "小雨要求林岚必须懂画"],
+      "candidate_evidence_quote": ["我告诉她，那顿饭让我一直觉得抱歉。", "我们没有因为一次看展就变成从不吵架的母女"]
+    },
+    {
+      "id": "E09",
+      "event_year": 2024,
+      "memory_types": ["EVENT", "RELATIONSHIP"],
+      "must_extract": ["林岚在 2024 年翻出与阿琴去苏州的照片", "两人在苏州曾迷路并一起吃面", "旅行的具体年月尚未核实"],
+      "must_not_infer": ["苏州旅行确定发生在 2022 年 10 月", "照片证实了旅行的精确日期"],
+      "candidate_evidence_quote": ["二〇二四年整理柜子时，我翻出一叠去苏州的照片。", "具体是哪一天、哪一月，我现在说不准。"]
+    },
+    {
+      "id": "E10",
+      "event_year": 2025,
+      "memory_types": ["PREFERENCE", "EVENT"],
+      "must_extract": ["林岚曾常喝拿铁", "2025 年初暂时停喝", "后来偶尔喝半杯且不在太晚喝"],
+      "must_not_infer": ["林岚一生都不喝咖啡", "林岚有已确诊的睡眠疾病"],
+      "candidate_evidence_quote": ["就把每天午后的拿铁停了。", "我不会每天都喝，更不会太晚喝。"]
+    },
+    {
+      "id": "E11",
+      "event_year": 2026,
+      "memory_types": ["RELATIONSHIP", "EMOTION", "PREFERENCE"],
+      "must_extract": ["阿琴曾评价林岚太要强", "林岚并不认为自己总拒绝帮助", "两人一起把书搬上楼"],
+      "must_not_infer": ["太要强是林岚对自己毫无保留的自我定义", "林岚永远拒绝小雨的帮助"],
+      "candidate_evidence_quote": ["这句话是阿琴对我的评价", "我并不是谁的帮助都不要。"]
+    },
+    {
+      "id": "E12",
+      "event_year": 2026,
+      "memory_types": ["PREFERENCE", "VALUE", "RELATIONSHIP"],
+      "must_extract": ["林岚现在希望周六上午保留自己的时间", "有空时希望与小雨吃饭散步", "明年去苏州的计划尚未确定"],
+      "must_not_infer": ["小雨已同意每周日陪伴林岚", "林岚和阿琴已经订好明年苏州行程"],
+      "candidate_evidence_quote": ["星期六上午先留给自己", "我还没跟阿琴商量，不能说已经定了。"]
+    }
+  ]
+}
