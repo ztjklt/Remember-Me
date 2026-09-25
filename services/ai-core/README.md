@@ -48,6 +48,16 @@ The active prompt is `memory-extractor-v2`; the shared schema remains
 `integration-contract-v0.1.2`. Remove an old `AI_PROMPT_VERSION` override or
 set it to the current version. Unsupported prompt/schema versions fail startup.
 
+The isolated `ios` branch also supports a local Ollama adapter. Start Ollama
+with an installed model, then set `AI_PROVIDER=ollama_local`,
+`AI_BASE_URL=http://127.0.0.1:11434`, `AI_MODEL` to that model's name, and
+`AI_MODEL_VERSION` to a non-fixture deployment identifier. The adapter uses
+Ollama's native structured output with thinking disabled. It can relocate a
+model's Chinese evidence excerpt only when a one-to-one Traditional/Simplified
+conversion finds a unique match; it then copies the exact original transcript
+text into the evidence. Ambiguous or unsupported spans still fail validation.
+This is a local provider option, not proof of semantic extraction quality.
+
 Invalid input returns `422`; provider unavailability returns `503`; provider
 timeouts return `504`; invalid structured output or provenance returns `502`.
 The response contains stable `error_code` values and safe messages only.

@@ -112,6 +112,7 @@ manager, without committing their values:
 | `PHASE1_RECORDED_AT` | Actual capture time in RFC 3339 form with UTC offset |
 | `PHASE1_DATABASE_URL` | Backend database URL for readback verification |
 | `PHASE1_TIMEOUT_SECONDS` | Optional processing deadline; default 180 |
+| `PHASE1_CAPTURE_SOURCE` | Optional `ANDROID_MIC` (default) or `IMPORT` for the isolated iOS branch's saved-file upload |
 
 From the repository checkout:
 

@@ -9,6 +9,7 @@ from app.prompts import PROMPT_VERSION, SCHEMA_VERSION, build_system_prompt
 from app.providers.base import ModelRequest
 from app.providers.fixture import FixtureProvider
 from app.providers.openai_compatible import OpenAICompatibleProvider
+from app.providers.ollama_local import OllamaLocalProvider
 
 
 def _request() -> ModelRequest:
@@ -73,6 +74,79 @@ def test_openai_compatible_provider_sends_schema_and_parses_json_content() -> No
     assert seen["request"]["response_format"]["type"] == "json_schema"
     assert seen["request"]["response_format"]["json_schema"]["strict"] is True
     assert seen["request"]["messages"][1]["role"] == "user"
+
+
+def test_ollama_local_disables_thinking_and_keeps_schema_boundary() -> None:
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={
+            "done": True,
+            "message": {"content": json.dumps(_provider_response(), ensure_ascii=False)},
+        })
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    provider = OllamaLocalProvider(
+        base_url="http://127.0.0.1:11434", timeout_seconds=60,
+        max_response_bytes=1024 * 1024, client=client,
+    )
+    assert provider.generate(_request()) == _provider_response()
+    assert seen["path"] == "/api/chat"
+    assert seen["body"]["think"] is False
+    assert seen["body"]["stream"] is False
+    assert seen["body"]["format"]["type"] == "object"
+    assert seen["body"]["format"]["$defs"]["Evidence"]["properties"]["excerpt"]["enum"]
+    assert "subject_id" not in seen["body"]["messages"][1]["content"]
+
+
+def test_ollama_local_reanchors_only_unique_verbatim_evidence() -> None:
+    request = _request()
+    excerpt = request.payload.transcript[:3]
+    output = {**_provider_response(), "evidence": [{
+        "excerpt": excerpt, "span_start": 99, "span_end": 100,
+        "source_ref": "episode:wrong#span:99-100",
+    }, {
+        "excerpt": "not present", "span_start": 99, "span_end": 100,
+        "source_ref": "episode:wrong#span:99-100",
+    }]}
+    provider = OllamaLocalProvider(
+        base_url="http://127.0.0.1:11434", timeout_seconds=3,
+        max_response_bytes=1024 * 1024,
+        client=httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200, json={
+            "done": True, "message": {"content": json.dumps(output)},
+        }))),
+    )
+
+    result = provider.generate(request)
+
+    assert result["evidence"][0]["span_start"] == 0
+    assert result["evidence"][0]["span_end"] == 3
+    assert result["evidence"][0]["source_ref"] == f"episode:{request.payload.episode_id}#span:0-3"
+    assert result["evidence"][1] == output["evidence"][1]
+
+
+def test_ollama_local_reanchors_traditional_chinese_to_original_transcript() -> None:
+    request = _request()
+    request.payload.transcript = "我喜歡咖啡,我今天在公園散步。"
+    output = {**_provider_response(), "evidence": [{
+        "excerpt": "我喜欢咖啡", "span_start": 0, "span_end": 2,
+        "source_ref": "episode:wrong#span:0-2",
+    }]}
+    provider = OllamaLocalProvider(
+        base_url="http://127.0.0.1:11434", timeout_seconds=3,
+        max_response_bytes=1024 * 1024,
+        client=httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200, json={
+            "done": True, "message": {"content": json.dumps(output)},
+        }))),
+    )
+
+    result = provider.generate(request)
+
+    assert result["evidence"][0]["excerpt"] == "我喜歡咖啡"
+    assert result["evidence"][0]["span_start"] == 0
+    assert result["evidence"][0]["span_end"] == 5
 
 
 def test_openai_compatible_provider_rejects_invalid_json_content() -> None:

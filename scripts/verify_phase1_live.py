@@ -161,10 +161,13 @@ def run() -> None:
         raise ValueError("PHASE1_TIMEOUT_SECONDS must be a positive finite number")
 
     headers = {"Authorization": f"Bearer {token}"}
+    capture_source = os.environ.get("PHASE1_CAPTURE_SOURCE", "ANDROID_MIC")
+    if capture_source not in {"ANDROID_MIC", "IMPORT"}:
+        raise ValueError("PHASE1_CAPTURE_SOURCE must be ANDROID_MIC or IMPORT")
     capture = {
         "subject_id": subject_id,
         "recording_consent_id": consent_id,
-        "source": "ANDROID_MIC",
+        "source": capture_source,
         "recorded_at": recorded_at.isoformat(),
         "audio_ref": path.name,
         "idempotency_key": f"phase1-live-{uuid4().hex}",
@@ -218,7 +221,7 @@ def run() -> None:
         f"episode=ready result=200 memories={len(result.memory_items)}"
         f" stt={stt_version} ai={ai_version} persistence=verified"
     )
-    print("Service path verified; Android real-device gate remains separate")
+    print("Service path verified; real-device acceptance remains separate")
 
 
 if __name__ == "__main__":

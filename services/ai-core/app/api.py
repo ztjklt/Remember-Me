@@ -16,6 +16,7 @@ from .extractor import MemoryExtractor
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
+from .providers.ollama_local import OllamaLocalProvider
 
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
@@ -23,6 +24,12 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
         if settings.environment not in {"development", "test"}:
             raise ValueError("fixture provider is allowed only in development and test")
         provider = FixtureProvider()
+    elif settings.provider == "ollama_local":
+        provider = OllamaLocalProvider(
+            base_url=settings.base_url,
+            timeout_seconds=settings.timeout_seconds,
+            max_response_bytes=settings.max_response_bytes,
+        )
     else:
         provider = OpenAICompatibleProvider(
             base_url=settings.base_url,

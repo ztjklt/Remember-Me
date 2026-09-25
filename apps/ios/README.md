@@ -30,6 +30,21 @@ xcodebuild -project RememberMeIOS.xcodeproj -scheme RememberMeIOS \
 5. Record, pause/resume, save, play, upload, and observe the Episode state and
    returned Memory. The same `episode_id` is retained for retries and refreshes.
 
+For a repeatable local service check after starting the real STT bridge on
+`127.0.0.1:8200` and AI Core on `127.0.0.1:8100`, run:
+
+```bash
+cd services/backend
+PHASE1_AUDIO_PATH=/absolute/path/to/consented-recording.m4a \
+  uv run --locked python ../../scripts/verify_ios_local_stack.py
+```
+
+The script applies Backend migrations to a temporary SQLite database, seeds a
+private Actor token, starts the API and worker, uploads with `source=IMPORT`,
+and verifies that real STT and non-fixture AI produced persisted Memory and
+Evidence for the same Episode. Its synthetic-audio run is a technical check;
+real device acceptance needs a recording from the app.
+
 The audio file stays in the app's Documents/Recordings directory even after an
 upload or processing failure. On restart the most recent saved recording and
 Episode ID can be recovered. The upload uses `source=IMPORT` because Contract

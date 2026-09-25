@@ -29,7 +29,7 @@ class Settings(BaseSettings):
             "ENVIRONMENT",
         ),
     )
-    provider: Literal["fixture", "openai_compatible"] = Field(
+    provider: Literal["fixture", "openai_compatible", "ollama_local"] = Field(
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     def real_provider_has_explicit_identity(self) -> "Settings":
         if self.prompt_version != PROMPT_VERSION or self.schema_version != SCHEMA_VERSION:
             raise ValueError("prompt/schema versions must identify the implementation in this build")
-        if self.provider == "openai_compatible" and (
+        if self.provider in {"openai_compatible", "ollama_local"} and (
             self.model.startswith("fixture-ai-") or self.model_version.startswith("fixture-ai-")
         ):
             raise ValueError("real providers require explicit AI_MODEL and AI_MODEL_VERSION")
