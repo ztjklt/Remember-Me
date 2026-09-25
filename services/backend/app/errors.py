@@ -155,7 +155,7 @@ class IdempotencyConflict(AppError):
 
 
 class SttUnavailable(AppError):
-    """No speech-to-text provider could be reached. Retrying may work."""
+    """No speech-to-text provider could be reached, or it answered 503. Retrying may work."""
 
     code = "STT_UNAVAILABLE"
     http_status = 503
@@ -170,7 +170,7 @@ class SttFailed(AppError):
 
 
 class SttTimeout(AppError):
-    """The speech-to-text provider did not answer in time. Retrying may work.
+    """The speech-to-text provider did not answer in time, or answered 504.
 
     Its own code rather than STT_UNAVAILABLE because the two call for different
     things: a provider that is unreachable is a provider to check, while one that
