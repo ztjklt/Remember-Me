@@ -14,6 +14,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var calibration: CalibrationRecord?
     @Published private(set) var legacyGrant: LegacyGrantRecord?
+    @Published private(set) var legacyAudit: [LegacyAuditRecord] = []
     @Published private(set) var recipientMemories: [SubjectMemory] = []
     @Published private(set) var modelVersion: String?
     @Published private(set) var isBusy = false
@@ -117,6 +118,9 @@ final class EpisodeFlow: ObservableObject {
             legacyGrant = try await api.createLegacyGrant(
                 recipientActorID: recipientActorID, domains: domains, settings: settings
             )
+            if let legacyGrant {
+                legacyAudit = (try? await api.legacyAudit(id: legacyGrant.grantId, settings: settings)) ?? []
+            }
             message = "交接草稿已保存；接收者目前无法读取。"
         } catch {
             message = error.localizedDescription
@@ -129,6 +133,11 @@ final class EpisodeFlow: ObservableObject {
         defer { isBusy = false }
         do {
             legacyGrant = try await api.handoverGrants(settings: settings).first
+            if let legacyGrant {
+                legacyAudit = (try? await api.legacyAudit(id: legacyGrant.grantId, settings: settings)) ?? []
+            } else {
+                legacyAudit = []
+            }
         } catch {
             message = error.localizedDescription
         }
@@ -142,6 +151,7 @@ final class EpisodeFlow: ObservableObject {
             self.legacyGrant = try await api.activateLegacyPreview(
                 id: legacyGrant.grantId, settings: settings
             )
+            legacyAudit = (try? await api.legacyAudit(id: legacyGrant.grantId, settings: settings)) ?? []
             message = "接收者预演已激活，并冻结可见 Memory 清单。此操作不是正式 Legacy 转承。"
         } catch {
             message = error.localizedDescription
@@ -156,6 +166,7 @@ final class EpisodeFlow: ObservableObject {
             self.legacyGrant = try await api.revokeLegacyGrant(
                 id: legacyGrant.grantId, settings: settings
             )
+            legacyAudit = (try? await api.legacyAudit(id: legacyGrant.grantId, settings: settings)) ?? []
             message = "交接授权已撤销。"
         } catch {
             message = error.localizedDescription

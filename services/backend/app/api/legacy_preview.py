@@ -17,7 +17,8 @@ from ..errors import (
     LegacyAccessDenied, LegacyGrantConflict, LegacyGrantNotFound, RequestInvalid,
 )
 from ..models import (
-    Actor, Consent, ConsentScope, ConsentStatus, Episode, LegacyGrant, as_utc, utcnow,
+    Actor, Consent, ConsentScope, ConsentStatus, Episode, LegacyAuditEvent,
+    LegacyGrant, PersonModelSnapshot, as_utc, utcnow,
 )
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
@@ -48,6 +49,7 @@ class GrantView(BaseModel):
     allowed_domains: list[str]
     status: str
     snapshot_count: int
+    baseline_model_revision: int | None
     created_at: datetime
     activated_at: datetime | None
     revoked_at: datetime | None
@@ -59,6 +61,7 @@ class GrantView(BaseModel):
             recipient_actor_id=row.recipient_actor_id,
             allowed_domains=row.allowed_domains, status=row.status,
             snapshot_count=len(row.snapshot_memory_ids),
+            baseline_model_revision=row.baseline_model_revision,
             created_at=as_utc(row.created_at),
             activated_at=as_utc(row.activated_at) if row.activated_at else None,
             revoked_at=as_utc(row.revoked_at) if row.revoked_at else None,
@@ -69,6 +72,29 @@ class RecipientMemories(BaseModel):
     subject_id: str
     mode: str
     items: list[MemoryView]
+
+
+class AuditView(BaseModel):
+    event_id: str
+    grant_id: str
+    actor_id: str
+    action: str
+    occurred_at: datetime
+
+    @classmethod
+    def of(cls, row: LegacyAuditEvent) -> "AuditView":
+        return cls(
+            event_id=row.event_id, grant_id=row.grant_id,
+            actor_id=row.actor_id, action=row.action,
+            occurred_at=as_utc(row.occurred_at),
+        )
+
+
+def _audit(session: Session, *, grant_id: str, actor_id: str, action: str) -> None:
+    session.add(LegacyAuditEvent(
+        event_id=f"audit_{uuid4().hex[:16]}", grant_id=grant_id,
+        actor_id=actor_id, action=action, occurred_at=utcnow(),
+    ))
 
 
 def _own_grant(
@@ -123,6 +149,8 @@ def create_grant(
         status="DRAFT", created_at=utcnow(),
     )
     session.add(row)
+    session.flush()
+    _audit(session, grant_id=row.grant_id, actor_id=actor.actor_id, action="CREATED")
     session.commit()
     return GrantView.of(row)
 
@@ -140,6 +168,21 @@ def list_grants(
         ).order_by(LegacyGrant.created_at.desc())
     ).all()
     return [GrantView.of(row) for row in rows]
+
+
+@router.get("/handover/grants/{grant_id}/audit", response_model=list[AuditView])
+def grant_audit(
+    subject_id: str,
+    grant_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> list[AuditView]:
+    _own_grant(session, subject_id=subject_id, grant_id=grant_id, actor_id=actor.actor_id)
+    rows = session.scalars(
+        select(LegacyAuditEvent).where(LegacyAuditEvent.grant_id == grant_id)
+        .order_by(LegacyAuditEvent.occurred_at, LegacyAuditEvent.event_id)
+    ).all()
+    return [AuditView.of(row) for row in rows]
 
 
 @router.post("/handover/grants/{grant_id}/activate-preview", response_model=GrantView)
@@ -173,6 +216,9 @@ def activate_preview(
         raise LegacyGrantConflict("No eligible Memory is available for this preview")
     row.status = "PREVIEW_ACTIVE"
     row.activated_at = utcnow()
+    snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    row.baseline_model_revision = snapshot.revision if snapshot else 0
+    _audit(session, grant_id=row.grant_id, actor_id=actor.actor_id, action="ACTIVATED")
     session.commit()
     return GrantView.of(row)
 
@@ -190,6 +236,7 @@ def revoke_grant(
     if row.status != "REVOKED":
         row.status = "REVOKED"
         row.revoked_at = utcnow()
+        _audit(session, grant_id=row.grant_id, actor_id=actor.actor_id, action="REVOKED")
         session.commit()
     return GrantView.of(row)
 
@@ -224,6 +271,8 @@ def recipient_memories(
                 and item.correction is None
             ):
                 items[item.memory_item_id] = item
+        _audit(session, grant_id=grant.grant_id, actor_id=actor.actor_id, action="READ")
+    session.commit()
     return RecipientMemories(
         subject_id=subject_id, mode="PREVIEW", items=list(items.values())
     )

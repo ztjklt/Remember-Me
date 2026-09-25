@@ -40,6 +40,12 @@
 > AI Core does not generate the final wording, since model paraphrases can add
 > unsupported claims.
 
+> Handover preview activation records the current Actor-partitioned Person
+> Model revision. Grant creation, activation, successful recipient reads and
+> revocation append events to `legacy_audit_events`; only the grantor can read
+> `/handover/grants/{grant_id}/audit`. This is a rehearsal audit, not proof of
+> a formal Legacy transition.
+
 Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.

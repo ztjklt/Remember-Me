@@ -129,17 +129,22 @@ def run() -> None:
         ))
         if activated["status"] != "PREVIEW_ACTIVE":
             raise ValueError("Preview did not activate")
+        if activated["baseline_model_revision"] != model["revision"]:
+            raise ValueError("Preview did not lock the current Person Model revision")
         visible = checked(client.get(subject_path + "/legacy-preview/memories", headers=recipient))
         if item["memory_item_id"] not in {entry["memory_item_id"] for entry in visible["items"]}:
             raise ValueError("Explicit recipient grant did not expose the selected Memory")
         checked(client.post(grant_path + "/revoke", headers=owner))
         if client.get(subject_path + "/legacy-preview/memories", headers=recipient).status_code != 404:
             raise ValueError("Revocation did not cut off Recipient access")
+        events = checked(client.get(grant_path + "/audit", headers=owner))
+        if [event["action"] for event in events] != ["CREATED", "ACTIVATED", "READ", "REVOKED"]:
+            raise ValueError("Legacy preview audit missed a grant or access event")
 
     print(
         "ios-extended=verified person-model=source-linked graph=provenance "
         "twin=evidence-labelled calibration=real-model capture-plan=ready "
-        "legacy-preview=revocable"
+        "legacy-preview=revocable-audited"
     )
 
 

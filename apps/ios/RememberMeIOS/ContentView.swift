@@ -64,6 +64,9 @@ private struct HandoverScreen: View {
                         LabeledContent("接收者", value: grant.recipientActorId)
                         LabeledContent("状态", value: grant.status)
                         LabeledContent("锁定 Memory", value: "\(grant.snapshotCount)")
+                        if let revision = grant.baselineModelRevision {
+                            LabeledContent("激活时模型修订", value: "r\(revision)")
+                        }
                         Text(grant.allowedDomains.joined(separator: "、"))
                             .font(.caption).foregroundStyle(.secondary)
                         if grant.status == "DRAFT" {
@@ -75,6 +78,17 @@ private struct HandoverScreen: View {
                                 Task { await flow.revokeLegacyPreview() }
                             }
                             .disabled(flow.isBusy)
+                        }
+                    }
+                }
+                if !flow.legacyAudit.isEmpty {
+                    Section("授权访问记录") {
+                        ForEach(flow.legacyAudit) { entry in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.action)
+                                Text("Actor \(entry.actorId) · \(entry.occurredAt)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }

@@ -155,8 +155,19 @@ struct LegacyGrantRecord: Decodable, Identifiable {
     let allowedDomains: [String]
     let status: String
     let snapshotCount: Int
+    let baselineModelRevision: Int?
 
     var id: String { grantId }
+}
+
+struct LegacyAuditRecord: Decodable, Identifiable {
+    let eventId: String
+    let grantId: String
+    let actorId: String
+    let action: String
+    let occurredAt: String
+
+    var id: String { eventId }
 }
 
 struct RecipientMemoryList: Decodable {
@@ -448,6 +459,15 @@ struct EpisodeAPI {
             path: handoverPath(settings: settings), method: "GET", settings: settings
         )
         return try await decode([LegacyGrantRecord].self, request: request)
+    }
+
+    func legacyAudit(id: String, settings: ServerSettings) async throws -> [LegacyAuditRecord] {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let request = try authorizedRequest(
+            path: handoverPath(settings: settings) + "/\(encoded)/audit",
+            method: "GET", settings: settings
+        )
+        return try await decode([LegacyAuditRecord].self, request: request)
     }
 
     func activateLegacyPreview(id: String, settings: ServerSettings) async throws -> LegacyGrantRecord {

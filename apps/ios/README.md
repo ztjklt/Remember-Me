@@ -131,7 +131,9 @@ choose visible Memory domains. A draft exposes nothing. Explicit preview
 activation freezes the eligible Memory IDs; later captures do not enter that
 snapshot. Corrected or deleted items disappear from recipient retrieval, and
 grant or consent revocation cuts access immediately. The Recipient signs in with
-their own Actor token and reads the preview from the same tab. There is no
+their own Actor token and reads the preview from the same tab. Activation also
+records the Person Model revision, and the grantor can inspect append-only
+create, activate, recipient read, and revoke events. There is no
 formal Legacy activation, death verification, identity proof, voice grant, or
 legal authority check in this branch.
 

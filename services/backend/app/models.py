@@ -508,12 +508,36 @@ class LegacyGrant(Base):
     )
     allowed_domains: Mapped[list] = mapped_column(JSON, nullable=False)
     snapshot_memory_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    baseline_model_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LegacyAuditEvent(Base):
+    """Append-only record of preview grant lifecycle and recipient reads."""
+
+    __tablename__ = "legacy_audit_events"
+    __table_args__ = (
+        Index("ix_legacy_audit_grant_time", "grant_id", "occurred_at"),
+        CheckConstraint(
+            "action IN ('CREATED', 'ACTIVATED', 'READ', 'REVOKED')",
+            name="ck_legacy_audit_action",
+        ),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    grant_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("legacy_grants.grant_id", ondelete="RESTRICT"), nullable=False
+    )
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class PersonModelSnapshot(Base):

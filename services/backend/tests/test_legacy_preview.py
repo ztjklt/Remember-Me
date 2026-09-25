@@ -41,6 +41,9 @@ def test_recipient_preview_is_scoped_frozen_and_revocable(client, session):
     assert draft.status_code == 201, draft.text
     grant_id = draft.json()["grant_id"]
     assert draft.json()["status"] == "DRAFT"
+    audit_path = f"{grant_path}/{grant_id}/audit"
+    assert [entry["action"] for entry in client.get(audit_path, headers=owner_auth).json()] == ["CREATED"]
+    assert client.get(audit_path, headers=recipient_auth).status_code == 404
     assert client.get(recipient_path, headers=recipient_auth).status_code == 404
     activate = f"{grant_path}/{grant_id}/activate-preview"
     assert client.post(
@@ -55,6 +58,7 @@ def test_recipient_preview_is_scoped_frozen_and_revocable(client, session):
     assert active.status_code == 200, active.text
     assert active.json()["status"] == "PREVIEW_ACTIVE"
     assert active.json()["snapshot_count"] == 1
+    assert active.json()["baseline_model_revision"] == 0
     assert client.get(recipient_path, headers=recipient_auth).json()["items"][0]["content"] == "我喜欢咖啡。"
     assert client.get(recipient_path, headers=other_auth).status_code == 404
 
@@ -84,6 +88,10 @@ def test_recipient_preview_is_scoped_frozen_and_revocable(client, session):
     assert client.post(revoke, headers=other_auth).status_code == 404
     assert client.post(revoke, headers=owner_auth).json()["status"] == "REVOKED"
     assert client.get(recipient_path, headers=recipient_auth).status_code == 404
+    actions = [entry["action"] for entry in client.get(audit_path, headers=owner_auth).json()]
+    assert actions[0:2] == ["CREATED", "ACTIVATED"]
+    assert actions.count("READ") == 4
+    assert actions[-1] == "REVOKED"
     assert client.post(
         activate, headers=owner_auth, json={"confirmation": "ACTIVATE_PREVIEW"},
     ).status_code == 409
