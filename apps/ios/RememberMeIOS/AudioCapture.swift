@@ -2,6 +2,11 @@ import AVFoundation
 import Foundation
 import UIKit
 
+struct PersonalVoiceChoice: Identifiable {
+    let id: String
+    let name: String
+}
+
 @MainActor
 final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
     @Published private(set) var fileURL: URL?
@@ -11,13 +16,14 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
     @Published private(set) var isPaused = false
     @Published private(set) var isPlaying = false
     @Published private(set) var isSpeaking = false
-    @Published private(set) var personalVoiceName: String?
+    @Published private(set) var personalVoiceChoices: [PersonalVoiceChoice] = []
+    @Published var selectedPersonalVoiceID = ""
     @Published var message: String?
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
     private let synthesizer = AVSpeechSynthesizer()
-    private var personalVoice: AVSpeechSynthesisVoice?
+    private var personalVoices: [String: AVSpeechSynthesisVoice] = [:]
     private var timer: Timer?
 
     override init() {
@@ -204,8 +210,9 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
     func requestPersonalVoiceAccess() async {
         let status = await AVSpeechSynthesizer.requestPersonalVoiceAuthorization()
         guard status == .authorized else {
-            personalVoice = nil
-            personalVoiceName = nil
+            personalVoices = [:]
+            personalVoiceChoices = []
+            selectedPersonalVoiceID = ""
             switch status {
             case .denied:
                 message = "设备未授权此 App 使用个人声音。可在 iOS 设置中调整。"
@@ -217,13 +224,13 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
             return
         }
         refreshPersonalVoice()
-        message = personalVoiceName.map {
-            "已找到设备个人声音：\($0)。播放前仍需独立 VOICE 同意。"
-        } ?? "已授权，但设备尚无可用的个人声音。请先在 iOS 辅助功能中创建。"
+        message = personalVoiceChoices.isEmpty
+            ? "已授权，但设备尚无可用的个人声音。请先在 iOS 辅助功能中创建。"
+            : "已找到 \(personalVoiceChoices.count) 个设备个人声音。请明确选择后播放。"
     }
 
     func speakPersonalText(_ text: String) {
-        guard let voice = personalVoice,
+        guard let voice = personalVoices[selectedPersonalVoiceID],
               !isRecording,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             message = "设备个人声音不可用；请先授权并检查。"
@@ -247,14 +254,19 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
 
     private func refreshPersonalVoice() {
         guard AVSpeechSynthesizer.personalVoiceAuthorizationStatus == .authorized else {
-            personalVoice = nil
-            personalVoiceName = nil
+            personalVoices = [:]
+            personalVoiceChoices = []
+            selectedPersonalVoiceID = ""
             return
         }
-        personalVoice = AVSpeechSynthesisVoice.speechVoices().first {
+        let voices = AVSpeechSynthesisVoice.speechVoices().filter {
             $0.voiceTraits.contains(.isPersonalVoice)
         }
-        personalVoiceName = personalVoice?.name
+        personalVoices = Dictionary(uniqueKeysWithValues: voices.map { ($0.identifier, $0) })
+        personalVoiceChoices = voices.map { PersonalVoiceChoice(id: $0.identifier, name: $0.name) }
+        if personalVoices[selectedPersonalVoiceID] == nil {
+            selectedPersonalVoiceID = ""
+        }
     }
 
     func stopSystemSpeech() {

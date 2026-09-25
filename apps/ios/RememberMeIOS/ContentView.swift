@@ -550,8 +550,13 @@ private struct TwinView: View {
                             Task { await capture.requestPersonalVoiceAccess() }
                         }
                         .disabled(flow.isBusy || capture.isRecording)
-                        if let voiceName = capture.personalVoiceName {
-                            LabeledContent("设备个人声音", value: voiceName)
+                        if !capture.personalVoiceChoices.isEmpty {
+                            Picker("选择设备个人声音", selection: $capture.selectedPersonalVoiceID) {
+                                Text("请选择").tag("")
+                                ForEach(capture.personalVoiceChoices) { voice in
+                                    Text(voice.name).tag(voice.id)
+                                }
+                            }
                             Button(capture.isSpeaking ? "停止朗读" : "用设备个人声音朗读") {
                                 if capture.isSpeaking {
                                     capture.stopSystemSpeech()
@@ -563,7 +568,7 @@ private struct TwinView: View {
                                     }
                                 }
                             }
-                            .disabled(flow.isBusy || capture.isRecording)
+                            .disabled(flow.isBusy || capture.isRecording || capture.selectedPersonalVoiceID.isEmpty)
                         }
                         Text("每次播放前验证独立 VOICE 同意。设备个人声音还需 iOS 授权和本机预先创建；此处尚未核实它与 Subject 的身份关系，也不训练或上传声音模型。")
                             .font(.caption).foregroundStyle(.secondary)

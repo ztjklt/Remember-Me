@@ -111,7 +111,7 @@ is created by this fallback.
 On a supported device, the user may also explicitly authorize access to an
 [Apple Personal Voice](https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer/requestpersonalvoiceauthorization%28completionhandler%3A%29)
 that they already created in iOS Accessibility settings. The app offers it only
-after system authorization and still checks Backend `VOICE` consent on each
+after system authorization and explicit selection of a voice; it still checks Backend `VOICE` consent on each
 playback. This is on-device playback, not a Voice profile built from Remember Me
 Episodes. The current account model cannot verify that the device's Personal
 Voice belongs to the selected Subject, so the UI labels that limitation.
