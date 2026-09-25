@@ -199,7 +199,11 @@ Contract states may not be extended: failure is `failed` plus an error code, nev
 
 `episode_id` and the internal job id appear as **log fields only**, never as payload fields beyond what the contract defines. `trace_id` is an infrastructure correlation identifier; Android must not depend on it as a product identifier.
 
+**Every process that handles an Episode logs under its trace id, not only the API.** The Worker adopts the Episode's own trace id for the duration of a stage, so a completed stage, a failed stage, and a crashed stage are written with the identifier the status endpoint returns to the client. That is what makes a client-reported `episode_id` sufficient to find the work in the Worker's log; without it, the person debugging has to resolve an `episode_id` to the internal job id in the database before they can read the Worker's output, which is a lookup rather than a log field. The Worker logs one line per stage with its duration and the version that produced it, so a healthy run is legible and not only a failing one.
+
 **Rationale.** The Golden Path's failure modes are mostly asynchronous, so the only practical debugging path is correlating a client-visible status with a worker run. Generating `trace_id` at the boundary is what makes that correlation possible, and it is what Contract v0.1.1 assigns to Backend.
+
+**Rejected.** *Free-text logs* (nothing is queryable, and the same failure would read differently in the API and the Worker). *Writing `job_id` into a contract payload so a client can correlate directly* (`job_id` is internal and its lifetime is the queue's, not the product's; `episode_id` is the client's identifier and the status endpoint already carries the trace). *Shipping logs to a collector or a tracing backend* (that is a provider decision Phase 1 does not authorize, and it consumes this baseline rather than replacing it — see the open items).
 
 ## D14 — Local verification and determinism
 
