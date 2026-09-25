@@ -4,7 +4,7 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
-The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
+The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
 
 The Android prototype is runnable. The iOS track is authorized but has no app project in this repository yet. Feature readiness is tracked through the current PRs and the [roadmap](docs/roadmap/ROADMAP.md); a working Phase 1 demo requires a real recording through the shared processing path on one client.
 
