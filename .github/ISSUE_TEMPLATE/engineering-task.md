@@ -1,76 +1,27 @@
 ---
-name: Engineering Task
-about: A scoped, executable unit of work owned by exactly one module owner.
-title: "[Area] "
+name: Delegated Task
+about: A bounded task that helps the current product path move forward.
+title: "[Task] "
 labels: ""
 assignees: ""
 ---
 
-<!--
-One Issue = one owner = one deliverable. Fill every section.
-If you cannot fill Non-Goals or Definition of Done, the task is not ready to start.
-Phase discipline: Phase 1 — Golden Path is the only committed workstream.
-Phase 2–4 Issues are PLANNED; picking one up requires an explicit decision from the Product and Integration Owner.
--->
+<!-- One Issue assigns one temporary task owner. Do not use it to create a permanent module queue. Phase 1 is the only committed workstream; later phases require a Product Owner decision. -->
 
-## Context
+## Outcome
 
-Why this task exists. What is broken, missing, or blocked today, and what it unblocks.
+What should work when this task is done, and what main-path problem does it unblock?
 
-## Owner
+## Scope and inputs
 
-Sole owner: <!-- @github-handle --> (module: <!-- android | ai-core | backend | voice | hardware | integration -->)
+Existing code, interfaces, fixtures, and decisions to reuse. State any boundary the contributor must not change. Link a proposal first if the shared Contract must change.
 
-## Goal
+## Done when
 
-The problem this solves once complete. One or two sentences.
+One or two observable checks, with the shortest relevant command or real-device action. Name the first external dependency if it blocks this result.
 
-## Scope
+## Handoff
 
-What is specifically being done in this task.
+Task owner: @<!-- GitHub handle -->
 
--
--
-
-## Non-Goals
-
-What is explicitly NOT being done here. This section prevents scope creep.
-
--
--
-
-## Inputs / Dependencies
-
-Contracts, APIs, Issues, or decisions this task depends on.
-
-| Dependency | What it provides | Status |
-| --- | --- | --- |
-|  |  | <!-- ready / blocked / not needed --> |
-
-## Deliverables
-
-Code, documentation, tests, and migrations that must be submitted.
-
-- [ ]
-- [ ]
-
-## Definition of Done
-
-The conditions under which this Issue may be closed. Be concrete and verifiable.
-
-- [ ]
-- [ ]
-
-## Verification
-
-How the Product / Integration Owner verifies this. State the exact command, device, or artifact.
-
-```bash
-# command, or "on a real Android device: ..."
-```
-
-## Blockers
-
-External dependencies that currently prevent progress. If none, write "None".
-
-- <!-- None -->
+Open a reviewable PR into `develop` and include a concise result, Contract impact, and setup notes needed to use it locally.

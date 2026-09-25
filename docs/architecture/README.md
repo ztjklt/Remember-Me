@@ -1,12 +1,14 @@
 # Architecture
 
-Baseline: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) and the [Team Development Guide v1.0](../team/Remember_Me_Team_Development_Guide_v1.0.docx). The client baseline is **Android / Kotlin / Jetpack Compose**. Any older description naming iOS, Swift, or SwiftUI as the current client is superseded.
+Baseline: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) and the [current delivery model](../team/00_TEAM_OWNERSHIP.md). The client baseline is **Android / Kotlin / Jetpack Compose**. Any older description naming iOS, Swift, or SwiftUI as the current client is superseded.
 
 ## End-to-end path
 
 `Android and Hardware → API / Auth → Episode and Job → STT → AI Core → Memory / Graph / Person Model → Twin → optional Voice → Android`
 
 Raw Episodes are persisted before AI or Voice runs, so a downstream failure can never lose the original life record.
+
+For the Phase 1 build, treat this as one product path: Android records and calls the Backend API; Backend preserves the Episode, runs STT and structured extraction behind provider adapters, then returns status and Memory to Android. Backend, AI Core, and Voice are logical responsibilities and existing code areas, not mandatory staffing or deployment splits. Simplify deployment only when it helps the runnable path; preserve the shared Contract and data boundaries while doing so.
 
 ## Layers
 

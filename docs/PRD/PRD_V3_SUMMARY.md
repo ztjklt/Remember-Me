@@ -71,7 +71,7 @@ Recording, Cloud Twin, Voice Clone, third-party contribution, Digital Handover, 
 
 ## Engineering phases
 
-Product goals for the four phases are defined in the PRD; execution status, owners, and exit gates are defined in the [Team Development Guide](../team/Remember_Me_Team_Development_Guide_v1.0.docx) and recorded in the repository [roadmap](../roadmap/ROADMAP.md). Reading Phase 2–4 does not authorize starting them.
+Product goals for the four phases are defined in the PRD; execution status and exit gates are recorded in the repository [roadmap](../roadmap/ROADMAP.md). Current work assignment follows the [single-path delivery model](../team/00_TEAM_OWNERSHIP.md), which supersedes fixed staffing in the original [Team Development Guide](../team/Remember_Me_Team_Development_Guide_v1.0.docx). Reading Phase 2–4 does not authorize starting them.
 
 | Phase | Status | Product goal |
 | --- | --- | --- |
