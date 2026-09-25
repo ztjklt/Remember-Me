@@ -27,6 +27,7 @@ Inputs and outputs must conform to [`packages/contracts`](../../packages/contrac
 | `app/worker.py` | The processing worker: one stage per tick, under a renewable lease |
 | `app/api/` | HTTP surface |
 | `app/seed.py` | Local development seed |
+| `docs/android-client.md` | Pointing the Android client at a running Backend: the reachable address, the seeded credential, the limits, and troubleshooting |
 | `migrations/` | Alembic environment and the migrations |
 | `tests/` | The local verification suite |
 
@@ -186,6 +187,8 @@ URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Pro
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 
 Every response carries an `X-Request-ID`. The value is generated at the request boundary and is the identifier Issue #1 propagates as the contract's `trace_id`.
+
+A client integrating against these endpoints should start from [docs/android-client.md](docs/android-client.md): which address to point at, the seeded credential, the upload limits, and what each failure means.
 
 ## Configuration
 
