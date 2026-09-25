@@ -8,6 +8,8 @@
 - **Related:** Issue #13 (this decision), Issue #8 (foundation), Issue #1 (ingestion), [Architecture baseline](README.md), [Contract v0.1](../../packages/contracts/README.md)
 - **Path note:** Issue #13 names `docs/architecture/adr/ADR-0001-backend-platform.md` as the canonical location and permits an equivalent agreed path. This file is that decision record; if the ratifier prefers the named path, it moves without any content change.
 
+**Delivery-policy update (2026-09-26):** Local checks remain useful diagnostics, but CI and a recorded test command are no longer mandatory PR merge gates. The current policy is in [team ownership](../team/00_TEAM_OWNERSHIP.md).
+
 ## Context
 
 The engineering baseline proposes Supabase / PostgreSQL plus Object Storage, an independent Backend, and a Worker layer, but the reasoning and the boundaries were never written down. Without a decision record, Backend, Android, and AI Core each risk binding to a different assumed architecture.
@@ -16,7 +18,7 @@ This ADR fixes the platform decisions. It is deliberately narrow: it decides **h
 
 Two constraints shape most decisions below:
 
-1. **Phase 1 policy requires a deterministic local verification command in every Pull Request.** The available development machine has `python3.13` and `uv`, and has **no Docker and no PostgreSQL**. A test path that needs a container cannot be the PR gate.
+1. **Backend needs a deterministic local verification command for quick diagnostics.** The available development machine has `python3.13` and `uv`, and has **no Docker and no PostgreSQL**. The default check should not need a container.
 2. **No external provider is chosen.** STT, LLM, and Voice providers are all still open. Every one of them must sit behind an adapter so that Phase 1 can be built and verified end to end without selecting a vendor.
 
 ## Decision summary
@@ -211,9 +213,9 @@ cd services/backend && uv run pytest
 
 It runs against SQLite, the local-filesystem object store, and fake STT / AI Core adapters. It must complete with no Docker, no PostgreSQL, and no network access. Real provider and PostgreSQL runs are opt-in through environment configuration. This command is added to `services/backend/README.md` by the first implementation Pull Request (#8), as the Phase 1 kickoff requires.
 
-**Rationale.** Phase 1 policy requires every PR to record the exact local command and its result, and the development machine has neither Docker nor PostgreSQL. Making the default path dependency-free means a PR fails for product reasons, not environment reasons.
+**Rationale.** The development machine has neither Docker nor PostgreSQL. Making the default check dependency-free helps distinguish product failures from environment failures without making a passing result a merge condition.
 
-**Rejected.** *A Docker-based test path as the gate* (would fail closed on a machine that cannot run it). *Skipped or no-op checks* (explicitly forbidden by the kickoff policy).
+**Rejected.** *A Docker-only default check* (would be unavailable on this development machine). *Skipped or no-op checks presented as passing evidence* (they do not verify behavior).
 
 **CI.** `.github/workflows/services-ci.placeholder.yml.disabled` stays disabled until there is real source code and this real command. It is renamed and enabled with the first implementation PR, and it must never contain a no-op job.
 

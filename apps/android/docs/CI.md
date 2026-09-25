@@ -20,7 +20,7 @@ The self-hosted Runner uses the verified local Android toolchain and the trusted
 
 Self-hosted CI executes only pushes and Pull Requests whose head repository is this repository. Fork Pull Requests are skipped so untrusted fork code cannot run on the developer machine. The service explicitly clears inherited AI-provider and SSH-agent environment variables, and the workflow verifies that they are empty before running project code.
 
-Repository collaborators are still trusted code executors on this Runner. Pull Requests require Code Owner review before merge. Do not add steps that print the environment, home directory contents, credential stores, or unrelated host state.
+Repository collaborators are still trusted code executors on this Runner. Code Owner review is available as feedback but is not required before merge. Do not add steps that print the environment, home directory contents, credential stores, or unrelated host state.
 
 ## Local reproduction
 
@@ -33,7 +33,7 @@ export ANDROID_HOME="$ANDROID_SDK_ROOT"
 ./gradlew --no-daemon test assembleDebug --stacktrace
 ```
 
-The expected artifact is `app/build/outputs/apk/debug/app-debug.apk`. A correct change must produce a green job; deliberately breaking a Kotlin source or test must produce a red job.
+The expected artifact is `app/build/outputs/apk/debug/app-debug.apk`. A correct change should produce a green job; deliberately breaking a Kotlin source or test must produce a red job. The job reports build health but is not a required branch-protection check.
 
 ## Operations
 

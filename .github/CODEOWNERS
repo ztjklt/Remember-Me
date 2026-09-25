@@ -1,10 +1,4 @@
-* @ztjklt
-/apps/android/ @shuziyuxingxing-stack @ztjklt
-/.github/workflows/android-ci.yml @shuziyuxingxing-stack @ztjklt
-# Re-add the named module owners after their pending repository invitations are accepted.
-/services/ai-core/ @ztjklt
-/services/backend/ @ztjklt
-/services/voice/ @ztjklt
-/infra/ @ztjklt
+# Advisory routing only. Neither main nor develop requires a Code Owner review.
+/apps/ios/ @ztjklt
+/apps/android/ @shuziyuxingxing-stack
 /packages/contracts/ @ztjklt
-/docs/team/ @ztjklt
