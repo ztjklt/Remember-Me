@@ -12,6 +12,8 @@ duplicate result must not be written — and the tests reproduce each one rather
 than reasoning about it.
 """
 
+import json
+import logging
 import time
 from datetime import timedelta
 
@@ -22,6 +24,7 @@ from sqlalchemy import select, update
 
 from app.ai_core import FakeAiCoreClient, HttpAiCoreClient
 from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
+from app.logging_config import JsonFormatter
 from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
 from app.seed import seed_development_data
 from app.stt import FakeSttProvider, HttpSttProvider, Transcript
@@ -602,3 +605,103 @@ def test_the_heartbeat_gives_up_a_lease_it_no_longer_holds(app, session, uploade
     heartbeat.stop()
 
     assert not heartbeat.alive
+
+
+@pytest.fixture
+def worker_log():
+    """The worker's own output, formatted as it is written.
+
+    `trace_id` is attached by the formatter from a context variable, so it has to
+    be read while the record is emitted — inspecting the LogRecord afterwards
+    would always find it cleared. This is also the shape that reaches disk, which
+    is what the "no transcript in the logs" rule is about.
+    """
+
+    class Capture(logging.Handler):
+        def __init__(self) -> None:
+            super().__init__()
+            self.payloads: list[dict] = []
+
+        def emit(self, record: logging.LogRecord) -> None:
+            self.payloads.append(json.loads(JsonFormatter().format(record)))
+
+    handler = Capture()
+    logger = logging.getLogger("app.worker")
+    previous_level = logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    try:
+        yield handler.payloads
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous_level)
+
+
+def test_a_completed_stage_is_logged_with_what_produced_it(worker, uploaded, worker_log):
+    """ADR-0001 D13 promises the transitions, the durations, and the versions.
+
+    A run that succeeds used to log nothing at all, which left the question worth
+    asking — "the Episode is stuck, what is the worker doing?" — with no answer in
+    the worker's own output.
+    """
+    advance(worker)
+
+    completed = [p for p in worker_log if p["message"] == "stage.completed"]
+
+    assert [p["stage"] for p in completed] == ["transcribe", "extract", "model"]
+    # The status names the stage that just ran, which is what a poller sees.
+    assert [p["status"] for p in completed] == ["transcribing", "extracting", "ready"]
+    assert {p["episode_id"] for p in completed} == {uploaded}
+    assert all(p["job_id"] and p["duration_ms"] >= 0 for p in completed)
+
+    # Each stage names its own producer. The transcript is still on the row when
+    # the extract stage runs, so reading "whichever version is set" would report
+    # the transcriber's model as the one that extracted the memories.
+    assert (completed[0]["provider"], completed[0]["model_version"]) == (
+        "fake",
+        "fake-stt-v1",
+    )
+    assert completed[1]["model_version"] == "fake-ai-v1"
+    assert completed[2]["model_version"] == "fake-ai-v1"
+
+
+def test_a_worker_line_carries_the_episodes_trace_id(worker, session, uploaded, worker_log):
+    """`infra/deployment.md` promises the two processes' logs are matchable.
+
+    That is the whole of the troubleshooting story: the client has an
+    `episode_id`, the log lines carry a `trace_id`, and the status endpoint is
+    what converts one into the other.
+    """
+    trace_id = episode_of(session, uploaded).trace_id
+
+    advance(worker)
+
+    completed = [p for p in worker_log if p["message"] == "stage.completed"]
+    assert completed, "the fixture must produce output to check"
+    assert {p["trace_id"] for p in completed} == {trace_id}
+
+
+def test_a_failed_stage_is_findable_from_the_episode(app, session, uploaded, worker_log):
+    class Unreachable(FakeAiCoreClient):
+        def process(self, payload):  # noqa: ANN001, ANN201
+            raise AiUnavailable("AI Core is unreachable")
+
+    trace_id = episode_of(session, uploaded).trace_id
+
+    advance(build_worker(app, ai=Unreachable()))
+
+    failed = [p for p in worker_log if p["message"] == "stage.failed"]
+    assert failed, "a stage that failed must say so"
+    assert {p["error_code"] for p in failed} == {"AI_UNAVAILABLE"}
+    assert {p["trace_id"] for p in failed} == {trace_id}
+
+
+def test_the_worker_logs_never_carry_the_transcript(worker, session, uploaded, worker_log):
+    """A transcript is the subject's speech; a log line is written to disk."""
+    advance(worker)
+
+    transcript = episode_of(session, uploaded).transcript
+    assert transcript, "the fixture must actually produce a transcript"
+
+    written = "\n".join(json.dumps(payload) for payload in worker_log)
+    assert transcript not in written
