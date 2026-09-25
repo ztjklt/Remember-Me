@@ -16,7 +16,7 @@ The [Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md) records the original assignme
 
 Every delegated PR briefly states what changed, what was actually checked, whether `packages/contracts` changed, and any real consent, privacy, or migration impact. A mainline lead may use the same concise format. Cross-module Contract changes still require an Issue or proposal and Product Owner approval before implementation.
 
-CI and review are optional feedback on both `develop` and `main`; neither is a required merge gate. Record one relevant command or observation when it helps explain the result, and report failures honestly. Device checks focus on changed native behavior and the chosen end-to-end demo, not every PR or both clients. Do not present a skipped, placeholder, or no-op check as successful verification. Force pushes and branch deletion remain disabled.
+CI and review are optional feedback on both `develop` and `main`; neither branch has protection rules. Direct pushes are allowed. Record one relevant command or observation when it helps explain the result, and report failures honestly. Device checks focus on changed native behavior and the chosen end-to-end demo, not every PR or both clients. Do not present a skipped, placeholder, or no-op check as successful verification.
 
 ## Scope
 

@@ -27,4 +27,4 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 
 ## Delivery flow
 
-The iOS and Android leads can progress independently. Use descriptive branches and batch related work when useful; a delegated small Issue uses a focused PR for handoff. Neither `develop` nor `main` requires a passing CI check or second-person approval to merge. Preserve truthful test results, relevant docs, and Contract impact. Keep `main` as a usable demo snapshot; force pushes and branch deletion remain disabled.
+The iOS and Android leads can progress independently. Use descriptive branches and batch related work when useful; a delegated small Issue uses a focused PR for handoff. Neither `develop` nor `main` has branch protection or requires a passing CI check or second-person approval. Direct pushes are allowed. Preserve truthful test results, relevant docs, and Contract impact. Keep `main` as a usable demo snapshot.
