@@ -176,6 +176,26 @@ private struct CaptureView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("引导式采集 · 预览") {
+                    Button("刷新 2–4 个优先问题") {
+                        Task { await flow.loadCapturePlan() }
+                    }
+                    .disabled(flow.isBusy || flow.settings.subjectID.isEmpty)
+                    if let plan = flow.capturePlan {
+                        Text("依据 \(plan.modelVersion) 的覆盖度与校准差异，按启发式分数排序。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        ForEach(plan.questions) { item in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.question)
+                                Text("\(item.domain) · 已有 \(item.existingFacts) 条来源记忆")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    } else {
+                        Text("可先录音，也可读取建议问题后做引导式录音。")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
                 Section("本机录音") {
                     Text("先征得录音对象同意。录音文件保存在本机；上传后由 Backend 异步处理。")
                         .font(.footnote)

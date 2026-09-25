@@ -93,6 +93,13 @@ goes to the background. The button explicitly says this is **not** the Subject's
 cloned voice. No Voice dataset, speaker verification, clone provider or profile
 is created by this fallback.
 
+Capture offers a guided preview of up to four questions. Backend ranks seven
+fixed-domain prompts by a documented heuristic score based on estimated
+information gain, importance, uncertainty, recent calibration gaps and
+interaction cost. The questions update after new Episodes or calibration
+feedback. This is not an automatic interviewing agent or an empirical measure
+of information gain.
+
 The Handover tab provides a manual Legacy **preview**: the capturing Actor must
 grant separate `DIGITAL_HANDOVER` consent, name an existing Recipient Actor, and
 choose visible Memory domains. A draft exposes nothing. Explicit preview

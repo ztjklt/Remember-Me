@@ -9,6 +9,7 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var subjectMemories: [SubjectMemory] = []
     @Published private(set) var domainCounts: [String: Int] = [:]
     @Published private(set) var personModel: PersonModelPreview?
+    @Published private(set) var capturePlan: CapturePlan?
     @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var calibration: CalibrationRecord?
     @Published private(set) var legacyGrant: LegacyGrantRecord?
@@ -196,6 +197,20 @@ final class EpisodeFlow: ObservableObject {
         }
     }
 
+    func loadCapturePlan() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let plan = try await api.capturePlan(settings: settings)
+            guard plan.subjectId == settings.subjectID else { throw EpisodeAPIError.invalidResponse }
+            capturePlan = plan
+            message = "已按当前记忆覆盖与校准差异刷新引导问题。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
     func correctMemory(_ id: String, proposedContent: String) async {
         guard !isBusy else { return }
         isBusy = true
@@ -304,6 +319,9 @@ final class EpisodeFlow: ObservableObject {
                 gaps: gaps, settings: settings
             )
             message = "校准反馈已保存，按 Actor 提交记录；不会自动改写本人事实。"
+            if let plan = try? await api.capturePlan(settings: settings) {
+                capturePlan = plan
+            }
         } catch {
             message = error.localizedDescription
         }
@@ -378,6 +396,10 @@ final class EpisodeFlow: ObservableObject {
                        preview.subjectId == settings.subjectID {
                         personModel = preview
                     }
+                }
+                if let plan = try? await api.capturePlan(settings: settings),
+                   plan.subjectId == settings.subjectID {
+                    capturePlan = plan
                 }
                 return
             }

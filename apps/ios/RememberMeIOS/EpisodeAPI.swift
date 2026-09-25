@@ -145,6 +145,22 @@ struct PersonModelPreview: Decodable {
     let domains: [String: [PersonModelFact]]
 }
 
+struct GuidedQuestion: Decodable, Identifiable {
+    let domain: String
+    let question: String
+    let existingFacts: Int
+    let score: Double
+
+    var id: String { domain }
+}
+
+struct CapturePlan: Decodable {
+    let subjectId: String
+    let modelVersion: String
+    let planningMethod: String
+    let questions: [GuidedQuestion]
+}
+
 enum EpisodeAPIError: LocalizedError {
     case invalidServerURL
     case missingCredentials
@@ -265,6 +281,15 @@ struct EpisodeAPI {
             path: "api/v1/subjects/\(id)/person-model", method: "GET", settings: settings
         )
         return try await decode(PersonModelPreview.self, request: request)
+    }
+
+    func capturePlan(settings: ServerSettings) async throws -> CapturePlan {
+        guard !settings.subjectID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        let id = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let request = try authorizedRequest(
+            path: "api/v1/subjects/\(id)/capture-plan", method: "GET", settings: settings
+        )
+        return try await decode(CapturePlan.self, request: request)
     }
 
     func twin(question: String, settings: ServerSettings) async throws -> TwinAnswer {

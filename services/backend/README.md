@@ -190,6 +190,7 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `GET /api/v1/episodes/{episode_id}/result` | **Episode result.** The contract's `episodeResult`, once the Episode is `ready`. Before that it is `409 EPISODE_NOT_READY`, which a poller can tell apart from `404`. Readable only by the Actor that captured it. |
 | `GET /api/v1/subjects/{subject_id}/memories` | Isolated iOS branch's provisional Phase 2 cross-Episode Memory list with evidence. Actor-owned Episodes only. |
 | `GET /api/v1/subjects/{subject_id}/person-model` | Actor-partitioned, versioned seven-domain preview built in the worker model stage from evidence-linked Memory. |
+| `GET /api/v1/subjects/{subject_id}/capture-plan` | Two to four guided-capture questions ranked by coverage, confidence and latest manual calibration gaps. |
 | `PUT /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Record an Actor's proposed correction; the disputed source claim is immediately excluded from Twin retrieval. |
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}/correction` | Withdraw that correction proposal. |
 | `DELETE /api/v1/subjects/{subject_id}/memories/{memory_item_id}` | Remove one derived Memory from Episode results and Twin retrieval. Source Episode and raw Evidence remain. |
@@ -213,6 +214,10 @@ Person Model preview revisions change when usable Memory changes. Disputed
 claims are excluded until correction withdrawal or verified replacement. This
 snapshot is a source-linked aggregate, not an inferred personality or semantic
 relationship graph.
+The capture planner uses a fixed heuristic approximation of
+`information_gain × importance × uncertainty × time_urgency ÷ interaction_cost`.
+Its factors are shown in the response; they are not learned probabilities or a
+validated measure of question value.
 Calibration records are Actor-submitted observations. The current account model
 cannot prove the Actor is the Subject, so the Backend does not turn them into
 verified Subject evidence or automatically update the Person Model.
