@@ -74,7 +74,7 @@ def capture_plan(
         select(CalibrationSession).where(
             CalibrationSession.subject_id == subject_id,
             CalibrationSession.actor_id == actor.actor_id,
-            CalibrationSession.completed_at.is_not(None),
+            CalibrationSession.confirmed_at.is_not(None),
         ).order_by(CalibrationSession.completed_at.desc()).limit(1)
     )
     gaps = latest.dimension_gaps if latest and latest.dimension_gaps else {}
@@ -87,6 +87,11 @@ def capture_plan(
         if comparison.get(gap, {}).get("verdict") == "DIFFERENT"
     )
     options: list[CaptureQuestion] = []
+    followup_domain = sorted(urgent_domains)[0] if urgent_domains else None
+    followup_text = None
+    if latest and latest.human_answer and followup_domain:
+        excerpt = " ".join(latest.human_answer.split())[:40]
+        followup_text = f"你刚才提到“{excerpt}”，能讲讲一件具体经历吗？"
     for domain in DOMAINS:
         facts = snapshot.domains.get(domain, []) if snapshot else []
         count = len(facts)
@@ -97,7 +102,7 @@ def capture_plan(
         )
         uncertainty = 1.0 if count == 0 else max(0.2, 1.0 - average_confidence)
         time_urgency = 1.5 if domain in urgent_domains else 1.0
-        question = QUESTIONS[domain]
+        question = followup_text if domain == followup_domain and followup_text else QUESTIONS[domain]
         interaction_cost = 1.0 + max(0, len(question) - 20) / 100.0
         score = (
             information_gain * importance * uncertainty * time_urgency
@@ -114,6 +119,6 @@ def capture_plan(
     return CapturePlan(
         subject_id=subject_id,
         model_version=f"person-preview-r{snapshot.revision if snapshot else 0}",
-        planning_method="heuristic-v2",
+        planning_method="heuristic-v3-contextual" if followup_text else "heuristic-v2",
         questions=options[:limit],
     )

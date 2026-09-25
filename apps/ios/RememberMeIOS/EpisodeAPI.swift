@@ -5,6 +5,30 @@ struct EpisodeCreated: Decodable {
     let uploadStatus: String
 }
 
+struct AccountAuthResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+    let actorId: String
+    let subjectId: String
+    let email: String
+}
+
+struct EpisodeSummary: Decodable, Identifiable {
+    let episodeId: String
+    let recordedAt: String
+    let status: String
+    let hasTranscript: Bool
+    let errorMessage: String?
+    var id: String { episodeId }
+}
+
+struct EpisodeTranscript: Decodable {
+    let episodeId: String
+    let transcript: String
+    let sttBackend: String?
+    let sttModelVersion: String?
+}
+
 struct EpisodeStatus: Decodable {
     let episodeId: String
     let status: String
@@ -35,6 +59,12 @@ struct EpisodeResult: Decodable {
 
 struct RecordingConsent: Decodable {
     let consentId: String
+    let status: String
+}
+
+struct ConsentSummary: Decodable {
+    let consentId: String
+    let scope: String
     let status: String
 }
 
@@ -144,6 +174,7 @@ struct CalibrationRecord: Decodable, Identifiable {
     let humanAnswer: String?
     let gaps: CalibrationGaps?
     let aiAssessment: CalibrationAssessment?
+    let confirmedAt: String?
 
     var id: String { calibrationId }
 }
@@ -273,8 +304,71 @@ struct EpisodeAPI {
         self.session = session
     }
 
+    func startEmail(_ email: String, baseURL: URL) async throws {
+        var request = URLRequest(url: baseURL.appending(path: "api/v1/auth/email/start"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
+        _ = try await decode(AuthStatus.self, request: request)
+    }
+
+    func verifyEmail(_ email: String, code: String, baseURL: URL) async throws -> AccountAuthResponse {
+        var request = URLRequest(url: baseURL.appending(path: "api/v1/auth/email/verify"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email, "code": code])
+        return try await decode(AccountAuthResponse.self, request: request)
+    }
+
+    func refreshAccount(baseURL: URL, refreshToken: String) async throws -> AccountAuthResponse {
+        var request = URLRequest(url: baseURL.appending(path: "api/v1/auth/refresh"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["refresh_token": refreshToken])
+        return try await decode(AccountAuthResponse.self, request: request)
+    }
+
+    func logout(settings: ServerSettings) async throws {
+        let request = try authorizedRequest(path: "api/v1/auth/logout", method: "POST", settings: settings)
+        _ = try await decode(AuthStatus.self, request: request)
+    }
+
+    func claimLegacy(token: String, subjectID: String, settings: ServerSettings) async throws -> AccountAuthResponse {
+        var request = try authorizedRequest(path: "api/v1/auth/claim", method: "POST", settings: settings)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "legacy_token": token, "subject_id": subjectID
+        ])
+        return try await decode(AccountAuthResponse.self, request: request)
+    }
+
+    func episodes(settings: ServerSettings) async throws -> [EpisodeSummary] {
+        let request = try authorizedRequest(path: "api/v1/episodes", method: "GET", settings: settings)
+        return try await decode([EpisodeSummary].self, request: request)
+    }
+
+    func transcript(episodeID: String, settings: ServerSettings) async throws -> EpisodeTranscript {
+        let encoded = episodeID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? episodeID
+        let request = try authorizedRequest(path: "api/v1/episodes/\(encoded)/transcript", method: "GET", settings: settings)
+        return try await decode(EpisodeTranscript.self, request: request)
+    }
+
+    func retryProcessing(episodeID: String, settings: ServerSettings) async throws -> EpisodeStatus {
+        let encoded = episodeID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? episodeID
+        let request = try authorizedRequest(path: "api/v1/episodes/\(encoded)/retry", method: "POST", settings: settings)
+        return try await decode(EpisodeStatus.self, request: request)
+    }
+
     func grantRecordingConsent(settings: ServerSettings) async throws -> RecordingConsent {
         try await grantConsent(scope: "RECORDING", settings: settings)
+    }
+
+    func consents(settings: ServerSettings) async throws -> [ConsentSummary] {
+        var request = try authorizedRequest(path: "api/v1/consents", method: "GET", settings: settings)
+        var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "subject_id", value: settings.subjectID)]
+        request.url = components.url
+        return try await decode([ConsentSummary].self, request: request)
     }
 
     func grantCloudTwinConsent(settings: ServerSettings) async throws -> RecordingConsent {
@@ -438,6 +532,15 @@ struct EpisodeAPI {
         return try await decode(CalibrationRecord.self, request: request)
     }
 
+    func confirmCalibration(id: String, settings: ServerSettings) async throws -> CalibrationRecord {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let request = try authorizedRequest(
+            path: calibrationPath(settings: settings) + "/\(encoded)/confirm",
+            method: "POST", settings: settings
+        )
+        return try await decode(CalibrationRecord.self, request: request)
+    }
+
     func createLegacyGrant(
         recipientActorID: String, domains: [String], settings: ServerSettings
     ) async throws -> LegacyGrantRecord {
@@ -573,15 +676,44 @@ struct EpisodeAPI {
     }
 
     private func decode<T: Decodable>(_ type: T.Type, request: URLRequest) async throws -> T {
-        let (data, response) = try await session.data(for: request)
-        guard let response = response as? HTTPURLResponse else { throw EpisodeAPIError.invalidResponse }
-        guard (200..<300).contains(response.statusCode) else {
+        var (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else { throw EpisodeAPIError.invalidResponse }
+        let stored = SettingsStore.load()
+        let expectedEmail = SettingsStore.email
+        let requestToken = request.value(forHTTPHeaderField: "Authorization")?
+            .replacingOccurrences(of: "Bearer ", with: "")
+        if httpResponse.statusCode == 401,
+           !(request.url?.path.contains("/auth/") ?? false),
+           !expectedEmail.isEmpty,
+           stored.token == requestToken,
+           let baseURL = stored.validatedURL,
+           !SettingsStore.refreshToken.isEmpty {
+            if let fresh = try? await refreshAccount(baseURL: baseURL, refreshToken: SettingsStore.refreshToken) {
+                guard SettingsStore.email == expectedEmail,
+                      SettingsStore.load().subjectID == stored.subjectID else {
+                    throw EpisodeAPIError.http(401, "登录状态已变更，请重试")
+                }
+                try SettingsStore.saveAccount(
+                    email: fresh.email, accessToken: fresh.accessToken,
+                    refreshToken: fresh.refreshToken, subjectID: fresh.subjectId
+                )
+            }
+            let latestToken = SettingsStore.load().token
+            if SettingsStore.email == expectedEmail,
+               SettingsStore.load().subjectID == stored.subjectID,
+               latestToken != requestToken {
+                var retried = request
+                retried.setValue("Bearer \(latestToken)", forHTTPHeaderField: "Authorization")
+                (data, response) = try await session.data(for: retried)
+            }
+        }
+        guard let finalResponse = response as? HTTPURLResponse, (200..<300).contains(finalResponse.statusCode) else {
             let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             let message = object?["error_message"] as? String
                 ?? object?["detail"] as? String
                 ?? object?["error_code"] as? String
                 ?? "请求失败"
-            throw EpisodeAPIError.http(response.statusCode, message)
+            throw EpisodeAPIError.http((response as? HTTPURLResponse)?.statusCode ?? 0, message)
         }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -589,6 +721,8 @@ struct EpisodeAPI {
         catch { throw EpisodeAPIError.invalidResponse }
     }
 }
+
+private struct AuthStatus: Decodable { let status: String }
 
 private struct CorrectionReceipt: Decodable {
     let memoryItemId: String

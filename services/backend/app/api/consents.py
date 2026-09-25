@@ -38,7 +38,7 @@ from ..db import get_session
 from ..models import Actor, Consent, ConsentScope, as_utc
 from ..repositories.consents import ConsentRepository
 from ..repositories.subjects import SubjectRepository
-from ..security import current_actor
+from ..security import current_actor, require_subject_owner
 
 router = APIRouter(prefix="/api/v1/consents", tags=["consent"])
 
@@ -114,6 +114,7 @@ def grant_consent(
     so a grant always names who made it.
     """
     SubjectRepository(session).require(payload.subject_id)
+    require_subject_owner(session, subject_id=payload.subject_id, actor_id=actor.actor_id)
     consent = ConsentRepository(session).grant(
         subject_id=payload.subject_id,
         granted_by_actor_id=actor.actor_id,
@@ -194,5 +195,8 @@ def revoke_consent(
     consent = repository.revoke(
         repository.require_for(consent_id, actor_id=actor.actor_id)
     )
+    if consent.scope == str(ConsentScope.CLOUD_TWIN):
+        from ..person_model import rebuild_person_model
+        rebuild_person_model(session, subject_id=consent.subject_id, actor_id=actor.actor_id)
     session.commit()
     return ConsentResponse.of(consent)

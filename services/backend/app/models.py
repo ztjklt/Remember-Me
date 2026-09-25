@@ -193,6 +193,52 @@ class Actor(Base):
     )
 
 
+class Account(Base):
+    """A verified login identity, distinct from the Actor and modeled Subject."""
+
+    __tablename__ = "accounts"
+    email: Mapped[str] = mapped_column(String(320), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), unique=True, nullable=False
+    )
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), unique=True, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class EmailChallenge(Base):
+    __tablename__ = "email_challenges"
+    email: Mapped[str] = mapped_column(String(320), primary_key=True)
+    code_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class LoginSession(Base):
+    __tablename__ = "login_sessions"
+    session_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    access_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    refresh_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    access_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    refresh_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class AccountClaim(Base):
+    __tablename__ = "account_claims"
+    claim_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), ForeignKey("accounts.email"), nullable=False)
+    old_actor_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    claimed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
 class Consent(Base):
     """A granted permission record tying a Subject to the Actor who granted it.
 
@@ -482,6 +528,7 @@ class CalibrationSession(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     assessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class LegacyGrant(Base):
@@ -554,4 +601,5 @@ class PersonModelSnapshot(Base):
     revision: Mapped[int] = mapped_column(Integer, nullable=False)
     source_memory_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     domains: Mapped[dict] = mapped_column(JSON, nullable=False)
+    calibration_updates: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

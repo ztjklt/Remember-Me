@@ -30,6 +30,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -51,7 +52,10 @@ from ..models import (
     ConsentScope,
     Episode,
     EpisodeStatus,
+    JobStage,
+    JobState,
     as_utc,
+    utcnow,
 )
 from ..repositories.consents import ConsentRepository
 from ..repositories.episodes import (
@@ -62,7 +66,7 @@ from ..repositories.episodes import (
 from ..repositories.jobs import JobRepository
 from ..repositories.memory import MemoryRepository
 from ..repositories.subjects import SubjectRepository
-from ..security import current_actor
+from ..security import current_actor, require_subject_owner
 from ..storage.base import ObjectStore, checksum_of
 
 logger = logging.getLogger(__name__)
@@ -205,6 +209,84 @@ class CaptureEpisodeForm(BaseModel):
     metadata: str | None = Field(None, description="Arbitrary capture metadata, as JSON")
 
 
+class EpisodeSummary(BaseModel):
+    episode_id: str
+    recorded_at: datetime
+    status: str
+    has_transcript: bool
+    error_message: str | None
+
+
+class TranscriptView(BaseModel):
+    episode_id: str
+    transcript: str
+    stt_backend: str | None
+    stt_model_version: str | None
+
+
+@router.get("", response_model=list[EpisodeSummary])
+def list_episodes(
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> list[EpisodeSummary]:
+    rows = session.scalars(select(Episode).where(Episode.actor_id == actor.actor_id)
+        .order_by(Episode.recorded_at.desc()).limit(100)).all()
+    return [EpisodeSummary(
+        episode_id=row.episode_id, recorded_at=as_utc(row.recorded_at),
+        status=row.status, has_transcript=bool(row.transcript), error_message=row.error_message,
+    ) for row in rows]
+
+
+@router.get("/{episode_id}/transcript", response_model=TranscriptView)
+def read_transcript(
+    episode_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> TranscriptView:
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    if not episode.transcript:
+        raise EpisodeNotReady("Transcript is not available yet")
+    return TranscriptView(
+        episode_id=episode.episode_id, transcript=episode.transcript,
+        stt_backend=episode.stt_backend, stt_model_version=episode.stt_model_version,
+    )
+
+
+@router.post("/{episode_id}/retry", response_model=ProcessingStatus, response_model_exclude_none=True)
+def retry_episode(
+    episode_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> ProcessingStatus:
+    """Retry a terminal failed stage using the same durable audio and Episode."""
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    if episode.status != str(EpisodeStatus.FAILED):
+        raise RequestInvalid("Only a failed Episode can be retried")
+    ConsentRepository(session).require_active(
+        episode.recording_consent_id, subject_id=episode.subject_id,
+        scope=ConsentScope.RECORDING, actor_id=actor.actor_id,
+    )
+    job = JobRepository(session).for_episode(episode_id)
+    if job is None or job.state != str(JobState.FAILED):
+        raise RequestInvalid("The Episode job is not ready for manual retry")
+    job.state = str(JobState.QUEUED)
+    job.attempts = 0
+    job.available_at = utcnow()
+    job.lease_owner = None
+    job.lease_expires_at = None
+    job.last_error_code = None
+    stage_status = {
+        JobStage.TRANSCRIBE: EpisodeStatus.TRANSCRIBING,
+        JobStage.EXTRACT: EpisodeStatus.EXTRACTING,
+        JobStage.MODEL: EpisodeStatus.MODELING,
+    }
+    episode.status = str(stage_status[JobStage(job.stage)])
+    episode.error_code = None
+    episode.error_message = None
+    session.commit()
+    return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status), trace_id=episode.trace_id or None)
+
+
 @router.post("", response_model=EpisodeCreated, status_code=status.HTTP_201_CREATED)
 def create_episode(
     response: Response,
@@ -235,6 +317,7 @@ def create_episode(
 
     subjects = SubjectRepository(session)
     subjects.require(form.subject_id)
+    require_subject_owner(session, subject_id=form.subject_id, actor_id=actor.actor_id)
     ConsentRepository(session).require_active(
         form.recording_consent_id,
         subject_id=form.subject_id,

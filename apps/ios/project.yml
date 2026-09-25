@@ -15,6 +15,7 @@ targets:
         CFBundleDisplayName: Remember Me
         NSMicrophoneUsageDescription: 录制你的生活片段并生成有来源的记忆。
         NSLocalNetworkUsageDescription: 连接你自己运行的 Remember Me Backend。
+        UILaunchScreen: {}
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:
@@ -33,3 +34,4 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.remember.ios.tests
         SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES

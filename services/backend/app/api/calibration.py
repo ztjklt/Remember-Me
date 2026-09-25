@@ -19,7 +19,8 @@ from ..errors import (
     AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable,
     CalibrationConflict, CalibrationNotFound, RequestInvalid,
 )
-from ..models import Actor, CalibrationSession, ConsentScope, as_utc, utcnow
+from ..models import Account, Actor, CalibrationSession, ConsentScope, as_utc, utcnow
+from ..person_model import rebuild_person_model
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
 from .core_twin import TwinQuestion, query_twin
@@ -79,6 +80,7 @@ class CalibrationView(BaseModel):
     created_at: datetime
     completed_at: datetime | None
     assessed_at: datetime | None
+    confirmed_at: datetime | None
 
     @classmethod
     def of(cls, row: CalibrationSession) -> "CalibrationView":
@@ -97,6 +99,7 @@ class CalibrationView(BaseModel):
             created_at=as_utc(row.created_at),
             completed_at=as_utc(row.completed_at) if row.completed_at else None,
             assessed_at=as_utc(row.assessed_at) if row.assessed_at else None,
+            confirmed_at=as_utc(row.confirmed_at) if row.confirmed_at else None,
         )
 
 
@@ -238,4 +241,33 @@ def assess_calibration(
     row.ai_assessment = comparison.model_dump()
     row.assessed_at = utcnow()
     session.commit()
+    return CalibrationView.of(row)
+
+
+@router.post("/{calibration_id}/confirm", response_model=CalibrationView)
+def confirm_calibration(
+    subject_id: str,
+    calibration_id: str,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> CalibrationView:
+    """A self-bound account explicitly accepts advisory feedback into its model."""
+    row = _owned(session, subject_id=subject_id, calibration_id=calibration_id, actor_id=actor.actor_id)
+    owner = session.scalar(select(Account).where(
+        Account.actor_id == actor.actor_id, Account.subject_id == subject_id
+    ))
+    if owner is None:
+        raise CalibrationConflict("A personal account must own this Subject to confirm feedback")
+    if row.completed_at is None or row.ai_assessment is None:
+        raise CalibrationConflict("Compare locked and human answers before confirmation")
+    ConsentRepository(session).require_active(
+        row.cloud_twin_consent_id,
+        subject_id=subject_id, scope=ConsentScope.CLOUD_TWIN,
+        actor_id=actor.actor_id,
+    )
+    if row.confirmed_at is None:
+        row.confirmed_at = utcnow()
+        session.flush()
+        rebuild_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+        session.commit()
     return CalibrationView.of(row)

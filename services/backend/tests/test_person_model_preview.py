@@ -4,6 +4,8 @@ from app.models import Actor
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
 from test_worker import advance, build_worker
+from test_core_twin import _ready_episode
+from app.person_model import rebuild_person_model
 
 
 def test_worker_materializes_and_feedback_rebuilds_person_preview(client, app, session):
@@ -58,3 +60,22 @@ def test_worker_materializes_and_feedback_rebuilds_person_preview(client, app, s
     assert client.get(
         path, headers={"Authorization": f"Bearer {other_token}"},
     ).status_code == 404
+
+
+def test_explicit_preference_change_keeps_both_sources_and_time(client, session):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    _ready_episode(client, session, seeded, auth, key="first", content="我喜欢咖啡。")
+    _ready_episode(
+        client, session, seeded, auth, key="second", recorded_at="2026-09-25T09:00:00Z",
+        evidence_id="ev_second", content="我现在不喜欢咖啡。",
+    )
+    rebuild_person_model(session, subject_id=seeded.subject_id, actor_id=seeded.actor_id)
+    session.commit()
+    model = client.get(f"/api/v1/subjects/{seeded.subject_id}/person-model", headers=auth).json()
+    earlier, later = model["domains"]["Preferences"]
+    assert earlier["status"] == "superseded"
+    assert earlier["valid_to"] == later["valid_from"]
+    assert later["status"] == "current"
+    assert later["conflict_type"] == "changed"
+    assert earlier["counter_evidence_ids"] == later["evidence_ids"]

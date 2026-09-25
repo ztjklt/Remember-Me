@@ -12,8 +12,9 @@
 > submitted. `POST /api/v1/subjects/{id}/calibrations/{calibration_id}/assess`
 > optionally calls AI Core's real-provider `/calibrate` endpoint after checking
 > the Actor's active `CLOUD_TWIN` consent. The versioned comparison is stored
-> once and remains advisory; it does not update Subject facts or prove the
-> Actor's identity.
+> once. A self-bound account can then explicitly confirm it; confirmed feedback
+> is kept as provisional calibration input separate from source-grounded facts
+> and influences the next Capture Plan. A legacy Actor cannot confirm.
 
 > `GET /api/v1/subjects/{id}/memory-graph` is a provisional Actor-isolated
 > provenance timeline. It links current undisputed Memory rows to their
@@ -26,7 +27,7 @@
 > It checks provenance, Twin labelling, calibration persistence and revocable
 > recipient preview after the Phase 1 upload/STT/AI path succeeds.
 
-> Capture Planner `heuristic-v2` uses the latest Actor-submitted manual gaps and
+> Capture Planner `heuristic-v2` uses the latest account-confirmed manual gaps and
 > explicit `DIFFERENT` verdicts in a saved AI calibration assessment to rank
 > follow-up questions. `UNCERTAIN` verdicts do not increase urgency. Planning
 > affects question order only and never promotes unverified facts into the
@@ -35,10 +36,18 @@
 > With a real AI Core provider, the iOS Twin route first checks for a direct
 > Subject excerpt. If none matches, `/twin/simulate` can select relevant
 > evidence from at most 20 current, undisputed Actor-visible candidates. Backend
-> rejects foreign citation IDs and displays the excerpts as a low-confidence
+> rejects foreign citation IDs and displays a low-confidence, evidence-bounded
 > `SIMULATION` with explicit uncertainty about speaker and answer completeness.
-> AI Core does not generate the final wording, since model paraphrases can add
-> unsupported claims.
+> The returned wording is still provisional and needs semantic evaluation.
+
+> Personal email-code sign-in is available at `/api/v1/auth/email/start`,
+> `/email/verify`, `/refresh`, and `/logout`. Each new account owns an Actor and
+> Subject, and access/refresh credentials are hashed, expiring, and rotated.
+> Development uses `REMEMBER_MAIL_BACKEND=memory`; its one-time code is written
+> to the ignored `var/dev-mailbox/` with owner-only permissions. Configure SMTP
+> for actual delivery. A one-time, audited development claim can move data from
+> an exclusive legacy token into the new account. Actor-scoped Episode list,
+> transcript, and failed-job retry endpoints support the iOS capture timeline.
 
 > Handover preview activation records the current Actor-partitioned Person
 > Model revision. Grant creation, activation, successful recipient reads and

@@ -18,22 +18,24 @@ xcodebuild -project RememberMeIOS.xcodeproj -scheme RememberMeIOS \
 
 ## Run the local Phase 1 path
 
-1. Start Backend API and worker from `services/backend/README.md`, apply its
-   migrations, and seed an Actor and Subject. Keep the generated token private.
+1. Start Backend API and worker from `services/backend/README.md` and apply its
+   migrations. For local sign-in use the development mail inbox in
+   `services/backend/var/dev-mailbox/`; configure SMTP for delivered email.
 2. Configure Backend with an HTTP STT service and AI Core with a real model to
    test the true path. Fake providers are useful only for wiring checks.
 3. In the simulator, set Backend URL to `http://127.0.0.1:8000`; on a phone,
-   use a reachable private-network hostname or HTTPS endpoint. Enter the seed
-   Actor token and Subject ID. The token is stored in the iOS Keychain.
+   use a reachable private-network hostname or HTTPS endpoint. Sign in with an
+   email code, then explicitly approve recording and upload. Access and refresh
+   tokens are stored in the iOS Keychain; the new account owns its own Subject.
    For a local development iPhone, a one-time `Documents/rememberme-local-connection.json`
-   with `baseURL`, `token`, and `subjectID` can be copied into the app data
-   container before launch. Debug builds import it into Settings and Keychain,
-   then delete the plaintext file. Release builds ignore this file. It never
-   carries provider credentials or a recording consent ID.
-4. Tap **我确认并登记录音同意**. This creates a RECORDING consent for that Actor and
-   Subject. It does not grant VOICE consent.
-5. Record, pause/resume, save, play, upload, and observe the Episode state and
-   returned Memory. The same `episode_id` is retained for retries and refreshes.
+   with `baseURL`, `token`, `subjectID`, `email`, and `refreshToken` can be copied
+   into the app data container before launch. Debug builds import it into
+   Settings and Keychain, then delete the plaintext file after successful
+   import. Release builds ignore this file. It never carries provider secrets.
+4. Stop a recording to save and automatically upload it. The left-hand capture
+   bubble first confirms local receipt, then displays the actual STT transcript
+   and extracted Memory for that Episode. Failed uploads retain the local file;
+   failed processing can be retried from the same Episode.
 
 For a recording device that exports files, use **从文件导入设备录音**. The app copies
 `.m4a` or `.wav` into its own recordings folder, checks the 25 MiB limit, lets
@@ -86,9 +88,10 @@ shown as SIMULATION with explicit speaker uncertainty and confidence capped at
 0.5; unrelated questions return insufficient evidence with zero confidence.
 The direct path is a deterministic evidence router. With a real AI Core
 provider, an unmatched question can retrieve related evidence semantically;
-Backend quotes the source excerpts with a low-confidence SIMULATION caveat
-instead of using the model's paraphrase as a new fact. This is not a full
-semantic Person Model or generative Twin. The shared Contract is unchanged.
+Backend returns a low-confidence, evidence-bounded SIMULATION answer and
+rejects citations outside the permitted evidence set. This is still a
+provisional Twin and has not passed semantic answer evaluation. The shared
+Contract is unchanged.
 
 The Memories tab can now submit an Actor correction proposal for a Memory.
 Corrected items remain visible with the original evidence, but Twin immediately
@@ -98,14 +101,15 @@ item from Episode results, the cross-Episode list and Twin retrieval. Its source
 Episode, transcript and raw Evidence remain for provenance; this operation is
 not an Episode or account erasure request.
 
-The Calibration tab persists a locked Twin answer and its evidence IDs under
+The Calibration screen persists a locked Twin answer and its evidence IDs under
 the Actor's active `CLOUD_TWIN` consent before accepting a human answer and
 manual gap marks for decision, reasoning, value priority, emotional reaction,
 and expression. An optional AI comparison then assesses those two fixed answers
 across the same five dimensions. The assessment is model-versioned, immutable,
 Actor-isolated, and marked uncertain where both answers lack direct information.
-It remains advisory: the app does not verify that the Actor is the Subject or
-promote calibration feedback into the Person Model.
+Only an account bound to its own Subject can explicitly confirm the result.
+Confirmed feedback is stored as provisional calibration input and can affect
+the next guided question; it is kept separate from source-grounded facts.
 
 Twin answers also have an iOS system-speech fallback. Each playback asks
 Backend to authorize an active, separate `VOICE` consent and stops when the app
@@ -126,7 +130,7 @@ fixed-domain prompts by a documented heuristic score based on estimated
 information gain, importance, uncertainty, recent calibration gaps and
 interaction cost. A saved AI comparison can also raise a domain's priority
 when its verdict is explicitly `DIFFERENT`; `UNCERTAIN` adds no urgency. The
-questions update after new Episodes or calibration
+questions update after new Episodes or confirmed calibration
 feedback. This is not an automatic interviewing agent or an empirical measure
 of information gain.
 
@@ -142,9 +146,11 @@ create, activate, recipient read, and revoke events. There is no
 formal Legacy activation, death verification, identity proof, voice grant, or
 legal authority check in this branch.
 
-This client does not itself certify Phase 1 or the later phase gates. A real
-device, real STT, a working AI provider, persisted Memory, and an acceptance
-record are needed for Phase 1. Phase 2 still needs evaluated semantic links,
+The local service check on 2026-09-25 passed real Whisper STT, DeepSeek
+extraction, persistence, evidence-labelled Twin, calibration comparison and
+revocable handover preview using a synthesized audio file. It did not exercise
+iPhone capture. A real device, a complete capture to display run and an
+acceptance record are still needed. Phase 2 still needs evaluated semantic links,
 verified correction promotion, and a semantically evaluated Twin. Phase 3 still needs
 verified Subject feedback, empirical calibration evaluation, and real Voice. Phase 4 still needs
 formal activation and verified hardware integration.

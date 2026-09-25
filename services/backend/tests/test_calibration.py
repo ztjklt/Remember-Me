@@ -1,11 +1,13 @@
 """The locked-answer ordering and Actor isolation of calibration."""
 
 import httpx
+from types import SimpleNamespace
 
 from app.models import Actor
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
 from test_core_twin import _ready_episode
+from test_email_auth import login
 
 
 def test_calibration_locks_answer_before_human_submission(client, session, monkeypatch):
@@ -103,3 +105,45 @@ def test_calibration_locks_answer_before_human_submission(client, session, monke
         json={"question": "我喜欢咖啡吗？", "cloud_twin_consent_id": consent_id},
     ).status_code == 403
     assert client.get(path, headers=auth).json()[0]["locked_answer"] == before["locked_answer"]
+
+
+def test_personal_account_confirms_calibration_and_revocation_invalidates_update(client, app, session, monkeypatch):
+    account = login(client, app, "self@example.com")
+    auth = {"Authorization": f"Bearer {account['access_token']}"}
+    recording = client.post("/api/v1/consents", headers=auth, json={
+        "subject_id": account["subject_id"], "scope": "RECORDING"
+    }).json()["consent_id"]
+    cloud = client.post("/api/v1/consents", headers=auth, json={
+        "subject_id": account["subject_id"], "scope": "CLOUD_TWIN"
+    }).json()["consent_id"]
+    seeded = SimpleNamespace(subject_id=account["subject_id"], consent_id=recording)
+    _ready_episode(client, session, seeded, auth)
+    base = f"/api/v1/subjects/{account['subject_id']}/calibrations"
+    created = client.post(base, headers=auth, json={
+        "question": "我喜欢咖啡吗？", "cloud_twin_consent_id": cloud
+    }).json()
+    cid = created["calibration_id"]
+    assert client.post(f"{base}/{cid}/confirm", headers=auth).status_code == 409
+    client.post(f"{base}/{cid}/answer", headers=auth, json={
+        "human_answer": "我现在不喜欢咖啡。",
+        "gaps": {"decision": False, "reasoning": False, "value_priority": True,
+                 "emotional_reaction": False, "expression": False},
+    })
+
+    def compare(_url, **_kwargs):
+        values = {key: {"verdict": "UNCERTAIN", "rationale": "证据不足"}
+                  for key in ("decision", "reasoning", "value_priority", "emotional_reaction", "expression")}
+        return httpx.Response(200, json={**values, "overall": "UNCERTAIN",
+                                         "model_version": "real-compare", "assessment_version": "v1"})
+
+    monkeypatch.setattr("app.api.calibration.httpx.post", compare)
+    assert client.post(f"{base}/{cid}/assess", headers=auth).status_code == 200
+    confirmed = client.post(f"{base}/{cid}/confirm", headers=auth)
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["confirmed_at"]
+    model_path = f"/api/v1/subjects/{account['subject_id']}/person-model"
+    model = client.get(model_path, headers=auth).json()
+    assert model["calibration_updates"][0]["source_type"] == "CALIBRATION"
+    assert model["calibration_updates"][0]["domains"] == ["Values & Beliefs"]
+    client.post(f"/api/v1/consents/{cloud}/revoke", headers=auth)
+    assert client.get(model_path, headers=auth).json()["calibration_updates"] == []

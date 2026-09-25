@@ -24,7 +24,7 @@ from ..errors import (
 from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, PersonModelSnapshot, as_utc, utcnow
 from ..person_model import rebuild_person_model
 from ..repositories.consents import ConsentRepository
-from ..security import current_actor
+from ..security import current_actor, require_subject_owner
 
 router = APIRouter(prefix="/api/v1/subjects", tags=["core-twin"])
 
@@ -68,6 +68,12 @@ class PersonFact(BaseModel):
     recorded_at: datetime
     effective_at: datetime | None
     model_version: str
+    context: str | None = None
+    counter_evidence_ids: list[str] = []
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    status: str = "current"
+    conflict_type: str | None = None
 
 
 class PersonModelView(BaseModel):
@@ -76,6 +82,7 @@ class PersonModelView(BaseModel):
     model_version: str
     source_memory_ids: list[str]
     domains: dict[str, list[PersonFact]]
+    calibration_updates: list[dict] = []
     updated_at: datetime | None
 
 
@@ -122,6 +129,7 @@ class TwinSimulation(BaseModel):
 
     supported: bool
     evidence_ids: list[str] = Field(max_length=3)
+    answer: str | None = Field(default=None, max_length=1000)
     model_version: str = Field(min_length=1)
 
 
@@ -138,6 +146,10 @@ class CorrectionView(BaseModel):
 
 
 def _can_read_subject(session: Session, *, subject_id: str, actor_id: str) -> bool:
+    try:
+        require_subject_owner(session, subject_id=subject_id, actor_id=actor_id)
+    except SubjectNotFound:
+        return False
     # An Actor may read their own captured Episodes after consent revocation,
     # just as the Phase 1 Episode result remains readable. A grant also lets a
     # newly seeded Actor see an empty Memory list before their first capture.
@@ -235,6 +247,7 @@ def get_person_model(
             subject_id=subject_id, revision=0, model_version="person-preview-r0",
             source_memory_ids=[],
             domains={domain: [] for domain in (*DOMAINS, "Unclassified")},
+            calibration_updates=[],
             updated_at=None,
         )
     return PersonModelView(
@@ -242,6 +255,7 @@ def get_person_model(
         model_version=f"person-preview-r{snapshot.revision}",
         source_memory_ids=snapshot.source_memory_ids,
         domains=snapshot.domains,
+        calibration_updates=snapshot.calibration_updates,
         updated_at=as_utc(snapshot.updated_at),
     )
 
@@ -303,6 +317,17 @@ def get_memory_graph(
                     target_id=f"memory:{later.memory_item_id}",
                     relation="PRECEDES_IN_DOMAIN",
                 ))
+    snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    if snapshot is not None:
+        for facts in snapshot.domains.values():
+            for fact in facts:
+                for counter_id in fact.get("counter_evidence_ids", []):
+                    edge = GraphEdge(
+                        source_id=f"memory:{fact['memory_item_id']}",
+                        target_id=f"evidence:{counter_id}", relation="CONTRADICTED_BY",
+                    )
+                    if edge.source_id in {node.node_id for node in nodes}:
+                        edges.append(edge)
     return MemoryGraphView(subject_id=subject_id, nodes=nodes, edges=edges)
 
 
@@ -441,12 +466,17 @@ def query_twin(
     if not _can_read_subject(session, subject_id=subject_id, actor_id=actor.actor_id):
         raise SubjectNotFound("No accessible Subject")
     words = _tokens(payload.question)
+    snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+    statuses = {
+        fact["memory_item_id"]: fact.get("status", "current")
+        for facts in snapshot.domains.values() for fact in facts
+    } if snapshot is not None else {}
     matches: list[tuple[int, MemoryView, EvidenceView]] = []
     inferred_matches: list[tuple[int, MemoryView, EvidenceView]] = []
     candidates: list[dict[str, str]] = []
     candidate_evidence: dict[str, EvidenceView] = {}
     for item in _memories(session, subject_id=subject_id, actor_id=actor.actor_id):
-        if item.correction is not None:
+        if item.correction is not None or statuses.get(item.memory_item_id, "current") != "current":
             continue
         # A shared verb such as 喜欢 does not mean that a statement about coffee
         # answers a question about cities. Route to ORIGINAL only when a more
@@ -525,9 +555,10 @@ def query_twin(
             if not cited:
                 raise AiSchemaInvalid("Twin retrieval omitted evidence")
             excerpts = " / ".join((evidence.excerpt or "")[:180] for evidence in cited)
+            answer = generated.answer.strip() if generated.answer else excerpts
             return TwinAnswer(
                 subject_id=subject_id, question=payload.question,
-                answer=f"模型检索到可能相关的录音片段；这不一定完整回答问题，且尚未核实说话人：{excerpts}",
+                answer=f"根据相关录音推测，仍需本人核实：{answer}",
                 response_type="SIMULATION", confidence=0.25,
                 evidence=cited, model_version=generated.model_version,
             )

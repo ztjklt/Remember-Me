@@ -1,6 +1,6 @@
 """Guided questions react to model coverage and calibration gaps."""
 
-from app.models import Actor, CalibrationSession
+from app.models import Actor, CalibrationSession, utcnow
 from app.person_model import rebuild_person_model
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
@@ -51,12 +51,16 @@ def test_capture_plan_reorders_after_model_and_calibration(client, session):
         },
     )
     assert answer.status_code == 200
+    calibration = session.get(CalibrationSession, calibration_id)
+    calibration.confirmed_at = utcnow()
+    session.commit()
     updated = client.get(path, headers=auth).json()
     assert updated["questions"][0]["domain"] == "Values & Beliefs"
     assert updated["questions"][0]["time_urgency"] == 1.5
+    assert updated["planning_method"] == "heuristic-v3-contextual"
+    assert "我更在意家庭" in updated["questions"][0]["question"]
     assert client.get(path + "?limit=5", headers=auth).status_code == 422
 
-    calibration = session.get(CalibrationSession, calibration_id)
     calibration.dimension_gaps = {key: False for key in calibration.dimension_gaps}
     calibration.ai_assessment = {"expression": {"verdict": "DIFFERENT"}}
     session.commit()

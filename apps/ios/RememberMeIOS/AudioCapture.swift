@@ -30,7 +30,6 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
         super.init()
         synthesizer.delegate = self
         refreshPersonalVoice()
-        loadLatestRecording()
         NotificationCenter.default.addObserver(
             self, selector: #selector(saveWhenBackgrounded),
             name: UIApplication.didEnterBackgroundNotification, object: nil
@@ -112,18 +111,39 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
         isRecording = false
         isPaused = false
         try? AVAudioSession.sharedInstance().setActive(false)
-        message = "录音已保存在本机；上传失败也不会删除原文件。"
+        message = nil
     }
 
-    func importAudio(from source: URL) {
+    func restorePendingRecording(at url: URL?) {
+        guard let url, fileURL != url,
+              let directory = try? recordingsDirectory().standardizedFileURL,
+              url.standardizedFileURL.deletingLastPathComponent() == directory,
+              FileManager.default.fileExists(atPath: url.path) else { return }
+        fileURL = url
+        recordedAt = UserDefaults.standard.object(forKey: recordingDateKey(url)) as? Date
+        if let player = try? AVAudioPlayer(contentsOf: url) { elapsed = player.duration }
+    }
+
+    func clearSelection() {
+        if isRecording { stop() }
+        stopPlayback()
+        stopSystemSpeech()
+        fileURL = nil
+        recordedAt = nil
+        elapsed = 0
+        message = nil
+    }
+
+    @discardableResult
+    func importAudio(from source: URL) -> Bool {
         guard !isRecording else {
             message = "请先保存当前录音再导入。"
-            return
+            return false
         }
         let extensionName = source.pathExtension.lowercased()
         guard ["m4a", "wav"].contains(extensionName) else {
             message = "目前可导入 .m4a 或 .wav 录音。"
-            return
+            return false
         }
         let access = source.startAccessingSecurityScopedResource()
         defer { if access { source.stopAccessingSecurityScopedResource() } }
@@ -133,7 +153,7 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
             guard let size = attributes[.size] as? NSNumber,
                   size.intValue > 0, size.intValue <= 25 * 1024 * 1024 else {
                 message = "文件为空或超过 25 MiB 上传限制。"
-                return
+                return false
             }
             stopPlayback()
             let destination = try recordingsDirectory()
@@ -145,9 +165,11 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
             setRecordedAt((try? source.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date())
             elapsed = candidate.duration
             message = "文件已复制到本机。请核对录制时间，并确认录音对象的同意。"
+            return true
         } catch {
             if let copiedFile { try? FileManager.default.removeItem(at: copiedFile) }
             message = "导入失败：\(error.localizedDescription)"
+            return false
         }
     }
 
@@ -316,22 +338,4 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
         "recordedAt:\(url.lastPathComponent)"
     }
 
-    private func loadLatestRecording() {
-        guard let directory = try? recordingsDirectory(),
-              let files = try? FileManager.default.contentsOfDirectory(
-                at: directory, includingPropertiesForKeys: [.creationDateKey], options: [.skipsHiddenFiles]
-              ) else { return }
-        let latest = files.filter { ["m4a", "wav"].contains($0.pathExtension.lowercased()) }
-            .max { lhs, rhs in
-                let left = (try? lhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-                let right = (try? rhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
-                return left < right
-            }
-        guard let latest else { return }
-        fileURL = latest
-        recordedAt = (UserDefaults.standard.object(forKey: recordingDateKey(latest)) as? Date)
-            ?? (try? latest.resourceValues(forKeys: [.creationDateKey]).creationDate)
-            ?? Date()
-        if let player = try? AVAudioPlayer(contentsOf: latest) { elapsed = player.duration }
-    }
 }

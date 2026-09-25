@@ -2,20 +2,169 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @EnvironmentObject private var capture: AudioCapture
+    @State private var restoringAccount = true
+
     var body: some View {
-        TabView {
-            CaptureView()
-                .tabItem { Label("录音", systemImage: "mic") }
-            MemoriesView()
-                .tabItem { Label("记忆", systemImage: "books.vertical") }
-            TwinView()
-                .tabItem { Label("Twin", systemImage: "bubble.left.and.text.bubble.right") }
-            CalibrationScreen()
-                .tabItem { Label("校准", systemImage: "checkmark.bubble") }
-            HandoverScreen()
-                .tabItem { Label("交接", systemImage: "person.2.badge.key") }
-            ConnectionView()
-                .tabItem { Label("连接", systemImage: "server.rack") }
+        Group {
+            if restoringAccount {
+                ProgressView("Remember Me")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !flow.isAuthenticated {
+                LoginScreen()
+            } else if flow.settings.recordingConsentID.isEmpty {
+                RecordingConsentScreen()
+            } else {
+                TabView {
+                    CaptureView()
+                        .tabItem { Label("记录", systemImage: "waveform") }
+                    MemoriesView()
+                        .tabItem { Label("记忆", systemImage: "books.vertical") }
+                    TwinView()
+                        .tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
+                    ProfileScreen()
+                        .tabItem { Label("我的", systemImage: "person.crop.circle") }
+                }
+            }
+        }
+        .task {
+            await flow.restoreAccount()
+            restoringAccount = false
+        }
+        .onChange(of: flow.isAuthenticated) { _, authenticated in
+            if !authenticated { capture.clearSelection() }
+        }
+    }
+}
+
+private struct LoginScreen: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var email = ""
+    @State private var code = ""
+    @State private var codeRequested = false
+    @State private var showServer = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Spacer(minLength: 90)
+                    Text("Remember Me")
+                        .font(.system(size: 42, weight: .semibold, design: .rounded))
+                    Text("留下你想记住的生活")
+                        .font(.title3).foregroundStyle(.secondary)
+                    TextField("邮箱地址", text: $email)
+                        .textContentType(.emailAddress).keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .textFieldStyle(.roundedBorder)
+                        .onChange(of: email) { _, _ in
+                            codeRequested = false
+                            code = ""
+                        }
+                    if codeRequested {
+                        TextField("六位验证码", text: $code)
+                            .keyboardType(.numberPad).textContentType(.oneTimeCode)
+                            .textFieldStyle(.roundedBorder)
+                        Button("登录或创建账号") {
+                            Task { await flow.verifyLogin(email: email, code: code) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(flow.isBusy || code.count != 6)
+                        Button("重新发送验证码") { Task { await flow.requestLoginCode(email: email) } }
+                            .disabled(flow.isBusy)
+                    } else {
+                        Button("获取验证码") {
+                            Task {
+                                await flow.requestLoginCode(email: email)
+                                if flow.message == "验证码已发送到邮箱。" { codeRequested = true }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(flow.isBusy || !email.contains("@"))
+                    }
+                    if flow.isBusy { ProgressView() }
+                    if let message = flow.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                    #if DEBUG
+                    if let importError = UserDefaults.standard.string(forKey: "developmentImportError") {
+                        Text("本地账号导入失败：\(importError)")
+                            .font(.footnote).foregroundStyle(.red)
+                    }
+                    #endif
+                    DisclosureGroup("连接设置", isExpanded: $showServer) {
+                        TextField("Backend 地址", text: $flow.settings.baseURL)
+                            .keyboardType(.URL).textInputAutocapitalization(.never)
+                            .autocorrectionDisabled().textFieldStyle(.roundedBorder)
+                        Button("保存地址") { flow.saveSettings() }
+                    }
+                    .font(.footnote)
+                    Spacer(minLength: 120)
+                }
+                .padding(28)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+        }
+    }
+}
+
+private struct RecordingConsentScreen: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var agreed = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 22) {
+                Text("Remember Me").font(.largeTitle.bold())
+                Text("开始记录前，请确认你是被记录的本人。录音会上传处理，形成可查看和删除的记忆。")
+                Toggle("我是本人，同意录音和上传处理", isOn: $agreed)
+                Button("同意并开始记录") { Task { await flow.grantRecordingConsent() } }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!agreed || flow.isBusy)
+                if let message = flow.message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+                Spacer()
+            }
+            .padding(28)
+            .toolbar { Button("退出") { Task { await flow.signOut() } } }
+        }
+    }
+}
+
+private struct ProfileScreen: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var legacyToken = ""
+    @State private var legacySubject = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    LabeledContent("账号", value: flow.accountEmail)
+                    Button("退出登录", role: .destructive) { Task { await flow.signOut() } }
+                }
+                Section("更多功能") {
+                    NavigationLink("Twin 校准") { CalibrationScreen() }
+                    NavigationLink("数字交接预演") { HandoverScreen() }
+                    NavigationLink("连接与独立授权") { ConnectionView() }
+                }
+                #if DEBUG
+                Section("开发者选项") {
+                    DisclosureGroup("迁入已有开发数据") {
+                    SecureField("原 Actor 令牌", text: $legacyToken)
+                        .textInputAutocapitalization(.never)
+                    TextField("原 Subject ID", text: $legacySubject)
+                        .textInputAutocapitalization(.never)
+                    Button("一次性认领") {
+                        Task { await flow.claimLegacy(token: legacyToken, subjectID: legacySubject) }
+                    }
+                    .disabled(legacyToken.isEmpty || legacySubject.isEmpty || flow.isBusy)
+                    Text("只能认领该令牌独占的 Subject；认领后原令牌失效。")
+                        .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                #endif
+                if let message = flow.message { Section { Text(message).font(.footnote) } }
+            }
+            .navigationTitle("我的")
         }
     }
 }
@@ -188,8 +337,19 @@ private struct CalibrationScreen: View {
                                 }
                                 .disabled(flow.isBusy)
                             }
-                            Text("仅根据已锁定 Twin 回答与人的回答比较；证据不足时标记为不确定。不会自动更新 Person Model。")
+                            Text("分析仅比较已锁定的 Twin 回答与本人回答。确认差异后才会更新个人模型。")
                                 .font(.footnote).foregroundStyle(.secondary)
+                            if record.aiAssessment != nil {
+                                if record.confirmedAt == nil {
+                                    Button("确认差异并更新个人模型") {
+                                        Task { await flow.confirmCalibration() }
+                                    }
+                                    .disabled(flow.isBusy)
+                                } else {
+                                    Label("已确认并用于下一轮采集", systemImage: "checkmark.circle.fill")
+                                        .foregroundStyle(.green)
+                                }
+                            }
                         }
                     }
                 }
@@ -222,275 +382,318 @@ private struct CaptureView: View {
     @EnvironmentObject private var capture: AudioCapture
     @EnvironmentObject private var flow: EpisodeFlow
     @State private var showImporter = false
+    @State private var showGuidance = false
+    @State private var selectedQuestion: String?
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("引导式采集 · 预览") {
-                    Button("刷新 2–4 个优先问题") {
-                        Task { await flow.loadCapturePlan() }
-                    }
-                    .disabled(flow.isBusy || flow.settings.subjectID.isEmpty)
-                    if let plan = flow.capturePlan {
-                        Text("依据 \(plan.modelVersion) 的覆盖度与校准差异，按启发式分数排序。")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(plan.questions) { item in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.question)
-                                Text("\(item.domain) · 已有 \(item.existingFacts) 条来源记忆")
-                                    .font(.caption).foregroundStyle(.secondary)
+            ScrollViewReader { reader in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 18) {
+                        if flow.episodeSummaries.isEmpty && flow.pendingCaptureURL == nil {
+                            Text("说一段你想留下的事")
+                                .font(.title3).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, minHeight: 180)
+                        }
+                        ForEach(flow.episodeSummaries.reversed()) { item in
+                            episodeBubble(item)
+                                .id(item.episodeId)
+                        }
+                        if let pending = flow.pendingCaptureURL {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 7) {
+                                    Text("已采集").font(.headline)
+                                    Text(flow.pendingUploadFailed ? "上传失败，录音仍在本机" : "正在上传，录音已保存在本机")
+                                        .font(.subheadline).foregroundStyle(.secondary)
+                                    if flow.pendingUploadFailed {
+                                        Button("重试上传") {
+                                            Task {
+                                                await flow.uploadAndProcess(
+                                                    fileURL: pending, recordedAt: flow.pendingRecordedAt
+                                                )
+                                            }
+                                        }
+                                        .disabled(flow.isBusy)
+                                    }
+                                }
+                                .padding(14)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 17))
+                                Spacer(minLength: 30)
                             }
                         }
-                    } else {
-                        Text("可先录音，也可读取建议问题后做引导式录音。")
-                            .font(.footnote).foregroundStyle(.secondary)
+                        if let selectedQuestion {
+                            Text("引导问题：\(selectedQuestion)")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
+                    .padding(16)
                 }
-                Section("本机录音") {
-                    Text("先征得录音对象同意。录音文件保存在本机；上传后由 Backend 异步处理。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    HStack {
-                        Image(systemName: capture.isRecording ? "record.circle.fill" : "waveform")
-                            .foregroundStyle(capture.isRecording ? .red : .primary)
-                        Text(duration(capture.elapsed))
-                            .monospacedDigit()
-                            .font(.title2)
-                        Spacer()
-                        if capture.isPaused { Text("已暂停").foregroundStyle(.orange) }
-                    }
-                    if capture.isRecording {
-                        HStack {
-                            Button(capture.isPaused ? "继续" : "暂停") { capture.pauseOrResume() }
-                            Spacer()
-                            Button("保存录音") { capture.stop() }
-                                .tint(.red)
-                        }
-                    } else {
-                        Button("开始录音") { Task { await capture.start() } }
-                            .buttonStyle(.borderedProminent)
-                        Button("从文件导入设备录音") { showImporter = true }
-                    }
-                    if let file = capture.fileURL, !capture.isRecording {
-                        Text(file.lastPathComponent)
-                            .font(.caption)
-                            .textSelection(.enabled)
-                        Button(capture.isPlaying ? "停止播放" : "完整播放录音") {
-                            capture.playOrStop()
-                        }
-                        DatePicker(
-                            "录制时间",
-                            selection: Binding(
-                                get: { capture.recordedAt ?? Date() },
-                                set: { capture.setRecordedAt($0) }
-                            ),
-                            in: ...Date(),
-                            displayedComponents: [.date, .hourAndMinute]
-                        )
-                        Text("导入文件时请核对时间；设备导出时间可能不等于实际录制时间。")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    if let message = capture.message {
-                        Text(message).font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
-
-                Section("上传与处理") {
-                    Button("上传这段录音") {
-                        Task { await flow.uploadAndProcess(fileURL: capture.fileURL, recordedAt: capture.recordedAt) }
-                    }
-                    .disabled(capture.fileURL == nil || capture.isRecording || flow.isBusy)
-                    if flow.isBusy { ProgressView("正在上传或等待处理") }
-                    LabeledContent("状态", value: stageTitle(flow.stage))
-                    if let id = flow.lastEpisodeID {
-                        LabeledContent("Episode ID", value: id)
-                            .font(.caption)
-                            .textSelection(.enabled)
-                        Button("刷新这条 Episode") {
-                            Task { await flow.refreshLastEpisode() }
-                        }
-                        .disabled(flow.isBusy)
-                    }
-                    if let message = flow.message {
-                        Text(message).font(.footnote)
-                            .foregroundStyle(flow.stage == "failed" ? .red : .secondary)
+                .onChange(of: flow.episodeSummaries.count) { _, _ in
+                    if let id = flow.episodeSummaries.first?.episodeId {
+                        withAnimation { reader.scrollTo(id, anchor: .bottom) }
                     }
                 }
             }
-            .navigationTitle("记录生活")
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                composer
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial)
+            }
+            .navigationTitle("Remember Me")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showGuidance = true
+                        Task { await flow.loadCapturePlan() }
+                    } label: {
+                        Image(systemName: "sparkles")
+                    }
+                    .accessibilityLabel("引导式采集")
+                }
+            }
+            .sheet(isPresented: $showGuidance) {
+                NavigationStack {
+                    List {
+                        if let questions = flow.capturePlan?.questions, !questions.isEmpty {
+                            ForEach(questions) { item in
+                                Button {
+                                    selectedQuestion = item.question
+                                    showGuidance = false
+                                } label: {
+                                    Text(item.question)
+                                        .foregroundStyle(.primary)
+                                        .padding(.vertical, 5)
+                                }
+                            }
+                        } else {
+                            if flow.isBusy {
+                                ProgressView("正在准备问题")
+                            } else {
+                                Text("暂时无法获取问题").foregroundStyle(.secondary)
+                                Button("重试") { Task { await flow.loadCapturePlan() } }
+                            }
+                        }
+                    }
+                    .navigationTitle("引导式采集")
+                    .toolbar {
+                        Button("完成") { showGuidance = false }
+                    }
+                }
+                .presentationDetents([.medium, .large])
+            }
             .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio]) { result in
                 switch result {
-                case .success(let url): capture.importAudio(from: url)
-                case .failure(let error): capture.message = "无法选择录音：\(error.localizedDescription)"
+                case .success(let url):
+                    if capture.importAudio(from: url),
+                       let file = capture.fileURL, let date = capture.recordedAt {
+                        flow.registerPendingCapture(fileURL: file, recordedAt: date)
+                        Task { await flow.uploadAndProcess(fileURL: file, recordedAt: date) }
+                    }
+                case .failure(let error):
+                    capture.message = "无法选择录音：\(error.localizedDescription)"
                 }
+            }
+            .task {
+                capture.restorePendingRecording(at: flow.pendingCaptureURL)
+                await flow.loadEpisodes()
+                await flow.loadSubjectMemories()
             }
         }
     }
 
-    private func duration(_ seconds: TimeInterval) -> String {
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 4) {
+        if let message = capture.message {
+            Text(message).font(.footnote).foregroundStyle(.red)
+        }
+        if flow.pendingUploadFailed, let message = flow.message {
+            Text(message).font(.footnote).foregroundStyle(.red)
+        }
+        HStack(spacing: 12) {
+            Menu {
+                Button("导入录音文件", systemImage: "square.and.arrow.down") {
+                    showImporter = true
+                }
+                if capture.fileURL != nil && !capture.isRecording {
+                    Button(capture.isPlaying ? "停止播放" : "播放最近录音",
+                           systemImage: "play.circle") {
+                        capture.playOrStop()
+                    }
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title3)
+                    .frame(width: 40, height: 44)
+            }
+            .disabled(capture.isRecording)
+            if capture.isRecording {
+                Text(formatDuration(capture.elapsed))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(capture.isPaused ? .orange : .red)
+                Button(capture.isPaused ? "继续" : "暂停") { capture.pauseOrResume() }
+                    .font(.subheadline)
+            } else {
+                Text("轻点开始录音")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Button {
+                if capture.isRecording {
+                    capture.stop()
+                    if let file = capture.fileURL, let date = capture.recordedAt {
+                        flow.registerPendingCapture(fileURL: file, recordedAt: date)
+                        Task { await flow.uploadAndProcess(fileURL: file, recordedAt: date) }
+                    }
+                } else {
+                    Task { await capture.start() }
+                }
+            } label: {
+                Image(systemName: capture.isRecording ? "stop.fill" : "mic.fill")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(capture.isRecording ? Color.red : Color.accentColor, in: Circle())
+            }
+            .accessibilityLabel(capture.isRecording ? "保存并转录录音" : "开始录音")
+            .disabled((flow.isBusy || flow.pendingUploadFailed) && !capture.isRecording)
+        }
+        }
+    }
+
+    private func episodeBubble(_ item: EpisodeSummary) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("已采集").font(.headline)
+                    Spacer()
+                    Text(timeLabel(item.recordedAt))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                if let transcript = flow.transcripts[item.episodeId] {
+                    Text(transcript).textSelection(.enabled)
+                } else if item.status == "failed" {
+                    Text(item.errorMessage ?? "处理失败，录音仍已保存")
+                        .foregroundStyle(.red)
+                } else {
+                    Text("正在转成文字…").foregroundStyle(.secondary)
+                }
+                if item.status == "ready" {
+                    let related = flow.subjectMemories.filter { $0.episodeId == item.episodeId }
+                    ForEach(related.prefix(2)) { memory in
+                        Text("记住了：\(memory.content)")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                } else if item.hasTranscript {
+                    Text("正在整理记忆…")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if item.status == "failed" {
+                    Button("重新处理") { Task { await flow.retryProcessing(item.episodeId) } }
+                        .font(.caption)
+                        .disabled(flow.isBusy)
+                } else if item.status != "ready" {
+                    Button("刷新状态") { Task { await flow.refreshEpisode(item.episodeId) } }
+                        .font(.caption)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: 330, alignment: .leading)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 17))
+            Spacer(minLength: 30)
+        }
+    }
+
+    private func formatDuration(_ seconds: TimeInterval) -> String {
         let whole = max(0, Int(seconds))
         return String(format: "%02d:%02d", whole / 60, whole % 60)
     }
 
-    private func stageTitle(_ stage: String) -> String {
-        switch stage {
-        case "idle": return "尚未上传"
-        case "uploading": return "上传中"
-        case "uploaded": return "已上传"
-        case "transcribing": return "转录中"
-        case "extracting": return "提取记忆中"
-        case "modeling": return "整理结果中"
-        case "ready": return "已完成"
-        case "failed": return "失败"
-        default: return stage
-        }
+    private func timeLabel(_ value: String) -> String {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plain = ISO8601DateFormatter()
+        guard let date = fractional.date(from: value) ?? plain.date(from: value) else { return "" }
+        let display = DateFormatter()
+        display.locale = Locale(identifier: "zh_CN")
+        display.dateFormat = "M月d日 HH:mm"
+        return display.string(from: date)
     }
 }
 
 private struct MemoriesView: View {
     @EnvironmentObject private var flow: EpisodeFlow
+    @State private var query = ""
     @State private var selectedMemoryID: String?
     @State private var correctionDraft = ""
     @State private var showCorrection = false
     @State private var showDeletion = false
 
+    private var visible: [SubjectMemory] {
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return flow.subjectMemories }
+        return flow.subjectMemories.filter {
+            $0.content.localizedCaseInsensitiveContains(text)
+                || $0.domain.localizedCaseInsensitiveContains(text)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
-                if let id = flow.lastEpisodeID {
-                    Section("来源") {
-                        LabeledContent("Episode", value: id)
-                            .textSelection(.enabled)
-                        if let version = flow.modelVersion {
-                            LabeledContent("模型版本", value: version)
+                if flow.subjectMemories.isEmpty {
+                    ContentUnavailableView(
+                        "还没有记忆", systemImage: "books.vertical",
+                        description: Text("录下一段生活，记忆会出现在这里。")
+                    )
+                }
+                ForEach(visible) { item in
+                    DisclosureGroup {
+                        if let correction = item.correction {
+                            Text("待核实的纠错：\(correction)")
+                                .foregroundStyle(.orange)
                         }
-                    }
-                }
-                if flow.memories.isEmpty {
-                    if flow.subjectMemories.isEmpty {
-                        ContentUnavailableView(
-                            "暂无记忆", systemImage: "books.vertical",
-                            description: Text("录音上传并完成处理后，这里显示 Backend 返回的真实 Memory。")
-                        )
-                    }
-                }
-                if let model = flow.personModel {
-                    Section("Person Model · 有来源预览") {
-                        LabeledContent("版本", value: model.modelVersion)
-                        LabeledContent("来源 Memory", value: "\(model.sourceMemoryIds.count)")
-                        ForEach(model.domains.keys.sorted(), id: \.self) { domain in
-                            if let facts = model.domains[domain], !facts.isEmpty {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("\(domain) · \(facts.count) 条")
-                                        .font(.subheadline).bold()
-                                    if let latest = facts.last {
-                                        Text(latest.content)
-                                            .font(.caption).foregroundStyle(.secondary)
-                                        Text("证据 \(latest.evidenceIds.count) 项 · \(latest.sourceType)")
-                                            .font(.caption2).foregroundStyle(.secondary)
-                                    }
-                                }
+                        ForEach(item.evidence) { evidence in
+                            if let excerpt = evidence.excerpt {
+                                Text("来源：\(excerpt)")
+                                    .font(.subheadline)
                             }
                         }
-                    }
-                }
-                if let graph = flow.memoryGraph {
-                    let timeline = graph.nodes
-                        .filter { $0.kind == "MEMORY" }
-                        .sorted { ($0.recordedAt ?? "") < ($1.recordedAt ?? "") }
-                    if !timeline.isEmpty {
-                        Section("来源与时间图 · 预览") {
-                            Text("按领域连接先后记录；每条 Memory 可追溯到 Episode 和证据。争议或已删除的条目不参与。")
-                                .font(.footnote).foregroundStyle(.secondary)
-                            ForEach(timeline) { node in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(node.label)
-                                    Text("\(node.domain ?? "Unclassified") · \(node.sourceType ?? "未知来源") · \(node.recordedAt ?? "时间未知")")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                    let evidenceCount = graph.edges.filter {
-                                        $0.sourceId == node.nodeId && $0.relation == "SUPPORTED_BY"
-                                    }.count
-                                    Text("来源证据 \(evidenceCount) 项")
-                                        .font(.caption2).foregroundStyle(.secondary)
+                        Text("\(sourceLabel(item.sourceType)) · \(dateLabel(item.recordedAt)) 的录音")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Menu("管理记忆") {
+                            Button("提出纠错") {
+                                selectedMemoryID = item.memoryItemId
+                                correctionDraft = item.correction ?? ""
+                                showCorrection = true
+                            }
+                            if item.correction != nil {
+                                Button("撤回纠错") {
+                                    Task { await flow.removeMemoryCorrection(item.memoryItemId) }
                                 }
                             }
-                        }
-                    }
-                }
-                if !flow.domainCounts.isEmpty {
-                    Section("领域线索数（预览）") {
-                        ForEach(flow.domainCounts.keys.sorted(), id: \.self) { domain in
-                            LabeledContent(domain, value: "\(flow.domainCounts[domain] ?? 0)")
-                        }
-                    }
-                }
-                if !flow.subjectMemories.isEmpty {
-                    Section("跨 Episode 记忆") {
-                        ForEach(flow.subjectMemories) { item in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(item.content)
-                                if let correction = item.correction {
-                                    Text("纠错建议：\(correction)")
-                                        .font(.subheadline).foregroundStyle(.orange)
-                                    Text("原说法已暂停用于 Twin 回答，等待核实。")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                }
-                                Text("\(item.domain) · \(item.sourceType) · \(Int(item.confidence * 100))%")
-                                    .font(.caption).foregroundStyle(.secondary)
-                                Text("Episode \(item.episodeId)")
-                                    .font(.caption2).textSelection(.enabled)
-                                ForEach(item.evidence) { evidence in
-                                    if let excerpt = evidence.excerpt {
-                                        Text("证据：\(excerpt)")
-                                            .font(.caption).foregroundStyle(.secondary)
-                                    }
-                                }
-                                Menu("管理这条记忆") {
-                                    Button("提出纠错") {
-                                        selectedMemoryID = item.memoryItemId
-                                        correctionDraft = item.correction ?? ""
-                                        showCorrection = true
-                                    }
-                                    if item.correction != nil {
-                                        Button("撤回纠错") {
-                                            Task { await flow.removeMemoryCorrection(item.memoryItemId) }
-                                        }
-                                    }
-                                    Button("删除这条 Memory", role: .destructive) {
-                                        selectedMemoryID = item.memoryItemId
-                                        showDeletion = true
-                                    }
-                                }
-                                .disabled(flow.isBusy)
+                            Button("删除这条记忆", role: .destructive) {
+                                selectedMemoryID = item.memoryItemId
+                                showDeletion = true
                             }
-                            .padding(.vertical, 4)
                         }
-                    }
-                } else if !flow.memories.isEmpty {
-                    Section("提取结果") {
-                        ForEach(flow.memories) { item in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(item.content)
-                                    .font(.body)
-                                Text("\(item.memoryType) · \(item.sourceType) · 置信度 \(Int(item.confidence * 100))%")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text("证据：\(item.evidenceIds.joined(separator: ", "))")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .textSelection(.enabled)
-                            }
-                            .padding(.vertical, 4)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Text(item.content).font(.body)
+                            Text("\(item.domain) · \(dateLabel(item.recordedAt))")
+                                .font(.caption).foregroundStyle(.secondary)
                         }
+                        .padding(.vertical, 4)
                     }
                 }
             }
-            .navigationTitle("我的记忆")
-            .toolbar {
-                Button("刷新") { Task { await flow.loadSubjectMemories() } }
-                    .disabled(flow.isBusy)
-            }
-            .alert("纠正 Memory", isPresented: $showCorrection) {
+            .navigationTitle("记忆文库")
+            .searchable(text: $query, prompt: "搜索记忆")
+            .refreshable { await flow.loadSubjectMemories() }
+            .task { await flow.loadSubjectMemories() }
+            .alert("纠正记忆", isPresented: $showCorrection) {
                 TextField("写下正确内容", text: $correctionDraft)
                 Button("保存") {
                     guard let selectedMemoryID else { return }
@@ -498,16 +701,34 @@ private struct MemoriesView: View {
                 }
                 Button("取消", role: .cancel) {}
             } message: {
-                Text("纠错建议会暂停原说法用于 Twin 回答，原始证据仍可核查。")
+                Text("纠错后，原说法会暂停用于 Twin 回答。")
             }
-            .confirmationDialog("删除这条 Memory？", isPresented: $showDeletion) {
-                Button("删除 Memory", role: .destructive) {
+            .confirmationDialog("删除这条记忆？", isPresented: $showDeletion) {
+                Button("删除记忆", role: .destructive) {
                     guard let selectedMemoryID else { return }
                     Task { await flow.deleteMemory(selectedMemoryID) }
                 }
             } message: {
-                Text("这会从 Memory 结果和 Twin 检索中移除该条目。原始录音与 Episode 仍保留。")
+                Text("原始录音与 Episode 仍保留。")
             }
+        }
+    }
+
+    private func dateLabel(_ value: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fallback = ISO8601DateFormatter()
+        guard let date = formatter.date(from: value) ?? fallback.date(from: value) else { return "" }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private func sourceLabel(_ source: String) -> String {
+        switch source {
+        case "SUBJECT": "本人原话"
+        case "THIRD_PARTY": "他人描述"
+        case "OBJECTIVE": "客观资料"
+        case "CALIBRATION": "校准反馈"
+        default: "AI 整理"
         }
     }
 }
@@ -516,24 +737,94 @@ private struct TwinView: View {
     @EnvironmentObject private var flow: EpisodeFlow
     @EnvironmentObject private var capture: AudioCapture
     @State private var question = ""
+    @State private var lastQuestion = ""
+    @State private var showDetails = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("询问") {
-                    TextField("输入一个可由本人原话回答的问题", text: $question, axis: .vertical)
-                        .lineLimit(2...4)
-                    Button("查询证据") { Task { await flow.askTwin(question) } }
-                        .disabled(flow.isBusy || question.trimmingCharacters(in: .whitespacesAndNewlines).count < 2)
-                    if flow.isBusy { ProgressView() }
-                    Text("此分支目前实现的是保守证据路由：有相关本人原话才标 ORIGINAL；证据不足时明确说明，不编造回答。")
-                        .font(.footnote).foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    if flow.twinAnswer == nil && !flow.isBusy {
+                        Text("关于你的记忆，想聊什么？")
+                            .font(.title3).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, minHeight: 180)
+                    }
+                    if !lastQuestion.isEmpty {
+                        HStack {
+                            Spacer(minLength: 44)
+                            Text(lastQuestion)
+                                .padding(14)
+                                .background(Color.accentColor.opacity(0.14), in: RoundedRectangle(cornerRadius: 18))
+                        }
+                    }
+                    if flow.isBusy { ProgressView().padding() }
+                    if let answer = flow.twinAnswer {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(answer.responseType == "ORIGINAL" ? "本人原话" :
+                                     answer.responseType == "SIMULATION" ? "模拟回答" : "证据不足")
+                                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                Text(answer.answer)
+                                    .font(.body)
+                                if !answer.evidence.isEmpty {
+                                    Text("依据 \(answer.evidence.count) 条记忆")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Button("查看来源与说明") { showDetails = true }
+                                    .font(.footnote)
+                            }
+                            .padding(15)
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
+                            Spacer(minLength: 36)
+                        }
+                    }
+                    if let message = flow.message {
+                        Text(message).font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
-                if let answer = flow.twinAnswer {
-                    Section(answer.responseType == "ORIGINAL" ? "本人原话" : (answer.evidence.isEmpty ? "证据不足" : "未核实的相关线索")) {
-                        Text(answer.answer).font(.body)
-                        LabeledContent("类型", value: answer.responseType)
-                        LabeledContent("置信度", value: "\(Int(answer.confidence * 100))%")
+                .padding(16)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .safeAreaInset(edge: .bottom) {
+                HStack(alignment: .bottom, spacing: 10) {
+                    TextField("问一个关于记忆的问题", text: $question, axis: .vertical)
+                        .lineLimit(1...4)
+                        .padding(12)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+                    Button {
+                        let asked = question.trimmingCharacters(in: .whitespacesAndNewlines)
+                        lastQuestion = asked
+                        question = ""
+                        Task { await flow.askTwin(asked) }
+                    } label: {
+                        Image(systemName: "arrow.up.circle.fill").font(.system(size: 32))
+                    }
+                    .disabled(flow.isBusy || question.trimmingCharacters(in: .whitespacesAndNewlines).count < 2)
+                    .accessibilityLabel("发送问题")
+                }
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(.bar)
+            }
+            .navigationTitle("对话")
+            .sheet(isPresented: $showDetails) {
+                NavigationStack {
+                    List {
+                        if let answer = flow.twinAnswer {
+                            Section("回答依据") {
+                                LabeledContent("类型", value: answer.responseType)
+                                LabeledContent("置信度", value: "\(Int(answer.confidence * 100))%")
+                                if let version = answer.modelVersion {
+                                    LabeledContent("模型版本", value: version)
+                                }
+                                ForEach(answer.evidence) { evidence in
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(evidence.excerpt ?? "无摘录")
+                                        Text("\(evidence.sourceType) · \(evidence.sourceRef)")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            Section("朗读") {
                         Button(capture.isSpeaking ? "停止系统朗读" : "系统朗读（非本人声音）") {
                             if capture.isSpeaking {
                                 capture.stopSystemSpeech()
@@ -570,23 +861,15 @@ private struct TwinView: View {
                             }
                             .disabled(flow.isBusy || capture.isRecording || capture.selectedPersonalVoiceID.isEmpty)
                         }
-                        Text("每次播放前验证独立 VOICE 同意。设备个人声音还需 iOS 授权和本机预先创建；此处尚未核实它与 Subject 的身份关系，也不训练或上传声音模型。")
+                        Text("需要独立声音授权。设备个人声音须在本机创建，尚未验证与账号本人身份一致。")
                             .font(.caption).foregroundStyle(.secondary)
-                        if let version = answer.modelVersion { LabeledContent("模型版本", value: version) }
-                        ForEach(answer.evidence) { evidence in
-                            VStack(alignment: .leading) {
-                                Text(evidence.excerpt ?? "无摘录")
-                                Text("\(evidence.sourceType) · \(evidence.sourceRef)")
-                                    .font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
-                }
-                if let message = flow.message {
-                    Section { Text(message).font(.footnote) }
+                    .navigationTitle("回答详情")
+                    .toolbar { Button("完成") { showDetails = false } }
                 }
             }
-            .navigationTitle("证据 Twin")
         }
     }
 }
@@ -597,11 +880,14 @@ private struct ConnectionView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("本地开发连接") {
+                Section("服务连接") {
+                    LabeledContent("Backend", value: flow.settings.baseURL)
+                    #if DEBUG
                     TextField("Backend 根地址", text: $flow.settings.baseURL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .keyboardType(.URL)
+                    if !flow.isAuthenticated {
                     SecureField("Actor 令牌", text: $flow.settings.token)
                         .textInputAutocapitalization(.never)
                     TextField("Subject ID", text: $flow.settings.subjectID)
@@ -619,10 +905,12 @@ private struct ConnectionView: View {
                     TextField("Voice 同意 ID", text: $flow.settings.voiceConsentID)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    }
                     Button("保存连接设置") { flow.saveSettings() }
                         .disabled(flow.isBusy)
                     Text("令牌保存在 iOS 钥匙串。模拟器可用 127.0.0.1；真机需要能访问 Mac 的私有网络地址或 HTTPS 服务。")
                         .font(.footnote).foregroundStyle(.secondary)
+                    #endif
                 }
                 Section("明确同意") {
                     Text("确认你有权为此 Subject 录音。录音同意只允许 Capture，不授权 Voice Clone。")

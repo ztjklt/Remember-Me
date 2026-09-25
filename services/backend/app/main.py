@@ -11,11 +11,12 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
 from .ai_core import build_ai_client
-from .api import calibration, capture_plan, consents, core_twin, episodes, health, legacy_preview, session
+from .api import auth, calibration, capture_plan, consents, core_twin, episodes, health, legacy_preview, session
 from .config import Settings, get_settings
 from .db import Database
 from .errors import REQUEST_INVALID, AppError
 from .logging_config import configure_logging, trace_id_var
+from .mail import Mailer
 from .storage import build_object_store
 from .stt import build_stt_provider
 
@@ -127,6 +128,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # worker long after the deployment looked healthy.
     stt_provider = build_stt_provider(settings)
     ai_client = build_ai_client(settings)
+    mailer = Mailer(settings)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -144,12 +146,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.object_store = object_store
     app.state.stt_provider = stt_provider
     app.state.ai_client = ai_client
+    app.state.mailer = mailer
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)
     app.add_exception_handler(RequestValidationError, _request_error_handler)
     app.include_router(health.router)
     app.include_router(session.router)
+    app.include_router(auth.router)
     app.include_router(consents.router)
     app.include_router(episodes.router)
     app.include_router(core_twin.router)

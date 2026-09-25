@@ -18,6 +18,10 @@ EXPECTED_TABLES = {
     "legacy_grants",
     "legacy_audit_events",
     "person_model_snapshots",
+    "accounts",
+    "email_challenges",
+    "login_sessions",
+    "account_claims",
 }
 
 

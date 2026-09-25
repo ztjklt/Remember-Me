@@ -71,6 +71,14 @@ class Settings(BaseSettings):
     # any worker, and a result is committed only while the claim is held.
     job_lease_seconds: int = 60
 
+    # Real login requires an SMTP relay. The in-memory sender is development/test only.
+    mail_backend: Literal["memory", "smtp"] = "memory"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "Remember Me <noreply@remember.me>"
+
 
 @lru_cache
 def get_settings() -> Settings:

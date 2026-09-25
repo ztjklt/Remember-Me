@@ -29,5 +29,7 @@
 	<string>连接你自己运行的 Remember Me Backend。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>录制你的生活片段并生成有来源的记忆。</string>
+	<key>UILaunchScreen</key>
+	<dict/>
 </dict>
 </plist>
