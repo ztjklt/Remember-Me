@@ -239,16 +239,28 @@ def test_an_unreachable_ai_core_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_ai_core_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+@pytest.mark.parametrize(
+    ("status_code", "error_type", "retryable"),
+    [
+        (413, AiFailed, False),
+        (422, AiFailed, False),
+        (502, AiFailed, False),
+        (503, AiUnavailable, True),
+        (504, AiTimeout, True),
+        (500, AiFailed, False),
+    ],
+)
+def test_ai_core_http_errors_keep_the_retry_boundary(
+    http_post, status_code, error_type, retryable
+):
+    http_post(lambda request: httpx.Response(status_code, text="provider error"))
 
-    with pytest.raises(AiFailed) as raised:
+    with pytest.raises(error_type) as raised:
         client_for().process(INPUT)
 
-    assert "500" in raised.value.message
-    assert "traceback" in raised.value.message
-    # AI Core ran and refused: the same request would be refused again.
-    assert not raised.value.retryable
+    assert str(status_code) in raised.value.message
+    assert "provider error" in raised.value.message
+    assert raised.value.retryable is retryable
 
 
 def test_a_response_that_is_not_json_is_a_schema_problem(http_post):
