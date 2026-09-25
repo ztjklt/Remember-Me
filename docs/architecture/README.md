@@ -36,7 +36,7 @@ Real recording writes to client-private storage. Permission denial, offline, upl
 - Backend proposes PostgreSQL/Supabase plus Object Storage; provider choices stay replaceable. Episode states: `uploaded → transcribing → extracting → modeling → ready/failed`.
 - Cross-service calls carry idempotency, retry, trace id, and audit. Every request states `actor_id`, `subject_id`, role/relationship, consent, `grant_scope`, and `legacy_state`.
 - AI Core takes Episode/Transcript as its input boundary and returns structured memory, graph, and persona updates as its output boundary. Structured output must be schema-validated before persistence, and every important inference keeps provenance, evidence, confidence, and model version. Twin must answer from evidence retrieval — a fixed persona prompt is not memory.
-- Voice is decoupled from Person Model with its own consent, dataset, profile, and audit. Pipeline: Consent Gate → Speaker Verification → Quality → Clean Segment → Dataset → Voice Profile/Clone → TTS. Third-party audio never enters a Subject Voice Dataset, and Android receives only status and playable audio.
+- Voice is decoupled from Person Model with its own consent, dataset, profile, and audit. Pipeline: Consent Gate → Speaker Verification → Quality → Clean Segment → Dataset → Voice Profile/Clone → TTS. Third-party audio never enters a Subject Voice Dataset, and the requesting client receives only status and playable audio.
 
 ## Adapter rule
 
