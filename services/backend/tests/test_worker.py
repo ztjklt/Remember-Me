@@ -27,7 +27,7 @@ from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
 from app.logging_config import JsonFormatter
 from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
 from app.seed import seed_development_data
-from app.stt import FakeSttProvider, Transcript
+from app.stt import FakeSttProvider, HttpSttProvider, Transcript
 from app.worker import LeaseHeartbeat, ProcessingWorker
 
 AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmt "
@@ -341,6 +341,52 @@ def test_a_retryable_failure_leaves_the_episode_on_the_stage_it_is_stuck_on(
     assert job.attempts == 1
     # Waiting, not retrying immediately: backoff is scheduled, not ignored.
     assert as_utc(job.available_at) > utcnow()
+
+
+@pytest.mark.parametrize(
+    ("status_code", "error_code", "attempts"),
+    [
+        (413, "STT_FAILED", 1),
+        (422, "STT_FAILED", 1),
+        (502, "STT_FAILED", 1),
+        (503, "STT_UNAVAILABLE", 3),
+        (504, "STT_TIMEOUT", 3),
+    ],
+)
+def test_an_stt_http_failure_persists_with_the_right_retry_budget(
+    app, session, uploaded, monkeypatch, status_code, error_code, attempts
+):
+    """What the provider answers decides the budget, and the audio survives either way.
+
+    The recording is stored before transcription is attempted (ADR-0001 D11), so
+    a transcription that fails cannot lose it. The two rows assert that together
+    because they are the same promise: the Episode records why, and the audio it
+    could not read is still in the object store for the retry or the operator.
+    """
+    calls = []
+
+    def post(url, **kwargs):  # noqa: ANN001, ANN003, ANN202 - mirrors httpx.post
+        calls.append((url, kwargs))
+        return httpx.Response(status_code, text="provider error")
+
+    monkeypatch.setattr(httpx, "post", post)
+    stt = HttpSttProvider("http://stt.internal", "/transcribe", 5.0)
+    worker = build_worker(app, stt=stt, max_attempts=3)
+
+    for _ in range(attempts):
+        worker.run_once()
+
+    job = job_of(session, uploaded)
+    episode = episode_of(session, uploaded)
+    assert job.state == str(JobState.FAILED)
+    assert job.attempts == attempts
+    assert job.last_error_code == error_code
+    assert episode.status == "failed"
+    assert episode.error_code == error_code
+    assert episode.transcript is None
+    assert app.state.object_store.get(episode.audio_object_key) == AUDIO
+    # One request per attempt: the adapter does not retry underneath the job.
+    assert len(calls) == attempts
 
 
 def test_a_missing_audio_object_is_named_as_such(app, session, uploaded):

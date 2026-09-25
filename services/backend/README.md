@@ -259,9 +259,9 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 | `EPISODE_NOT_READY` | 409 | The result was asked for before the Episode finished processing |
 | `STORAGE_UNAVAILABLE` | 503 | Object storage refused the upload. No Episode is written: a record whose audio never arrived would claim to hold something it does not have |
 | `AUDIO_UNAVAILABLE` | 503 | The audio an Episode points at could not be read from object storage |
-| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached |
-| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio |
-| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time |
+| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached or answered HTTP 503 |
+| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio, including HTTP 413, 422, and 502 |
+| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time or answered HTTP 504 |
 | `STT_EMPTY_TRANSCRIPT` | 422 | The provider returned no text, so there is nothing to extract |
 | `AI_UNAVAILABLE` | 503 | AI Core could not be reached or answered HTTP 503 |
 | `AI_FAILED` | 502 | AI Core refused the request, including HTTP 413, 422, and 502 |
@@ -274,6 +274,8 @@ A processing failure is not a request failure: it is recorded **on the Episode**
 The AI Core HTTP adapter makes one request per worker attempt. Its 503 and 504 responses use the worker's bounded retry and backoff; 413, 422, and 502 end the AI stage without retrying. The original audio and transcript remain on the Episode when extraction fails.
 
 The codes are Backend-owned: the contract types `error_code` and `error_message` as free strings, so adding one is not a contract change, while renaming one a client branches on is a compatibility concern. ADR-0001 D11 is the decision record for this taxonomy.
+
+Both HTTP adapters map a provider's own status onto that taxonomy the same way, so `retryable` means one thing regardless of which stage is running: 503 and 504 go back to the bounded retry budget, while 413, 422, and 502 end the stage. Transcription runs before extraction, so a failed transcription leaves the Episode with no transcript but never without its audio, and a failed extraction leaves both.
 
 ## Data model
 

@@ -491,16 +491,40 @@ def test_an_unreachable_provider_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_the_provider_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+@pytest.mark.parametrize(
+    ("status_code", "error_type", "retryable"),
+    [
+        (413, SttFailed, False),
+        (422, SttFailed, False),
+        (500, SttFailed, False),
+        (502, SttFailed, False),
+        (503, SttUnavailable, True),
+        (504, SttTimeout, True),
+    ],
+)
+def test_the_status_a_provider_answers_keeps_the_retry_boundary(
+    http_post, status_code, error_type, retryable
+):
+    """A refusal and a provider that is not ready yet are not the same failure.
 
-    with pytest.raises(SttFailed) as raised:
+    This is the same table the AI Core boundary keeps, deliberately: one worker
+    decides whether to retry using `retryable` alone, so a status that meant
+    "retry" on one provider and "stop" on the other would make the worker's
+    behaviour depend on which stage it happened to be running.
+
+    503 is the one that matters in practice. A model server that is still
+    loading answers 503, and treating that as terminal ends the Episode on a
+    condition that clears by itself — with the audio already stored, and two
+    unused attempts left in the budget.
+    """
+    http_post(lambda request: httpx.Response(status_code, text="provider error"))
+
+    with pytest.raises(error_type) as raised:
         stt_for().transcribe(AUDIO, "audio/mp4")
 
-    assert raised.value.code == "STT_FAILED"
-    assert "500" in raised.value.message
-    # The provider ran and refused: the same audio would be refused again.
-    assert not raised.value.retryable
+    assert str(status_code) in raised.value.message
+    assert "provider error" in raised.value.message
+    assert raised.value.retryable is retryable
 
 
 def test_a_response_that_is_not_json_is_a_failed_call(http_post):

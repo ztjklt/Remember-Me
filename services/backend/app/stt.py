@@ -15,6 +15,11 @@ other part of the service changing:
     ->
     200 {"text": "...", "model_version": "..."}   # model_version optional
 
+A non-2xx answer keeps the same meaning it has at the AI Core boundary: 503 and
+504 are the provider's own transient conditions and return to the job's retry
+budget, while anything else ends the stage, because the same audio would be
+refused again.
+
 `model_version` is optional because a provider that does not report one is still
 a provider; what it must not do is have "unreported" written into the record as
 if it were a version, so the absence gets a name of its own.
@@ -129,10 +134,20 @@ class HttpSttProvider:
             ) from error
 
         if response.status_code >= 400:
-            raise SttFailed(
+            message = (
                 f"The speech-to-text provider answered {response.status_code}: "
                 f"{response.text[:_ERROR_EXCERPT]}"
             )
+            # The same boundary AI Core keeps. A provider that answers 503 is one
+            # that is not serving yet — a model server still loading, or a load
+            # balancer with nothing healthy behind it — and it clears on its own,
+            # so it is a retry rather than the end of the Episode. 504 is the same
+            # judgement as a client-side timeout, reached the other way round.
+            if response.status_code == 503:
+                raise SttUnavailable(message)
+            if response.status_code == 504:
+                raise SttTimeout(message)
+            raise SttFailed(message)
 
         try:
             body = response.json()
