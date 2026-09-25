@@ -71,7 +71,7 @@ def test_persona_rejects_foreign_citations_and_unsupported_graph():
         PersonaSynthesizer(provider=Stub(invalid_relation), model_version="real").synthesize(payload)
     unrelated_relation = output()
     unrelated_relation["entities"] = [
-        {"name": "阿明", "kind": "PERSON", "support_memory_ids": ["m1"]},
+        {"name": "阿明", "kind": "PERSON", "support_memory_ids": ["m2"]},
         {"name": "北京", "kind": "PLACE", "support_memory_ids": ["m2"]},
     ]
     unrelated_relation["relations"] = [
@@ -79,6 +79,18 @@ def test_persona_rejects_foreign_citations_and_unsupported_graph():
     ]
     with pytest.raises(AIOutputInvalid):
         PersonaSynthesizer(provider=Stub(unrelated_relation), model_version="real").synthesize(payload)
+    # A pronoun may refer to an entity anchored in another recording. The
+    # relation itself still cites a Memory supporting its other endpoint.
+    one_sided = output()
+    one_sided["entities"] = [
+        {"name": "阿明", "kind": "PERSON", "support_memory_ids": ["m1"]},
+        {"name": "北京", "kind": "PLACE", "support_memory_ids": ["m2"]},
+    ]
+    one_sided["relations"] = [
+        {"source_name": "阿明", "target_name": "北京", "relation": "居住于", "support_memory_ids": ["m2"]}
+    ]
+    accepted = PersonaSynthesizer(provider=Stub(one_sided), model_version="real").synthesize(payload)
+    assert accepted.relations[0].support_memory_ids == ["m2"]
 
 
 def test_fixture_refuses_persona_generation():

@@ -189,8 +189,8 @@ def _semantic_model(
         if not source_id or not target_id:
             raise AiSchemaInvalid("Persona relation referenced a missing entity")
         support = set(relation.support_memory_ids)
-        if not support & entity_sources[source_name] or not support & entity_sources[target_name]:
-            raise AiSchemaInvalid("Persona relation lacked source evidence shared with its entities")
+        if not support & (entity_sources[source_name] | entity_sources[target_name]):
+            raise AiSchemaInvalid("Persona relation lacked source evidence for either entity")
         graph_edges.append({"source_id": source_id, "target_id": target_id,
                             "relation": relation.relation, "support_memory_ids": relation.support_memory_ids})
     return domains, {"nodes": graph_nodes, "edges": graph_edges}, result.model_version
@@ -356,6 +356,14 @@ def invalidate_person_model(session: Session, *, subject_id: str, actor_id: str)
     """
     snapshot = session.get(PersonModelSnapshot, (subject_id, actor_id))
     if snapshot is None:
+        snapshot = PersonModelSnapshot(
+            subject_id=subject_id, actor_id=actor_id, revision=1,
+            source_memory_ids=[],
+            domains={domain: [] for domain in (*DOMAINS, "Unclassified")},
+            calibration_updates=[], semantic_graph={"nodes": [], "edges": []},
+            synthesis_model_version=None, updated_at=utcnow(),
+        )
+        session.add(snapshot)
         return
     snapshot.revision += 1
     snapshot.source_memory_ids = []

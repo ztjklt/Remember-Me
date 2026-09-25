@@ -22,7 +22,7 @@ from ..errors import (
     MemoryNotFound, RequestInvalid, SubjectNotFound,
 )
 from ..models import Actor, Consent, ConsentScope, Episode, Evidence, MemoryFeedback, MemoryItem, PersonModelSnapshot, as_utc, utcnow
-from ..person_model import rebuild_person_model, refresh_after_mutation
+from ..person_model import invalidate_person_model, rebuild_person_model, refresh_after_mutation
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor, require_subject_owner
 
@@ -272,6 +272,10 @@ def get_person_model(
             # snapshot visible and retry synthesis on a later read.
             session.rollback()
             snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
+            if snapshot is None:
+                invalidate_person_model(session, subject_id=subject_id, actor_id=actor.actor_id)
+                session.commit()
+                snapshot = session.get(PersonModelSnapshot, (subject_id, actor.actor_id))
     if snapshot is None:
         return PersonModelView(
             subject_id=subject_id, revision=0,

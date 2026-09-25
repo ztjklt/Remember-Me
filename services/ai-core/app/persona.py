@@ -24,7 +24,9 @@ PERSONA_PROMPT = (
     "opposition as unresolved. Do not silently select a winner. Keep status "
     "current, superseded, or disputed, and cite counter_memory_ids. "
     "Create entities and relations only when the supplied excerpts state them; "
-    "each must cite source memory IDs. Write concise Chinese statements and "
+    "each must cite source memory IDs. A relation source must also ground at "
+    "least one endpoint; the other endpoint may be grounded by a different "
+    "memory when the relation source uses a pronoun. Write concise Chinese statements and "
     "context. Do not invent people, dates, motives, relationships, or confidence. "
     "No prose outside the JSON schema."
 )
@@ -144,8 +146,8 @@ class PersonaSynthesizer:
             if source not in names or target not in names:
                 raise AIOutputInvalid("Persona relation referenced an absent entity")
             support = set(relation.support_memory_ids)
-            if not support & names[source] or not support & names[target]:
-                raise AIOutputInvalid("Persona relation lacked shared source evidence for its entities")
+            if not support & (names[source] | names[target]):
+                raise AIOutputInvalid("Persona relation lacked source evidence for either entity")
         output.model_version = self.model_version
         output.schema_version = PERSONA_SCHEMA_VERSION
         return output

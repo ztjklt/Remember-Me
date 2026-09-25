@@ -36,12 +36,16 @@ from .contracts import AICoreInput
 from .db import Database
 from .errors import (
     AppError,
+    AiFailed,
+    AiSchemaInvalid,
+    AiTimeout,
+    AiUnavailable,
     AudioUnavailable,
     SttEmptyTranscript,
     SttUnavailable,
 )
 from .models import ConsentScope, Episode, JobStage, JobState
-from .person_model import rebuild_person_model
+from .person_model import invalidate_person_model, rebuild_person_model
 from .repositories.episodes import EpisodeRepository
 from .repositories.consents import ConsentRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
@@ -391,10 +395,25 @@ class ProcessingWorker:
             raise UnexpectedFailure(
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
-        rebuild_person_model(
-            session, subject_id=episode.subject_id, actor_id=episode.actor_id,
-            settings=self.settings,
-        )
+        try:
+            rebuild_person_model(
+                session, subject_id=episode.subject_id, actor_id=episode.actor_id,
+                settings=self.settings,
+            )
+        except (AiFailed, AiSchemaInvalid, AiTimeout, AiUnavailable) as error:
+            if self.settings is None or self.settings.ai_backend != "http":
+                raise
+            # Extraction has already persisted the transcript and Memories.
+            # Persona is a derived read model: its outage cannot undo capture.
+            # Clearing the previous snapshot also prevents stale Twin answers.
+            invalidate_person_model(
+                session, subject_id=episode.subject_id, actor_id=episode.actor_id,
+            )
+            logger.warning(
+                "persona.deferred",
+                extra={"extra_fields": {"episode_id": episode.episode_id,
+                                        "error_code": error.code}},
+            )
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
         """Retry the stage or give up, in its own transaction.

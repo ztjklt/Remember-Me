@@ -25,7 +25,7 @@ def test_backend_rejects_persona_relation_without_shared_entity_evidence(
         return httpx.Response(200, json={
             "traits": [],
             "entities": [
-                {"name": "阿明", "kind": "PERSON", "support_memory_ids": [first]},
+                {"name": "阿明", "kind": "PERSON", "support_memory_ids": [second]},
                 {"name": "北京", "kind": "PLACE", "support_memory_ids": [second]},
             ],
             "relations": [
@@ -41,6 +41,18 @@ def test_backend_rejects_persona_relation_without_shared_entity_evidence(
             session, subject_id=seeded.subject_id, actor_id=seeded.actor_id,
             settings=client.app.state.settings,
         )
+
+    def one_sided(url, *, json, **kwargs):
+        payload = unrelated(url, json=json, **kwargs).json()
+        payload["entities"][0]["support_memory_ids"] = [json["memories"][0]["memory_item_id"]]
+        return httpx.Response(200, json=payload)
+
+    monkeypatch.setattr("app.person_model.httpx.post", one_sided)
+    snapshot = rebuild_person_model(
+        session, subject_id=seeded.subject_id, actor_id=seeded.actor_id,
+        settings=client.app.state.settings,
+    )
+    assert any(edge["relation"] == "居住于" for edge in snapshot.semantic_graph["edges"])
 
 
 def test_existing_ready_memories_build_persona_when_snapshot_is_missing(client, session, monkeypatch):
@@ -70,6 +82,33 @@ def test_existing_ready_memories_build_persona_when_snapshot_is_missing(client, 
     assert body["processing_state"] == "ready"
     assert body["model_version"] == "real-persona-v1"
     assert body["domains"]["Preferences"][0]["content"] == "我喜欢咖啡。"
+
+
+def test_missing_snapshot_persona_outage_reports_rebuilding_and_twin_fails_closed(
+    client, session, monkeypatch,
+):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    auth = {"Authorization": f"Bearer {seeded.actor_token}"}
+    _ready_episode(client, session, seeded, auth)
+    client.app.state.settings.ai_backend = "http"
+
+    def unavailable(*_args, **_kwargs):
+        raise httpx.ConnectError("Persona offline")
+
+    monkeypatch.setattr("app.person_model.httpx.post", unavailable)
+    base = f"/api/v1/subjects/{seeded.subject_id}"
+    model = client.get(base + "/person-model", headers=auth)
+    assert model.status_code == 200, model.text
+    assert model.json()["processing_state"] == "rebuilding"
+    assert model.json()["source_memory_ids"] == []
+    cloud = client.post("/api/v1/consents", headers=auth, json={
+        "subject_id": seeded.subject_id, "scope": "CLOUD_TWIN"
+    }).json()["consent_id"]
+    twin = client.post(base + "/twin/query", headers=auth, json={
+        "question": "我喜欢咖啡吗？", "cloud_twin_consent_id": cloud,
+    })
+    assert twin.status_code == 503, twin.text
+    assert twin.json()["error_code"] == "AI_UNAVAILABLE"
 
 
 def test_semantic_change_and_correction_recompute_twin_and_graph(client, session, monkeypatch):

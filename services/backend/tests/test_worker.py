@@ -22,7 +22,7 @@ from sqlalchemy import select, update
 
 from app.ai_core import FakeAiCoreClient, HttpAiCoreClient
 from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
-from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
+from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, PersonModelSnapshot, as_utc, utcnow
 from app.seed import seed_development_data
 from app.stt import FakeSttProvider, Transcript
 from app.worker import LeaseHeartbeat, ProcessingWorker
@@ -290,6 +290,37 @@ def test_the_transcript_is_kept_when_a_later_stage_fails(client, session, upload
 
     # And the audio is still where it was.
     assert app.state.object_store.get(episode.audio_object_key) == AUDIO
+
+
+def test_persona_failure_keeps_extracted_memories_ready_and_invalidates_model(
+    app, session, uploaded, seeded, monkeypatch,
+):
+    app.state.settings.ai_backend = "http"
+    session.add(PersonModelSnapshot(
+        subject_id=seeded.subject_id, actor_id=seeded.actor_id, revision=1,
+        source_memory_ids=["stale-memory"],
+        domains={"Preferences": [{"content": "stale claim"}]},
+        calibration_updates=[],
+        semantic_graph={"nodes": [{"node_id": "stale", "kind": "TOPIC", "label": "stale"}], "edges": []},
+        synthesis_model_version="old-persona-v1", updated_at=utcnow(),
+    ))
+    session.commit()
+    def broken_persona(*_args, **_kwargs):
+        raise AiSchemaInvalid("Persona returned an invalid relation")
+    monkeypatch.setattr("app.worker.rebuild_person_model", broken_persona)
+    worker = build_worker(app, settings=app.state.settings)
+    advance(worker)
+    episode = episode_of(session, uploaded)
+    assert episode.status == "ready"
+    assert episode.transcript
+    assert session.scalars(select(MemoryItem).where(MemoryItem.episode_id == uploaded)).all()
+    snapshot = session.get(PersonModelSnapshot, (seeded.subject_id, seeded.actor_id))
+    assert snapshot is not None
+    assert snapshot.synthesis_model_version is None
+    assert snapshot.source_memory_ids == []
+    assert snapshot.domains["Preferences"] == []
+    assert snapshot.semantic_graph == {"nodes": [], "edges": []}
+    assert snapshot.revision == 2
 
 
 def test_a_deterministic_failure_is_not_retried(app, session, uploaded):

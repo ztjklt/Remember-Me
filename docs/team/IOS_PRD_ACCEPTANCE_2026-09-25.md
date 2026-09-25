@@ -11,6 +11,6 @@
 | Twin、校准与引导 | 真实 Twin Agent 做语义检索，原话逐字返回、模拟回答附引用、证据不足拒答；五维比较后由本人账号明确确认；真实 Capture Planner 生成中文问题与追问 | 账号是本人声明，未接入正式身份核验；真人素材的回答质量、追问质量尚未人工评分；Twin 当前单次检索窗口为 100 条证据 |
 | Voice 与 Work 3200 | 独立同意和能力回退边界保留；无可用能力时不标为已完成 | 声线克隆供应商与 Work 3200 SDK/设备尚未确定 |
 
-2026-09-25 更新验证：Backend 全套 244 项测试、AI Core 142 项测试、iOS 模拟器构建及 7 项测试通过；`git diff --check` 通过。本机合成语音重新走真实 Whisper STT → DeepSeek Memory Extractor → Persona → Twin Agent → Capture Planner，Episode `ep_8a788a5784974498` 返回 `ready`、4 条 Memory；扩展脚本严格核对非 fixture 的模型版本、七域特征、Twin 和追问后通过。此前另一个模拟器账号的 Episode `ep_b2ffdc2ca8ac42de` 已在 App 左侧采集气泡中显示真实转录和提取内容。合成语音与模拟器检查不等同于 iPhone 录音验收。当前 iPhone 15 Pro Max 已通过本机开发证书完成签名构建和安装，首次 CLI 启动被设备锁屏拒绝，尚未形成真机操作记录。
+2026-09-25 更新验证：Backend 全套 246 项测试、AI Core 142 项测试、iOS 模拟器构建及 7 项测试通过；`git diff --check` 通过。本机合成语音重新走真实 Whisper STT → DeepSeek Memory Extractor → Persona → Twin Agent → Capture Planner，Episode `ep_04803462dd1c40aa` 返回 `ready`、4 条 Memory；扩展脚本严格核对非 fixture 的模型版本、七域特征、Twin 和追问后通过。另用失败模拟验证 Persona 不可用时已提取 Episode 仍 `ready`、旧画像清空待重建；录音授权在处理中撤销时不持久化结果。此前另一个模拟器账号的 Episode `ep_b2ffdc2ca8ac42de` 已在 App 左侧采集气泡中显示真实转录和提取内容。合成语音与模拟器检查不等同于 iPhone 录音验收。当前 iPhone 15 Pro Max 已通过本机开发证书完成签名构建和安装，首次 CLI 启动被设备锁屏拒绝，尚未形成真机操作记录。
 
 发布前必须补做：连接真实 iPhone，配置可投递邮箱服务和可从手机访问的 Backend；本人录音后确认气泡即时出现、异步真实转录、同一 Episode 的 Memory 文库展示、失败与重启恢复；用两段有变化的真实素材人工复核冲突、Twin 引用与校准追问。记录设备、系统版本、服务模型版本与结果。

@@ -56,7 +56,10 @@ The service exposes:
   follow-ups from current traits, coverage and confirmed calibration gaps.
 
 The three new model endpoints require a real provider. Their closed schemas and
-source-ID checks reject invented citations. A bounded regeneration attempt is
+source-ID checks reject invented citations. Persona relations must cite current
+source Memory and share it with at least one endpoint entity; the other endpoint
+may be grounded separately when the relation source uses a pronoun. A bounded
+regeneration attempt is
 used for malformed extraction output; it never relaxes provenance validation.
 
 For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,

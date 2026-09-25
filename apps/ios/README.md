@@ -78,7 +78,9 @@ trait and graph link must cite a current Memory. The graph also preserves
 Episode and Evidence provenance. Corrections, deletions and consent changes
 invalidate derived traits in the same transaction; a subsequent read or Twin
 query rebuilds them. During provider failure, the model reports `rebuilding`
-and Twin cannot use stale traits. The Twin Agent searches current evidence
+and Twin cannot use stale traits. A Persona failure after successful extraction
+does not discard the Episode transcript or Memory; the derived model remains
+queued for a later rebuild. The Twin Agent searches current evidence
 semantically, returns one exact Subject excerpt as ORIGINAL when it answers the
 question, otherwise returns a cited SIMULATION or refuses. The Backend verifies
 citations and keeps the shared Contract unchanged. Fixture mode remains an

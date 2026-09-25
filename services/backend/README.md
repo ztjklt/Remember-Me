@@ -261,7 +261,10 @@ excluded until correction withdrawal or verified replacement. Real mode builds
 semantic traits and entity relationships from cited sources. Correction,
 deletion and consent mutation first invalidate the snapshot; later reads rebuild
 it, and an unavailable provider leaves it visibly `rebuilding` rather than
-serving stale traits. The real Capture Planner estimates
+serving stale traits. If Persona fails in the worker model stage, the extracted
+Episode still becomes ready with its transcript and Memories; a blank invalidated
+snapshot prevents stale Twin retrieval until a later successful rebuild. The
+real Capture Planner estimates
 `information_gain × importance × uncertainty × time_urgency ÷ interaction_cost`;
 these are not learned probabilities or validated measures of question value.
 Calibration records are Actor-submitted observations. The current account model
