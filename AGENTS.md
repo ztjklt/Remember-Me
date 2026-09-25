@@ -4,9 +4,9 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 
 ## Source of truth
 
-- `docs/PRD/Remember_Me_PRD_v3.0.docx` is the current product Source of Truth. `docs/PRD/archive/` is history and is not an implementation basis.
-- The client baseline is Android / Kotlin / Jetpack Compose. Text naming iOS, Swift, or SwiftUI as the current client is superseded — do not reintroduce it.
-- The current execution model is `docs/team/00_TEAM_OWNERSHIP.md`. It supersedes fixed staffing assignments in the Team Development Guide v1.0 and historical task briefs; it does not change PRD v3.0 or the shared Contract.
+- `docs/PRD/Remember_Me_PRD_v3.0.docx` remains the source of product behavior. The 2026-09-26 Product Owner amendment in `docs/team/00_TEAM_OWNERSHIP.md` authorizes both iOS and Android client tracks; older Android-only platform wording is superseded. `docs/PRD/archive/` remains history.
+- iOS and Android use the same Backend Contract. The current Android Compose prototype stays intact; iOS implementation can start as its own client track.
+- The current execution model is `docs/team/00_TEAM_OWNERSHIP.md`. It supersedes fixed staffing assignments in the Team Development Guide v1.0 and historical task briefs without changing the shared Contract.
 
 ## Phase discipline
 
@@ -22,9 +22,9 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 - Do not tear down the working Android Compose prototype to pursue architectural tidiness. Replace Mock implementations incrementally.
 - Preserve provenance, consent, subject isolation, model version, and failure states.
 - Prefer one main LLM with schema workers for the first AI implementation; do not split services only to claim a multi-agent architecture.
-- Keep providers behind adapters. Android must not depend directly on a specific backend, STT, LLM, or voice provider, and must hold no provider secrets.
-- A feature is complete when its actual path is verified and the result is recorded concisely in the Pull Request. Reuse existing evidence; do not repeat tests solely to reformat a report.
+- Keep providers behind adapters. Neither mobile client depends directly on an STT, LLM, or voice provider or holds provider secrets; both use the shared Backend Contract.
+- Verify the changed behavior once with the shortest relevant check and record the result concisely in the Pull Request. Native-device behavior gets a focused device check when it changes; do not require repeat cross-team or cross-platform checks for every PR.
 
 ## Delivery flow
 
-Work from `develop` on a descriptive feature branch. Delegate bounded work with an Issue, review its PR into `develop`, and pull the merged result before continuing. Keep changes reviewable, update tests and docs with behavior, and disclose contract impact in every Pull Request. Never push directly to `main`.
+Work from `develop` on a descriptive feature branch. Delegate bounded work with an Issue and merge its PR after the required CI check; routine `develop` PRs do not require a second person's approval. The mainline lead keeps both client tracks moving while delegated work is in flight. Update tests and docs with behavior, disclose Contract impact, and keep `main` behind release review and CI. Never push directly to `main`.

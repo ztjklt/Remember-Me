@@ -6,7 +6,7 @@ Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Prod
 
 | Phase | Status | Product goal | Exit gate |
 | --- | --- | --- | --- |
-| Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → Android shows a real Memory |
+| Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → the same mobile client shows a real Memory |
 | Phase 2 — Core Twin | **PLANNED / NEXT** | Move from "it records" to "it is starting to understand me" | Person Model + Evidence Twin + Original Router demonstrable |
 | Phase 3 — Calibration + Voice | **PLANNED** | Verify fidelity and create a "sounds like me" perception | Calibration feeds the model back + Voice Seed/Clone/Twin Voice |
 | Phase 4 — Hardware + Legacy | **BACKLOG / CONDITIONAL** | Prove the recording device's value and complete the entrustment narrative | Hardware Capture + Handover/Grant/Legacy core path |
@@ -15,11 +15,11 @@ Reading Phase 2–4 does not authorize starting them. Phase 1 Golden Path is the
 
 ## Phase 1 — Golden Path (COMMITTED)
 
-The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`.
+The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`.
 
-The path is built in runnable slices: phone recording and local file; upload and durable Episode; STT and structured Memory extraction; status/result readback in Android. Backend, AI Core, and Voice name logical capabilities and existing code areas, not permanent people or mandatory separate deployments. The Product / Integration Owner works across slices and delegates bounded blockers through Issues and PRs.
+Android and iOS are the two active client tracks. The Product / Integration Owner leads both; two contributors help on bounded Issues when available. The shared path is built in runnable slices: phone recording and local file; upload and durable Episode; STT and structured Memory extraction; status/result readback on the same client. Backend, AI Core, and Voice name logical capabilities and existing code areas, not permanent people or mandatory separate deployments. Neither client waits for the other to finish an intermediate slice.
 
-Phase 1 is not complete until a real device records, uploads, and reads back a real extracted Memory — not a Mock, not a stubbed response.
+Phase 1 is not complete until one real device records, uploads, and reads back a real extracted Memory — not a Mock or stubbed response. The other client track does not repeat this gate merely to release the first demo.
 
 ## Phase 2 — Core Twin (PLANNED / NEXT)
 

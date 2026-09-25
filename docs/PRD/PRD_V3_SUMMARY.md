@@ -1,6 +1,6 @@
 # Remember Me PRD v3.0 Summary
 
-Agent-readable orientation for [Remember Me PRD v3.0](Remember_Me_PRD_v3.0.docx), the current product Source of Truth. PRD v3.0 is an Android-first revision of v2.0: it does not redo the product definition, it moves the client engineering baseline from iOS/SwiftUI to Android/Kotlin/Jetpack Compose and brings the existing Android prototype into the real development path. Where any older repository document still names iOS, Swift, or SwiftUI as the current client, v3.0 wins.
+Agent-readable orientation for [Remember Me PRD v3.0](Remember_Me_PRD_v3.0.docx), the source of product behavior. PRD v3.0 was an Android-first revision of v2.0 and brought the existing Compose prototype into the real development path. A [2026-09-26 Product Owner amendment](../team/00_TEAM_OWNERSHIP.md) now authorizes iOS and Android as parallel client tracks using one shared Backend Contract. This changes platform scope and staffing, not the consent or product principles below. The original v3.0 Android-first comparison remains historical context.
 
 Remember Me is a consent-first product for building a traceable record of how a person remembers, relates, decides, values, and expresses. It is not a transcription tool, an AI memorial, a legal proxy, or a claim of consciousness replication. The product begins while the subject can still participate, then may transition under prior authorization into a Legacy experience for designated recipients.
 
@@ -27,7 +27,7 @@ These carry over from v2.0 unchanged and must not be deleted or rewritten withou
 
 ## Roles and lifecycle
 
-Subject (the modeled person), Actor/User (whoever operates the Android app, who may be the Subject or later a Recipient), Steward (a pre-designated digital caretaker acting only within grant scope), Beneficiary/Recipient (Legacy content receiver, access by grant scope), and Contributor (an authorized third-party observer whose content carries perspective and never overrides the Subject Person Model). The lifecycle remains Build Me → Entrust Me → Transition → Remember Me.
+Subject (the modeled person), Actor/User (whoever operates a client app, who may be the Subject or later a Recipient), Steward (a pre-designated digital caretaker acting only within grant scope), Beneficiary/Recipient (Legacy content receiver, access by grant scope), and Contributor (an authorized third-party observer whose content carries perspective and never overrides the Subject Person Model). The lifecycle remains Build Me → Entrust Me → Transition → Remember Me.
 
 ## Memory and person architecture
 
@@ -37,7 +37,7 @@ Subject (the modeled person), Actor/User (whoever operates the Android app, who 
 
 Every important trait preserves context, confidence, source type, evidence, counter-evidence, effective time, status, and model version. Conflict and change over time are valid states rather than data to flatten.
 
-## Android-first v3.0 changes
+## Android-first v3.0 changes (historical baseline)
 
 | Area | v2.0 | v3.0 |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ Home / Twin, Capture, Processing, Memories, Calibration, Handover, Legacy Home, 
 
 Capture has three modes: Free Capture (user-triggered, the agent does not interrupt), Guided Capture (2–4 main questions plus dynamic follow-ups to fill high-value gaps), and Twin Calibration (Twin answers and locks first, then the human answers, then the diff is analyzed and the model updated). Recording must confirm receipt immediately; heavy STT, AI, and Voice work stays asynchronous; the app must remain complete without Work 3200.
 
-Voice is a separate embodiment layer behind its own consent: Person Model decides what is said, Expression decides how, Voice decides whether it sounds like the person. Pipeline is Consent Gate → Speaker Verification → Quality Assessment → Clean Segment Selection → Voice Dataset → Voice Profile/Clone → TTS. Third-party speech must never enter a subject's Voice Dataset. Providers stay behind adapters; Android never binds directly to a vendor.
+Voice is a separate embodiment layer behind its own consent: Person Model decides what is said, Expression decides how, Voice decides whether it sounds like the person. Pipeline is Consent Gate → Speaker Verification → Quality Assessment → Clean Segment Selection → Voice Dataset → Voice Profile/Clone → TTS. Third-party speech must never enter a subject's Voice Dataset. Providers stay behind adapters; neither mobile client binds directly to a vendor.
 
 The logical model is an Agent Swarm, the engineering model is an Orchestrator plus specialist workers (Memory Extractor, Graph Updater, Persona Synthesizer, Conflict Detector, Calibration Agent, Capture Planner, Twin Agent). The first version should be one main LLM with prompt, tool, and JSON-schema workers, not a premature service split.
 
@@ -71,7 +71,7 @@ Recording, Cloud Twin, Voice Clone, third-party contribution, Digital Handover, 
 
 ## Engineering phases
 
-Product goals for the four phases are defined in the PRD; execution status and exit gates are recorded in the repository [roadmap](../roadmap/ROADMAP.md). Current work assignment follows the [single-path delivery model](../team/00_TEAM_OWNERSHIP.md), which supersedes fixed staffing in the original [Team Development Guide](../team/Remember_Me_Team_Development_Guide_v1.0.docx). Reading Phase 2–4 does not authorize starting them.
+Product goals for the four phases are defined in the PRD; the iOS/Android platform amendment, execution status, and exit gates are recorded in the [current delivery model](../team/00_TEAM_OWNERSHIP.md) and [roadmap](../roadmap/ROADMAP.md). These supersede fixed staffing in the original [Team Development Guide](../team/Remember_Me_Team_Development_Guide_v1.0.docx). Reading Phase 2–4 does not authorize starting them.
 
 | Phase | Status | Product goal |
 | --- | --- | --- |
@@ -82,4 +82,4 @@ Product goals for the four phases are defined in the PRD; execution status and e
 
 ## Open dependencies
 
-Work 3200 SDK/API, the STT provider, and the Voice Clone provider are **not decided**. Keep each behind an adapter with a capability fallback, and do not treat unconfirmed device capabilities such as markers, live audio, or background recording as guaranteed. Provider secrets stay server-side; Android holds none of them.
+Work 3200 SDK/API, the STT provider, and the Voice Clone provider are **not decided**. Keep each behind an adapter with a capability fallback, and do not treat unconfirmed device capabilities such as markers, live audio, or background recording as guaranteed. Provider secrets stay server-side; neither client holds them.
