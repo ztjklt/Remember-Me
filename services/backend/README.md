@@ -27,6 +27,7 @@ Inputs and outputs must conform to [`packages/contracts`](../../packages/contrac
 | `app/worker.py` | The processing worker: one stage per tick, under a renewable lease |
 | `app/api/` | HTTP surface |
 | `app/seed.py` | Local development seed |
+| `docs/android-client.md` | Pointing the Android client at a running Backend: the reachable address, the seeded credential, the limits, and troubleshooting |
 | `migrations/` | Alembic environment and the migrations |
 | `tests/` | The local verification suite |
 
@@ -188,6 +189,8 @@ A response carries only fields the contract defines, and omits the optional ones
 The HTTP AI Core adapter applies the same rule to outbound `aiCoreInput`: absent `trace_id` or `subject_context` is omitted, while a present value is sent unchanged. The provider tests validate both wire shapes against the frozen Contract v0.1 schema.
 
 Every response carries an `X-Request-ID`. The value is generated at the request boundary and is the identifier Issue #1 propagates as the contract's `trace_id`.
+
+A client integrating against these endpoints should start from [docs/android-client.md](docs/android-client.md): which address to point at, the seeded credential, the upload limits, and what each failure means.
 
 ## Configuration
 
