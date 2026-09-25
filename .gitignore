@@ -16,3 +16,7 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+*.py[cod]
+__pycache__/
+.venv/
+.pytest_cache/
