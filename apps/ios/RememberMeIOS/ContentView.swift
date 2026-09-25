@@ -401,6 +401,7 @@ private struct MemoriesView: View {
 
 private struct TwinView: View {
     @EnvironmentObject private var flow: EpisodeFlow
+    @EnvironmentObject private var capture: AudioCapture
     @State private var question = ""
 
     var body: some View {
@@ -420,6 +421,20 @@ private struct TwinView: View {
                         Text(answer.answer).font(.body)
                         LabeledContent("类型", value: answer.responseType)
                         LabeledContent("置信度", value: "\(Int(answer.confidence * 100))%")
+                        Button(capture.isSpeaking ? "停止系统朗读" : "系统朗读（非本人声音）") {
+                            if capture.isSpeaking {
+                                capture.stopSystemSpeech()
+                            } else {
+                                Task {
+                                    if await flow.authorizeVoicePlayback() {
+                                        capture.speakSystemText(answer.answer)
+                                    }
+                                }
+                            }
+                        }
+                        .disabled(flow.isBusy || capture.isRecording)
+                        Text("每次朗读前验证独立 VOICE 同意；当前仅用 iOS 系统声音，不使用录音训练或克隆。")
+                            .font(.caption).foregroundStyle(.secondary)
                         if let version = answer.modelVersion { LabeledContent("模型版本", value: version) }
                         ForEach(answer.evidence) { evidence in
                             VStack(alignment: .leading) {
@@ -464,6 +479,9 @@ private struct ConnectionView: View {
                     TextField("数字交接同意 ID", text: $flow.settings.handoverConsentID)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    TextField("Voice 同意 ID", text: $flow.settings.voiceConsentID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     Button("保存连接设置") { flow.saveSettings() }
                         .disabled(flow.isBusy)
                     Text("令牌保存在 iOS 钥匙串。模拟器可用 127.0.0.1；真机需要能访问 Mac 的私有网络地址或 HTTPS 服务。")
@@ -482,6 +500,10 @@ private struct ConnectionView: View {
                     .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
                     Button("我确认并登记数字交接预演同意") {
                         Task { await flow.grantHandoverConsent() }
+                    }
+                    .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
+                    Button("我确认并登记独立 Voice 同意") {
+                        Task { await flow.grantVoiceConsent() }
                     }
                     .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
                 }

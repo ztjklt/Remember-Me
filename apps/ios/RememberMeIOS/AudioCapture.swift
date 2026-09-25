@@ -3,21 +3,24 @@ import Foundation
 import UIKit
 
 @MainActor
-final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
+final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVSpeechSynthesizerDelegate {
     @Published private(set) var fileURL: URL?
     @Published private(set) var recordedAt: Date?
     @Published private(set) var elapsed: TimeInterval = 0
     @Published private(set) var isRecording = false
     @Published private(set) var isPaused = false
     @Published private(set) var isPlaying = false
+    @Published private(set) var isSpeaking = false
     @Published var message: String?
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
+    private let synthesizer = AVSpeechSynthesizer()
     private var timer: Timer?
 
     override init() {
         super.init()
+        synthesizer.delegate = self
         loadLatestRecording()
         NotificationCenter.default.addObserver(
             self, selector: #selector(saveWhenBackgrounded),
@@ -32,7 +35,7 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func start() async {
         guard !isRecording else { return }
         let allowed = await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+            AVAudioApplication.requestRecordPermission { granted in
                 continuation.resume(returning: granted)
             }
         }
@@ -42,6 +45,7 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         do {
             stopPlayback()
+            stopSystemSpeech()
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
             try session.setActive(true)
@@ -151,6 +155,7 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
             return
         }
         do {
+            stopSystemSpeech()
             try AVAudioSession.sharedInstance().setCategory(.playback)
             try AVAudioSession.sharedInstance().setActive(true)
             let player = try AVAudioPlayer(contentsOf: fileURL)
@@ -174,6 +179,44 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
         try? AVAudioSession.sharedInstance().setActive(false)
     }
 
+    func speakSystemText(_ text: String) {
+        guard !isRecording, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        do {
+            stopPlayback()
+            stopSystemSpeech()
+            try AVAudioSession.sharedInstance().setCategory(.playback)
+            try AVAudioSession.sharedInstance().setActive(true)
+            let utterance = AVSpeechUtterance(string: text)
+            let hasChinese = text.unicodeScalars.contains { (0x4E00...0x9FFF).contains($0.value) }
+            utterance.voice = AVSpeechSynthesisVoice(language: hasChinese ? "zh-CN" : "en-US")
+            isSpeaking = true
+            synthesizer.speak(utterance)
+            message = "系统朗读中：这不是录音对象的克隆声音。"
+        } catch {
+            isSpeaking = false
+            message = "系统朗读失败：\(error.localizedDescription)"
+        }
+    }
+
+    func stopSystemSpeech() {
+        if synthesizer.isSpeaking {
+            synthesizer.stopSpeaking(at: .immediate)
+            try? AVAudioSession.sharedInstance().setActive(false)
+        }
+        isSpeaking = false
+    }
+
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor [weak self] in
+            self?.isSpeaking = false
+            try? AVAudioSession.sharedInstance().setActive(false)
+        }
+    }
+
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor [weak self] in self?.isSpeaking = false }
+    }
+
     private func stopPlayback() {
         player?.stop()
         player = nil
@@ -183,6 +226,8 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     @objc private func saveWhenBackgrounded() {
         if isRecording { stop() }
+        if isSpeaking { stopSystemSpeech() }
+        if isPlaying { stopPlayback() }
     }
 
     private func recordingsDirectory() throws -> URL {

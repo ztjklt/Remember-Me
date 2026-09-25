@@ -38,6 +38,11 @@ struct RecordingConsent: Decodable {
     let status: String
 }
 
+private struct ConsentAuthorization: Decodable {
+    let authorized: Bool
+    let scope: String
+}
+
 struct EvidenceView: Decodable, Identifiable {
     let evidenceId: String
     let sourceType: String
@@ -191,6 +196,25 @@ struct EpisodeAPI {
 
     func grantHandoverConsent(settings: ServerSettings) async throws -> RecordingConsent {
         try await grantConsent(scope: "DIGITAL_HANDOVER", settings: settings)
+    }
+
+    func grantVoiceConsent(settings: ServerSettings) async throws -> RecordingConsent {
+        try await grantConsent(scope: "VOICE", settings: settings)
+    }
+
+    func authorizeVoice(settings: ServerSettings) async throws {
+        guard !settings.voiceConsentID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        var request = try authorizedRequest(
+            path: "api/v1/consents/authorize", method: "POST", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "subject_id": settings.subjectID,
+            "scope": "VOICE",
+            "consent_id": settings.voiceConsentID
+        ])
+        let result = try await decode(ConsentAuthorization.self, request: request)
+        guard result.authorized, result.scope == "VOICE" else { throw EpisodeAPIError.invalidResponse }
     }
 
     private func grantConsent(scope: String, settings: ServerSettings) async throws -> RecordingConsent {

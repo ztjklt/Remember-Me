@@ -78,6 +78,34 @@ final class EpisodeFlow: ObservableObject {
         }
     }
 
+    func grantVoiceConsent() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let consent = try await api.grantVoiceConsent(settings: settings)
+            guard consent.status == "granted" else { throw EpisodeAPIError.invalidResponse }
+            settings.voiceConsentID = consent.consentId
+            try SettingsStore.save(settings)
+            message = "Voice 同意已单独登记。系统朗读仍不是本人声音克隆。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func authorizeVoicePlayback() async -> Bool {
+        guard !isBusy else { return false }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await api.authorizeVoice(settings: settings)
+            return true
+        } catch {
+            message = error.localizedDescription
+            return false
+        }
+    }
+
     func createLegacyGrant(recipientActorID: String, domains: [String]) async {
         guard !isBusy else { return }
         isBusy = true

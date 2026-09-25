@@ -83,6 +83,12 @@ and Actor-isolated. This is a Phase 3 calibration capture loop; it does not yet
 verify that the Actor is the Subject, automatically compare the answers, or
 update the Person Model.
 
+Twin answers also have an iOS system-speech fallback. Each playback asks
+Backend to authorize an active, separate `VOICE` consent and stops when the app
+goes to the background. The button explicitly says this is **not** the Subject's
+cloned voice. No Voice dataset, speaker verification, clone provider or profile
+is created by this fallback.
+
 The Handover tab provides a manual Legacy **preview**: the capturing Actor must
 grant separate `DIGITAL_HANDOVER` consent, name an existing Recipient Actor, and
 choose visible Memory domains. A draft exposes nothing. Explicit preview
