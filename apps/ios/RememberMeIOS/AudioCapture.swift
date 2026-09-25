@@ -208,13 +208,17 @@ final class AudioCapture: NSObject, ObservableObject, AVAudioPlayerDelegate, AVS
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         Task { @MainActor [weak self] in
-            self?.isSpeaking = false
+            guard let self, !self.synthesizer.isSpeaking else { return }
+            self.isSpeaking = false
             try? AVAudioSession.sharedInstance().setActive(false)
         }
     }
 
     nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        Task { @MainActor [weak self] in self?.isSpeaking = false }
+        Task { @MainActor [weak self] in
+            guard let self, !self.synthesizer.isSpeaking else { return }
+            self.isSpeaking = false
+        }
     }
 
     private func stopPlayback() {

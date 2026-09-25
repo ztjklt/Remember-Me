@@ -13,7 +13,7 @@ from opencc import OpenCC
 
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable
 from .base import ModelRequest
-from .openai_compatible import _strict_schema
+from .openai_compatible import _reject_non_json_number, _strict_schema
 
 
 def _source_excerpts(transcript: str) -> list[str]:
@@ -98,11 +98,11 @@ class OllamaLocalProvider:
         except httpx.TransportError as exc:
             raise ProviderUnavailable("Local model connection failed") from exc
         try:
-            envelope = json.loads(chunks)
+            envelope = json.loads(chunks, parse_constant=_reject_non_json_number)
             if envelope.get("done") is not True:
                 raise AIOutputInvalid("Local model did not finish")
             content = envelope["message"]["content"]
-            output = json.loads(content)
+            output = json.loads(content, parse_constant=_reject_non_json_number)
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise AIOutputInvalid("Local model returned invalid structured output") from exc
         if not isinstance(output, dict):

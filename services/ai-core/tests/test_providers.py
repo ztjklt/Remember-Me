@@ -149,6 +149,18 @@ def test_ollama_local_reanchors_traditional_chinese_to_original_transcript() -> 
     assert result["evidence"][0]["span_end"] == 5
 
 
+def test_ollama_local_rejects_non_finite_json_numbers() -> None:
+    provider = OllamaLocalProvider(
+        base_url="http://127.0.0.1:11434", timeout_seconds=3,
+        max_response_bytes=1024 * 1024,
+        client=httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(
+            200, content=b'{"done":true,"message":{"content":"{\\"confidence\\":NaN}"}}',
+        ))),
+    )
+    with pytest.raises(AIOutputInvalid):
+        provider.generate(_request())
+
+
 def test_openai_compatible_provider_rejects_invalid_json_content() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
