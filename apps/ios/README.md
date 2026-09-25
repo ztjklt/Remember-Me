@@ -25,6 +25,11 @@ xcodebuild -project RememberMeIOS.xcodeproj -scheme RememberMeIOS \
 3. In the simulator, set Backend URL to `http://127.0.0.1:8000`; on a phone,
    use a reachable private-network hostname or HTTPS endpoint. Enter the seed
    Actor token and Subject ID. The token is stored in the iOS Keychain.
+   For a local development iPhone, a one-time `Documents/rememberme-local-connection.json`
+   with `baseURL`, `token`, and `subjectID` can be copied into the app data
+   container before launch. Debug builds import it into Settings and Keychain,
+   then delete the plaintext file. Release builds ignore this file. It never
+   carries provider credentials or a recording consent ID.
 4. Tap **我确认并登记录音同意**. This creates a RECORDING consent for that Actor and
    Subject. It does not grant VOICE consent.
 5. Record, pause/resume, save, play, upload, and observe the Episode state and

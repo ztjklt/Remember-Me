@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 import httpx
+from opencc import OpenCC
 
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable
 from .base import ModelRequest
+from .evidence_anchor import reanchor_unique_evidence
 
 
 def _strict_schema(value: Any) -> Any:
@@ -39,12 +41,15 @@ class OpenAICompatibleProvider:
         *,
         base_url: str,
         api_key: str,
+        structured_output_mode: Literal["json_schema", "json_object"] = "json_schema",
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 1_048_576,
         client: httpx.Client | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/") + "/"
         self.api_key = api_key
+        self.structured_output_mode = structured_output_mode
+        self._chinese_converter = OpenCC("t2s.json") if structured_output_mode == "json_object" else None
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
@@ -63,10 +68,20 @@ class OpenAICompatibleProvider:
             "prompt_version": request.prompt_version,
             "schema_version": request.schema_version,
         })
+        schema = _strict_schema(request.response_schema)
+        system_prompt = request.system_prompt + "\nDeployment versions: " + versions
+        if self.structured_output_mode == "json_object":
+            system_prompt += (
+                "\nReturn one JSON object conforming to this JSON Schema. "
+                "An empty result looks like "
+                '{"memory_items":[],"graph_updates":[],"persona_updates":[],"evidence":[],"model_version":"'
+                + request.model_version + '"}. JSON Schema: '
+                + json.dumps(schema, ensure_ascii=False)
+            )
         body = {
             "model": request.model,
             "messages": [
-                {"role": "system", "content": request.system_prompt + "\nDeployment versions: " + versions},
+                {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
                     "content": json.dumps(
@@ -77,15 +92,20 @@ class OpenAICompatibleProvider:
                     ),
                 },
             ],
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "remember_me_ai_core_output",
-                    "strict": True,
-                    "schema": _strict_schema(request.response_schema),
-                },
-            },
+            "response_format": (
+                {"type": "json_object"}
+                if self.structured_output_mode == "json_object" else {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "remember_me_ai_core_output",
+                        "strict": True,
+                        "schema": schema,
+                    },
+                }
+            ),
         }
+        if self.structured_output_mode == "json_object":
+            body["max_tokens"] = 8192
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
@@ -137,6 +157,11 @@ class OpenAICompatibleProvider:
 
         if not isinstance(output, dict):
             raise AIOutputInvalid("AI provider structured output must be a JSON object")
+        if self._chinese_converter is not None:
+            return reanchor_unique_evidence(
+                output, transcript=request.payload.transcript,
+                episode_id=request.payload.episode_id, converter=self._chinese_converter,
+            )
         return output
 
 

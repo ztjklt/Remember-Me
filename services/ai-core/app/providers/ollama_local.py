@@ -13,6 +13,7 @@ from opencc import OpenCC
 
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable
 from .base import ModelRequest
+from .evidence_anchor import reanchor_unique_evidence
 from .openai_compatible import _reject_non_json_number, _strict_schema
 
 
@@ -112,36 +113,7 @@ class OllamaLocalProvider:
         # excerpt has one exact occurrence after one-to-one conversion. Copy
         # the original transcript text into the evidence; ambiguous or changed
         # length conversions still fail strict provenance validation.
-        evidences = output.get("evidence")
-        transcript = request.payload.transcript
-        normalized_transcript: str | None = None
-        for evidence in evidences if isinstance(evidences, list) else []:
-            if not isinstance(evidence, dict):
-                continue
-            excerpt = evidence.get("excerpt")
-            if not isinstance(excerpt, str) or not excerpt.strip():
-                continue
-            if transcript.count(excerpt) == 1:
-                start = transcript.index(excerpt)
-            else:
-                if normalized_transcript is None:
-                    converted = [self._chinese_converter.convert(char) for char in transcript]
-                    normalized_transcript = (
-                        "".join(converted) if all(len(char) == 1 for char in converted) else ""
-                    )
-                normalized_excerpt = "".join(
-                    self._chinese_converter.convert(char) for char in excerpt
-                )
-                if (
-                    not normalized_transcript
-                    or len(normalized_excerpt) != len(excerpt)
-                    or normalized_transcript.count(normalized_excerpt) != 1
-                ):
-                    continue
-                start = normalized_transcript.index(normalized_excerpt)
-            end = start + len(excerpt)
-            evidence["excerpt"] = transcript[start:end]
-            evidence["span_start"] = start
-            evidence["span_end"] = end
-            evidence["source_ref"] = f"episode:{request.payload.episode_id}#span:{start}-{end}"
-        return output
+        return reanchor_unique_evidence(
+            output, transcript=request.payload.transcript,
+            episode_id=request.payload.episode_id, converter=self._chinese_converter,
+        )

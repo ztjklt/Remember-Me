@@ -37,6 +37,7 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
         provider = OpenAICompatibleProvider(
             base_url=settings.base_url,
             api_key=settings.api_key.get_secret_value(),
+            structured_output_mode=settings.structured_output_mode,
             timeout_seconds=settings.timeout_seconds,
             max_response_bytes=settings.max_response_bytes,
         )
@@ -66,6 +67,7 @@ def _build_assessor(settings: Settings) -> CalibrationAssessor | None:
             base_url=settings.base_url,
             model=settings.model,
             api_key=settings.api_key.get_secret_value(),
+            structured_output_mode=settings.structured_output_mode,
             timeout_seconds=settings.timeout_seconds,
             max_response_bytes=settings.max_response_bytes,
         ),
@@ -82,6 +84,7 @@ def _build_twin(settings: Settings) -> TwinSynthesizer | None:
             base_url=settings.base_url,
             model=settings.model,
             api_key=settings.api_key.get_secret_value(),
+            structured_output_mode=settings.structured_output_mode,
             timeout_seconds=settings.timeout_seconds,
             max_response_bytes=settings.max_response_bytes,
         ),

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
+    structured_output_mode: Literal["json_schema", "json_object"] = Field(
+        default="json_schema", validation_alias="AI_STRUCTURED_OUTPUT_MODE",
+    )
     model: str = Field(default=FixtureProvider.default_model_version, validation_alias="AI_MODEL")
     base_url: str = Field(
         default="http://127.0.0.1:8000/v1",

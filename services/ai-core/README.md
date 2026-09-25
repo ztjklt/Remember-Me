@@ -50,6 +50,18 @@ For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,
 `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, and the version settings. Provider
 secrets stay in the AI Core process environment and are never returned in an
 error body. The fixture provider is refused in `staging` and `production`.
+Providers that implement JSON object output but not Chat Completions JSON Schema
+can set `AI_STRUCTURED_OUTPUT_MODE=json_object`. AI Core sends the output schema
+as prompt guidance and still validates the returned JSON, evidence and versions
+before Backend can persist it. The default remains `json_schema`.
+
+For the current DeepSeek Chat Completions API, a local, git-ignored `.env` can
+contain `AI_PROVIDER=openai_compatible`, `AI_BASE_URL=https://api.deepseek.com`,
+`AI_MODEL=deepseek-flash`, `AI_STRUCTURED_OUTPUT_MODE=json_object`, an explicit
+`AI_MODEL_VERSION` deployment label, and `AI_API_KEY`. DeepSeek's JSON object
+mode guarantees parseable JSON, not conformity to this project's schema; AI Core
+keeps its own validation and may reject an unsupported claim or ambiguous quote.
+Backend uses only the AI Core URL and never receives the provider key.
 Real providers require explicit non-fixture `AI_MODEL` and `AI_MODEL_VERSION`.
 The active prompt is `memory-extractor-v2`; the shared schema remains
 `integration-contract-v0.1.2`. Remove an old `AI_PROMPT_VERSION` override or

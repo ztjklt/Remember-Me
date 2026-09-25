@@ -34,6 +34,9 @@ enum SettingsStore {
     private static let account = "actor-token"
 
     static func load() -> ServerSettings {
+        #if DEBUG
+        importLocalDevelopmentConnection()
+        #endif
         let defaults = UserDefaults.standard
         return ServerSettings(
             baseURL: defaults.string(forKey: "backendURL") ?? "http://127.0.0.1:8000",
@@ -45,6 +48,35 @@ enum SettingsStore {
             voiceConsentID: defaults.string(forKey: "voiceConsentID") ?? ""
         )
     }
+
+    #if DEBUG
+    private struct LocalDevelopmentConnection: Decodable {
+        let baseURL: String
+        let token: String
+        let subjectID: String
+    }
+
+    private static func importLocalDevelopmentConnection() {
+        guard let documents = FileManager.default.urls(
+            for: .documentDirectory, in: .userDomainMask
+        ).first else { return }
+        let file = documents.appendingPathComponent("rememberme-local-connection.json")
+        guard FileManager.default.fileExists(atPath: file.path) else { return }
+        defer { try? FileManager.default.removeItem(at: file) }
+        guard let data = try? Data(contentsOf: file),
+              let connection = try? JSONDecoder().decode(LocalDevelopmentConnection.self, from: data) else {
+            return
+        }
+        let settings = ServerSettings(
+            baseURL: connection.baseURL, token: connection.token,
+            subjectID: connection.subjectID, recordingConsentID: "",
+            cloudTwinConsentID: "", handoverConsentID: "", voiceConsentID: ""
+        )
+        guard settings.validatedURL != nil, !settings.token.isEmpty,
+              !settings.subjectID.isEmpty else { return }
+        try? save(settings)
+    }
+    #endif
 
     static func save(_ settings: ServerSettings) throws {
         let defaults = UserDefaults.standard

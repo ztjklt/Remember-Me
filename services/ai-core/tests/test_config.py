@@ -35,3 +35,11 @@ def test_real_provider_accepts_explicit_model_and_version():
         base_url="http://127.0.0.1:8080/v1", _env_file=None,
     )
     assert settings.model_version == "local-revision-1"
+
+
+def test_json_object_mode_can_be_selected_for_a_compatible_provider():
+    settings = Settings(
+        provider="openai_compatible", model="test-model", model_version="test-v1",
+        structured_output_mode="json_object", _env_file=None,
+    )
+    assert settings.structured_output_mode == "json_object"

@@ -91,6 +91,29 @@ def test_ollama_comparison_uses_structured_output_and_excludes_subject_id():
     assert "subject_id" not in seen["body"]["messages"][1]["content"]
 
 
+def test_openai_compatible_comparison_supports_json_object_mode():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(_output())},
+        }]})
+
+    provider = HttpComparisonProvider(
+        kind="openai_compatible", base_url="https://provider.test",
+        model="test-model", api_key="test-secret", structured_output_mode="json_object",
+        timeout_seconds=10, max_response_bytes=1024 * 1024,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    result = CalibrationAssessor(provider=provider, model_version="real-model").assess(
+        CalibrationInput.model_validate(_payload())
+    )
+    assert result.model_version == "real-model"
+    assert seen["body"]["response_format"] == {"type": "json_object"}
+    assert "JSON Schema" in seen["body"]["messages"][0]["content"]
+
+
 def test_invalid_comparison_is_rejected():
     class InvalidProvider(StubComparisonProvider):
         def compare(self, payload, schema):

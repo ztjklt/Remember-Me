@@ -76,6 +76,56 @@ def test_openai_compatible_provider_sends_schema_and_parses_json_content() -> No
     assert seen["request"]["messages"][1]["role"] == "user"
 
 
+def test_openai_compatible_json_object_mode_keeps_local_validation_boundary() -> None:
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(_provider_response())},
+        }]})
+
+    provider = OpenAICompatibleProvider(
+        base_url="https://provider.test", api_key="test-secret",
+        structured_output_mode="json_object",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    assert provider.generate(_request()) == _provider_response()
+    assert seen["body"]["response_format"] == {"type": "json_object"}
+    assert seen["body"]["max_tokens"] == 8192
+    assert "JSON Schema" in seen["body"]["messages"][0]["content"]
+    assert "subject_id" not in seen["body"]["messages"][1]["content"]
+
+
+def test_openai_compatible_json_object_mode_reanchors_only_unique_evidence() -> None:
+    request = _request()
+    request.payload.transcript = "我計畫下個月帶媽媽去杭州,媽媽也喜歡茶。"
+    output = {**_provider_response(), "memory_items": [{
+        "content": "我計劃下個月帶媽媽去杭州", "source_type": "SUBJECT",
+        "evidence_ids": ["ev-1"],
+    }], "evidence": [{
+        "evidence_id": "ev-1",
+        "excerpt": "我計劃下個月帶媽媽去杭州", "span_start": 99, "span_end": 100,
+        "source_ref": "episode:wrong#span:99-100",
+    }, {
+        "excerpt": "不存在的内容", "span_start": 99, "span_end": 100,
+        "source_ref": "episode:wrong#span:99-100",
+    }]}
+    provider = OpenAICompatibleProvider(
+        base_url="https://provider.test", api_key="test-secret",
+        structured_output_mode="json_object",
+        client=httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(
+            200, json={"choices": [{"finish_reason": "stop", "message": {"content": json.dumps(output)}}]},
+        ))),
+    )
+    result = provider.generate(request)
+    assert result["evidence"][0]["excerpt"] == "我計畫下個月帶媽媽去杭州"
+    assert result["evidence"][0]["span_start"] == 0
+    assert result["evidence"][0]["source_ref"] == f"episode:{request.payload.episode_id}#span:0-12"
+    assert result["memory_items"][0]["content"] == "我計畫下個月帶媽媽去杭州"
+    assert result["evidence"][1] == output["evidence"][1]
+
+
 def test_ollama_local_disables_thinking_and_keeps_schema_boundary() -> None:
     seen: dict = {}
 

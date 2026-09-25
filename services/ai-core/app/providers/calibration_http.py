@@ -25,6 +25,7 @@ class HttpComparisonProvider:
     def __init__(
         self, *, kind: Literal["ollama_local", "openai_compatible"],
         base_url: str, model: str, api_key: str,
+        structured_output_mode: Literal["json_schema", "json_object"] = "json_schema",
         timeout_seconds: float, max_response_bytes: int,
         client: httpx.Client | None = None,
     ) -> None:
@@ -32,6 +33,7 @@ class HttpComparisonProvider:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key
+        self.structured_output_mode = structured_output_mode
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
@@ -66,16 +68,26 @@ class HttpComparisonProvider:
             headers = {"Content-Type": "application/json"}
         else:
             url = self.base_url + "/chat/completions"
+            if self.structured_output_mode == "json_object":
+                messages[0]["content"] += (
+                    "\nReturn exactly one JSON object matching this JSON Schema: "
+                    + json.dumps(strict, ensure_ascii=False)
+                )
             body = {
                 "model": self.model, "messages": messages,
-                "response_format": {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": schema_name,
-                        "strict": True, "schema": strict,
-                    },
-                },
+                "response_format": (
+                    {"type": "json_object"}
+                    if self.structured_output_mode == "json_object" else {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": schema_name,
+                            "strict": True, "schema": strict,
+                        },
+                    }
+                ),
             }
+            if self.structured_output_mode == "json_object":
+                body["max_tokens"] = 8192
             headers = {"Content-Type": "application/json"}
             if self.api_key:
                 headers["Authorization"] = f"Bearer {self.api_key}"
