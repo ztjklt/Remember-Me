@@ -1,12 +1,12 @@
 # Remember Me
 
-Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. This repository contains the Android client and the shared baseline for backend, AI Core, voice, infrastructure, and team integration.
+Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
 ## Current status
 
 The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
 
-The Android prototype is runnable and tested, but it is a Mock product-flow prototype, not a working product. Real microphone capture, upload, STT, AI extraction, person modeling, Twin, voice cloning, backend persistence, accounts, cloud sync, and Work 3200 integration are **not yet implemented**.
+The Android prototype is runnable. The iOS track is authorized but has no app project in this repository yet. Feature readiness is tracked through the current PRs and the [roadmap](docs/roadmap/ROADMAP.md); a working Phase 1 demo requires a real recording through the shared processing path on one client.
 
 | Phase | Status |
 | --- | --- |
@@ -17,13 +17,14 @@ The Android prototype is runnable and tested, but it is a Mock product-flow prot
 
 ## Baseline documents
 
-- [Remember Me PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx) — current product Source of Truth (Android First)
+- [Remember Me PRD v3.0](docs/PRD/Remember_Me_PRD_v3.0.docx) — product behavior source of truth; the current delivery model amends its client scope to iOS and Android
 - [PRD v3.0 Summary](docs/PRD/PRD_V3_SUMMARY.md) — agent-readable orientation
-- [Team Development Guide v1.0](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx) — engineering execution baseline
-- [Roadmap](docs/roadmap/ROADMAP.md) — phases, exit gates, owners
-- [Phase 1 Team Kickoff](docs/team/PHASE1_KICKOFF.md) — first tasks, branch names, dependency order, and temporary local-verification policy
+- [Current delivery model](docs/team/00_TEAM_OWNERSHIP.md) — iOS and Android tracks led along one product path, with bounded Issue delegation
+- [Team Development Guide v1.0](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx) — historical engineering guide; fixed staffing assignments are superseded
+- [Roadmap](docs/roadmap/ROADMAP.md) — phases and exit gates
+- [Phase 1 Team Kickoff](docs/team/PHASE1_KICKOFF.md) — historical first assignments and PR context
 
-PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). Older text naming iOS, Swift, or SwiftUI as the current client is superseded by PRD v3.0.
+PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). The 2026-09-26 Product Owner decision in the current delivery model activates iOS alongside Android; it does not revive archived product behavior.
 
 ## Repository map
 
@@ -36,12 +37,12 @@ PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). Older 
 - `docs/PRD` — current PRD and its agent-readable summary
 - `docs/architecture` — system architecture baseline
 - `docs/roadmap` — phase status, gates, and owners
-- `docs/team` — team development guide, ownership, and individual task briefs
+- `docs/team` — current delivery model and historical task briefs
 - `docs/api` — contract field and integration guidance
 
 ## Start here
 
-All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the [PRD v3.0 summary](docs/PRD/PRD_V3_SUMMARY.md), the [Team Development Guide](docs/team/Remember_Me_Team_Development_Guide_v1.0.docx), [team ownership](docs/team/00_TEAM_OWNERSHIP.md), the [Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md), your own task brief in `docs/team/`, the [roadmap](docs/roadmap/ROADMAP.md), and [contract v0.1](packages/contracts/README.md) before changing code.
+All contributors and coding agents must read [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md), the [PRD v3.0 summary](docs/PRD/PRD_V3_SUMMARY.md), the [current delivery model](docs/team/00_TEAM_OWNERSHIP.md), the [roadmap](docs/roadmap/ROADMAP.md), and [shared contracts](packages/contracts/README.md) before changing code. A delegated contributor also reads the Issue that defines the task.
 
 Android setup and build commands are in [apps/android/README.md](apps/android/README.md). The local verification command is:
 

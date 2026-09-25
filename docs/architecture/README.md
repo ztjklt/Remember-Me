@@ -1,18 +1,21 @@
 # Architecture
 
-Baseline: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) and the [Team Development Guide v1.0](../team/Remember_Me_Team_Development_Guide_v1.0.docx). The client baseline is **Android / Kotlin / Jetpack Compose**. Any older description naming iOS, Swift, or SwiftUI as the current client is superseded.
+Baseline: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx) and the [2026-09-26 dual-client delivery amendment](../team/00_TEAM_OWNERSHIP.md). Android / Kotlin / Jetpack Compose is the existing implementation; iOS is an authorized parallel client track. Both use the same Backend Contract.
 
 ## End-to-end path
 
-`Android and Hardware → API / Auth → Episode and Job → STT → AI Core → Memory / Graph / Person Model → Twin → optional Voice → Android`
+`iOS or Android Capture → API / Auth → Episode and Job → STT → AI Core → Memory / Graph / Person Model → Twin → optional Voice → the requesting client`
 
 Raw Episodes are persisted before AI or Voice runs, so a downstream failure can never lose the original life record.
+
+For the Phase 1 build, treat this as one shared processing path: either client records and calls the Backend API; Backend preserves the Episode, runs STT and structured extraction behind provider adapters, then returns status and Memory to that client. Backend, AI Core, and Voice are logical responsibilities and existing code areas, not mandatory staffing or deployment splits. Simplify deployment only when it helps the runnable path; preserve the shared Contract and data boundaries while doing so.
 
 ## Layers
 
 | Layer | v3.0 components |
 | --- | --- |
 | Android Client | Kotlin, Jetpack Compose, Material 3, Compose Navigation, ViewModel/StateFlow, Repository, Local Audio, Hardware Adapter |
+| iOS Client | New client track; use the same Backend Contract, consent semantics, and provenance presentation without duplicating server processing |
 | API / Auth / Policy | Identity, Subject/Actor, device, consent, grant, rate limit, audit |
 | Orchestrator | Event bus, task queue, state machine, worker scheduling, idempotency, retry, policy context |
 | AI Workers | STT, Speaker Gate, Memory, Persona, Conflict, Calibration, Capture Planner, Twin |
@@ -26,7 +29,7 @@ Single `app` module, layered Compose. UI consumes page state and domain models o
 
 `Subject` (the modeled person) and `Actor` (whoever currently operates the app) are distinct types, so Creator Mode and Legacy Mode can move between actors around one Subject. Important page states use `Loadable` to express Loading, Content, Empty, and Error.
 
-Real recording writes to app-scoped storage. Permission denial, offline, upload failure, and processing failure each need an explicit state — no silent swallowing.
+Real recording writes to client-private storage. Permission denial, offline, upload failure, and processing failure each need an explicit state — no silent swallowing on either client.
 
 ## Service boundaries
 
@@ -37,7 +40,7 @@ Real recording writes to app-scoped storage. Permission denial, offline, upload 
 
 ## Adapter rule
 
-Every external provider — STT, LLM, vector/graph store, voice clone, hardware — sits behind an adapter. Android holds no provider secrets and calls only the Backend contract. Hardware uses a capability profile, and the microphone path stays fully functional with no device present.
+Every external provider — STT, LLM, vector/graph store, voice clone, hardware — sits behind an adapter. Neither mobile client holds provider secrets; both call only the Backend Contract. Hardware uses a capability profile, and the phone microphone path stays functional without an external device.
 
 ## Decision records
 
