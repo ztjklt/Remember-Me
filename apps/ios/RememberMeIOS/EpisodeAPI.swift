@@ -93,6 +93,22 @@ struct CalibrationGaps: Codable {
     var expression = false
 }
 
+struct CalibrationDimension: Decodable {
+    let verdict: String
+    let rationale: String
+}
+
+struct CalibrationAssessment: Decodable {
+    let decision: CalibrationDimension
+    let reasoning: CalibrationDimension
+    let valuePriority: CalibrationDimension
+    let emotionalReaction: CalibrationDimension
+    let expression: CalibrationDimension
+    let overall: String
+    let modelVersion: String
+    let assessmentVersion: String
+}
+
 struct CalibrationRecord: Decodable, Identifiable {
     let calibrationId: String
     let subjectId: String
@@ -104,6 +120,7 @@ struct CalibrationRecord: Decodable, Identifiable {
     let evidenceIds: [String]
     let humanAnswer: String?
     let gaps: CalibrationGaps?
+    let aiAssessment: CalibrationAssessment?
 
     var id: String { calibrationId }
 }
@@ -365,6 +382,16 @@ struct EpisodeAPI {
             path: calibrationPath(settings: settings), method: "GET", settings: settings
         )
         return try await decode([CalibrationRecord].self, request: request)
+    }
+
+    func assessCalibration(id: String, settings: ServerSettings) async throws -> CalibrationRecord {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        var request = try authorizedRequest(
+            path: calibrationPath(settings: settings) + "/\(encoded)/assess",
+            method: "POST", settings: settings
+        )
+        request.timeoutInterval = 140
+        return try await decode(CalibrationRecord.self, request: request)
     }
 
     func createLegacyGrant(

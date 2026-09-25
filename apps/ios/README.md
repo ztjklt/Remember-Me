@@ -79,13 +79,14 @@ item from Episode results, the cross-Episode list and Twin retrieval. Its source
 Episode, transcript and raw Evidence remain for provenance; this operation is
 not an Episode or account erasure request.
 
-The Calibration tab starts by persisting a locked Twin answer and its evidence
-IDs under the Actor's active `CLOUD_TWIN` consent. Only after that does it
-accept a human answer and manual gap marks for decision, reasoning, value
-priority, emotional reaction, and expression. Completed records are immutable
-and Actor-isolated. This is a Phase 3 calibration capture loop; it does not yet
-verify that the Actor is the Subject, automatically compare the answers, or
-update the Person Model.
+The Calibration tab persists a locked Twin answer and its evidence IDs under
+the Actor's active `CLOUD_TWIN` consent before accepting a human answer and
+manual gap marks for decision, reasoning, value priority, emotional reaction,
+and expression. An optional AI comparison then assesses those two fixed answers
+across the same five dimensions. The assessment is model-versioned, immutable,
+Actor-isolated, and marked uncertain where both answers lack direct information.
+It remains advisory: the app does not verify that the Actor is the Subject or
+promote calibration feedback into the Person Model.
 
 Twin answers also have an iOS system-speech fallback. Each playback asks
 Backend to authorize an active, separate `VOICE` consent and stops when the app
@@ -114,5 +115,5 @@ This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
 record are needed for Phase 1. Phase 2 still needs a semantic temporal graph,
 verified correction promotion, and a semantically evaluated Twin. Phase 3 still needs
-automatic comparison, Capture Planner and real Voice. Phase 4 still needs
+verified Subject feedback, empirical calibration evaluation, and real Voice. Phase 4 still needs
 formal activation and verified hardware integration.

@@ -38,6 +38,9 @@ The service exposes:
 - `GET /health` for provider-neutral liveness;
 - `POST /process` accepting the frozen `AICoreInput` and returning only
   `AICoreOutput`.
+- `POST /calibrate` comparing a locked Twin answer with a later human answer.
+  It returns a versioned, advisory five-dimension assessment. The fixture
+  provider refuses this operation; a configured real provider is required.
 
 For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,
 `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, and the version settings. Provider
@@ -57,6 +60,12 @@ model's Chinese evidence excerpt only when a one-to-one Traditional/Simplified
 conversion finds a unique match; it then copies the exact original transcript
 text into the evidence. Ambiguous or unsupported spans still fail validation.
 This is a local provider option, not proof of semantic extraction quality.
+For calibration, the provider receives only the question and the two answers.
+The service verifies a closed result schema and forces each dimension to
+`UNCERTAIN` unless both answers directly mention that dimension. It also
+refuses a confident comparison when the locked Twin answer itself says the
+evidence is insufficient. The comparison is advisory, not identity proof or
+an automatic Person Model update.
 
 Invalid input returns `422`; provider unavailability returns `503`; provider
 timeouts return `504`; invalid structured output or provenance returns `502`.

@@ -476,10 +476,12 @@ class CalibrationSession(Base):
     evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     human_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     dimension_gaps: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    ai_assessment: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    assessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class LegacyGrant(Base):

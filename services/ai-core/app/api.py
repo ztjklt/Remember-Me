@@ -9,12 +9,14 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from .calibration import CalibrationAssessment, CalibrationAssessor, CalibrationInput
 from .config import Settings
 from .contracts import AICoreInput, AICoreOutput
 from .errors import AIOutputInvalid, EvidenceInvalid, ProviderTimeout, ProviderUnavailable
 from .extractor import MemoryExtractor
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
+from .providers.calibration_http import HttpComparisonProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama_local import OllamaLocalProvider
 
@@ -54,13 +56,31 @@ def _safe_error(code: str, message: str, status_code: int) -> JSONResponse:
     )
 
 
+def _build_assessor(settings: Settings) -> CalibrationAssessor | None:
+    if settings.provider == "fixture":
+        return None
+    return CalibrationAssessor(
+        provider=HttpComparisonProvider(
+            kind=settings.provider,
+            base_url=settings.base_url,
+            model=settings.model,
+            api_key=settings.api_key.get_secret_value(),
+            timeout_seconds=settings.timeout_seconds,
+            max_response_bytes=settings.max_response_bytes,
+        ),
+        model_version=settings.model_version,
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     *,
     extractor: MemoryExtractor | None = None,
+    assessor: CalibrationAssessor | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
+    active_assessor = assessor or _build_assessor(settings)
     slots = BoundedSemaphore(settings.max_concurrent_requests)
 
     @asynccontextmanager
@@ -73,6 +93,8 @@ def create_app(
                 close = getattr(active_extractor.provider, "close", None)
                 if close is not None:
                     close()
+            if assessor is None and active_assessor is not None:
+                active_assessor.provider.close()
 
     app = FastAPI(title="Remember Me AI Core", version="0.2.0", lifespan=lifespan)
     app.add_middleware(RequestSizeLimit, max_bytes=settings.max_request_bytes)
@@ -81,7 +103,7 @@ def create_app(
     async def input_invalid_handler(_request, exc: RequestValidationError) -> JSONResponse:
         # Default FastAPI errors can echo the full private transcript on a missing
         # field, and arbitrary user keys can appear in loc. Keep safe field hints.
-        known_fields = {"body", *AICoreInput.model_fields}
+        known_fields = {"body", *AICoreInput.model_fields, *CalibrationInput.model_fields}
         details = [{
             "type": error["type"],
             "loc": [part if isinstance(part, int) or part in known_fields else "unknown_field"
@@ -118,6 +140,17 @@ def create_app(
             raise ProviderUnavailable("AI Core extraction capacity is busy")
         try:
             return active_extractor.process(payload)
+        finally:
+            slots.release()
+
+    @app.post("/calibrate", response_model=CalibrationAssessment)
+    def calibrate(payload: CalibrationInput) -> CalibrationAssessment:
+        if active_assessor is None:
+            raise ProviderUnavailable("A real comparison provider is required")
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable("AI Core comparison capacity is busy")
+        try:
+            return active_assessor.assess(payload)
         finally:
             slots.release()
 

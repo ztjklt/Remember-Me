@@ -157,6 +157,27 @@ private struct CalibrationScreen: View {
                             .disabled(flow.isBusy || humanAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                     }
+                    if record.humanAnswer != nil {
+                        Section("AI 差异分析 · 辅助判断") {
+                            if let assessment = record.aiAssessment {
+                                LabeledContent("整体", value: verdictLabel(assessment.overall))
+                                assessmentRow("决策", assessment.decision)
+                                assessmentRow("推理", assessment.reasoning)
+                                assessmentRow("价值优先级", assessment.valuePriority)
+                                assessmentRow("情绪反应", assessment.emotionalReaction)
+                                assessmentRow("表达方式", assessment.expression)
+                                Text("模型：\(assessment.modelVersion) · 规则：\(assessment.assessmentVersion)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            } else {
+                                Button("运行 AI 差异分析（建议）") {
+                                    Task { await flow.assessCalibration() }
+                                }
+                                .disabled(flow.isBusy)
+                            }
+                            Text("仅根据已锁定 Twin 回答与人的回答比较；证据不足时标记为不确定。不会自动更新 Person Model。")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 if let message = flow.message {
                     Section { Text(message).font(.footnote) }
@@ -164,6 +185,21 @@ private struct CalibrationScreen: View {
             }
             .navigationTitle("Twin 校准")
             .task { await flow.loadLatestCalibration() }
+        }
+    }
+
+    private func assessmentRow(_ title: String, _ dimension: CalibrationDimension) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            LabeledContent(title, value: verdictLabel(dimension.verdict))
+            Text(dimension.rationale).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func verdictLabel(_ verdict: String) -> String {
+        switch verdict {
+        case "MATCH": "一致"
+        case "DIFFERENT": "有差异"
+        default: "不确定"
         }
     }
 }

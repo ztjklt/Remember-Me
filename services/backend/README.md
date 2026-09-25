@@ -8,6 +8,13 @@
 > Subject evidence excerpt as ORIGINAL; otherwise it returns explicit
 > uncertainty. These Backend-owned shapes are not yet a frozen Phase 2 Contract.
 
+> On `ios`, Calibration locks the Twin answer before the human answer is
+> submitted. `POST /api/v1/subjects/{id}/calibrations/{calibration_id}/assess`
+> optionally calls AI Core's real-provider `/calibrate` endpoint after checking
+> the Actor's active `CLOUD_TWIN` consent. The versioned comparison is stored
+> once and remains advisory; it does not update Subject facts or prove the
+> Actor's identity.
+
 Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.

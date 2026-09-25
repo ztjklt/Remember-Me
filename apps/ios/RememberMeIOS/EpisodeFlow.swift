@@ -327,6 +327,20 @@ final class EpisodeFlow: ObservableObject {
         }
     }
 
+    func assessCalibration() async {
+        guard !isBusy, let calibration, calibration.humanAnswer != nil else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            self.calibration = try await api.assessCalibration(
+                id: calibration.calibrationId, settings: settings
+            )
+            message = "AI 差异分析已保存。它是辅助判断，不会自动改写本人事实。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
     func uploadAndProcess(fileURL: URL?, recordedAt: Date?) async {
         guard !isBusy else { return }
         guard let fileURL, let recordedAt else {

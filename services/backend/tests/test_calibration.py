@@ -1,12 +1,14 @@
 """The locked-answer ordering and Actor isolation of calibration."""
 
+import httpx
+
 from app.models import Actor
 from app.seed import seed_development_data
 from app.tokens import generate_actor_token, hash_actor_token
 from test_core_twin import _ready_episode
 
 
-def test_calibration_locks_answer_before_human_submission(client, session):
+def test_calibration_locks_answer_before_human_submission(client, session, monkeypatch):
     seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
     auth = {"Authorization": f"Bearer {seeded.actor_token}"}
     _ready_episode(client, session, seeded, auth)
@@ -40,6 +42,9 @@ def test_calibration_locks_answer_before_human_submission(client, session):
     ).json()["response_type"] == "SIMULATION"
 
     answer_path = f"{path}/{before['calibration_id']}/answer"
+    assert client.post(
+        f"{path}/{before['calibration_id']}/assess", headers=auth,
+    ).status_code == 409
     answer = {
         "human_answer": "我现在不喜欢咖啡。",
         "gaps": {
@@ -58,12 +63,39 @@ def test_calibration_locks_answer_before_human_submission(client, session):
         json={**answer, "human_answer": "another answer"},
     ).status_code == 409
 
+    def fake_compare(url, **kwargs):
+        assert url.endswith("/calibrate")
+        assert kwargs["json"]["locked_answer"] == before["locked_answer"]
+        assert kwargs["json"]["human_answer"] == answer["human_answer"]
+        dimensions = {
+            name: {"verdict": "UNCERTAIN", "rationale": "未见该维度证据。"}
+            for name in (
+                "decision", "reasoning", "value_priority",
+                "emotional_reaction", "expression",
+            )
+        }
+        return httpx.Response(200, json={
+            **dimensions, "overall": "UNCERTAIN",
+            "model_version": "real-calibrator-v1",
+            "assessment_version": "calibration-assessment-v1",
+        })
+
+    monkeypatch.setattr("app.api.calibration.httpx.post", fake_compare)
+    assessed = client.post(f"{path}/{before['calibration_id']}/assess", headers=auth)
+    assert assessed.status_code == 200, assessed.text
+    assert assessed.json()["ai_assessment"]["model_version"] == "real-calibrator-v1"
+    assert assessed.json()["locked_answer"] == before["locked_answer"]
+    assert client.post(
+        f"{path}/{before['calibration_id']}/assess", headers=auth,
+    ).json()["assessed_at"] == assessed.json()["assessed_at"]
+
     other_token = generate_actor_token()
     session.add(Actor(actor_id="cal_other", display_name="Other", token_hash=hash_actor_token(other_token)))
     session.commit()
     other_auth = {"Authorization": f"Bearer {other_token}"}
     assert client.get(path, headers=other_auth).json() == []
     assert client.post(answer_path, headers=other_auth, json=answer).status_code == 404
+    assert client.post(f"{path}/{before['calibration_id']}/assess", headers=other_auth).status_code == 404
 
     assert client.post(f"/api/v1/consents/{consent_id}/revoke", headers=auth).status_code == 200
     assert client.post(
