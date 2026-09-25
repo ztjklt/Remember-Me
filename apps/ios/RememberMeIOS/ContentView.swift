@@ -12,8 +12,99 @@ struct ContentView: View {
                 .tabItem { Label("Twin", systemImage: "bubble.left.and.text.bubble.right") }
             CalibrationScreen()
                 .tabItem { Label("校准", systemImage: "checkmark.bubble") }
+            HandoverScreen()
+                .tabItem { Label("交接", systemImage: "person.2.badge.key") }
             ConnectionView()
                 .tabItem { Label("连接", systemImage: "server.rack") }
+        }
+    }
+}
+
+private struct HandoverScreen: View {
+    @EnvironmentObject private var flow: EpisodeFlow
+    @State private var recipientActorID = ""
+    @State private var selectedDomains: Set<String> = []
+    @State private var showActivation = false
+
+    private let domains = [
+        "Identity", "Episodic Memory", "Relationships", "Preferences",
+        "Values & Beliefs", "Decision Patterns", "Expression", "Unclassified"
+    ]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("数字交接预演") {
+                    Text("仅供手动预演。当前没有 Subject 身份核验或正式 Legacy 激活证明。接收者只能看到激活时锁定、且被明确选择的 Memory 领域。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    TextField("接收者 Actor ID", text: $recipientActorID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    ForEach(domains, id: \.self) { domain in
+                        Toggle(domain, isOn: Binding(
+                            get: { selectedDomains.contains(domain) },
+                            set: { enabled in
+                                if enabled { selectedDomains.insert(domain) }
+                                else { selectedDomains.remove(domain) }
+                            }
+                        ))
+                    }
+                    Button("创建交接草稿") {
+                        Task {
+                            await flow.createLegacyGrant(
+                                recipientActorID: recipientActorID,
+                                domains: domains.filter { selectedDomains.contains($0) }
+                            )
+                        }
+                    }
+                    .disabled(flow.isBusy || recipientActorID.isEmpty || selectedDomains.isEmpty)
+                }
+                if let grant = flow.legacyGrant {
+                    Section("当前授权") {
+                        LabeledContent("接收者", value: grant.recipientActorId)
+                        LabeledContent("状态", value: grant.status)
+                        LabeledContent("锁定 Memory", value: "\(grant.snapshotCount)")
+                        Text(grant.allowedDomains.joined(separator: "、"))
+                            .font(.caption).foregroundStyle(.secondary)
+                        if grant.status == "DRAFT" {
+                            Button("手动激活接收者预演") { showActivation = true }
+                                .disabled(flow.isBusy)
+                        }
+                        if grant.status != "REVOKED" {
+                            Button("撤销授权", role: .destructive) {
+                                Task { await flow.revokeLegacyPreview() }
+                            }
+                            .disabled(flow.isBusy)
+                        }
+                    }
+                }
+                Section("以接收者身份查看") {
+                    Button("读取我获授权的 Memory") {
+                        Task { await flow.loadRecipientMemories() }
+                    }
+                    .disabled(flow.isBusy)
+                    ForEach(flow.recipientMemories) { item in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.content)
+                            Text("\(item.domain) · Episode \(item.episodeId)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if let message = flow.message {
+                    Section { Text(message).font(.footnote) }
+                }
+            }
+            .navigationTitle("数字交接")
+            .toolbar {
+                Button("刷新") { Task { await flow.loadLegacyGrant() } }
+                    .disabled(flow.isBusy)
+            }
+            .confirmationDialog("确认手动激活预演？", isPresented: $showActivation) {
+                Button("激活预演") { Task { await flow.activateLegacyPreview() } }
+            } message: {
+                Text("接收者将能读取激活时锁定的指定领域 Memory；这不是正式 Legacy 转承。")
+            }
         }
     }
 }
@@ -370,6 +461,9 @@ private struct ConnectionView: View {
                     TextField("Cloud Twin 同意 ID", text: $flow.settings.cloudTwinConsentID)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    TextField("数字交接同意 ID", text: $flow.settings.handoverConsentID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     Button("保存连接设置") { flow.saveSettings() }
                         .disabled(flow.isBusy)
                     Text("令牌保存在 iOS 钥匙串。模拟器可用 127.0.0.1；真机需要能访问 Mac 的私有网络地址或 HTTPS 服务。")
@@ -384,6 +478,10 @@ private struct ConnectionView: View {
                     .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
                     Button("我确认并登记 Cloud Twin 同意") {
                         Task { await flow.grantCloudTwinConsent() }
+                    }
+                    .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
+                    Button("我确认并登记数字交接预演同意") {
+                        Task { await flow.grantHandoverConsent() }
                     }
                     .disabled(flow.isBusy || flow.settings.token.isEmpty || flow.settings.subjectID.isEmpty)
                 }

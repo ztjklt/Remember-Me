@@ -83,9 +83,19 @@ and Actor-isolated. This is a Phase 3 calibration capture loop; it does not yet
 verify that the Actor is the Subject, automatically compare the answers, or
 update the Person Model.
 
+The Handover tab provides a manual Legacy **preview**: the capturing Actor must
+grant separate `DIGITAL_HANDOVER` consent, name an existing Recipient Actor, and
+choose visible Memory domains. A draft exposes nothing. Explicit preview
+activation freezes the eligible Memory IDs; later captures do not enter that
+snapshot. Corrected or deleted items disappear from recipient retrieval, and
+grant or consent revocation cuts access immediately. The Recipient signs in with
+their own Actor token and reads the preview from the same tab. There is no
+formal Legacy activation, death verification, identity proof, voice grant, or
+legal authority check in this branch.
+
 This client does not itself certify Phase 1 or the later phase gates. A real
 device, real STT, a working AI provider, persisted Memory, and an acceptance
 record are needed for Phase 1. Phase 2 still needs a temporal graph, verified
 correction promotion, and a semantically evaluated Twin. Phase 3 still needs
-automatic comparison, Capture Planner and real Voice; Phase 4 endpoints
-and providers remain separate work on this branch.
+automatic comparison, Capture Planner and real Voice. Phase 4 still needs
+formal activation and verified hardware integration.

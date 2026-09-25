@@ -103,6 +103,23 @@ struct CalibrationRecord: Decodable, Identifiable {
     var id: String { calibrationId }
 }
 
+struct LegacyGrantRecord: Decodable, Identifiable {
+    let grantId: String
+    let subjectId: String
+    let recipientActorId: String
+    let allowedDomains: [String]
+    let status: String
+    let snapshotCount: Int
+
+    var id: String { grantId }
+}
+
+struct RecipientMemoryList: Decodable {
+    let subjectId: String
+    let mode: String
+    let items: [SubjectMemory]
+}
+
 enum EpisodeAPIError: LocalizedError {
     case invalidServerURL
     case missingCredentials
@@ -170,6 +187,10 @@ struct EpisodeAPI {
 
     func grantCloudTwinConsent(settings: ServerSettings) async throws -> RecordingConsent {
         try await grantConsent(scope: "CLOUD_TWIN", settings: settings)
+    }
+
+    func grantHandoverConsent(settings: ServerSettings) async throws -> RecordingConsent {
+        try await grantConsent(scope: "DIGITAL_HANDOVER", settings: settings)
     }
 
     private func grantConsent(scope: String, settings: ServerSettings) async throws -> RecordingConsent {
@@ -266,6 +287,63 @@ struct EpisodeAPI {
             path: calibrationPath(settings: settings), method: "GET", settings: settings
         )
         return try await decode([CalibrationRecord].self, request: request)
+    }
+
+    func createLegacyGrant(
+        recipientActorID: String, domains: [String], settings: ServerSettings
+    ) async throws -> LegacyGrantRecord {
+        guard !settings.handoverConsentID.isEmpty else { throw EpisodeAPIError.missingCredentials }
+        var request = try authorizedRequest(
+            path: handoverPath(settings: settings), method: "POST", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "recipient_actor_id": recipientActorID,
+            "handover_consent_id": settings.handoverConsentID,
+            "allowed_domains": domains
+        ])
+        return try await decode(LegacyGrantRecord.self, request: request)
+    }
+
+    func handoverGrants(settings: ServerSettings) async throws -> [LegacyGrantRecord] {
+        let request = try authorizedRequest(
+            path: handoverPath(settings: settings), method: "GET", settings: settings
+        )
+        return try await decode([LegacyGrantRecord].self, request: request)
+    }
+
+    func activateLegacyPreview(id: String, settings: ServerSettings) async throws -> LegacyGrantRecord {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        var request = try authorizedRequest(
+            path: handoverPath(settings: settings) + "/\(encoded)/activate-preview",
+            method: "POST", settings: settings
+        )
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["confirmation": "ACTIVATE_PREVIEW"])
+        return try await decode(LegacyGrantRecord.self, request: request)
+    }
+
+    func revokeLegacyGrant(id: String, settings: ServerSettings) async throws -> LegacyGrantRecord {
+        let encoded = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+        let request = try authorizedRequest(
+            path: handoverPath(settings: settings) + "/\(encoded)/revoke",
+            method: "POST", settings: settings
+        )
+        return try await decode(LegacyGrantRecord.self, request: request)
+    }
+
+    func legacyRecipientMemories(settings: ServerSettings) async throws -> RecipientMemoryList {
+        let subject = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        let request = try authorizedRequest(
+            path: "api/v1/subjects/\(subject)/legacy-preview/memories",
+            method: "GET", settings: settings
+        )
+        return try await decode(RecipientMemoryList.self, request: request)
+    }
+
+    private func handoverPath(settings: ServerSettings) -> String {
+        let subject = settings.subjectID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? settings.subjectID
+        return "api/v1/subjects/\(subject)/handover/grants"
     }
 
     private func calibrationPath(settings: ServerSettings) -> String {

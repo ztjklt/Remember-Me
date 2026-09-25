@@ -196,6 +196,11 @@ It runs against SQLite, the in-memory object store, and migrations applied to an
 | `POST /api/v1/subjects/{subject_id}/calibrations` | Lock a Twin answer and evidence before the Actor can submit a human answer. Requires active `CLOUD_TWIN` consent. |
 | `GET /api/v1/subjects/{subject_id}/calibrations` | List this Actor's calibration records. |
 | `POST /api/v1/subjects/{subject_id}/calibrations/{calibration_id}/answer` | Submit immutable Actor-provided human answer and five manual gap marks. |
+| `POST /api/v1/subjects/{subject_id}/handover/grants` | Create a domain-scoped, recipient-specific draft under independent `DIGITAL_HANDOVER` consent. Grantor must own a ready Episode. |
+| `GET /api/v1/subjects/{subject_id}/handover/grants` | List the calling grantor's drafts and previews. |
+| `POST /api/v1/subjects/{subject_id}/handover/grants/{grant_id}/activate-preview` | Explicit manual preview activation, freezing currently eligible Memory IDs. |
+| `POST /api/v1/subjects/{subject_id}/handover/grants/{grant_id}/revoke` | Revoke recipient access immediately. |
+| `GET /api/v1/subjects/{subject_id}/legacy-preview/memories` | Recipient-only view of currently accessible, snapshot-scoped Memory. |
 
 URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Processing Status, and Episode Result are the `captureEpisode`, `processingStatus`, and `episodeResult` shapes, and the AI Core request and answer are `aiCoreInput` and `aiCoreOutput`.
 
@@ -206,6 +211,10 @@ the source recording or transcript.
 Calibration records are Actor-submitted observations. The current account model
 cannot prove the Actor is the Subject, so the Backend does not turn them into
 verified Subject evidence or automatically update the Person Model.
+The Legacy endpoints are a rehearsal of per-Recipient, per-domain access. Their
+activation is manual and named `PREVIEW_ACTIVE`; it does not establish a formal
+Legacy transition, identity proof, legal authority or Voice access. Revoking
+the independent handover consent also disables recipient reads.
 
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 

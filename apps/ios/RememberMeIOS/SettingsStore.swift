@@ -7,6 +7,7 @@ struct ServerSettings {
     var subjectID: String
     var recordingConsentID: String
     var cloudTwinConsentID: String
+    var handoverConsentID: String
 
     var validatedURL: URL? {
         guard let url = URL(string: baseURL.trimmingCharacters(in: .whitespacesAndNewlines)),
@@ -38,7 +39,8 @@ enum SettingsStore {
             token: readToken() ?? "",
             subjectID: defaults.string(forKey: "subjectID") ?? "",
             recordingConsentID: defaults.string(forKey: "recordingConsentID") ?? "",
-            cloudTwinConsentID: defaults.string(forKey: "cloudTwinConsentID") ?? ""
+            cloudTwinConsentID: defaults.string(forKey: "cloudTwinConsentID") ?? "",
+            handoverConsentID: defaults.string(forKey: "handoverConsentID") ?? ""
         )
     }
 
@@ -48,6 +50,7 @@ enum SettingsStore {
         defaults.set(settings.subjectID.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "subjectID")
         defaults.set(settings.recordingConsentID.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "recordingConsentID")
         defaults.set(settings.cloudTwinConsentID.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "cloudTwinConsentID")
+        defaults.set(settings.handoverConsentID.trimmingCharacters(in: .whitespacesAndNewlines), forKey: "handoverConsentID")
         try saveToken(settings.token.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 

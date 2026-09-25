@@ -146,6 +146,21 @@ class CalibrationConflict(AppError):
     http_status = 409
 
 
+class LegacyGrantNotFound(AppError):
+    code = "LEGACY_GRANT_NOT_FOUND"
+    http_status = 404
+
+
+class LegacyGrantConflict(AppError):
+    code = "LEGACY_GRANT_CONFLICT"
+    http_status = 409
+
+
+class LegacyAccessDenied(AppError):
+    code = "LEGACY_ACCESS_DENIED"
+    http_status = 404
+
+
 class EpisodeNotReady(AppError):
     """The result was requested before the Episode finished processing.
 

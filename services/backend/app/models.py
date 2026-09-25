@@ -52,6 +52,7 @@ class ConsentScope(StrEnum):
     RECORDING = "RECORDING"
     VOICE = "VOICE"
     CLOUD_TWIN = "CLOUD_TWIN"
+    DIGITAL_HANDOVER = "DIGITAL_HANDOVER"
 
 
 # The database refuses a scope this codebase does not register, so a typo or a
@@ -479,3 +480,35 @@ class CalibrationSession(Base):
         DateTime(timezone=True), nullable=False, default=utcnow
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LegacyGrant(Base):
+    """Revocable, domain-scoped rehearsal grant with a frozen Memory snapshot."""
+
+    __tablename__ = "legacy_grants"
+    __table_args__ = (
+        Index("ix_legacy_recipient_subject_status", "recipient_actor_id", "subject_id", "status"),
+        CheckConstraint("status IN ('DRAFT', 'PREVIEW_ACTIVE', 'REVOKED')", name="ck_legacy_grants_status"),
+    )
+
+    grant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("subjects.subject_id", ondelete="RESTRICT"), nullable=False
+    )
+    grantor_actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    recipient_actor_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("actors.actor_id", ondelete="RESTRICT"), nullable=False
+    )
+    handover_consent_id: Mapped[str] = mapped_column(
+        String(64), ForeignKey("consents.consent_id", ondelete="RESTRICT"), nullable=False
+    )
+    allowed_domains: Mapped[list] = mapped_column(JSON, nullable=False)
+    snapshot_memory_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utcnow
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -10,6 +10,8 @@ final class EpisodeFlow: ObservableObject {
     @Published private(set) var domainCounts: [String: Int] = [:]
     @Published private(set) var twinAnswer: TwinAnswer?
     @Published private(set) var calibration: CalibrationRecord?
+    @Published private(set) var legacyGrant: LegacyGrantRecord?
+    @Published private(set) var recipientMemories: [SubjectMemory] = []
     @Published private(set) var modelVersion: String?
     @Published private(set) var isBusy = false
     @Published var message: String?
@@ -57,6 +59,91 @@ final class EpisodeFlow: ObservableObject {
             try SettingsStore.save(settings)
             message = "Cloud Twin 同意已登记，与录音及 Voice 同意分开。"
         } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func grantHandoverConsent() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let consent = try await api.grantHandoverConsent(settings: settings)
+            guard consent.status == "granted" else { throw EpisodeAPIError.invalidResponse }
+            settings.handoverConsentID = consent.consentId
+            try SettingsStore.save(settings)
+            message = "数字交接同意已登记；仅用于明确授权的预演。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func createLegacyGrant(recipientActorID: String, domains: [String]) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            legacyGrant = try await api.createLegacyGrant(
+                recipientActorID: recipientActorID, domains: domains, settings: settings
+            )
+            message = "交接草稿已保存；接收者目前无法读取。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func loadLegacyGrant() async {
+        guard !isBusy, !settings.subjectID.isEmpty, !settings.token.isEmpty else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            legacyGrant = try await api.handoverGrants(settings: settings).first
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func activateLegacyPreview() async {
+        guard !isBusy, let legacyGrant else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            self.legacyGrant = try await api.activateLegacyPreview(
+                id: legacyGrant.grantId, settings: settings
+            )
+            message = "接收者预演已激活，并冻结可见 Memory 清单。此操作不是正式 Legacy 转承。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func revokeLegacyPreview() async {
+        guard !isBusy, let legacyGrant else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            self.legacyGrant = try await api.revokeLegacyGrant(
+                id: legacyGrant.grantId, settings: settings
+            )
+            message = "交接授权已撤销。"
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    func loadRecipientMemories() async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            let result = try await api.legacyRecipientMemories(settings: settings)
+            guard result.subjectId == settings.subjectID, result.mode == "PREVIEW" else {
+                throw EpisodeAPIError.invalidResponse
+            }
+            recipientMemories = result.items
+            message = "已按接收者授权范围读取 \(result.items.count) 条预演 Memory。"
+        } catch {
+            recipientMemories = []
             message = error.localizedDescription
         }
     }
