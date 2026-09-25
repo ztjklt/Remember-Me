@@ -1,6 +1,6 @@
 # ADR-0001 — Backend Platform, Data, Storage, Auth, and Failure Model
 
-- **Status:** Proposed — awaiting ratification by the Product / Integration Owner (Issue #13)
+- **Status:** Accepted — ratified by the Product / Integration Owner (Issue #13) on 2026-09-25
 - **Date:** 2026-09-21
 - **Decider:** 王昊宇 `@qingtian-4` (Backend / Voice / Infrastructure)
 - **Ratifier:** 张天霁 `@ztjklt` (Product / Repo / Integration)
