@@ -29,4 +29,13 @@ final class Phase1BoundaryTests: XCTestCase {
             XCTAssertNil(settings.validatedURL, bad)
         }
     }
+
+    func testImportedWavKeepsItsAudioType() {
+        let body = MultipartCapture.body(
+            audio: Data([1, 2]), fileName: "device.wav", subjectID: "s",
+            recordingConsentID: "c", recordedAt: Date(timeIntervalSince1970: 0),
+            idempotencyKey: "device-import", boundary: "test-boundary"
+        )
+        XCTAssertTrue(String(decoding: body, as: UTF8.self).contains("Content-Type: audio/wav"))
+    }
 }

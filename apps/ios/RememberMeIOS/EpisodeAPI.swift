@@ -149,7 +149,8 @@ enum MultipartCapture {
         let safeName = fileName.replacingOccurrences(of: "\"", with: "_")
             .replacingOccurrences(of: "\r", with: "_")
             .replacingOccurrences(of: "\n", with: "_")
-        result.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(safeName)\"\r\nContent-Type: audio/mp4\r\n\r\n".utf8))
+        let contentType = fileName.lowercased().hasSuffix(".wav") ? "audio/wav" : "audio/mp4"
+        result.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(safeName)\"\r\nContent-Type: \(contentType)\r\n\r\n".utf8))
         result.append(audio)
         result.append(Data("\r\n--\(boundary)--\r\n".utf8))
         return result

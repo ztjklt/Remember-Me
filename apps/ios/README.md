@@ -30,6 +30,12 @@ xcodebuild -project RememberMeIOS.xcodeproj -scheme RememberMeIOS \
 5. Record, pause/resume, save, play, upload, and observe the Episode state and
    returned Memory. The same `episode_id` is retained for retries and refreshes.
 
+For a recording device that exports files, use **从文件导入设备录音**. The app copies
+`.m4a` or `.wav` into its own recordings folder, checks the 25 MiB limit, lets
+the user correct the capture time, and uploads through the existing `IMPORT`
+path. This is a hardware-free fallback; it does not claim Work 3200 SDK support
+or markers. The selected capture time persists across app restarts.
+
 For a repeatable local service check after starting the real STT bridge on
 `127.0.0.1:8200` and AI Core on `127.0.0.1:8100`, run:
 

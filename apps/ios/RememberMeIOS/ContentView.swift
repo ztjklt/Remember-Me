@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     var body: some View {
@@ -79,6 +80,7 @@ private struct CalibrationScreen: View {
 private struct CaptureView: View {
     @EnvironmentObject private var capture: AudioCapture
     @EnvironmentObject private var flow: EpisodeFlow
+    @State private var showImporter = false
 
     var body: some View {
         NavigationStack {
@@ -106,6 +108,7 @@ private struct CaptureView: View {
                     } else {
                         Button("开始录音") { Task { await capture.start() } }
                             .buttonStyle(.borderedProminent)
+                        Button("从文件导入设备录音") { showImporter = true }
                     }
                     if let file = capture.fileURL, !capture.isRecording {
                         Text(file.lastPathComponent)
@@ -114,6 +117,17 @@ private struct CaptureView: View {
                         Button(capture.isPlaying ? "停止播放" : "完整播放录音") {
                             capture.playOrStop()
                         }
+                        DatePicker(
+                            "录制时间",
+                            selection: Binding(
+                                get: { capture.recordedAt ?? Date() },
+                                set: { capture.setRecordedAt($0) }
+                            ),
+                            in: ...Date(),
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        Text("导入文件时请核对时间；设备导出时间可能不等于实际录制时间。")
+                            .font(.caption).foregroundStyle(.secondary)
                     }
                     if let message = capture.message {
                         Text(message).font(.footnote).foregroundStyle(.secondary)
@@ -143,6 +157,12 @@ private struct CaptureView: View {
                 }
             }
             .navigationTitle("记录生活")
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio]) { result in
+                switch result {
+                case .success(let url): capture.importAudio(from: url)
+                case .failure(let error): capture.message = "无法选择录音：\(error.localizedDescription)"
+                }
+            }
         }
     }
 
