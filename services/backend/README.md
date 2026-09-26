@@ -254,9 +254,9 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 | `EPISODE_NOT_READY` | 409 | The result was asked for before the Episode finished processing |
 | `STORAGE_UNAVAILABLE` | 503 | Object storage refused the upload. No Episode is written: a record whose audio never arrived would claim to hold something it does not have |
 | `AUDIO_UNAVAILABLE` | 503 | The audio an Episode points at could not be read from object storage |
-| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached |
-| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio |
-| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time |
+| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached or answered HTTP 503 |
+| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio, including HTTP 413, 422, and 502 |
+| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time or answered HTTP 504 |
 | `STT_EMPTY_TRANSCRIPT` | 422 | The provider returned no text, so there is nothing to extract |
 | `AI_UNAVAILABLE` | 503 | AI Core could not be reached |
 | `AI_FAILED` | 502 | AI Core ran and refused the request |
@@ -267,6 +267,8 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 A processing failure is not a request failure: it is recorded **on the Episode** as `error_code` and `error_message`, and the Episode stays readable. The codes that a stage can fail with are also the ones the worker decides about, and `retryable` is part of the code rather than a decision each call site makes: `AUDIO_UNAVAILABLE`, `STORAGE_UNAVAILABLE`, `STT_UNAVAILABLE`, `STT_TIMEOUT`, `AI_UNAVAILABLE`, `AI_TIMEOUT`, and `INTERNAL` are worth asking again, while `STT_EMPTY_TRANSCRIPT`, `STT_FAILED`, `AI_FAILED`, and `AI_SCHEMA_INVALID` would fail the same way twice and end the Episode immediately.
 
 The codes are Backend-owned: the contract types `error_code` and `error_message` as free strings, so adding one is not a contract change, while renaming one a client branches on is a compatibility concern. ADR-0001 D11 is the decision record for this taxonomy.
+
+Both HTTP adapters map a provider's own status onto that taxonomy the same way, so `retryable` means one thing regardless of which stage is running: 503 and 504 go back to the bounded retry budget, while 413, 422, and 502 end the stage. Transcription runs before extraction, so a failed transcription leaves the Episode with no transcript but never without its audio, and a failed extraction leaves both.
 
 ## Data model
 
