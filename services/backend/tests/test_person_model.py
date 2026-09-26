@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from jsonschema import Draft202012Validator
 
-from app.models import CaptureQuestion, DeviceCredential, Episode, MemoryAudit, MemoryItem, PairingCode, PersonTrait, utcnow
+from app.models import CaptureQuestion, DeviceCredential, Episode, Job, MemoryAudit, MemoryItem, PairingCode, PersonTrait, utcnow
 from app.repositories.person_model import PersonModelRepository
 from app.errors import SttUnavailable
 from app.seed import seed_development_data
@@ -27,8 +27,14 @@ def test_second_episode_correction_delete_and_subject_isolation(app, client, ses
                   "recorded_at": "2026-09-26T09:00:00Z", "audio_ref": f"voice-{index}.m4a"},
             files={"file": ("voice.m4a", b"FAKE-AUDIO" + bytes([index]), "audio/mp4")})
         assert response.status_code == 201, response.text
-        for _ in range(3):
-            worker.run_once()
+        episode_id = response.json()["episode_id"]
+        worker.run_once()
+        review = client.get(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers)
+        assert review.json()["state"] == "reviewing"
+        assert client.patch(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers,
+                            json={"transcript": review.json()["transcript"]}).status_code == 200
+        worker.run_once()
+        worker.run_once()
     model = client.get(f"/api/v1/subjects/{seeded.subject_id}/person-model", headers=headers).json()
     assert model["version"] == 2
     assert len(model["domains"]) == 7
@@ -74,8 +80,13 @@ def test_conflicting_memories_coexist_and_prompt_for_clarification(app, client, 
                   "recorded_at": "2026-09-26T09:00:00Z", "audio_ref": f"voice-{index}.m4a"},
             files={"file": ("voice.m4a", b"AUDIO" + bytes([index]), "audio/mp4")})
         assert response.status_code == 201
-        for _ in range(3):
-            worker.run_once()
+        episode_id = response.json()["episode_id"]
+        worker.run_once()
+        text = client.get(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers).json()["transcript"]
+        assert client.patch(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers,
+                            json={"transcript": text}).status_code == 200
+        worker.run_once()
+        worker.run_once()
     rows = list(session.scalars(select(MemoryItem).order_by(MemoryItem.created_at)))
     rows[0].memory_type = rows[1].memory_type = "PREFERENCE"
     rows[0].content = "我喜欢咖啡"
@@ -148,8 +159,61 @@ def test_failed_processing_can_resume_without_creating_another_episode(app, clie
     recovered = ProcessingWorker(app.state.database, app.state.object_store,
                                  app.state.stt_provider, app.state.ai_client,
                                  backoff_seconds=0)
-    for _ in range(3):
-        recovered.run_once()
+    recovered.run_once()
+    text = client.get(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers).json()["transcript"]
+    assert client.patch(f"/api/v1/episodes/{episode_id}/transcript-review", headers=headers,
+                        json={"transcript": text}).status_code == 200
+    recovered.run_once()
+    recovered.run_once()
     assert client.get(f"/api/v1/episodes/{episode_id}", headers=headers).json()["status"] == "ready"
     assert session.query(Episode).count() == 1
     assert client.get(f"/api/v1/episodes/{episode_id}/audio", headers=headers).content == b"UNIQUE-PHONE-AUDIO"
+
+
+def test_ios_transcript_waits_for_actor_review_and_preserves_machine_output(app, client, session):
+    seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
+    other = seed_development_data(session, subject_name="Other", actor_name="Other")
+    headers = {"Authorization": "Bearer " + seeded.actor_token}
+    other_headers = {"Authorization": "Bearer " + other.actor_token}
+    uploaded = client.post("/api/v1/episodes", headers=headers,
+        data={"subject_id": seeded.subject_id, "recording_consent_id": seeded.consent_id,
+              "idempotency_key": "review-one", "source": "IOS_MIC",
+              "recorded_at": "2026-09-26T09:00:00Z", "audio_ref": "review.m4a"},
+        files={"file": ("review.m4a", b"REVIEW-AUDIO", "audio/mp4")})
+    assert uploaded.status_code == 201
+    episode_id = uploaded.json()["episode_id"]
+    path = f"/api/v1/episodes/{episode_id}/transcript-review"
+    worker = ProcessingWorker(app.state.database, app.state.object_store,
+                              app.state.stt_provider, app.state.ai_client, backoff_seconds=0)
+    worker.run_once()
+    review = client.get(path, headers=headers)
+    assert review.status_code == 200
+    assert review.headers["cache-control"] == "private, no-store"
+    assert review.json()["state"] == "reviewing"
+    machine_text = review.json()["transcript"]
+    assert machine_text.startswith("[fake-stt]")
+    assert client.get(path, headers=other_headers).status_code == 404
+    assert client.patch(path, headers=other_headers, json={"transcript": "我喜欢散步"}).status_code == 404
+    assert client.patch(path, headers=headers, json={"transcript": "  "}).status_code == 422
+    worker.run_once()  # The worker cannot extract until the Actor confirms text.
+    session.expire_all()
+    assert session.get(Job, session.query(Job.job_id).filter_by(episode_id=episode_id).scalar()).state == "waiting"
+    assert session.query(MemoryItem).filter_by(episode_id=episode_id).count() == 0
+
+    confirmed_text = "我喜欢散步。"
+    confirmed = client.patch(path, headers=headers, json={"transcript": confirmed_text})
+    assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "extracting"
+    assert client.patch(path, headers=headers, json={"transcript": confirmed_text}).status_code == 200
+    assert client.patch(path, headers=headers, json={"transcript": "不同文字"}).status_code == 422
+    worker.run_once()
+    worker.run_once()
+    session.expire_all()
+    episode = session.get(Episode, episode_id)
+    assert episode.status == "ready"
+    assert episode.stt_transcript == machine_text
+    assert episode.transcript == confirmed_text
+    assert episode.transcript_reviewed_by == seeded.actor_id
+    assert episode.transcript_reviewed_at is not None
+    memory = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == episode_id))
+    assert memory is not None and confirmed_text in memory.content

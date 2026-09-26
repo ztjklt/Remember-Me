@@ -2,9 +2,9 @@
 
 The shared AI Core supports Phase 1 and the Product Owner's approved iOS Person Model slice. Current ownership follows the [two-client delivery model](../../docs/team/00_TEAM_OWNERSHIP.md); the original [task brief](../../docs/team/02_KANGXIN_AI_CORE.md) records the Phase 1 foundation.
 
-For the local iOS path, `AI_PROVIDER=ollama` uses Qwen through Ollama's native structured-output API with thinking disabled. The model supplies an original quote and a domain; Python resolves a corresponding span in the original Chinese transcript and drops any candidate it cannot locate. It reads Ollama's actual model digest for each extraction. Backend applies the typed evidence-linked graph and trait proposals in its `modeling` stage. See [apps/ios/README.md](../../apps/ios/README.md).
+The current iOS deployment uses `AI_PROVIDER=deepseek` with `AI_MODEL=deepseek-v4-flash`. This sends the transcript, but not the audio, to DeepSeek over HTTPS. The model supplies an original quote and a domain; Python resolves a corresponding span in the original Chinese transcript and drops any candidate it cannot locate. The actual API response model name is stored with each extraction. `AI_PROVIDER=ollama` remains available for a fully local Qwen deployment. Backend applies the typed evidence-linked graph and trait proposals in its `modeling` stage. See [apps/ios/README.md](../../apps/ios/README.md).
 
-This directory contains schema-validated memory extraction with fixture, OpenAI-compatible, and local Ollama adapters. Evidence-backed Twin responses, calibration, and Voice remain future work. The domain layer stays provider-neutral.
+This directory contains schema-validated memory extraction with fixture, OpenAI-compatible, Ollama, and DeepSeek adapters. Evidence-backed Twin responses, calibration, and Voice remain future work. The domain layer stays provider-neutral.
 
 Phase 1 scope: the Episode/Transcript → Memory Extractor schema, structured output that is validated before persistence, preserved provenance fields, and a minimum AI processing interface callable by Backend with deterministic fixtures.
 
@@ -45,7 +45,7 @@ For a real OpenAI-compatible endpoint, set `AI_PROVIDER=openai_compatible`,
 `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY`, and the version settings. Provider
 secrets stay in the AI Core process environment and are never returned in an
 error body. The fixture provider is refused in `staging` and `production`.
-The OpenAI-compatible adapter requires explicit non-fixture `AI_MODEL` and `AI_MODEL_VERSION`; Ollama requires `AI_MODEL` and reads the actual digest itself.
+The OpenAI-compatible adapter requires explicit non-fixture `AI_MODEL` and `AI_MODEL_VERSION`; Ollama requires `AI_MODEL` and reads the actual digest itself. For DeepSeek, set `AI_PROVIDER=deepseek`, `AI_MODEL=deepseek-v4-flash`, `AI_BASE_URL=https://api.deepseek.com`, and `AI_API_KEY` in the AI Core process environment. Keep the key outside the repository. The adapter uses JSON output with thinking disabled and records the model identifier returned by DeepSeek (`deepseek-flash` in the verified response). The credential is accepted only for the official HTTPS host.
 The active prompt is `memory-extractor-v3`; newly extracted memories use
 `integration-contract-v0.2`. Remove an old `AI_PROMPT_VERSION` override or
 set it to the current version. Unsupported prompt/schema versions fail startup.
@@ -74,7 +74,7 @@ provider responses are rejected with `502 / AI_SCHEMA_INVALID`.
 - The real provider receives only `episode_id` and `transcript`. `subject_id`,
   `trace_id`, `subject_context` and prior model state stay local in Phase 1.
 - The OpenAI-compatible adapter retains a strict closed-object Phase 1 projection.
-  The Ollama adapter requests a compact quote-first shape, then constructs v0.2
+  The Ollama and DeepSeek adapters request a compact quote-first shape, then construct v0.2
   Memory, graph, trait, and Evidence records only after locating original spans.
 - The offline fixture simulator now extracts multiple clear sentences, deduplicates
   exact repeats, preserves negation, and skips a small set of uncertainty/instruction

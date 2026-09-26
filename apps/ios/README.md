@@ -1,11 +1,11 @@
 # iOS 本机语音 → Person Model
 
-这个 SwiftUI 客户端把自由录音或智能追问回答交给 Mac 上的 Backend。Backend 先保存 Episode 和原音，再由本机 Whisper 转写、Qwen 提取可在原始转写中定位的 Memory，最后更新七领域 Person Model。客户端可播放原音、查看证据、纠正或删除 Memory。Android 仍走原有请求。
+这个 SwiftUI 客户端把自由录音或智能追问回答交给 Mac 上的 Backend。Backend 先保存 Episode 和原音，由本机 Whisper 转写；iOS 随即显示文字并允许修改，用户确认后才由 DeepSeek V4 Flash 提取可在确认版文字中定位的 Memory，最后更新七领域 Person Model。当前配置会把确认后的转写文本发往 DeepSeek；原音、机器原始转写、数据库和密钥仍保存在本机。客户端可播放原音、查看证据、纠正或删除 Memory。Android 仍走原有自动处理流程。
 
 ## 需要的本机环境
 
-- macOS 上安装 Xcode、`xcodegen`、`uv`、`ffmpeg`、`whisper-cli`、Ollama 与多语言 Whisper 模型（例如 `~/.cache/remember-me/ggml-base.bin`）。`ggml-base.en.bin` 不能用于中文。
-- 用 `ollama list` 确认 `qwen3.5:latest` 已下载；`ollama serve` 只供本机访问。
+- macOS 上安装 Xcode、`xcodegen`、`uv`、`ffmpeg`、`whisper-cli` 与多语言 Whisper 模型（例如 `~/.cache/remember-me/ggml-base.bin`）。`ggml-base.en.bin` 不能用于中文。
+- DeepSeek API key 仅通过 AI Core 进程环境变量 `AI_API_KEY` 加载；不要写进仓库、命令历史、PR 或 App。需要完全本机运行时，仍可配置 Ollama Qwen 适配器。
 - iPhone 与 Mac 在同一局域网；iPhone 已信任 Mac。首次真机安装需 Xcode 的 Apple Accounts 能创建这个 App 的签名配置文件。
 
 ## 启动四个本机进程
@@ -43,9 +43,9 @@ uv run python -m app.seed --subject-name "你的名字" --actor-name "你的名�
 WHISPER_MODEL_PATH="$HOME/.cache/remember-me/ggml-base.bin" \
   uv run uvicorn app.local_stt:app --host 127.0.0.1 --port 8200
 
-# 终端 2：services/ai-core，Qwen 仅经 loopback 调用
-AI_PROVIDER=ollama AI_MODEL=qwen3.5:latest \
-  AI_BASE_URL=http://127.0.0.1:11434 AI_TIMEOUT_SECONDS=120 \
+# 终端 2：services/ai-core；先在本终端从本机私有密钥文件加载 AI_API_KEY
+AI_PROVIDER=deepseek AI_MODEL=deepseek-v4-flash \
+  AI_BASE_URL=https://api.deepseek.com AI_TIMEOUT_SECONDS=120 \
   uv run uvicorn app.main:app --host 127.0.0.1 --port 8100
 
 # 终端 3：services/backend，唯一面向 iPhone 的 HTTPS 接口
@@ -65,7 +65,7 @@ REMEMBER_STT_TIMEOUT_SECONDS=300 REMEMBER_AI_TIMEOUT_SECONDS=150 \
   uv run python -m app.worker
 ```
 
-AI Core 每次提取前从 Ollama 查询实际模型 digest 并写入 Memory 和 Episode 的模型版本，不依赖手填标签。每个新终端需要重新设置 `REMEMBER_LOCAL_DATA_DIR`，例如 `export REMEMBER_LOCAL_DATA_DIR="$HOME/.cache/remember-me/live"`。两个 Python 服务和 Ollama 只监听 `127.0.0.1`；iPhone 只连 Backend 的 HTTPS 端口。启动后可用 `curl --cacert "$REMEMBER_LOCAL_DATA_DIR/tls/local.crt" "https://$REMEMBER_LAN_IP:8000/health"` 检查连通。
+AI Core 从 DeepSeek 的 API 返回读取模型标识并写入 Memory 和 Episode，不依赖手填标签。每个新终端需要重新设置 `REMEMBER_LOCAL_DATA_DIR`，例如 `export REMEMBER_LOCAL_DATA_DIR="$HOME/.cache/remember-me/live"`。STT 和 AI Core 只监听 `127.0.0.1`；iPhone 只连 Backend 的 HTTPS 端口。启动后可用 `curl --cacert "$REMEMBER_LOCAL_DATA_DIR/tls/local.crt" "https://$REMEMBER_LAN_IP:8000/health"` 检查连通。
 
 ## 一次性配对与运行
 
@@ -89,6 +89,6 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 
 ## 这一次的真机记录
 
-只需完整跑一次：自由录一段中文并提交；看到 Episode 到 `ready`、记忆原文证据和七领域模型；回答 App 给出的一条追问，再确认模型版本和领域内容更新；纠正或删除一条错误记忆，确认 trait 与下一条追问重算。断网时同一段录音仍在 App 内，重新提交会用相同幂等键；模型超时到达失败状态后可从同一个 Episode 重试处理。把设备型号、iOS 版本、两段 Episode ID、STT/AI 模型版本和观察到的结果写进 PR 的 “How it was tested” 即可。
+只需完整跑一次：自由录一段中文并提交；核对和修改转写文字，确认后看到 Episode 到 `ready`、记忆原文证据和七领域模型；回答 App 给出的一条追问并再次确认转写，再检查模型版本和领域内容更新；纠正或删除一条错误记忆，确认 trait 与下一条追问重算。断网时同一段录音仍在 App 内，重新提交会用相同幂等键；模型超时到达失败状态后可从同一个 Episode 重试处理。把设备型号、iOS 版本、两段 Episode ID、STT/AI 模型版本和观察到的结果写进 PR 的 “How it was tested” 即可。
 
 实测的合成音频联调可以证明服务链和数据流，不应写成本人真机录音。真机录音必须由使用者在设备上亲自完成。

@@ -15,6 +15,7 @@ from .errors import AIOutputInvalid, EvidenceInvalid, ProviderTimeout, ProviderU
 from .extractor import MemoryExtractor
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
+from .providers.deepseek import DeepSeekProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 
@@ -27,6 +28,11 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
     elif settings.provider == "ollama":
         provider = OllamaProvider(base_url=settings.base_url, timeout_seconds=settings.timeout_seconds,
                                   max_response_bytes=settings.max_response_bytes)
+    elif settings.provider == "deepseek":
+        provider = DeepSeekProvider(base_url=settings.base_url,
+                                    api_key=settings.api_key.get_secret_value(),
+                                    timeout_seconds=settings.timeout_seconds,
+                                    max_response_bytes=settings.max_response_bytes)
     else:
         provider = OpenAICompatibleProvider(
             base_url=settings.base_url,

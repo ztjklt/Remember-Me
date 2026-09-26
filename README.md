@@ -6,7 +6,7 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`. The Product Owner has separately authorized the iOS voice-to-Person-Model slice of Phase 2 in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). Twin, Voice, cloud deployment, and multi-user accounts remain outside that slice.
 
-The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its local Mac stack uses Whisper and Qwen behind the existing Backend and AI Core adapters. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
+The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its current Mac stack uses local Whisper and DeepSeek V4 Flash behind the existing Backend and AI Core adapters. Audio remains local; transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
 
 | Phase | Status |
 | --- | --- |

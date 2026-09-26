@@ -137,13 +137,14 @@ SOURCE_TYPE_CHECK = _enum_check("source_type", SourceType)
 class JobState(StrEnum):
     """Lifecycle of one unit of processing work.
 
-    `queued` and `running` are the only live states; a lease that expires returns
-    a job to `queued` rather than leaving it stuck, which is how a worker that
-    dies mid-stage is recovered (ADR-0001 D8).
+    `queued` and `running` are worker-active states; `waiting` pauses iOS work
+    until the capturing Actor reviews STT output. An expired lease returns a job
+    to `queued` rather than leaving it stuck (ADR-0001 D8).
     """
 
     QUEUED = "queued"
     RUNNING = "running"
+    WAITING = "waiting"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
 
@@ -288,6 +289,10 @@ class Episode(Base):
     trace_id: Mapped[str] = mapped_column(String(64), nullable=False)
 
     transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Preserve machine output when the Subject confirms or edits the transcript.
+    stt_transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transcript_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    transcript_reviewed_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     stt_backend: Mapped[str | None] = mapped_column(String(32), nullable=True)
     stt_model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     model_version: Mapped[str | None] = mapped_column(String(64), nullable=True)

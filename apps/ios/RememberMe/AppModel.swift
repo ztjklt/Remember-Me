@@ -25,6 +25,8 @@ final class AppModel: ObservableObject {
     @Published var draft: RecordingDraft?
     @Published var episodeID: String?
     @Published var processingStatus = ""
+    @Published var transcriptDraft = ""
+    @Published var isTranscriptReviewReady = false
     @Published var errorMessage: String?
     @Published var isBusy = false
     @Published var isRecording = false
@@ -101,6 +103,8 @@ final class AppModel: ObservableObject {
 
     func startRecording(questionID: String? = nil) async {
         errorMessage = nil
+        transcriptDraft = ""
+        isTranscriptReviewReady = false
         let granted = await withCheckedContinuation { continuation in
             AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
         }
@@ -232,12 +236,21 @@ final class AppModel: ObservableObject {
                     UserDefaults.standard.removeObject(forKey: "pending-episode")
                     draft = nil
                     self.episodeID = nil
+                    isTranscriptReviewReady = false
+                    transcriptDraft = ""
                     await refresh()
                     return
                 }
                 if status.status == "failed" {
                     processingStatus = "failed"
                     errorMessage = "处理失败：\(status.error_message ?? status.error_code ?? "请稍后重试")。原录音仍保存在手机和本机服务里。"
+                    return
+                }
+                let review = try await client.transcriptReview(episodeID)
+                if review.state == "reviewing", let text = review.transcript {
+                    if !isTranscriptReviewReady { transcriptDraft = text }
+                    isTranscriptReviewReady = true
+                    processingStatus = "请核对转写文字"
                     return
                 }
             } catch {
@@ -247,6 +260,24 @@ final class AppModel: ObservableObject {
             try? await Task.sleep(for: .seconds(2))
         }
         errorMessage = "处理时间较长。录音已保存，可稍后回来查看。"
+    }
+
+    func submitTranscript() async {
+        guard let episodeID, let client else { return }
+        let text = transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            errorMessage = "转写文字不能为空。请修改后再确认。"
+            return
+        }
+        isBusy = true
+        errorMessage = nil
+        defer { isBusy = false }
+        do {
+            try await client.confirmTranscript(episodeID, transcript: text)
+            isTranscriptReviewReady = false
+            processingStatus = "正在提取记忆"
+            await pollEpisode()
+        } catch { errorMessage = "文字还没有确认，录音仍在手机和 Mac 上。\n\(error.localizedDescription)" }
     }
 
     func correct(_ memory: MemoryRecord, to content: String) async {

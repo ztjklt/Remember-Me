@@ -32,7 +32,7 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>连接你自己的 Mac，在本机处理录音与记忆。</string>
+	<string>连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>录下你的原话，保存为你自己的记忆。</string>
 	<key>UIRequiresFullScreen</key>

@@ -68,6 +68,9 @@ class MemoryExtractor:
             schema_version=self.schema_version,
         )
         raw_output = self.provider.generate(request)
+        response_model_version = getattr(self.provider, "response_model_version", None)
+        if callable(response_model_version):
+            model_version = response_model_version(raw_output)
         try:
             output = AICoreOutput.model_validate(raw_output)
         except ValidationError as exc:

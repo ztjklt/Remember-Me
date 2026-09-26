@@ -69,6 +69,66 @@ def locate_quote(transcript: str, quote: str) -> tuple[int, int] | None:
     return positions[index], positions[index + len(target) - 1] + 1
 
 
+def grounded_result(raw: object, request: ModelRequest, *, model_version: str | None = None) -> dict:
+    """Turn compact model suggestions into records with program-proven evidence."""
+    if not isinstance(raw, dict) or not isinstance(raw.get("memories"), list):
+        raise AIOutputInvalid("Model returned no memories array")
+
+    version = model_version or request.model_version
+    transcript = request.payload.transcript
+    result: dict = {"memory_items": [], "graph_updates": [], "persona_updates": [],
+                    "evidence": [], "model_version": version}
+    seen: set[tuple[str, str]] = set()
+    for candidate in raw["memories"][:24]:
+        if not isinstance(candidate, dict):
+            continue
+        quote = candidate.get("quote")
+        statement = candidate.get("statement")
+        domain = candidate.get("domain")
+        memory_type = candidate.get("memory_type")
+        confidence = candidate.get("confidence")
+        if (not isinstance(quote, str) or not quote.strip() or
+            not isinstance(statement, str) or not statement.strip() or
+            domain not in DOMAINS or memory_type not in TYPES or
+            not isinstance(confidence, (float, int)) or isinstance(confidence, bool) or
+            not 0 <= confidence <= 1 or (quote, statement) in seen):
+            continue
+        span = locate_quote(transcript, quote)
+        if span is None:
+            continue  # A model cannot establish evidence by inventing its position.
+        seen.add((quote, statement))
+        start, end = span
+        excerpt = transcript[start:end]
+        evidence_id = "ev_" + uuid4().hex[:16]
+        result["evidence"].append({
+            "evidence_id": evidence_id, "source_type": "SUBJECT",
+            "source_ref": f"episode:{request.payload.episode_id}#span:{start}-{end}",
+            "excerpt": excerpt, "span_start": start, "span_end": end,
+            "confidence": float(confidence),
+        })
+        result["memory_items"].append({
+            "memory_type": memory_type, "content": statement, "source_type": "AI_INFERENCE",
+            "evidence_ids": [evidence_id], "confidence": float(confidence),
+            "model_version": version, "prompt_version": request.prompt_version,
+            "schema_version": request.schema_version, "metadata": {"domain": domain},
+        })
+        result["persona_updates"].append({
+            "trait_id": "trait_" + uuid4().hex[:16], "domain": domain,
+            "statement": statement, "context": excerpt,
+            "confidence": float(confidence), "source_type": "AI_INFERENCE",
+            "evidence_ids": [evidence_id], "counter_evidence_ids": [],
+            "status": "active", "model_version": version,
+        })
+        if memory_type in {"EVENT", "PERSON", "RELATIONSHIP"}:
+            result["graph_updates"].append({
+                "fact_id": "fact_" + uuid4().hex[:16],
+                "subject_id": request.payload.subject_id, "kind": memory_type,
+                "content": statement, "evidence_ids": [evidence_id],
+                "model_version": version,
+            })
+    return result
+
+
 class OllamaProvider:
     def __init__(self, *, base_url: str, timeout_seconds: float,
                  max_response_bytes: int = 1_048_576,
@@ -124,58 +184,4 @@ class OllamaProvider:
         except (httpx.HTTPStatusError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise AIOutputInvalid("Local model returned invalid output") from exc
 
-        if not isinstance(raw, dict) or not isinstance(raw.get("memories"), list):
-            raise AIOutputInvalid("Local model returned no memories array")
-
-        transcript = request.payload.transcript
-        result: dict = {"memory_items": [], "graph_updates": [], "persona_updates": [],
-                        "evidence": [], "model_version": request.model_version}
-        seen: set[tuple[str, str]] = set()
-        for candidate in raw["memories"][:24]:
-            if not isinstance(candidate, dict):
-                continue
-            quote = candidate.get("quote")
-            statement = candidate.get("statement")
-            domain = candidate.get("domain")
-            memory_type = candidate.get("memory_type")
-            confidence = candidate.get("confidence")
-            if (not isinstance(quote, str) or not quote.strip() or
-                not isinstance(statement, str) or not statement.strip() or
-                domain not in DOMAINS or memory_type not in TYPES or
-                not isinstance(confidence, (float, int)) or isinstance(confidence, bool) or
-                not 0 <= confidence <= 1 or (quote, statement) in seen):
-                continue
-            span = locate_quote(transcript, quote)
-            if span is None:
-                continue  # A model cannot establish evidence by inventing its position.
-            seen.add((quote, statement))
-            start, end = span
-            excerpt = transcript[start:end]
-            evidence_id = "ev_" + uuid4().hex[:16]
-            result["evidence"].append({
-                "evidence_id": evidence_id, "source_type": "SUBJECT",
-                "source_ref": f"episode:{request.payload.episode_id}#span:{start}-{end}",
-                "excerpt": excerpt, "span_start": start, "span_end": end,
-                "confidence": float(confidence),
-            })
-            result["memory_items"].append({
-                "memory_type": memory_type, "content": statement, "source_type": "AI_INFERENCE",
-                "evidence_ids": [evidence_id], "confidence": float(confidence),
-                "model_version": request.model_version, "prompt_version": request.prompt_version,
-                "schema_version": request.schema_version, "metadata": {"domain": domain},
-            })
-            result["persona_updates"].append({
-                "trait_id": "trait_" + uuid4().hex[:16], "domain": domain,
-                "statement": statement, "context": excerpt,
-                "confidence": float(confidence), "source_type": "AI_INFERENCE",
-                "evidence_ids": [evidence_id], "counter_evidence_ids": [],
-                "status": "active", "model_version": request.model_version,
-            })
-            if memory_type in {"EVENT", "PERSON", "RELATIONSHIP"}:
-                result["graph_updates"].append({
-                    "fact_id": "fact_" + uuid4().hex[:16],
-                    "subject_id": request.payload.subject_id, "kind": memory_type,
-                    "content": statement, "evidence_ids": [evidence_id],
-                    "model_version": request.model_version,
-                })
-        return result
+        return grounded_result(raw, request)

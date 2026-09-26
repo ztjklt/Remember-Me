@@ -382,6 +382,7 @@ class ProcessingWorker:
             )
 
         episode.transcript = transcript.text
+        episode.stt_transcript = transcript.text
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
 

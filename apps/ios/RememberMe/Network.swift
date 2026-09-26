@@ -24,6 +24,11 @@ struct Processing: Decodable {
     let error_code: String?
     let error_message: String?
 }
+struct TranscriptReview: Decodable {
+    let state: String
+    let transcript: String?
+    let stt_model_version: String?
+}
 struct EvidenceRecord: Decodable, Identifiable {
     let evidence_id: String
     let excerpt: String?
@@ -177,6 +182,15 @@ final class APIClient: @unchecked Sendable {
     }
     func status(_ episodeID: String) async throws -> Processing {
         try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)"))
+    }
+    func transcriptReview(_ episodeID: String) async throws -> TranscriptReview {
+        try JSONDecoder().decode(TranscriptReview.self, from: await request(
+            "/api/v1/episodes/\(episodeID)/transcript-review"))
+    }
+    func confirmTranscript(_ episodeID: String, transcript: String) async throws {
+        let body = try JSONSerialization.data(withJSONObject: ["transcript": transcript])
+        _ = try await request("/api/v1/episodes/\(episodeID)/transcript-review",
+                              method: "PATCH", body: body, contentType: "application/json")
     }
     func retry(_ episodeID: String) async throws {
         _ = try await request("/api/v1/episodes/\(episodeID)/retry", method: "POST")

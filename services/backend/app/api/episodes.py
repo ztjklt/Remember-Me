@@ -26,10 +26,11 @@ contract's test asserts the job id never leaks.
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -72,6 +73,16 @@ from ..storage.base import ObjectStore, checksum_of
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/episodes", tags=["episode"])
+
+
+class TranscriptReview(BaseModel):
+    state: Literal["transcribing", "reviewing", "submitted", "not_required"]
+    transcript: str | None = None
+    stt_model_version: str | None = None
+
+
+class ConfirmTranscript(BaseModel):
+    transcript: str = Field(min_length=1, max_length=100_000)
 
 # Read the upload in bounded pieces so a body larger than the limit is refused
 # while it is being read rather than after it is all in memory.
@@ -373,6 +384,77 @@ def read_status(
         error_code=episode.error_code,
         error_message=episode.error_message,
     )
+
+
+@router.get("/{episode_id}/transcript-review", response_model=TranscriptReview)
+def read_transcript_review(
+    episode_id: str,
+    response: Response,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> TranscriptReview:
+    """Expose STT text only to the capturing Actor while their iOS job waits."""
+    response.headers["Cache-Control"] = "private, no-store"
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    job = JobRepository(session).for_episode(episode_id)
+    if episode.source != str(CaptureSource.IOS_MIC):
+        state = "not_required"
+    elif job is not None and job.state == str(JobState.WAITING):
+        state = "reviewing"
+    elif episode.transcript_reviewed_at is not None:
+        state = "submitted"
+    elif episode.status == str(EpisodeStatus.READY):
+        state = "not_required"
+    else:
+        state = "transcribing"
+    return TranscriptReview(
+        state=state,
+        transcript=episode.transcript if state == "reviewing" else None,
+        stt_model_version=episode.stt_model_version,
+    )
+
+
+@router.patch("/{episode_id}/transcript-review", response_model=ProcessingStatus,
+              response_model_exclude_none=True)
+def confirm_transcript(
+    episode_id: str,
+    payload: ConfirmTranscript,
+    actor: Actor = Depends(current_actor),
+    session: Session = Depends(get_session),
+) -> ProcessingStatus:
+    """Commit the subject's text before the extract job can reach DeepSeek."""
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    text = payload.transcript.strip()
+    if not text:
+        raise RequestInvalid("The confirmed transcript cannot be blank")
+    if episode.source != str(CaptureSource.IOS_MIC):
+        raise RequestInvalid("Transcript review is available only for iOS capture")
+    if episode.transcript_reviewed_at is not None:
+        if episode.transcript == text:
+            return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
+                                    trace_id=episode.trace_id or None)
+        raise RequestInvalid("This Episode's transcript was already confirmed")
+
+    job = JobRepository(session).for_episode(episode_id)
+    if (job is None or job.state != str(JobState.WAITING)
+            or job.stage != str(JobStage.EXTRACT) or not episode.transcript
+            or not episode.stt_transcript):
+        raise RequestInvalid("The transcript is not ready for review")
+    now = utcnow()
+    claimed = session.execute(
+        update(type(job)).where(type(job).job_id == job.job_id,
+                               type(job).state == str(JobState.WAITING))
+        .values(state=str(JobState.QUEUED), available_at=now, updated_at=now)
+    )
+    if claimed.rowcount != 1:
+        raise RequestInvalid("The transcript was already confirmed")
+    episode.transcript = text
+    episode.transcript_reviewed_at = now
+    episode.transcript_reviewed_by = actor.actor_id
+    episode.status = str(EpisodeStatus.EXTRACTING)
+    session.commit()
+    return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus.EXTRACTING,
+                            trace_id=episode.trace_id or None)
 
 
 @router.get(

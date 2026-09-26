@@ -90,7 +90,7 @@ private struct PairingView: View {
                     .font(.system(size: 36, weight: .regular, design: .serif))
                     .foregroundStyle(Ink.text)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("录音只在你的手机与本机 Mac 之间传送。先用一次性配对码连接，再由你决定什么时候开始录。")
+                Text("原音只在你的手机与本机 Mac 之间传送；Mac 转写后会把文字发给 DeepSeek 提取记忆。先用一次性配对码连接，再由你决定什么时候开始录。")
                     .font(.system(size: 15))
                     .foregroundStyle(Ink.muted)
                     .lineSpacing(5)
@@ -358,6 +358,30 @@ private struct RecorderView: View {
                                 .buttonStyle(.bordered)
                             ActionButton(title: "完成录音", icon: "stop.fill") { model.finishRecording() }
                         }
+                    } else if model.isTranscriptReviewReady {
+                        VStack(alignment: .leading, spacing: 13) {
+                            Eyebrow(text: "先核对，再生成记忆")
+                            Text("这是本机识别出的文字。错字可以直接修改；确认后才会发送给 DeepSeek 提取记忆。")
+                                .font(.subheadline)
+                                .foregroundStyle(Ink.muted)
+                            if model.draft != nil {
+                                Button { model.togglePlayback() } label: {
+                                    Label(model.isPlaying ? "停止播放" : "边听原音边核对",
+                                          systemImage: model.isPlaying ? "stop.circle" : "play.circle")
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                            TextEditor(text: $model.transcriptDraft)
+                                .frame(minHeight: 170)
+                                .padding(9)
+                                .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+                                .accessibilityLabel("核对并修改转写文字")
+                            ActionButton(title: model.isBusy ? "正在提交…" : "确认文字并生成记忆",
+                                         icon: "checkmark.circle") {
+                                Task { await model.submitTranscript() }
+                            }
+                            .disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
                     } else if model.draft != nil {
                         VStack(spacing: 12) {
                             Button { model.togglePlayback() } label: {
@@ -365,7 +389,7 @@ private struct RecorderView: View {
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.bordered)
-                            ActionButton(title: model.isBusy ? "正在提交…" : "保存并生成记忆", icon: "arrow.up.heart") {
+                            ActionButton(title: model.isBusy ? "正在提交…" : "保存并转写", icon: "arrow.up.heart") {
                                 Task { await model.sendRecording() }
                             }
                             .disabled(model.isBusy)
@@ -380,7 +404,7 @@ private struct RecorderView: View {
                             .font(.subheadline)
                             .foregroundStyle(Ink.olive)
                     }
-                    Text("原音先保存在这台 iPhone。网络中断时可以重试，同一段录音不会重复创建记录。")
+                    Text("原音先保存在这台 iPhone。上传后请核对转写文字，再生成记忆；网络中断时可以重试，同一段录音不会重复创建记录。")
                         .font(.footnote)
                         .foregroundStyle(Ink.muted)
                 }
@@ -395,13 +419,16 @@ private struct RecorderView: View {
                     dismiss()
                 }
             } }
+            .task {
+                if model.episodeID != nil { await model.pollEpisode() }
+            }
             .confirmationDialog("开始录下这段声音？", isPresented: $showConsent) {
                 Button("同意并开始录音") {
                     Task { await model.startRecording(questionID: question?.id) }
                 }
                 Button("取消", role: .cancel) { }
             } message: {
-                Text("原音会先留在这台 iPhone，提交后只传给你配对的本机 Mac。你可以暂停或结束录音。")
+                Text("原音会先留在这台 iPhone，提交后传给你配对的本机 Mac；Mac 转写后会把文字发给 DeepSeek 提取记忆。你可以暂停或结束录音。")
             }
         }
     }

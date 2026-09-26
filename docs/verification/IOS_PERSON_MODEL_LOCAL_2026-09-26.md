@@ -1,6 +1,6 @@
 # iOS 语音到 Person Model：本机验证记录（2026-09-26）
 
-本记录区分自动检查、Mac 本机真实模型联调、iOS 构建，以及尚未完成的本人真机录音。联调音频由 macOS 中文系统语音生成，不代表真人在 iPhone 上录音。
+本记录区分自动检查、Mac 合成语音联调和本人 iPhone 真机录音。合成样例由 macOS 中文系统语音生成，不代表真人录音。2026-09-27 起，AI Core 切换为 DeepSeek V4 Flash；转写文本会发送到 DeepSeek，原音与数据库仍保存在 Mac 本机。
 
 ## 已运行
 
@@ -8,9 +8,9 @@
 | --- | --- |
 | `packages/contracts`: `npm test` | v0.1 与 v0.2 共 10 项通过；`IOS_MIC`、七领域快照、问题及类型化证据通过 JSON Schema 校验 |
 | `services/backend`: `uv run pytest -q` | 全部通过；覆盖迁移、Subject 隔离、一次性 HTTPS 配对、IOS_MIC 上传幂等、失败 Episode 原音保留与重试、矛盾并存、纠错/删除重算、录音文件权限 |
-| `services/ai-core`: `uv run pytest -q` | 全部通过；覆盖中文原话定位、无法定位时丢弃、Ollama 实际模型 digest、旧版提取边界 |
+| `services/ai-core`: `uv run pytest -q` | 128 项通过；覆盖中文原话定位、无法定位时丢弃、Ollama 实际模型 digest、DeepSeek JSON 输出及禁用思考、返回模型版本、密钥目标限制 |
 | iOS 模拟器与 `generic/platform=iOS` 无签名构建 | 通过；配对页已在模拟器启动并截图检查 |
-| iPhone 15 Pro Max 签名构建 | 未完成；Xcode Apple Accounts 无法读取开发团队（登录错误 -1200），新 bundle ID 无配置文件。设备上已有两个旧版 App，未覆盖。 |
+| iPhone 15 Pro Max 签名构建 | 2026-09-27 通过；Apple Accounts 连接恢复后，真机签名构建成功。 |
 
 ## Mac 本机真实模型联调
 
@@ -22,6 +22,19 @@
 
 以上样例已归档到本机 `~/.cache/remember-me/live/synthetic-probe.db` 和 `synthetic-probe-audio/`，临时配对凭证已删除。设备准备使用的 `remember.db` 是新建的干净数据库：1 个 Subject、0 个 Episode；数据库权限为 `0600`，音频目录为 `0700`。
 
-## 尚需一次本人真机记录
+## 2026-09-27 真机安装与配对
 
-在新 bundle ID 签名配置可用后，将 App 安装到已配对的 iPhone 15 Pro Max。本人在设备上录一段中文自由叙述，再回答 App 生成的一条问题，核对两段原音/转写、真实 Memory、七领域模型更新；然后在 iOS 上纠正或删除一条 Memory，并看 trait 与问题重算。另检查拒绝麦克风、断网与模型超时的可恢复界面。记录设备 iOS 版本、两个 Episode ID 和实测结果即可，不设重复交叉验收清单。
+新 bundle ID 的安装被免费 Personal Team 的每台设备 3 个 App 名额限制拒绝。经用户选择，将同一新版构建签为现有 `me.remember.ios.qa`，作为 QA App 更新安装；正式版 `me.remember.ios` 和其他 App 未改动。更新前将 QA 数据容器备份到 Mac 私有目录；旧 QA 的 Documents 目录没有录音文件。更新包的签名和 embedded profile 的 App ID 均已核对，安装与启动成功。
+
+Mac 切换到新局域网地址后，重新签发本机 TLS 证书，启动 loopback STT、AI Core、HTTPS Backend 和 worker。iPhone 上的一次性 HTTPS 配对成功，服务端已建立设备凭证。配对时数据库为 0 Episode，后续本人真机录音结果见下节。
+
+## 2026-09-27 本人真机录音进展
+
+1. iPhone 15 Pro Max 自由录音上传为 `ep_185a8be998e24832`，时长 16.6 秒，保留原始音频，由 `whisper-ggml-base-60ed5bc3dd14` 转写为中文。最初本机 Qwen 提取为 0 Memory；切换 DeepSeek 后，先备份数据库，再仅对这条尚无 Memory、证据或纠错审计的 Episode 重新排队执行提取和建模。原始 Episode ID、音频和转写未变。最终状态 `ready`，`deepseek-flash` 提取出 3 条 Memory、3 条逐字可定位的证据，Person Model 新增 3 条 `IDENTITY` trait。
+2. 第二段真机录音上传为 `ep_76d717f59e0b4058`，时长 9.4 秒，状态 `ready`，同一 Whisper 与 DeepSeek 模型。新增 1 条带证据的 Memory 和 1 条 `EPISODIC_MEMORY` trait，Person Model 到 v3。该 Episode 的元数据未含追问 ID，因此暂记为第二段自由录音；尚不能记为“回答 App 追问”。当前生成了下一条 `RELATIONSHIPS` 追问。
+
+密钥只从 Mac 本机私有环境文件加载，未写入仓库、App 或本记录。DeepSeek 返回模型标识为 `deepseek-flash`。真机资料不复制到仓库。
+
+## 尚需完成的真机步骤
+
+在 App 中点生成追问的“录下回答”并保存，确认上传元数据含对应问题 ID、问题状态变为 `answered` 且模型更新。然后在 iOS 上纠正或删除一条 Memory，确认 trait 与问题重算。另检查拒绝麦克风、断网与模型超时的可恢复界面，并记录设备 iOS 版本及观察结果。不设重复交叉验收清单。
