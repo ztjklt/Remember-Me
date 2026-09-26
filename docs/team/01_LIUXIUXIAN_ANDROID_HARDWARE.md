@@ -1,6 +1,6 @@
 # 刘修贤 Android and Hardware Task Brief
 
-You are the sole Owner of this module in the Remember Me team. First read the root PRD summary, TEAM OWNERSHIP, the Team Development Guide, CONTRACTS, and existing code. Do not rewrite another member's module or change a cross-module Contract without approval. Complete your Phase 1 minimum loop first, verify it locally, then submit it through a feature branch and Pull Request.
+Historical task brief for the original Android assignment. It explains existing Issues and PRs but does not create a standing module owner under the [current delivery model](00_TEAM_OWNERSHIP.md). New delegated work is scoped by its Issue. Shared Contract changes still require a proposal and Product / Integration Owner approval.
 
 ## Goal
 

@@ -1,12 +1,12 @@
 # Remember Me Engineering Roadmap
 
-Execution baseline: [Team Development Guide v1.0](../team/Remember_Me_Team_Development_Guide_v1.0.docx). Product goals: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx). This file records phase status, exit gates, and ownership so the whole team reads one roadmap instead of inferring status from individual briefs.
+Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Product goals: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx). This file records phase status and exit gates; staffing is assigned per delegated Issue, not by phase or service.
 
 ## Phase status
 
 | Phase | Status | Product goal | Exit gate |
 | --- | --- | --- | --- |
-| Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → Android shows a real Memory |
+| Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → the same mobile client shows a real Memory |
 | Phase 2 — Core Twin | **PLANNED / NEXT** | Move from "it records" to "it is starting to understand me" | Person Model + Evidence Twin + Original Router demonstrable |
 | Phase 3 — Calibration + Voice | **PLANNED** | Verify fidelity and create a "sounds like me" perception | Calibration feeds the model back + Voice Seed/Clone/Twin Voice |
 | Phase 4 — Hardware + Legacy | **BACKLOG / CONDITIONAL** | Prove the recording device's value and complete the entrustment narrative | Hardware Capture + Handover/Grant/Legacy core path |
@@ -15,16 +15,11 @@ Reading Phase 2–4 does not authorize starting them. Phase 1 Golden Path is the
 
 ## Phase 1 — Golden Path (COMMITTED)
 
-The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`.
+The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`.
 
-| Owner | Committed outcome |
-| --- | --- |
-| 刘修贤 `@shuziyuxingxing-stack` | Mic permission, real recording, pause/stop, elapsed time, audio-file persistence, metadata, upload with progress/retry, Episode creation, real Processing state, failure states |
-| 康欣 `@centraler` | Schema-validated Memory Extractor over Episode/Transcript, provenance fields preserved, deterministic fixtures, callable AI processing interface |
-| 王昊宇 `@qingtian-4` | Upload API, Episode persistence, object storage, STT plumbing, async job + status, auth/subject/consent minimum, Android-readable result API |
-| 张天霁 `@ztjklt` | Contract freeze, Golden Path integration on `develop`, Phase Gate acceptance, scope control |
+Android and iOS are the two active client tracks. 刘修贤 leads Android; 张天霁 leads iOS. 康欣 and 王昊宇 have no standing queue and help only through an explicitly assigned small Issue when available. The shared path is built in runnable slices: phone recording and local file; upload and durable Episode; STT and structured Memory extraction; status/result readback on the same client. Backend, AI Core, and Voice name logical capabilities and existing code areas, not permanent people or mandatory separate deployments. Neither client waits for the other to finish an intermediate slice.
 
-Phase 1 is not complete until a real device records, uploads, and reads back a real extracted Memory — not a Mock, not a stubbed response.
+Phase 1 is not complete until one real device records, uploads, and reads back a real extracted Memory — not a Mock or stubbed response. The other client track does not repeat this gate merely to release the first demo.
 
 ## Phase 2 — Core Twin (PLANNED / NEXT)
 
