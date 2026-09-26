@@ -1,6 +1,8 @@
 # 中文十年口述样例：合成音频到 AI Core 的阶段性证据（2026-09-25）
 
-状态：**供 #56 的 Phase 1 质量评估准备使用；未通过真实 Provider、真实录音或 Phase 1 Gate 验收。**本目录不是冻结的 `fixtures/phase1-v1`，不应被当作金标准或默认进入生产回归集。
+> 2026-09-26 状态：按[当前交付模式](../../../../docs/team/00_TEAM_OWNERSHIP.md)，本包作为既有 PR #69 的可复用材料保留，不是当前指派给康欣的任务。旧队列 #56 已关闭（`NOT_PLANNED`）；#2/#4/#5/#64/#66 已暂停并取消指派。两条主线若需要本包、转录校订或质量评估，应新建并明确指派一个小 Issue，写清要复用的代码/分支、输出和完成检查。下文的 2026-09-25 试跑结果及人员交接仅为历史证据；CI/他人审核不再是强制合并门槛，但素材仍不是产品验收证明。
+
+2026-09-25 试跑状态：**当时为 #56 准备 Phase 1 质量评估；未通过真实 Provider、真实录音或 Phase 1 Gate 验收。**本目录不是冻结的 `fixtures/phase1-v1`，不应被当作金标准或默认进入生产回归集。
 
 ## 输入来源与目录
 
@@ -52,7 +54,7 @@ $result | Select-Object model_version, memory_items, evidence
 - 优先听读 E03（母亲的话）、E04（阿琴与林岚的不同喜好）、E09（未核实的旅行日期）、E11（第三方评价）、E12（不应推断的未来安排）。E02/E08 的跨 Episode 变化是后续 Person Model 评估，不因本 PR 被视为 Phase 1 已实现。
 - 人工校订时保留本目录的原始 ASR 不变，另存带版本的最终输入和修订理由；团队应逐段听音频核对姓名、年份、否定、引述和漏读，而不是只拿原稿覆盖识别结果。
 
-## 交接边界与阻塞
+## 2026-09-25 交接边界与阻塞（历史记录，当前暂停）
 
 1. **AI Core Owner `@centraler`**：完成转录听读/版本记录；待 #66 交付可用真实 Provider 配置及脱敏运行证据后，使用现有 adapter 测 #2/#5 的六类 Memory、错误拒绝、Episode/span、`source_type`、confidence、model/prompt/schema 版本，并把失败案例写入独立 PR。AI Core 不负责 Backend 重试。
 2. **Integration Owner `@ztjklt`**：#66 认证真实 OpenAI-compatible `/process` 路径所需模型端点；#64 认证符合 Backend raw-audio POST 协议的真实 STT 服务。#4 已有合并的 #45/#51 与契约测试证据，仍需 Product/Integration Owner 确认后关闭。2026-09-25 的本地 Ollama 完整 `/process` 尝试返回 504，见 #56 评论；它不是可用 Provider 的证明。
