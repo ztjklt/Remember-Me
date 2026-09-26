@@ -1,7 +1,7 @@
 """Where an AI Core result becomes rows.
 
 The evidence and memory items of one Episode are replaced rather than appended:
-the model stage is the only writer, an Episode has exactly one result, and a
+the extract stage is their only pipeline writer, an Episode has exactly one result, and a
 retried stage that wrote rows before failing would otherwise collide on primary
 key or leave two versions of the same result behind.
 """
@@ -74,7 +74,7 @@ class MemoryRepository:
         return list(
             self.session.scalars(
                 select(MemoryItem)
-                .where(MemoryItem.episode_id == episode_id)
+                .where(MemoryItem.episode_id == episode_id, MemoryItem.deleted_at.is_(None))
                 .order_by(MemoryItem.ordinal)
             )
         )

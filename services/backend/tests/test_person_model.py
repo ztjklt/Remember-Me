@@ -58,6 +58,7 @@ def test_second_episode_correction_delete_and_subject_isolation(app, client, ses
     assert removed.status_code == 200
     assert removed.json()["model_version"] == 4
     assert len(client.get(f"/api/v1/subjects/{seeded.subject_id}/memories", headers=headers).json()["items"]) == 1
+    assert client.get(f"/api/v1/episodes/{first['episode_id']}/result", headers=headers).json()["memory_items"] == []
 
 
 def test_conflicting_memories_coexist_and_prompt_for_clarification(app, client, session):
