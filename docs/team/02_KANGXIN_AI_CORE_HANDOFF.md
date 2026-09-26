@@ -1,5 +1,7 @@
 # AI Core Phase 1 交接方案
 
+> 2026-09-26 执行规则：本文的固定 Owner、旧队列和验收交接安排是历史记录，已由[两条客户端主线与按需小 Issue 的交付模式](00_TEAM_OWNERSHIP.md)取代。张天霁主推 iOS，刘修贤主推 Android；康欣和王昊宇仅承接新建且明确指派的小 Issue，不继续执行关闭的 #56 全阶段队列。已有实现、音频素材与 PR #69 保留供两条主线按需复用；保留不等于自动合并或重新激活旧任务。CI/他人审查不是强制合并门槛，共享 Contract 和真实产品验收边界仍需遵守。
+
 > 2026-09-25 阶段更新：新增[中文合成音频→原始 ASR→AI Core fixture 的评估包](../../services/ai-core/evaluations/zh-life-review-v1/README.md)，用于 #56 的真实输入准备。12 段音频已跑本地识别，原始文本进入 `/process`；真实 Provider、获授权真人录音和真机 Golden Path **仍未验收**。本更新不改下面的 Phase 1 责任边界，也不启动 Phase 2–4。
 
 > Owner: 康欣（`centraler`）
