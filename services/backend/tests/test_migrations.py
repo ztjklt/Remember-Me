@@ -13,6 +13,8 @@ EXPECTED_TABLES = {
     "jobs",
     "evidence",
     "memory_items",
+    "person_traits", "graph_facts", "capture_questions", "model_revisions",
+    "memory_audit", "pairing_codes", "device_credentials",
 }
 
 

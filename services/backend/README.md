@@ -1,6 +1,8 @@
 # Backend Service
 
-Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
+The shared Backend supports the Android Golden Path and the Product Owner's approved iOS voice-to-Person-Model slice. Current ownership follows the [two-client delivery model](../../docs/team/00_TEAM_OWNERSHIP.md); the old [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md) records the original Phase 1 foundation.
+
+The iOS extension adds `IOS_MIC`, a loopback Whisper sidecar, one-time HTTPS pairing, seven-domain derived traits and graph facts, post-recording questions, and audited correction/deletion. See the [iOS local runbook](../../apps/ios/README.md) for the complete four-process setup. Existing Android requests remain valid.
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.
 
@@ -16,17 +18,19 @@ Inputs and outputs must conform to [`packages/contracts`](../../packages/contrac
 | `app/logging_config.py` | JSON log formatter and the trace-id context |
 | `app/errors.py` | Backend-owned error codes, and whether the work is worth retrying |
 | `app/db.py` | Engine and session factory |
-| `app/models.py` | `Subject`, `Actor`, `Consent`, `Episode`, `Job`, `Evidence`, `MemoryItem` |
+| `app/models.py` | `Subject`, `Actor`, `Consent`, `Episode`, `Job`, `Evidence`, `MemoryItem`, Person Model and pairing records |
 | `app/contracts.py` | The Phase 1 contract shapes as Pydantic models |
 | `app/repositories/` | All structured-data access |
 | `app/security.py`, `app/tokens.py` | Token-to-Actor resolution |
 | `app/storage/` | `ObjectStore` boundary: local filesystem, in-memory, and S3-compatible |
 | `app/stt.py` | Speech-to-text boundary: the deterministic fake and the HTTP transport |
+| `app/local_stt.py` | Loopback FFmpeg + multilingual Whisper HTTP sidecar |
 | `app/ai_core.py` | AI Core boundary: the fake and the HTTP transport |
 | `app/providers.py` | The one rule both provider boundaries share: where a fake may run |
 | `app/worker.py` | The processing worker: one stage per tick, under a renewable lease |
 | `app/api/` | HTTP surface |
 | `app/seed.py` | Local development seed |
+| `app/local_pair.py` | Issue a one-time HTTPS iPhone pairing code |
 | `docs/android-client.md` | Pointing the Android client at a running Backend: the reachable address, the seeded credential, the limits, and troubleshooting |
 | `migrations/` | Alembic environment and the migrations |
 | `tests/` | The local verification suite |

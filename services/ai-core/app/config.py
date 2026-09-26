@@ -29,7 +29,7 @@ class Settings(BaseSettings):
             "ENVIRONMENT",
         ),
     )
-    provider: Literal["fixture", "openai_compatible"] = Field(
+    provider: Literal["fixture", "openai_compatible", "ollama"] = Field(
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
@@ -96,6 +96,12 @@ class Settings(BaseSettings):
             self.model.startswith("fixture-ai-") or self.model_version.startswith("fixture-ai-")
         ):
             raise ValueError("real providers require explicit AI_MODEL and AI_MODEL_VERSION")
+        if self.provider == "ollama":
+            if self.model.startswith("fixture-ai-"):
+                raise ValueError("Ollama requires an explicit installed AI_MODEL")
+            parsed = urlsplit(self.base_url)
+            if parsed.hostname not in {"127.0.0.1", "localhost", "::1"} or parsed.path not in {"", "/"}:
+                raise ValueError("Ollama must listen on this Mac's loopback address")
         return self
 
 

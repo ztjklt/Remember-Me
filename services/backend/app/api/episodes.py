@@ -52,6 +52,9 @@ from ..models import (
     Episode,
     EpisodeStatus,
     as_utc,
+    JobState,
+    JobStage,
+    utcnow,
 )
 from ..repositories.consents import ConsentRepository
 from ..repositories.episodes import (
@@ -60,6 +63,7 @@ from ..repositories.episodes import (
     new_episode_id,
 )
 from ..repositories.jobs import JobRepository
+from ..repositories.jobs import STAGE_STATUS
 from ..repositories.memory import MemoryRepository
 from ..repositories.subjects import SubjectRepository
 from ..security import current_actor
@@ -415,3 +419,33 @@ def read_result(
         model_version=episode.model_version,
         trace_id=episode.trace_id or None,
     )
+
+
+@router.get("/{episode_id}/audio")
+def read_audio(episode_id: str, actor: Actor = Depends(current_actor),
+               store: ObjectStore = Depends(_object_store),
+               session: Session = Depends(get_session)) -> Response:
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    return Response(content=store.get(episode.audio_object_key),
+                    media_type=episode.audio_content_type,
+                    headers={"Cache-Control": "private, no-store"})
+
+
+@router.post("/{episode_id}/retry", response_model=ProcessingStatus, response_model_exclude_none=True)
+def retry_processing(episode_id: str, actor: Actor = Depends(current_actor),
+                     session: Session = Depends(get_session)) -> ProcessingStatus:
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    job = JobRepository(session).for_episode(episode_id)
+    if episode.status != str(EpisodeStatus.FAILED) or job is None or job.state != str(JobState.FAILED):
+        raise RequestInvalid("Only a failed Episode can be retried")
+    job.state = str(JobState.QUEUED)
+    job.attempts = 0
+    job.available_at = utcnow()
+    job.lease_owner = None
+    job.lease_expires_at = None
+    episode.status = str(STAGE_STATUS[JobStage(job.stage)])
+    episode.error_code = None
+    episode.error_message = None
+    session.commit()
+    return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
+                            trace_id=episode.trace_id or None)

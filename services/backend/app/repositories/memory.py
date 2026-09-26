@@ -59,6 +59,10 @@ class MemoryRepository:
             )
 
         episode.model_version = output.model_version
+        episode.model_proposals = {
+            "graph_updates": [item.model_dump(mode="json", exclude_none=True) for item in output.graph_updates],
+            "persona_updates": [item.model_dump(mode="json", exclude_none=True) for item in output.persona_updates],
+        }
 
     def clear_result(self, episode_id: str) -> None:
         self.session.execute(

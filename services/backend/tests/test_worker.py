@@ -167,7 +167,7 @@ def test_processing_runs_to_a_readable_result(client, worker, session, uploaded,
     assert item["source_type"] == "AI_INFERENCE"
     assert item["model_version"] == "fake-ai-v1"
     assert item["prompt_version"] == "fake-prompt-v1"
-    assert item["schema_version"] == "integration-contract-v0.1"
+    assert item["schema_version"] == "integration-contract-v0.2"
 
     # The evidence a memory rests on was stored, and the id resolves.
     evidence = session.scalars(

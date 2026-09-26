@@ -45,6 +45,7 @@ from .models import Episode, JobStage, JobState
 from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
+from .repositories.person_model import PersonModelRepository
 from .stt import SttProvider, build_stt_provider
 from .storage import build_object_store
 from .storage.base import ObjectStore
@@ -280,7 +281,7 @@ class ProcessingWorker:
                 elif stage is JobStage.EXTRACT:
                     self._extract(session, episode)
                 else:
-                    self._model(episode)
+                    self._model(session, episode)
 
                 if not jobs.complete_stage(job, self.owner, episode):
                     # The lease lapsed while the stage ran and another worker has
@@ -411,19 +412,22 @@ class ProcessingWorker:
         output = self.ai.process(payload)
         MemoryRepository(session).store_result(episode, output)
 
-    def _model(self, episode: Episode) -> None:
-        """The last stage: an Episode becomes ready only past this point.
+    def _model(self, session, episode: Episode) -> None:
+        """Apply verified Memory and AI proposals to the seven-domain model.
 
-        Thin in Phase 1 on purpose. The graph and persona updates this stage will
-        own are Phase 2 shapes and are not committed yet, so what it does now is
-        hold the boundary: `ready` is reachable only from a stage that requires a
-        stored result, which is why an Episode cannot be reported ready while its
-        memories are still missing.
+        A correction or deletion later uses the same rebuild routine, so derived
+        traits and questions can never outlive the Memory that supports them.
+        The stage and job transition commit in one transaction.
         """
         if episode.model_version is None:
             raise UnexpectedFailure(
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
+        metadata = episode.capture_metadata or {}
+        PersonModelRepository(session).rebuild(
+            episode.subject_id,
+            answered_question_id=metadata.get("question_id"),
+        )
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
         """Retry the stage or give up, in its own transaction.
