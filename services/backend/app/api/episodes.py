@@ -30,7 +30,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -49,6 +49,7 @@ from ..logging_config import trace_id_var
 from ..models import (
     Actor,
     CaptureSource,
+    CalibrationRun,
     ConsentScope,
     Episode,
     EpisodeStatus,
@@ -284,6 +285,23 @@ def create_episode(
             episode_id=existing.episode_id, upload_status="uploaded"
         )
 
+    calibration = None
+    calibration_id = (capture_metadata or {}).get("calibration_id")
+    if calibration_id is not None:
+        if not isinstance(calibration_id, str) or form.source != CaptureSource.IOS_MIC:
+            raise RequestInvalid("calibration_id requires an iOS recording")
+        calibration = session.scalar(select(CalibrationRun).where(
+            CalibrationRun.calibration_id == calibration_id,
+            CalibrationRun.subject_id == form.subject_id,
+            CalibrationRun.actor_id == actor.actor_id))
+        if (calibration is None or calibration.status != "awaiting_human"
+                or calibration.human_episode_id is not None):
+            raise RequestInvalid("calibration_id is not awaiting this Actor's answer")
+        from .calibration import _check_source
+        if not _check_source(session, calibration):
+            session.commit()
+            raise RequestInvalid("calibration source has changed")
+
     episode = Episode(
         episode_id=new_episode_id(),
         subject_id=form.subject_id,
@@ -324,6 +342,9 @@ def create_episode(
     # refers to yet, so all of it is inside the compensation.
     try:
         episodes.attach_audio(episode, stored, audio_ref=form.audio_ref)
+        session.flush()
+        if calibration is not None:
+            calibration.human_episode_id = episode.episode_id
         session.commit()
     except IntegrityError:
         # Two uploads with the same key raced. The unique index chose one; this

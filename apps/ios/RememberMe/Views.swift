@@ -320,7 +320,7 @@ private struct HomeView: View {
         }
         .background(Ink.paper.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showRecorder) { RecorderView(question: selectedQuestion) }
+        .sheet(isPresented: $showRecorder) { RecorderView(question: selectedQuestion, calibration: nil) }
         .refreshable { await model.refresh() }
     }
 }
@@ -329,13 +329,15 @@ private struct RecorderView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     let question: QuestionRecord?
+    let calibration: CalibrationRecord?
     @State private var showConsent = false
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Eyebrow(text: question == nil ? "自由录音" : "回答这个问题")
-                    Text(question?.text ?? "把此刻，\n留在这里。")
+                    Eyebrow(text: calibration != nil ? "本人校准回答" :
+                            question == nil ? "自由录音" : "回答这个问题")
+                    Text(calibration?.question ?? question?.text ?? "把此刻，\n留在这里。")
                         .font(.system(size: 32, design: .serif))
                         .foregroundStyle(Ink.text)
                         .fixedSize(horizontal: false, vertical: true)
@@ -426,7 +428,8 @@ private struct RecorderView: View {
             }
             .confirmationDialog("开始录下这段声音？", isPresented: $showConsent) {
                 Button("同意并开始录音") {
-                    Task { await model.startRecording(questionID: question?.id) }
+                    Task { await model.startRecording(questionID: question?.id,
+                                                     calibrationID: calibration?.id) }
                 }
                 Button("取消", role: .cancel) { }
             } message: {
@@ -499,6 +502,12 @@ private struct MemoriesView: View {
 
 private struct TwinView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var showCalibrationRecorder = false
+    private let dimensionNames = ["DECISION": "做决定", "REASONING": "考虑理由",
+                                  "VALUE_PRIORITY": "价值优先", "EMOTIONAL_REACTION": "情绪反应",
+                                  "EXPRESSION": "表达方式"]
+    private let alignmentNames = ["MATCH": "相近", "PARTIAL": "部分相近",
+                                  "DIFFERENT": "有差异", "NOT_OBSERVED": "尚未提及"]
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -511,7 +520,7 @@ private struct TwinView: View {
                 if model.cloudConsentID == nil {
                     VStack(alignment: .leading, spacing: 12) {
                         Eyebrow(text: "先决定资料如何使用")
-                        Text("提问时，问题和少量相关记忆文字会发送给 DeepSeek 生成回答。原始录音和声音样本不会发送。")
+                        Text("提问时，问题和少量相关记忆文字会发送给 DeepSeek；若你使用校准，核对后的本人回答文字和锁定的 Twin 回答也会发送去比较。原始录音和声音样本不会发送。")
                             .font(.subheadline).foregroundStyle(Ink.text)
                         ActionButton(title: "同意使用云端 Twin", icon: "checkmark.shield") {
                             Task { await model.enableCloudTwin() }
@@ -584,6 +593,67 @@ private struct TwinView: View {
                             .font(.caption2).foregroundStyle(Ink.muted)
                     }
                     .journalCard()
+                    if answer.response_type != "UNKNOWN" && !answer.stale &&
+                        model.calibrationRun?.twin_answer_id != answer.id {
+                        Text("校准会先锁定这条回答，再录下你的真实回答并核对文字；比较只使用确认后的文字。")
+                            .font(.footnote).foregroundStyle(Ink.muted)
+                        Button("用这条回答做一次校准") {
+                            Task { await model.startCalibration() }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+                if let run = model.calibrationRun {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Eyebrow(text: "TWIN 校准 · \(run.status)")
+                        Text(run.question)
+                            .font(.system(size: 22, design: .serif)).foregroundStyle(Ink.text)
+                        if run.status == "stale" {
+                            Text("原始证据或授权已有变化，请重新提问并锁定新回答。")
+                                .font(.footnote).foregroundStyle(Ink.coral)
+                        } else {
+                            Text("Twin 先回答并锁定：“\(run.locked_answer ?? "")”")
+                                .font(.subheadline).foregroundStyle(Ink.muted)
+                            if run.status == "awaiting_human" {
+                                if run.human_episode_id == nil {
+                                    ActionButton(title: "录下我真正的回答", icon: "mic") {
+                                        showCalibrationRecorder = true
+                                    }
+                                } else if model.episodes.first(where: { $0.id == run.human_episode_id })?.status == "ready" {
+                                    ActionButton(title: model.isBusy ? "正在比较…" : "比较 Twin 和我的回答",
+                                                 icon: "arrow.left.arrow.right") {
+                                        Task { await model.completeCalibration(run.id) }
+                                    }
+                                    .disabled(model.isBusy)
+                                } else {
+                                    Text("回答已保存。请核对转写并等待记忆处理完成；之后可重试比较。")
+                                        .font(.footnote).foregroundStyle(Ink.muted)
+                                }
+                            } else if run.status == "complete" {
+                                Text(run.summary ?? "校准完成")
+                                    .font(.subheadline).foregroundStyle(Ink.text)
+                                ForEach(run.dimensions) { dimension in
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("\(dimensionNames[dimension.dimension] ?? dimension.dimension) · \(alignmentNames[dimension.alignment] ?? dimension.alignment)")
+                                            .font(.footnote.weight(.semibold)).foregroundStyle(Ink.coral)
+                                        Text(dimension.note)
+                                            .font(.footnote).foregroundStyle(Ink.text)
+                                        if let excerpt = dimension.human_excerpt {
+                                            Text("本人原话：“\(excerpt)”")
+                                                .font(.footnote).foregroundStyle(Ink.muted)
+                                        }
+                                    }
+                                }
+                                if let next = run.suggested_question {
+                                    Button("继续追问：\(next)") { model.queryDraft = next }
+                                        .font(.footnote)
+                                }
+                                Text("比较模型：\(run.comparison_model_version ?? "未知")")
+                                    .font(.caption2).foregroundStyle(Ink.muted)
+                            }
+                        }
+                    }
+                    .journalCard()
                 }
                 VoiceSetupView()
             }
@@ -592,6 +662,11 @@ private struct TwinView: View {
         .background(Ink.paper.ignoresSafeArea())
         .navigationTitle("Twin")
         .refreshable { await model.refresh() }
+        .sheet(isPresented: $showCalibrationRecorder) {
+            if let run = model.calibrationRun {
+                RecorderView(question: nil, calibration: run)
+            }
+        }
     }
 }
 

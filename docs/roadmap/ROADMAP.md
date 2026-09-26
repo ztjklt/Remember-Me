@@ -8,10 +8,10 @@ Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Prod
 | --- | --- | --- | --- |
 | Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → the same mobile client shows a real Memory |
 | Phase 2 — Core Twin | **iOS-first slice AUTHORIZED / IN PROGRESS** | Move from "it records" to "it is starting to understand me" | Person Model + Evidence Twin + Original Router demonstrable |
-| Phase 3 — Calibration + Voice | **local Voice slice AUTHORIZED / IN PROGRESS; calibration PLANNED** | Create a "sounds like me" perception | Separate Voice grant + own sample + local Twin speech |
+| Phase 3 — Calibration + Voice | **iOS-first calibration and local Voice slices AUTHORIZED / IN PROGRESS** | Compare a locked Twin answer with a real answer and create a "sounds like me" perception | Locked answer → human Episode → typed diff; separate Voice grant + own sample + local Twin speech |
 | Phase 4 — Hardware + Legacy | **BACKLOG / CONDITIONAL** | Prove the recording device's value and complete the entrustment narrative | Hardware Capture + Handover/Grant/Legacy core path |
 
-Reading Phase 2–4 alone does not authorize starting them. The Product Owner has now explicitly authorized the iOS-first evidence Twin and local Voice slice recorded in [the Contract proposal](../architecture/twin-voice-contract-proposal.md). Full calibration, Legacy, and cloud deployment remain planned.
+Reading Phase 2–4 alone does not authorize starting them. The Product Owner has explicitly authorized the iOS-first evidence Twin and local Voice slice in [the Twin proposal](../architecture/twin-voice-contract-proposal.md), then the locked-answer calibration slice in [the calibration proposal](../architecture/calibration-contract-proposal.md). Full unattended calibration and Capture Planner, Legacy, and cloud deployment remain planned.
 
 **Approved iOS-first scope:** [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75) authorized local STT, evidence-backed memories and the seven-domain model. The later [Twin and Voice decision](../architecture/twin-voice-contract-proposal.md) authorizes evidence retrieval, Original/Simulation/Unknown routing, and separately consented local voice playback. It does not activate recipient accounts, Legacy, cloud deployment, or the full calibration phase.
 
@@ -27,7 +27,7 @@ Phase 1 is not complete until one real device records, uploads, and reads back a
 
 Person Model and Temporal Memory Graph over real Episodes; Memories screen on real data; Evidence Retrieval; Twin Agent with explicit provenance; Original Router preferring direct subject statements over simulation; memory correction and deletion propagating to derived data.
 
-## Phase 3 — Calibration + Voice (local Voice slice authorized; calibration planned)
+## Phase 3 — Calibration + Voice (iOS-first slices authorized)
 
 Calibration Agent comparing a locked Twin answer against the human answer across Decision, Reasoning, Value Priority, Emotional Reaction, and Expression; Capture Planner driven by Information Gain × Importance × Uncertainty × Time Urgency ÷ Interaction Cost; Voice consent gate, speaker verification, quality assessment, clean segment selection, dataset, profile, provider adapter, and Twin Voice playback.
 

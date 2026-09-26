@@ -546,6 +546,31 @@ class TwinAnswer(Base):
     invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class CalibrationRun(Base):
+    __tablename__ = "calibration_runs"
+    __table_args__ = (Index("ix_calibration_runs_subject", "subject_id", "created_at"),)
+
+    calibration_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    twin_answer_id: Mapped[str] = mapped_column(String(64), ForeignKey("twin_answers.answer_id"), nullable=False, unique=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    locked_answer: Mapped[str] = mapped_column(Text, nullable=False)
+    locked_response_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    locked_model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    locked_person_model_version: Mapped[int] = mapped_column(Integer(), nullable=False)
+    locked_evidence_ids: Mapped[list] = mapped_column(JSON(), nullable=False)
+    source_snapshot: Mapped[list] = mapped_column(JSON(), nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
+    human_episode_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("episodes.episode_id"), nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dimension_diffs: Mapped[list] = mapped_column(JSON(), nullable=False, default=list)
+    suggested_question: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comparison_model_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class VoiceProfile(Base):
     __tablename__ = "voice_profiles"
 

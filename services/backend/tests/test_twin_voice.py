@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from app.models import Episode, Evidence, MemoryEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
+from app.models import CalibrationRun, Episode, Evidence, MemoryEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
 from app.seed import seed_development_data
 from app.worker import ProcessingWorker
 
@@ -152,3 +152,80 @@ def test_spoken_query_is_transient(app, client, session):
     assert result.status_code == 200
     assert result.json()["text"].startswith("[fake-stt]")
     assert session.query(Episode).count() == 0
+
+
+def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(app, client, session):
+    own = seed_development_data(session, subject_name="Own", actor_name="Own")
+    other = seed_development_data(session, subject_name="Other", actor_name="Other")
+    headers = {"Authorization": "Bearer " + own.actor_token}
+    _record(client, app, own.subject_id, own.consent_id, headers)
+    app.state.embedding_encoder = TinyEncoder()
+    app.state.twin_client = QuoteTwin()
+    app.state.settings.ai_backend = "http"
+    cloud = client.post("/api/v1/consents", headers=headers,
+                        json={"subject_id": own.subject_id, "scope": "CLOUD_TWIN"}).json()["consent_id"]
+    answer = client.post(f"/api/v1/subjects/{own.subject_id}/twin/answers", headers=headers,
+                         json={"question": "我喜欢什么？", "cloud_consent_id": cloud}).json()
+    path = f"/api/v1/subjects/{own.subject_id}/calibrations"
+    locked = client.post(path, headers=headers,
+                         json={"twin_answer_id": answer["answer_id"], "cloud_consent_id": cloud})
+    assert locked.status_code == 200, locked.text
+    run = locked.json()
+    assert run["status"] == "awaiting_human"
+    assert run["locked_answer"] == answer["answer"]
+    assert client.get(f"{path}/{run['calibration_id']}",
+                      headers={"Authorization": "Bearer " + other.actor_token}).status_code == 404
+    assert client.post(path, headers=headers,
+                       json={"twin_answer_id": answer["answer_id"], "cloud_consent_id": cloud}).json()["calibration_id"] == run["calibration_id"]
+    complete_path = f"{path}/{run['calibration_id']}/complete"
+    assert client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud}).status_code == 409
+    import json
+    metadata = json.dumps({"calibration_id": run["calibration_id"]})
+    wrong = client.post("/api/v1/episodes", headers=headers,
+        data={"subject_id": other.subject_id, "recording_consent_id": own.consent_id,
+              "idempotency_key": "bad-calibration", "source": "IOS_MIC",
+              "recorded_at": "2026-09-27T09:00:00Z", "audio_ref": "answer.m4a", "metadata": metadata},
+        files={"file": ("answer.m4a", b"HUMAN", "audio/mp4")})
+    assert wrong.status_code != 201
+    upload = client.post("/api/v1/episodes", headers=headers,
+        data={"subject_id": own.subject_id, "recording_consent_id": own.consent_id,
+              "idempotency_key": "human-calibration", "source": "IOS_MIC",
+              "recorded_at": "2026-09-27T09:00:00Z", "audio_ref": "answer.m4a", "metadata": metadata},
+        files={"file": ("answer.m4a", b"HUMAN", "audio/mp4")})
+    assert upload.status_code == 201, upload.text
+    human_id = upload.json()["episode_id"]
+    assert client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud}).status_code == 409
+    worker = ProcessingWorker(app.state.database, app.state.object_store,
+                              app.state.stt_provider, app.state.ai_client, backoff_seconds=0)
+    worker.run_once()
+    assert client.patch(f"/api/v1/episodes/{human_id}/transcript-review", headers=headers,
+                        json={"transcript": "我更喜欢游泳，因为我觉得自由"}).status_code == 200
+    worker.run_once()
+    worker.run_once()
+
+    class Comparison:
+        def compare(self, question, locked_answer, human_answer):
+            assert question == "我喜欢什么？"
+            assert locked_answer == "我喜欢散步"
+            assert human_answer == "我更喜欢游泳，因为我觉得自由"
+            return {"summary": "偏好与之前不同，值得继续确认。", "model_version": "deepseek-flash-test",
+                    "suggested_question": "游泳为什么让你觉得自由？",
+                    "dimensions": [{"dimension": dimension,
+                                    "alignment": "DIFFERENT" if dimension == "VALUE_PRIORITY" else "NOT_OBSERVED",
+                                    "note": "提到自由" if dimension == "VALUE_PRIORITY" else "没有谈及",
+                                    "human_excerpt": "我觉得自由" if dimension == "VALUE_PRIORITY" else None}
+                                   for dimension in ("DECISION", "REASONING", "VALUE_PRIORITY",
+                                                     "EMOTIONAL_REACTION", "EXPRESSION")]}
+    app.state.calibration_client = Comparison()
+    result = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
+    assert result.status_code == 200, result.text
+    assert result.json()["status"] == "complete"
+    assert result.json()["human_episode_id"] == human_id
+    assert result.json()["dimensions"][2]["human_excerpt"] == "我觉得自由"
+    assert session.get(CalibrationRun, run["calibration_id"]).locked_answer == "我喜欢散步"
+    source_memory_id = session.get(TwinAnswer, answer["answer_id"]).memory_item_ids[0]
+    assert client.patch(f"/api/v1/subjects/{own.subject_id}/memories/{source_memory_id}",
+                        headers=headers, json={"content": "改过的旧事实"}).status_code == 200
+    reading = client.get(f"{path}/{run['calibration_id']}", headers=headers).json()
+    assert reading["status"] == "stale"
+    assert reading["locked_answer"] is None

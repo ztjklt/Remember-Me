@@ -8,6 +8,7 @@ struct RecordingDraft: Codable, Identifiable {
     let recordedAt: Date
     let durationMS: Int
     let questionID: String?
+    let calibrationID: String?
     let consentConfirmedAt: Date
 }
 
@@ -46,6 +47,7 @@ final class AppModel: ObservableObject {
     @Published var memorySearchQuery = ""
     @Published var memorySearchResults: [MemorySearchRecord] = []
     @Published var auxiliarySeconds = 0
+    @Published var calibrationRun: CalibrationRecord?
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
@@ -114,6 +116,7 @@ final class AppModel: ObservableObject {
             async let nextQuestions = client.questions(pairing.subjectID)
             async let nextConsents = client.consents(subjectID: pairing.subjectID)
             async let nextVoiceProfile = client.voiceProfile(subjectID: pairing.subjectID)
+            async let nextCalibrations = client.calibrations(subjectID: pairing.subjectID)
             memories = try await nextMemories
             episodes = try await nextEpisodes
             let snapshot = try await nextModel
@@ -125,6 +128,7 @@ final class AppModel: ObservableObject {
             voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
             let profile = try await nextVoiceProfile
             voiceProfileReady = profile.ready
+            calibrationRun = try await nextCalibrations.first
             if cloudConsentID != nil,
                let answerID = UserDefaults.standard.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
                 twinAnswer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
@@ -135,7 +139,7 @@ final class AppModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    func startRecording(questionID: String? = nil) async {
+    func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
         errorMessage = nil
         transcriptDraft = ""
         isTranscriptReviewReady = false
@@ -168,6 +172,7 @@ final class AppModel: ObservableObject {
             self.recorder = recorder
             self.draft = RecordingDraft(id: id, fileURL: url, recordedAt: Date(),
                                         durationMS: 0, questionID: questionID,
+                                        calibrationID: calibrationID,
                                         consentConfirmedAt: Date())
             self.isRecording = true
             self.isPaused = false
@@ -220,6 +225,7 @@ final class AppModel: ObservableObject {
         self.draft = RecordingDraft(id: draft.id, fileURL: draft.fileURL,
                                     recordedAt: draft.recordedAt,
                                     durationMS: Int(duration * 1000), questionID: draft.questionID,
+                                    calibrationID: draft.calibrationID,
                                     consentConfirmedAt: draft.consentConfirmedAt)
         if let data = try? JSONEncoder().encode(self.draft) {
             UserDefaults.standard.set(data, forKey: "pending-recording")
@@ -266,6 +272,7 @@ final class AppModel: ObservableObject {
                 let status = try await client.status(episodeID)
                 processingStatus = status.status
                 if status.status == "ready" {
+                    let calibrationID = draft?.calibrationID
                     UserDefaults.standard.removeObject(forKey: "pending-recording")
                     UserDefaults.standard.removeObject(forKey: "pending-episode")
                     draft = nil
@@ -273,6 +280,9 @@ final class AppModel: ObservableObject {
                     isTranscriptReviewReady = false
                     transcriptDraft = ""
                     await refresh()
+                    if let calibrationID {
+                        await completeCalibration(calibrationID)
+                    }
                     return
                 }
                 if status.status == "failed" {
@@ -523,5 +533,27 @@ final class AppModel: ObservableObject {
             player?.play()
             isPlaying = true
         } catch { errorMessage = "个人声音暂时无法播放：\(error.localizedDescription)" }
+    }
+
+    func startCalibration() async {
+        guard let pairing, let client, let cloudConsentID,
+              let twinAnswer, !twinAnswer.stale, twinAnswer.response_type != "UNKNOWN" else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            calibrationRun = try await client.startCalibration(
+                subjectID: pairing.subjectID, answerID: twinAnswer.id, cloudConsentID: cloudConsentID)
+        } catch { errorMessage = "暂时无法锁定 Twin 回答：\(error.localizedDescription)" }
+    }
+
+    func completeCalibration(_ calibrationID: String) async {
+        guard let pairing, let client, let cloudConsentID else { return }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            calibrationRun = try await client.completeCalibration(
+                subjectID: pairing.subjectID, calibrationID: calibrationID,
+                cloudConsentID: cloudConsentID)
+        } catch { errorMessage = "录音已保存，校准比较可稍后重试：\(error.localizedDescription)" }
     }
 }

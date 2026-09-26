@@ -4,7 +4,7 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
-The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Contract proposal](docs/architecture/twin-voice-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
+The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Twin proposal](docs/architecture/twin-voice-contract-proposal.md), followed by a locked-answer [calibration slice](docs/architecture/calibration-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
 
 The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its current Mac stack uses local Whisper and DeepSeek V4 Flash behind the existing Backend and AI Core adapters. Audio remains local; transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
 
@@ -12,7 +12,7 @@ The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](a
 | --- | --- |
 | Phase 1 — Golden Path | COMMITTED / NOW |
 | Phase 2 — Core Twin | iOS-first slice AUTHORIZED / IN PROGRESS |
-| Phase 3 — Calibration + Voice | Local Voice slice AUTHORIZED / IN PROGRESS; calibration PLANNED |
+| Phase 3 — Calibration + Voice | iOS-first calibration and local Voice slices AUTHORIZED / IN PROGRESS |
 | Phase 4 — Hardware + Legacy | BACKLOG / CONDITIONAL |
 
 ## Baseline documents
