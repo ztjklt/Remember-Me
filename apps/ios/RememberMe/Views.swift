@@ -341,9 +341,10 @@ private struct RecorderView: View {
                         ForEach(0..<27, id: \.self) { index in
                             Capsule()
                                 .fill(index.isMultiple(of: 4) ? Ink.coral : Ink.peach)
-                                .frame(width: 5, height: CGFloat(20 + (index * 17) % 56))
+                                .frame(width: 5, height: 14 + 72 * model.meterLevels[index])
                         }
                     }
+                    .animation(.easeInOut(duration: 0.28), value: model.meterLevels)
                     .frame(maxWidth: .infinity)
                     .frame(height: 100)
                     .journalCard()

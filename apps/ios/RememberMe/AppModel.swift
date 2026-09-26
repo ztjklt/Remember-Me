@@ -30,6 +30,7 @@ final class AppModel: ObservableObject {
     @Published var isRecording = false
     @Published var isPaused = false
     @Published var recordedSeconds = 0
+    @Published var meterLevels: [CGFloat] = Array(repeating: 0.16, count: 27)
     @Published var isPlaying = false
 
     private var recorder: AVAudioRecorder?
@@ -124,6 +125,7 @@ final class AppModel: ObservableObject {
                                            AVNumberOfChannelsKey: 1,
                                            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue]
             let recorder = try AVAudioRecorder(url: url, settings: settings)
+            recorder.isMeteringEnabled = true
             guard recorder.record() else { throw APIError.invalidResponse }
             self.recorder = recorder
             self.draft = RecordingDraft(id: id, fileURL: url, recordedAt: Date(),
@@ -132,6 +134,7 @@ final class AppModel: ObservableObject {
             self.isRecording = true
             self.isPaused = false
             self.recordedSeconds = 0
+            self.meterLevels = Array(repeating: 0.16, count: 27)
             self.accumulated = 0
             self.startedAt = Date()
             timer?.invalidate()
@@ -139,6 +142,15 @@ final class AppModel: ObservableObject {
                 Task { @MainActor in
                     guard let self else { return }
                     self.recordedSeconds = Int(self.accumulated + (self.startedAt.map { Date().timeIntervalSince($0) } ?? 0))
+                    if self.isPaused {
+                        self.meterLevels.removeFirst()
+                        self.meterLevels.append(0.16)
+                    } else if let recorder = self.recorder {
+                        recorder.updateMeters()
+                        let level = max(0.16, min(1, (recorder.averagePower(forChannel: 0) + 60) / 60))
+                        self.meterLevels.removeFirst()
+                        self.meterLevels.append(CGFloat(level))
+                    }
                 }
             }
         } catch { errorMessage = "录音未能开始：\(error.localizedDescription)" }
