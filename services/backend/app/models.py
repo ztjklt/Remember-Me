@@ -51,6 +51,7 @@ class ConsentScope(StrEnum):
 
     RECORDING = "RECORDING"
     VOICE = "VOICE"
+    CLOUD_TWIN = "CLOUD_TWIN"
 
 
 # The database refuses a scope this codebase does not register, so a typo or a
@@ -512,4 +513,59 @@ class DeviceCredential(Base):
     __tablename__ = "device_credentials"
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class MemoryEmbedding(Base):
+    __tablename__ = "memory_embeddings"
+    __table_args__ = (Index("ix_memory_embeddings_subject", "subject_id"),)
+
+    memory_item_id: Mapped[str] = mapped_column(String(64), ForeignKey("memory_items.memory_item_id"), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    vector: Mapped[list] = mapped_column(JSON, nullable=False)
+
+
+class TwinAnswer(Base):
+    __tablename__ = "twin_answers"
+    __table_args__ = (Index("ix_twin_answers_subject", "subject_id", "created_at"),)
+
+    answer_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    response_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    memory_item_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    person_model_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class VoiceProfile(Base):
+    __tablename__ = "voice_profiles"
+
+    profile_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    voice_consent_id: Mapped[str] = mapped_column(String(64), ForeignKey("consents.consent_id"), nullable=False)
+    sample_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    sample_transcript: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class VoiceAsset(Base):
+    __tablename__ = "voice_assets"
+
+    asset_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    answer_id: Mapped[str] = mapped_column(String(64), ForeignKey("twin_answers.answer_id"), nullable=False)
+    profile_id: Mapped[str] = mapped_column(String(64), ForeignKey("voice_profiles.profile_id"), nullable=False)
+    object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)

@@ -97,6 +97,47 @@ struct QuestionRecord: Decodable, Identifiable {
 }
 struct QuestionListReply: Decodable { let items: [QuestionRecord] }
 
+struct ConsentRecord: Decodable, Identifiable {
+    let consent_id: String
+    let scope: String
+    let status: String
+    var id: String { consent_id }
+}
+struct TwinEvidenceRecord: Decodable, Identifiable {
+    let evidence_id: String
+    let excerpt: String?
+    let episode_id: String
+    let source_type: String
+    var id: String { evidence_id }
+}
+struct TwinAnswerRecord: Decodable, Identifiable {
+    let answer_id: String
+    let question: String
+    let answer: String
+    let response_type: String
+    let evidence: [TwinEvidenceRecord]
+    let model_version: String
+    let person_model_version: Int
+    let stale: Bool
+    var id: String { answer_id }
+}
+struct QueryTranscript: Decodable { let text: String; let stt_model_version: String }
+struct VoiceProfileRecord: Decodable {
+    let ready: Bool
+    let profile_id: String?
+    let model_version: String?
+    let voice_consent_id: String?
+}
+struct SpeechRecord: Decodable { let status: String; let asset_id: String; let model_version: String }
+struct MemorySearchRecord: Decodable, Identifiable {
+    let memory_item_id: String
+    let statement: String
+    let domain: String?
+    let evidence: [TwinEvidenceRecord]
+    var id: String { memory_item_id }
+}
+struct MemorySearchReply: Decodable { let items: [MemorySearchRecord] }
+
 enum APIError: LocalizedError {
     case invalidURL, invalidCertificate, server(Int, String), invalidResponse
     var errorDescription: String? {
@@ -205,6 +246,67 @@ final class APIClient: @unchecked Sendable {
     }
     func delete(subjectID: String, memoryID: String) async throws {
         _ = try await request("/api/v1/subjects/\(subjectID)/memories/\(memoryID)", method: "DELETE")
+    }
+
+    func consents(subjectID: String) async throws -> [ConsentRecord] {
+        try JSONDecoder().decode([ConsentRecord].self, from: await request(
+            "/api/v1/consents?subject_id=\(subjectID)"))
+    }
+    func searchMemories(subjectID: String, query: String) async throws -> [MemorySearchRecord] {
+        let escaped = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        return try JSONDecoder().decode(MemorySearchReply.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/memory-search?q=\(escaped)")).items
+    }
+    func grantConsent(subjectID: String, scope: String) async throws -> ConsentRecord {
+        let body = try JSONSerialization.data(withJSONObject: ["subject_id": subjectID, "scope": scope,
+                                                               "evidence_ref": "ios-explicit-confirmation"])
+        return try JSONDecoder().decode(ConsentRecord.self, from: await request(
+            "/api/v1/consents", method: "POST", body: body, contentType: "application/json"))
+    }
+    func revokeConsent(_ id: String) async throws {
+        _ = try await request("/api/v1/consents/\(id)/revoke", method: "POST")
+    }
+    func askTwin(subjectID: String, question: String, cloudConsentID: String) async throws -> TwinAnswerRecord {
+        let body = try JSONSerialization.data(withJSONObject: ["question": question, "cloud_consent_id": cloudConsentID])
+        return try JSONDecoder().decode(TwinAnswerRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/twin/answers", method: "POST", body: body,
+            contentType: "application/json"))
+    }
+    func twinAnswer(subjectID: String, answerID: String) async throws -> TwinAnswerRecord {
+        try JSONDecoder().decode(TwinAnswerRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/twin/answers/\(answerID)"))
+    }
+    func transcribeQuery(subjectID: String, audio: Data) async throws -> QueryTranscript {
+        try JSONDecoder().decode(QueryTranscript.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/twin/transcribe-query", method: "POST",
+            body: audio, contentType: "audio/mp4"))
+    }
+    func voiceProfile(subjectID: String) async throws -> VoiceProfileRecord {
+        try JSONDecoder().decode(VoiceProfileRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/voice/profile"))
+    }
+    func enrollVoice(subjectID: String, consentID: String, transcript: String, audio: Data) async throws -> VoiceProfileRecord {
+        let boundary = "RememberMe-\(UUID().uuidString)"
+        var body = Data()
+        func field(_ name: String, _ value: String) {
+            body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        field("voice_consent_id", consentID)
+        field("transcript", transcript)
+        field("own_voice_confirmed", "true")
+        body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"sample\"; filename=\"sample.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n".utf8))
+        body.append(audio)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+        return try JSONDecoder().decode(VoiceProfileRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/voice/profile", method: "POST", body: body,
+            contentType: "multipart/form-data; boundary=\(boundary)"))
+    }
+    func createSpeech(subjectID: String, answerID: String) async throws -> SpeechRecord {
+        try JSONDecoder().decode(SpeechRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/twin/answers/\(answerID)/speech", method: "POST"))
+    }
+    func speechAudio(subjectID: String, assetID: String) async throws -> Data {
+        try await request("/api/v1/subjects/\(subjectID)/voice/assets/\(assetID)/audio")
     }
 
     func upload(_ draft: RecordingDraft, pairing: Pairing) async throws -> String {

@@ -1,5 +1,11 @@
 # iOS 本机语音 → Person Model
 
+## Twin 与个人声音
+
+现有 Mac 服务及迁移启动后，执行 `cd services/backend && uv sync --extra retrieval` 安装本机中文检索依赖；另开终端执行 `cd services/voice && uv sync && uv run uvicorn local_voice:app --host 127.0.0.1 --port 8300`。首次检索会下载 BGE 中文向量模型，首次点播会下载 Qwen3-TTS Base 权重；它们只留在 Mac 的模型缓存。AI Core 和 Voice 仍只监听本机，iPhone 只连接已配对的 HTTPS Backend。DeepSeek 密钥仍只在 AI Core 的本机环境中。
+
+iPhone 的 Twin 页先单独询问云端推理授权，说明问题和少量相关记忆文字会发给 DeepSeek。可输入或录下问题、核对识别文字，再查看标注为原话、推测或无法确定的回答及原始 Episode 录音。个人声音需要另一项 VOICE 授权，和 5–15 秒专用样本、核对后的原话及本人声音确认；撤销会删除样本和生成的声音。App 只传保存过的回答 ID 请求朗读，不能要求合成任意文字。
+
 这个 SwiftUI 客户端把自由录音或智能追问回答交给 Mac 上的 Backend。Backend 先保存 Episode 和原音，由本机 Whisper 转写；iOS 随即显示文字并允许修改，用户确认后才由 DeepSeek V4 Flash 提取可在确认版文字中定位的 Memory，最后更新七领域 Person Model。当前配置会把确认后的转写文本发往 DeepSeek；原音、机器原始转写、数据库和密钥仍保存在本机。客户端可播放原音、查看证据、纠正或删除 Memory。Android 仍走原有自动处理流程。
 
 ## 需要的本机环境
@@ -89,6 +95,6 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 
 ## 这一次的真机记录
 
-只需完整跑一次：自由录一段中文并提交；核对和修改转写文字，确认后看到 Episode 到 `ready`、记忆原文证据和七领域模型；回答 App 给出的一条追问并再次确认转写，再检查模型版本和领域内容更新；纠正或删除一条错误记忆，确认 trait 与下一条追问重算。断网时同一段录音仍在 App 内，重新提交会用相同幂等键；模型超时到达失败状态后可从同一个 Episode 重试处理。把设备型号、iOS 版本、两段 Episode ID、STT/AI 模型版本和观察到的结果写进 PR 的 “How it was tested” 即可。
+只需完整跑一次：自由录一段中文并提交；核对和修改转写文字，确认后看到 Episode 到 `ready`、记忆原文证据和七领域模型；回答 App 给出的一条追问并再次确认转写，再检查模型版本和领域内容更新。再单独同意云端 Twin 文字处理，提一个新问题，检查原话／推测／无法确定的标记和录音证据。单独录 5–15 秒只有本人说话的声音样本，核对样本文字并授权，在有证据的 Twin 回答上点播本机合成声音。最后纠正或删除一条错误记忆，确认 trait、下一条追问及旧 Twin 回答的失效。断网时同一段录音仍在 App 内，重新提交会用相同幂等键。把设备型号、iOS 版本、Episode ID、STT／AI／Voice 模型版本和实际观察写进 PR 的 “How it was tested”。
 
 实测的合成音频联调可以证明服务链和数据流，不应写成本人真机录音。真机录音必须由使用者在设备上亲自完成。

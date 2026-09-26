@@ -4,7 +4,7 @@ The shared AI Core supports Phase 1 and the Product Owner's approved iOS Person 
 
 The current iOS deployment uses `AI_PROVIDER=deepseek` with `AI_MODEL=deepseek-v4-flash`. This sends the transcript, but not the audio, to DeepSeek over HTTPS. The model supplies an original quote and a domain; Python resolves a corresponding span in the original Chinese transcript and drops any candidate it cannot locate. The actual API response model name is stored with each extraction. `AI_PROVIDER=ollama` remains available for a fully local Qwen deployment. Backend applies the typed evidence-linked graph and trait proposals in its `modeling` stage. See [apps/ios/README.md](../../apps/ios/README.md).
 
-This directory contains schema-validated memory extraction with fixture, OpenAI-compatible, Ollama, and DeepSeek adapters. Evidence-backed Twin responses, calibration, and Voice remain future work. The domain layer stays provider-neutral.
+This directory contains schema-validated memory extraction and an evidence-limited Twin worker. `POST /twin` receives only Backend-selected memory snippets and a reviewed question, returns `ORIGINAL`, `SIMULATION`, or `UNKNOWN`, and records the actual DeepSeek response model. Backend alone verifies IDs, exact original spans, Subject authorization, consent, and answer storage. Calibration remains future work.
 
 Phase 1 scope: the Episode/Transcript → Memory Extractor schema, structured output that is validated before persistence, preserved provenance fields, and a minimum AI processing interface callable by Backend with deterministic fixtures.
 

@@ -1,5 +1,11 @@
 # Backend Service
 
+## iOS-first Twin and local Voice slice
+
+Migration `0006_twin_voice` adds subject-scoped local memory vectors, evidence-linked Twin answer snapshots, and separately consented voice profiles/audio. Run `uv sync --extra retrieval` before using memory search or Twin; this loads `BAAI/bge-small-zh-v1.5` locally on first query. `REMEMBER_EMBEDDING_MODEL` can point to an already downloaded local model directory. Twin uses the existing loopback AI Core at `POST /twin` and requires a `CLOUD_TWIN` consent in addition to recording access. Only selected memory snippets leave Backend for DeepSeek. `REMEMBER_VOICE_URL` defaults to `http://127.0.0.1:8300`, must stay on loopback, and calls the local adapter in `services/voice` only after a separate `VOICE` grant.
+
+The new Subject API provides `/memory-search`, `/twin/transcribe-query`, `/twin/answers`, `/voice/profile`, and answer-bound `/speech` plus private audio readback. Question audio is transient and never creates an Episode. Correction, deletion, a new model revision, or cloud-consent revocation invalidates saved answers and derived audio. VOICE revocation removes the dedicated sample and generated audio. A sample accepted by the sidecar is checked for duration/level; its own-speaker status is the Subject's explicit confirmation, not an automatic verification claim.
+
 The shared Backend supports the Android Golden Path and the Product Owner's approved iOS voice-to-Person-Model slice. Current ownership follows the [two-client delivery model](../../docs/team/00_TEAM_OWNERSHIP.md); the old [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md) records the original Phase 1 foundation.
 
 The iOS extension adds `IOS_MIC`, a loopback Whisper sidecar, one-time HTTPS pairing, seven-domain derived traits and graph facts, post-recording questions, and audited correction/deletion. See the [iOS local runbook](../../apps/ios/README.md) for the complete four-process setup. Existing Android requests remain valid.

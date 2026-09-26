@@ -18,6 +18,7 @@ from .providers.fixture import FixtureProvider
 from .providers.deepseek import DeepSeekProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
+from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
 
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
@@ -61,9 +62,14 @@ def create_app(
     settings: Settings | None = None,
     *,
     extractor: MemoryExtractor | None = None,
+    twin_provider: DeepSeekTwinProvider | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
+    active_twin = twin_provider or (DeepSeekTwinProvider(
+        base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
+        model=settings.model, timeout_seconds=settings.timeout_seconds,
+    ) if settings.provider == "deepseek" else None)
     slots = BoundedSemaphore(settings.max_concurrent_requests)
 
     @asynccontextmanager
@@ -76,6 +82,8 @@ def create_app(
                 close = getattr(active_extractor.provider, "close", None)
                 if close is not None:
                     close()
+            if twin_provider is None and active_twin is not None:
+                active_twin.close()
 
     app = FastAPI(title="Remember Me AI Core", version="0.2.0", lifespan=lifespan)
     app.add_middleware(RequestSizeLimit, max_bytes=settings.max_request_bytes)
@@ -121,6 +129,17 @@ def create_app(
             raise ProviderUnavailable("AI Core extraction capacity is busy")
         try:
             return active_extractor.process(payload)
+        finally:
+            slots.release()
+
+    @app.post("/twin", response_model=TwinOutput)
+    def answer_twin(payload: TwinInput) -> TwinOutput:
+        if active_twin is None:
+            raise ProviderUnavailable("Twin requires the configured DeepSeek adapter")
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable("AI Core capacity is busy")
+        try:
+            return active_twin.answer(payload)
         finally:
             slots.release()
 

@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -11,9 +11,10 @@ from ..db import get_session
 from ..errors import AppError
 from ..models import (
     Actor, CaptureQuestion, Consent, Episode, Evidence, GraphFact, MemoryAudit,
-    MemoryItem, ModelRevision, PERSON_DOMAINS, PersonTrait, as_utc, utcnow,
+    MemoryItem, MemoryEmbedding, ModelRevision, PERSON_DOMAINS, PersonTrait, as_utc, utcnow,
 )
 from ..repositories.person_model import PersonModelRepository
+from ..retrieval import invalidate_answers
 from ..security import current_actor
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["person-model"])
@@ -133,7 +134,7 @@ def questions(subject_id: str, actor: Actor = Depends(current_actor), session: S
 
 
 @router.patch("/memories/{memory_id}")
-def correct_memory(subject_id: str, memory_id: str, body: Correction,
+def correct_memory(subject_id: str, memory_id: str, body: Correction, request: Request,
                    actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     _authorized(session, subject_id, actor)
     memory = _memory(session, subject_id, memory_id)
@@ -153,13 +154,17 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction,
     memory.source_type = "CALIBRATION"
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
+    embedding = session.get(MemoryEmbedding, memory_id)
+    if embedding is not None:
+        session.delete(embedding)
     version = PersonModelRepository(session).rebuild(subject_id)
+    invalidate_answers(session, request.app.state.object_store, subject_id)
     session.commit()
     return {"memory_item_id": memory_id, "model_version": version}
 
 
 @router.delete("/memories/{memory_id}")
-def delete_memory(subject_id: str, memory_id: str,
+def delete_memory(subject_id: str, memory_id: str, request: Request,
                   actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     _authorized(session, subject_id, actor)
     memory = _memory(session, subject_id, memory_id)
@@ -168,6 +173,10 @@ def delete_memory(subject_id: str, memory_id: str,
                             action="delete", previous_content=memory.content,
                             created_at=utcnow()))
     memory.deleted_at = utcnow()
+    embedding = session.get(MemoryEmbedding, memory_id)
+    if embedding is not None:
+        session.delete(embedding)
     version = PersonModelRepository(session).rebuild(subject_id)
+    invalidate_answers(session, request.app.state.object_store, subject_id)
     session.commit()
     return {"memory_item_id": memory_id, "model_version": version}

@@ -46,6 +46,7 @@ from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
 from .repositories.person_model import PersonModelRepository
+from .retrieval import invalidate_answers
 from .stt import SttProvider, build_stt_provider
 from .storage import build_object_store
 from .storage.base import ObjectStore
@@ -429,6 +430,7 @@ class ProcessingWorker:
             episode.subject_id,
             answered_question_id=metadata.get("question_id"),
         )
+        invalidate_answers(session, self.object_store, episode.subject_id)
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
         """Retry the stage or give up, in its own transaction.

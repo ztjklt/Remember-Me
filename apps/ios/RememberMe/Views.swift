@@ -133,6 +133,8 @@ private struct MainTabs: View {
                 .tabItem { Label("录音", systemImage: "waveform") }
             NavigationStack { MemoriesView() }
                 .tabItem { Label("记忆", systemImage: "book.closed") }
+            NavigationStack { TwinView() }
+                .tabItem { Label("Twin", systemImage: "sparkles.rectangle.stack") }
             NavigationStack { ModelView() }
                 .tabItem { Label("关于我", systemImage: "person.crop.circle") }
         }
@@ -443,6 +445,27 @@ private struct MemoriesView: View {
                 Text("说过的话，留下痕迹。")
                     .font(.system(size: 30, design: .serif))
                     .foregroundStyle(Ink.text)
+                VStack(alignment: .leading, spacing: 10) {
+                    Eyebrow(text: "在自己的记忆里找")
+                    TextField("例如：我为什么喜欢散步？", text: $model.memorySearchQuery)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit { Task { await model.searchMemories() } }
+                    Button("查找相关记忆") { Task { await model.searchMemories() } }
+                        .buttonStyle(.bordered)
+                    ForEach(model.memorySearchResults) { result in
+                        if let memory = model.memories.first(where: { $0.id == result.id }) {
+                            NavigationLink { MemoryDetailView(memory: memory) } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(result.statement).font(.subheadline).foregroundStyle(Ink.text)
+                                    Text(result.evidence.first?.excerpt ?? "查看记忆详情")
+                                        .font(.footnote).foregroundStyle(Ink.muted)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .journalCard()
                 if model.memories.isEmpty {
                     Text("还没有记忆。试着录下第一段真实的故事。")
                         .foregroundStyle(Ink.muted)
@@ -471,6 +494,166 @@ private struct MemoriesView: View {
         .background(Ink.paper.ignoresSafeArea())
         .navigationTitle("记忆")
         .refreshable { await model.refresh() }
+    }
+}
+
+private struct TwinView: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                Eyebrow(text: "EVIDENCE TWIN")
+                Text("问一个关于自己的问题。")
+                    .font(.system(size: 30, design: .serif))
+                    .foregroundStyle(Ink.text)
+                Text("RM 会先找你真正说过的话；需要推测时会明确标出来，不知道时会说不知道。")
+                    .font(.subheadline).foregroundStyle(Ink.muted)
+                if model.cloudConsentID == nil {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Eyebrow(text: "先决定资料如何使用")
+                        Text("提问时，问题和少量相关记忆文字会发送给 DeepSeek 生成回答。原始录音和声音样本不会发送。")
+                            .font(.subheadline).foregroundStyle(Ink.text)
+                        ActionButton(title: "同意使用云端 Twin", icon: "checkmark.shield") {
+                            Task { await model.enableCloudTwin() }
+                        }
+                    }
+                    .journalCard()
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Eyebrow(text: "你的问题")
+                        TextEditor(text: $model.queryDraft)
+                            .frame(minHeight: 100)
+                            .padding(8)
+                            .background(Ink.paper, in: RoundedRectangle(cornerRadius: 14))
+                            .accessibilityLabel("核对或修改 Twin 问题")
+                        Button {
+                            Task {
+                                if model.isQueryRecording { await model.finishAuxiliaryRecording() }
+                                else { await model.startQueryRecording() }
+                            }
+                        } label: {
+                            Label(model.isQueryRecording ? "结束并识别问题" : "说出问题",
+                                  systemImage: model.isQueryRecording ? "stop.circle" : "mic")
+                        }
+                        .buttonStyle(.bordered)
+                        ActionButton(title: model.isBusy ? "正在查找证据…" : "提问", icon: "sparkle.magnifyingglass") {
+                            Task { await model.askTwin() }
+                        }
+                        .disabled(model.isBusy || model.queryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    .journalCard()
+                    Button("撤销云端 Twin 授权", role: .destructive) {
+                        Task { await model.revokeCloudTwin() }
+                    }
+                    .font(.footnote)
+                }
+                if let answer = model.twinAnswer {
+                    VStack(alignment: .leading, spacing: 13) {
+                        Eyebrow(text: answer.response_type == "ORIGINAL" ? "原话" :
+                                answer.response_type == "SIMULATION" ? "根据记忆推测" : "目前无法确定")
+                        Text(answer.answer)
+                            .font(.system(size: 23, design: .serif))
+                            .foregroundStyle(Ink.text)
+                        if answer.stale {
+                            Label("相关记忆已有变化，请重新提问。", systemImage: "arrow.clockwise")
+                                .font(.footnote).foregroundStyle(Ink.coral)
+                        }
+                        ForEach(answer.evidence) { source in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("证据：“\(source.excerpt ?? "")”")
+                                    .font(.subheadline).foregroundStyle(Ink.muted)
+                                Button("听当时的原始录音") {
+                                    Task { await model.playOriginal(episodeID: source.episode_id) }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                        if answer.response_type != "UNKNOWN" && !answer.stale {
+                            if model.voiceProfileReady {
+                                ActionButton(title: model.isBusy ? "正在生成声音…" : "用我的声音朗读",
+                                             icon: "speaker.wave.2", fill: Ink.olive) {
+                                    Task { await model.playTwinVoice() }
+                                }
+                                .disabled(model.isBusy)
+                            } else {
+                                Text("下方单独授权并录制声音样本后，可以点播个人声音。")
+                                    .font(.footnote).foregroundStyle(Ink.muted)
+                            }
+                        }
+                        Text("Person Model v\(answer.person_model_version) · \(answer.model_version)")
+                            .font(.caption2).foregroundStyle(Ink.muted)
+                    }
+                    .journalCard()
+                }
+                VoiceSetupView()
+            }
+            .padding(20)
+        }
+        .background(Ink.paper.ignoresSafeArea())
+        .navigationTitle("Twin")
+        .refreshable { await model.refresh() }
+    }
+}
+
+private struct VoiceSetupView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var ownVoiceConfirmed = false
+    private let guide = "今天我想留下一段自己的声音。希望以后听见它时，还能想起现在的自己。"
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Eyebrow(text: "只在本机的个人声音")
+            if model.voiceProfileReady {
+                Text("你的声音样本已就绪。生成只发生在配对的 Mac 上。")
+                    .font(.subheadline).foregroundStyle(Ink.text)
+                Button("撤销声音授权并删除样本", role: .destructive) {
+                    Task { await model.revokeVoice() }
+                }
+                .font(.footnote)
+            } else {
+                Text("请在安静的地方自然地读 5–15 秒，例如：\n“\(guide)”")
+                    .font(.subheadline).foregroundStyle(Ink.text)
+                Button {
+                    Task {
+                        if model.isVoiceRecording { await model.finishAuxiliaryRecording() }
+                        else { await model.startVoiceSample() }
+                    }
+                } label: {
+                    Label(model.isVoiceRecording ? "结束声音样本" : "录制专用声音样本",
+                          systemImage: model.isVoiceRecording ? "stop.circle" : "waveform")
+                }
+                .buttonStyle(.bordered)
+                if model.isVoiceRecording {
+                    Text("已录 \(model.auxiliarySeconds) 秒 · 目标 5–15 秒")
+                        .font(.footnote).foregroundStyle(Ink.coral)
+                }
+                if model.voiceSampleURL != nil {
+                    Text("请对照录音核对实际说出的文字；普通记忆录音不会被用作声音样本。")
+                        .font(.footnote).foregroundStyle(Ink.muted)
+                    TextEditor(text: $model.voiceSampleTranscript)
+                        .frame(minHeight: 100)
+                        .padding(8)
+                        .background(Ink.paper, in: RoundedRectangle(cornerRadius: 14))
+                        .onChange(of: model.voiceSampleTranscript) { _, text in
+                            UserDefaults.standard.set(text, forKey: "pending-voice-transcript")
+                        }
+                    Toggle("我确认样本中只有自己的声音", isOn: $ownVoiceConfirmed)
+                        .font(.footnote)
+                    ActionButton(title: model.isBusy ? "正在提交…" : "单独授权并保存声音样本",
+                                 icon: "lock.shield") {
+                        Task { await model.enrollVoice() }
+                    }
+                    .disabled(model.isBusy || !ownVoiceConfirmed ||
+                              model.voiceSampleTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                if model.voiceConsentID != nil {
+                    Button("撤销声音授权并删除样本", role: .destructive) {
+                        Task { await model.revokeVoice() }
+                    }
+                    .font(.footnote)
+                }
+            }
+        }
+        .journalCard()
     }
 }
 
