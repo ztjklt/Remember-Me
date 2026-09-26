@@ -35,6 +35,12 @@ Mac 切换到新局域网地址后，重新签发本机 TLS 证书，启动 loop
 
 密钥只从 Mac 本机私有环境文件加载，未写入仓库、App 或本记录。DeepSeek 返回模型标识为 `deepseek-flash`。真机资料不复制到仓库。
 
+## 2026-09-27 转写核对更新
+
+用户指出真机 Whisper base 转写有多处错字，选择保留现有 STT 模型，改为“转写后先显示、可编辑，再生成记忆”。新增 Backend 迁移 `0005_transcript_review`，新 iOS Episode 的 worker 在 STT 后等待录音 Actor 确认；这之前不调用 AI。数据库分别保存机器原文、确认版文字、确认 Actor 与时间。Android 自动处理不变。Mac 真实数据库迁移前已备份，迁移后完整性检查为 `ok`，原有两条 Episode 仍为 `ready`。
+
+Backend 全量 `uv run pytest -q`、AI Core 128 项测试及 wheel 冒烟检查通过；GitHub PR #76 的 ai-core 3.12/3.13、backend、contract、endpoint、Android test 均通过。iOS 无签名构建和针对 iPhone 15 Pro Max 的签名构建通过；新版已作为现有 QA App 的更新安装并启动。此时新核对步骤**尚未得到本人真机操作结果**，不能把自动测试写成真机通过。
+
 ## 尚需完成的真机步骤
 
-在 App 中点生成追问的“录下回答”并保存，确认上传元数据含对应问题 ID、问题状态变为 `answered` 且模型更新。然后在 iOS 上纠正或删除一条 Memory，确认 trait 与问题重算。另检查拒绝麦克风、断网与模型超时的可恢复界面，并记录设备 iOS 版本及观察结果。不设重复交叉验收清单。
+在新版 App 中点生成追问的“录下回答”，保存后核对并修改转写文字再确认，确认上传元数据含对应问题 ID、问题状态变为 `answered` 且模型更新。然后在 iOS 上纠正或删除一条 Memory，确认 trait 与问题重算。另检查拒绝麦克风、断网与模型超时的可恢复界面，并记录设备 iOS 版本及观察结果。不设重复交叉验收清单。
