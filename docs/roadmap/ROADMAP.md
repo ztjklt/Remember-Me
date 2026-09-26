@@ -13,6 +13,8 @@ Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Prod
 
 Reading Phase 2–4 does not authorize starting them. Phase 1 Golden Path is the only committed workstream.
 
+**Approved narrow exception (2026-09-26):** The Product Owner authorized the iOS real-voice → Person Model closure in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75): local STT, evidence-backed memories, seven-domain traits, questions, and correction/deletion. This is an active slice of Phase 2. It does not change the status of Twin, Original Router, Voice, multi-user accounts, or cloud deployment.
+
 ## Phase 1 — Golden Path (COMMITTED)
 
 The end-to-end proof: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`.

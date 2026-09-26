@@ -10,7 +10,7 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 
 ## Phase discipline
 
-- Phase 1 — Golden Path is COMMITTED / NOW and is the only committed workstream.
+- Phase 1 — Golden Path is COMMITTED / NOW. The Product Owner additionally authorized the iOS voice-to-Person-Model slice of Phase 2 in Issue #75; this does not authorize Twin or Voice.
 - Phase 2 — Core Twin is PLANNED / NEXT. Phases 3 and 4 are PLANNED and BACKLOG / CONDITIONAL.
 - A planned phase is not authorization to build it. Do not start Phase 2–4 implementation because the roadmap documents them. Preparing non-blocking skeletons such as UI shells, schemas, adapters, or test fixtures is allowed; freezing a cross-module implementation alone is not.
 - Do not assume undecided external dependencies are settled. Work 3200 SDK capability, the STT provider, and the Voice provider are all open — keep them behind adapters with capability fallback.

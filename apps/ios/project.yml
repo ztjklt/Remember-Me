@@ -1,0 +1,36 @@
+name: RememberMe
+options:
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: BZ5FA6MS43
+    CODE_SIGN_STYLE: Automatic
+targets:
+  RememberMe:
+    type: application
+    platform: iOS
+    sources:
+      - path: RememberMe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "录下你的原话，保存为你自己的记忆。"
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "连接你自己的 Mac，在本机处理录音与记忆。"
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: YES
+    info:
+      path: RememberMe/Info.plist
+      properties:
+        CFBundleDisplayName: 拾光
+        UIRequiresFullScreen: true
+        NSMicrophoneUsageDescription: 录下你的原话，保存为你自己的记忆。
+        NSLocalNetworkUsageDescription: 连接你自己的 Mac，在本机处理录音与记忆。
+        CFBundleURLTypes:
+          - CFBundleURLName: rememberme-pairing
+            CFBundleURLSchemes: [rememberme]
