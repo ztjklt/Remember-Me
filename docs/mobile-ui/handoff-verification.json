@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-27",
+  "version": "mobile-ui-v6",
+  "checkedAt": "2026-09-27T12:59:53.457784+00:00",
+  "sourceCommits": {
+    "androidRuntime": "219cad8dc5dd588c088c67eb38d629ca94fc9b4e",
+    "iosRuntime": "9a3cb44be038a7c8810fec8f56e813221756b514"
+  },
+  "android": {
+    "command": "./gradlew testDebugUnitTest assembleDebug assembleDebugAndroidTest lintDebug --console=plain",
+    "result": "BUILD SUCCESSFUL; 80 actionable tasks: 1 executed, 79 up-to-date; current reports reused for unchanged runtime code",
+    "unitTestReport": {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint": {
+      "Warning": 26
+    },
+    "apkSha256": "52ce60f035ad8960bb28e5cff0b24fb12d056b0450b07f36635f48c95838518f",
+    "connectedDevices": 0,
+    "instrumentationExecuted": false,
+    "realMicrophoneOrPlaybackVerified": false
+  },
+  "ios": {
+    "syntaxParser": "tree-sitter-swift",
+    "swiftFiles": [
+      {
+        "file": "AppModel.swift",
+        "syntaxParsed": true
+      },
+      {
+        "file": "Network.swift",
+        "syntaxParsed": true
+      },
+      {
+        "file": "RememberMeApp.swift",
+        "syntaxParsed": true
+      },
+      {
+        "file": "Views.swift",
+        "syntaxParsed": true
+      }
+    ],
+    "colorAssetPairsVerified": 14,
+    "xcodeBuildExecuted": false,
+    "simulatorOrDeviceRun": false
+  },
+  "design": {
+    "baseTextPairs": 22,
+    "gradientSamples": 1676,
+    "minimumComputedContrast": 4.57,
+    "allPassed": true,
+    "svgXmlParsed": 36,
+    "brandManifestEntriesVerified": 29,
+    "browserChecksRerunDuringHandoff": false,
+    "latestBrowserEvidence": "memory-elements/verification.json; v6 12 layout cases and gallery checks, retained from the UI round",
+    "screenshots": "media/*.png are HTML prototype/gallery captures, not native devices"
+  },
+  "scope": "No Xcode, device, live ASR/remote organization or user-study pass is claimed. Remote CI status is reported separately in the handoff PRs."
+}

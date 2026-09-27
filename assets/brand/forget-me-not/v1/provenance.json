@@ -1,0 +1,13 @@
+{
+  "concept": "C / 留声",
+  "approvedByUser": true,
+  "date": "2026-09-27",
+  "reference": "references/concept-c.png",
+  "conceptMethod": "Built-in imagegen",
+  "productionMethod": "Original deterministic vector redraw inspired by approved concept, not pixel-exact tracing",
+  "sharedSource": "build_assets.py",
+  "runtimeDependencies": [],
+  "font": "System font; no bundled font",
+  "transparentCandidate": "Generated with built-in imagegen but excluded from UI assets because of edge artifacts; vector export is used instead.",
+  "generationPrompt": "GENERATION.md"
+}

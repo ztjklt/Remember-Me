@@ -3,36 +3,34 @@ package me.remember.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import me.remember.app.data.repository.AndroidAudioCaptureService
-import me.remember.app.data.repository.MemoryRepository
-import me.remember.app.data.repository.LocalMemoryRepository
-import me.remember.app.navigation.RememberMeApp
+import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import me.remember.app.core.designsystem.RememberMeTheme
-import me.remember.app.data.repository.UnisoundSpeechToTextService
-import me.remember.app.data.repository.DeepSeekTitleGenerator
-import me.remember.app.data.repository.LocalTitleGenerator
-import me.remember.app.data.repository.LocalAsrService
+import me.remember.app.data.repository.AndroidAudioCaptureService
 import me.remember.app.data.repository.AndroidSherpaOnnxAsrService
-import me.remember.app.data.repository.DeepSeekMemoryExtractor
-import me.remember.app.data.repository.MemoryAgentOrchestrator
-import me.remember.app.data.repository.LocalAgentStateStore
+import me.remember.app.feature.MobileViewModel
+import me.remember.app.navigation.RememberMeApp
 
 class MainActivity : ComponentActivity() {
+    private lateinit var model: MobileViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val audioCaptureService = AndroidAudioCaptureService(applicationContext)
-        val memoryRepository: MemoryRepository = LocalMemoryRepository(audioCaptureService)
-        val asrKey = BuildConfig.UNISOUND_API_KEY
-        val titleGenerator = BuildConfig.DEEPSEEK_API_KEY.takeIf { it.isNotBlank() }
-            ?.let { DeepSeekTitleGenerator(it, BuildConfig.DEEPSEEK_TITLE_MODEL) }
-            ?: LocalTitleGenerator()
-        val speechToTextService = asrKey.takeIf { it.isNotBlank() }
-            ?.let { UnisoundSpeechToTextService(it) }
-        val localAsrService: LocalAsrService = AndroidSherpaOnnxAsrService(applicationContext)
-        val memoryExtractor = BuildConfig.DEEPSEEK_API_KEY.takeIf { it.isNotBlank() }
-            ?.let { DeepSeekMemoryExtractor(it, BuildConfig.DEEPSEEK_TITLE_MODEL) }
-        val agentStateStore = LocalAgentStateStore(applicationContext)
-        val orchestrator = memoryExtractor?.let { MemoryAgentOrchestrator(localAsrService, titleGenerator, it, agentStateStore) }
-        setContent { RememberMeTheme { RememberMeApp(audioCaptureService, memoryRepository, speechToTextService, localAsrService, titleGenerator, orchestrator) } }
+        enableEdgeToEdge()
+        model = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T = MobileViewModel(
+                AndroidAudioCaptureService(applicationContext), AndroidSherpaOnnxAsrService(applicationContext)
+                // Backend processing is deliberately unconfigured until its integration is approved.
+            ) as T
+        })[MobileViewModel::class.java]
+        setContent { RememberMeTheme { RememberMeApp(model) } }
+    }
+    override fun onStop() {
+        super.onStop()
+        if (::model.isInitialized) {
+            if (!isChangingConfigurations) model.finish()
+            model.audio.stopPlayback()
+        }
     }
 }

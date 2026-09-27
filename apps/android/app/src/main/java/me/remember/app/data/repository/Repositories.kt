@@ -1,6 +1,9 @@
 package me.remember.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import me.remember.app.model.*
 
 interface MemoryRepository { fun memories():Flow<Loadable<List<Memory>>> }
@@ -19,8 +22,17 @@ data class AudioRecording(
     val summary: String = "",
     val asrStatus: AsrStatus = AsrStatus.NotRequested,
     val memories: List<ExtractedMemory> = emptyList(),
-    val personModelVersion: String = ""
+    val personModelVersion: String = "",
+    val reviewedTranscript: String? = null,
+    val reviewedAt: String? = null,
+    val processingStage: ProcessingStage = if (transcript.isBlank()) ProcessingStage.Unprocessed else ProcessingStage.NeedsReview,
+    val processingError: String? = null
 )
+
+enum class ProcessingStage { Unprocessed, Transcribing, NeedsReview, Organizing, Complete, Failed }
+data class PlaybackState(val audioPath: String? = null, val playing: Boolean = false,
+    val positionMillis: Long = 0, val durationMillis: Long = 0, val error: String? = null,
+    val preparing: Boolean = false)
 
 data class ExtractedMemory(
     val id: String,
@@ -35,6 +47,12 @@ data class ExtractedMemory(
 enum class AsrStatus { NotRequested, Processing, Ready, Failed }
 
 interface AudioCaptureService {
+    val playback: StateFlow<PlaybackState> get() = MutableStateFlow(PlaybackState())
+    fun observeRecordings(): Flow<List<AudioRecording>> = flowOf(recordings())
+    fun amplitude(): Float = 0f
+    fun pausePlayback() = stopPlayback()
+    fun resumePlayback() = Unit
+    fun seekPlayback(positionMillis: Long) = Unit
     suspend fun start(): AudioRecording
     suspend fun pause()
     suspend fun resume()

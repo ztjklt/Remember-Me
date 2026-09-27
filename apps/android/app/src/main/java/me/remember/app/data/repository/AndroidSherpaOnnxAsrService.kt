@@ -17,6 +17,9 @@ import kotlin.math.roundToInt
 
 class AndroidSherpaOnnxAsrService(private val context: Context) : LocalAsrService {
     override suspend fun transcribe(audioRef: String): String = withContext(Dispatchers.Default) {
+        check(runCatching { context.assets.open("paraformer/model.int8.onnx").close() }.isSuccess) {
+            "本机转写暂不可用：尚未安装语音模型。原音仍保存在手机。"
+        }
         val samples = decodeToMono16k(File(audioRef))
         require(samples.isNotEmpty()) { "The recording contains no decodable audio." }
         val model = OfflineParaformerModelConfig().apply { model = "paraformer/model.int8.onnx" }
