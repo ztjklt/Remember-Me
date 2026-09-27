@@ -35,6 +35,12 @@ final class AppModel: ObservableObject {
     @Published var recordedSeconds = 0
     @Published var meterLevels: [CGFloat] = Array(repeating: 0.16, count: 27)
     @Published var isPlaying = false
+    @Published var playbackID: String?
+    @Published var playbackPosition: TimeInterval = 0
+    @Published var playbackDuration: TimeInterval = 0
+    @Published var playbackLoading = false
+    private var playbackTimer: Timer?
+    private var playbackRequestID: UUID?
     @Published var queryDraft = ""
     @Published var twinAnswer: TwinAnswerRecord?
     @Published var cloudConsentID: String?
@@ -140,6 +146,8 @@ final class AppModel: ObservableObject {
     }
 
     func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
+        guard !isRecording else { return }
+        stopPlayback()
         errorMessage = nil
         transcriptDraft = ""
         isTranscriptReviewReady = false
@@ -147,7 +155,7 @@ final class AppModel: ObservableObject {
             AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
         }
         guard granted else {
-            errorMessage = "麦克风权限已拒绝。请在系统设置中允许拾光使用麦克风，然后再试。"
+            errorMessage = "麦克风权限已拒绝。请在系统设置中允许勿忘我使用麦克风，然后再试。"
             return
         }
         do {
@@ -185,10 +193,8 @@ final class AppModel: ObservableObject {
                 Task { @MainActor in
                     guard let self else { return }
                     self.recordedSeconds = Int(self.accumulated + (self.startedAt.map { Date().timeIntervalSince($0) } ?? 0))
-                    if self.isPaused {
-                        self.meterLevels.removeFirst()
-                        self.meterLevels.append(0.16)
-                    } else if let recorder = self.recorder {
+                    if self.isPaused { return }
+                    if let recorder = self.recorder {
                         recorder.updateMeters()
                         let level = max(0.16, min(1, (recorder.averagePower(forChannel: 0) + 60) / 60))
                         self.meterLevels.removeFirst()
@@ -232,16 +238,71 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func stopPlayback() {
+        playbackRequestID = nil
+        playbackTimer?.invalidate()
+        playbackTimer = nil
+        player?.stop()
+        player = nil
+        isPlaying = false
+        playbackLoading = false
+        playbackID = nil
+        playbackPosition = 0
+        playbackDuration = 0
+    }
+
+    func pausePlayback() {
+        player?.pause()
+        isPlaying = false
+    }
+
+    func toggleCurrentPlayback() {
+        guard let player, !isRecording, !isQueryRecording, !isVoiceRecording else { return }
+        if player.isPlaying { pausePlayback() }
+        else {
+            if player.currentTime >= player.duration - 0.05 { player.currentTime = 0 }
+            player.play()
+            isPlaying = player.isPlaying
+        }
+    }
+
+    func seekPlayback(_ position: TimeInterval) {
+        guard let player else { return }
+        player.currentTime = min(max(0, position), player.duration)
+        playbackPosition = player.currentTime
+    }
+
+    private func beginPlayback(_ next: AVAudioPlayer, identity: String) throws {
+        guard !isRecording, !isQueryRecording, !isVoiceRecording else { return }
+        stopPlayback()
+        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        try AVAudioSession.sharedInstance().setActive(true)
+        player = next
+        playbackID = identity
+        playbackDuration = next.duration
+        next.prepareToPlay()
+        guard next.play() else { throw APIError.invalidResponse }
+        isPlaying = true
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let current = self.player else { return }
+                if self.isPlaying && !current.isPlaying { self.playbackPosition = current.duration }
+                else if current.isPlaying { self.playbackPosition = current.currentTime }
+                self.isPlaying = current.isPlaying
+            }
+        }
+    }
+
     func togglePlayback() {
         guard let draft else { return }
-        if player?.isPlaying == true {
-            player?.stop(); isPlaying = false; return
-        }
-        do {
-            player = try AVAudioPlayer(contentsOf: draft.fileURL)
-            player?.play()
-            isPlaying = true
-        } catch { errorMessage = "本地录音无法播放：\(error.localizedDescription)" }
+        if playbackID == draft.id { toggleCurrentPlayback(); return }
+        do { try beginPlayback(AVAudioPlayer(contentsOf: draft.fileURL), identity: draft.id) }
+        catch { errorMessage = "本地录音无法播放：\(error.localizedDescription)" }
+    }
+
+    func saveTranscriptDraft() {
+        guard let episodeID else { return }
+        UserDefaults.standard.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
     }
 
     func sendRecording() async {
@@ -273,6 +334,7 @@ final class AppModel: ObservableObject {
                 processingStatus = status.status
                 if status.status == "ready" {
                     let calibrationID = draft?.calibrationID
+                    UserDefaults.standard.removeObject(forKey: "transcript-edit-\(episodeID)")
                     UserDefaults.standard.removeObject(forKey: "pending-recording")
                     UserDefaults.standard.removeObject(forKey: "pending-episode")
                     draft = nil
@@ -292,7 +354,7 @@ final class AppModel: ObservableObject {
                 }
                 let review = try await client.transcriptReview(episodeID)
                 if review.state == "reviewing", let text = review.transcript {
-                    if !isTranscriptReviewReady { transcriptDraft = text }
+                    if !isTranscriptReviewReady { transcriptDraft = UserDefaults.standard.string(forKey: "transcript-edit-\(episodeID)") ?? text }
                     isTranscriptReviewReady = true
                     processingStatus = "请核对转写文字"
                     return
@@ -324,15 +386,19 @@ final class AppModel: ObservableObject {
         } catch { errorMessage = "文字还没有确认，录音仍在手机和 Mac 上。\n\(error.localizedDescription)" }
     }
 
-    func correct(_ memory: MemoryRecord, to content: String) async {
-        guard let pairing, let client else { return }
-        do { try await client.correct(subjectID: pairing.subjectID, memoryID: memory.id, content: content); await refresh() }
-        catch { errorMessage = error.localizedDescription }
+    func correct(_ memory: MemoryRecord, to content: String) async -> Bool {
+        guard let pairing, let client else { return false }
+        do { try await client.correct(subjectID: pairing.subjectID, memoryID: memory.id, content: content); await refresh(); return true }
+        catch { errorMessage = error.localizedDescription; return false }
     }
-    func delete(_ memory: MemoryRecord) async {
-        guard let pairing, let client else { return }
-        do { try await client.delete(subjectID: pairing.subjectID, memoryID: memory.id); await refresh() }
-        catch { errorMessage = error.localizedDescription }
+    func delete(_ memory: MemoryRecord) async -> Bool {
+        guard let pairing, let client else { return false }
+        do {
+            try await client.delete(subjectID: pairing.subjectID, memoryID: memory.id)
+            memories.removeAll { $0.id == memory.id }
+            memorySearchResults.removeAll { $0.id == memory.id }
+            return true
+        } catch { errorMessage = error.localizedDescription; return false }
     }
 
     func playOriginal(_ memory: MemoryRecord) async {
@@ -340,13 +406,17 @@ final class AppModel: ObservableObject {
     }
 
     func playOriginal(episodeID: String) async {
-        guard let client else { return }
+        guard let client, !isRecording, !isQueryRecording, !isVoiceRecording else { return }
+        if playbackID == episodeID { toggleCurrentPlayback(); return }
+        stopPlayback()
+        let request = UUID()
+        playbackRequestID = request
+        playbackLoading = true
+        defer { if playbackRequestID == request { playbackLoading = false } }
         do {
             let data = try await client.audio(episodeID)
-            player?.stop()
-            player = try AVAudioPlayer(data: data)
-            player?.play()
-            isPlaying = true
+            guard playbackRequestID == request else { return }
+            try beginPlayback(AVAudioPlayer(data: data), identity: episodeID)
         } catch { errorMessage = "原音暂时无法播放：\(error.localizedDescription)" }
     }
 
@@ -404,6 +474,7 @@ final class AppModel: ObservableObject {
     }
 
     private func beginAuxiliaryRecording(voice: Bool) async {
+        stopPlayback()
         errorMessage = nil
         guard !isRecording && auxiliaryRecorder == nil else {
             errorMessage = "请先结束正在进行的录音。"
@@ -528,10 +599,7 @@ final class AppModel: ObservableObject {
         do {
             let asset = try await client.createSpeech(subjectID: pairing.subjectID, answerID: twinAnswer.id)
             let audio = try await client.speechAudio(subjectID: pairing.subjectID, assetID: asset.asset_id)
-            player?.stop()
-            player = try AVAudioPlayer(data: audio)
-            player?.play()
-            isPlaying = true
+            try beginPlayback(AVAudioPlayer(data: audio), identity: "twin-\(twinAnswer.id)")
         } catch { errorMessage = "个人声音暂时无法播放：\(error.localizedDescription)" }
     }
 

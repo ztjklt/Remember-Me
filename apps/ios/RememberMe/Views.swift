@@ -3,13 +3,49 @@ import AVFoundation
 import UIKit
 
 private enum Ink {
-    static let paper = Color(red: 0.98, green: 0.965, blue: 0.937)
-    static let cream = Color(red: 1, green: 0.992, blue: 0.975)
-    static let text = Color(red: 0.25, green: 0.20, blue: 0.17)
-    static let muted = Color(red: 0.52, green: 0.46, blue: 0.42)
-    static let coral = Color(red: 0.71, green: 0.32, blue: 0.25)
-    static let peach = Color(red: 0.94, green: 0.85, blue: 0.79)
-    static let olive = Color(red: 0.43, green: 0.49, blue: 0.35)
+    static let paper = Color("RmBackground")
+    static let cream = Color("RmSurface")
+    static let text = Color("RmText")
+    static let muted = Color("RmMuted")
+    static let coral = Color("RmPrimary")
+    static let peach = Color("RmSoft")
+    static let olive = Color("RmPrimary")
+    static let onPrimary = Color("RmOnPrimary")
+}
+
+private struct PressFeedbackStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var enabled
+    let fill: Color
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(Ink.onPrimary)
+            .background(fill, in: RoundedRectangle(cornerRadius: 16))
+            .opacity(enabled ? (configuration.isPressed ? 0.86 : 1) : 0.5)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.10), value: configuration.isPressed)
+    }
+}
+
+private func statusLabel(_ state: String) -> String {
+    switch state {
+    case "uploaded": return "原音已保存"
+    case "transcribing": return "正在转成文字"
+    case "reviewing": return "待核对文字"
+    case "extracting", "modeling": return "正在整理记忆"
+    case "ready": return "已整理"
+    case "failed": return "处理未完成，可重试"
+    default: return state
+    }
+}
+
+private func sourceLabel(_ source: String) -> String {
+    switch source {
+    case "SUBJECT": return "本人叙述"
+    case "THIRD_PARTY": return "他人提供"
+    case "AI_INFERENCE": return "AI 推测"
+    default: return "来源待核对"
+    }
 }
 
 private extension View {
@@ -24,9 +60,8 @@ private extension View {
 private struct Eyebrow: View {
     let text: String
     var body: some View {
-        Text(text.uppercased())
-            .font(.system(size: 11, weight: .bold, design: .rounded))
-            .tracking(2)
+        Text(text)
+            .font(.system(.subheadline, design: .default).weight(.semibold))
             .foregroundStyle(Ink.coral)
     }
 }
@@ -39,13 +74,12 @@ private struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(.body, design: .default).weight(.semibold))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 17)
+                .padding(16)
+                .frame(minHeight: 56)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.white)
-        .background(fill, in: RoundedRectangle(cornerRadius: 18))
+        .buttonStyle(PressFeedbackStyle(fill: fill))
     }
 }
 
@@ -57,7 +91,6 @@ struct RootView: View {
             else { MainTabs() }
         }
         .tint(Ink.coral)
-        .preferredColorScheme(.light)
         .alert("需要留意", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -81,17 +114,17 @@ private struct PairingView: View {
             VStack(alignment: .leading, spacing: 23) {
                 Spacer(minLength: 45)
                 Image(systemName: "sparkle")
-                    .font(.system(size: 35, weight: .light))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.coral)
                     .frame(width: 72, height: 72)
                     .background(Ink.peach.opacity(0.55), in: RoundedRectangle(cornerRadius: 22))
                 Eyebrow(text: "REMEMBER ME · 私人手记")
                 Text("把说过的话，\n慢慢变成懂你的记忆。")
-                    .font(.system(size: 36, weight: .regular, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("原音只在你的手机与本机 Mac 之间传送；Mac 转写后会把文字发给 DeepSeek 提取记忆。先用一次性配对码连接，再由你决定什么时候开始录。")
-                    .font(.system(size: 15))
+                Text("原音只在你的手机与本机 Mac 之间传送；Mac 转写后，先由你核对文字并确认，再交给 DeepSeek 整理记忆。先用一次性配对码连接，再由你决定什么时候开始录。")
+                    .font(.system(.subheadline, design: .default).weight(.regular))
                     .foregroundStyle(Ink.muted)
                     .lineSpacing(5)
                 VStack(alignment: .leading, spacing: 15) {
@@ -111,7 +144,7 @@ private struct PairingView: View {
                 }
                 .journalCard()
                 Text("也可以在 iPhone 上打开 Mac 给出的配对链接，自动填写这三项。")
-                    .font(.footnote)
+                    .font(.subheadline)
                     .foregroundStyle(Ink.muted)
                 ActionButton(title: model.isBusy ? "正在连接…" : "安全连接", icon: "lock.shield") {
                     Task { await model.connect() }
@@ -127,57 +160,94 @@ private struct PairingView: View {
 private struct MainTabs: View {
     var body: some View {
         TabView {
-            NavigationStack { HomeView() }
-                .tabItem { Label("今天", systemImage: "sun.max") }
-            NavigationStack { EpisodesView() }
-                .tabItem { Label("录音", systemImage: "waveform") }
-            NavigationStack { MemoriesView() }
-                .tabItem { Label("记忆", systemImage: "book.closed") }
-            NavigationStack { TwinView() }
-                .tabItem { Label("Twin", systemImage: "sparkles.rectangle.stack") }
-            NavigationStack { ModelView() }
-                .tabItem { Label("关于我", systemImage: "person.crop.circle") }
+            NavigationStack { HomeView() }.tabItem { Label("今天", systemImage: "sun.max") }
+            NavigationStack { ArchiveView() }.tabItem { Label("档案", systemImage: "books.vertical") }
+            NavigationStack { TwinView() }.tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
+            NavigationStack { ProfileView() }.tabItem { Label("我的", systemImage: "person.crop.circle") }
+        }
+    }
+}
+
+private struct ArchiveView: View {
+    @State private var segment = 0
+    @State private var query = ""
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("档案内容", selection: $segment) {
+                Text("录音").tag(0)
+                Text("记忆").tag(1)
+            }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.vertical, 12)
+            if segment == 0 { EpisodesView(query: query) } else { MemoriesView(query: query) }
         }
         .background(Ink.paper)
+        .navigationTitle("档案")
+        .searchable(text: $query, prompt: "搜索录音文字或记忆")
+    }
+}
+
+private struct ProfileView: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        List {
+            Section {
+                Text("由你决定留下什么。").font(.title2.weight(.semibold))
+                Text("原音先保存在手机，提交后传给你配对的本机服务。确认文字后才进入记忆整理。").font(.body)
+            }
+            Section("数据与授权") {
+                NavigationLink("系统如何理解我") { ModelView() }
+                NavigationLink("个人声音与独立授权") { ScrollView { VoiceSetupView().padding(20) }.navigationTitle("个人声音") }
+                if model.cloudConsentID != nil {
+                    Button("撤销云端对话授权", role: .destructive) { Task { await model.revokeCloudTwin() } }
+                }
+                Button("管理系统麦克风权限") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                }
+            }
+            Section("外观") { LabeledContent("颜色与字号", value: "跟随系统") }
+            Section("连接") { Text(model.pairing == nil ? "尚未配对" : "已配对本机服务") }
+        }
+        .scrollContentBackground(.hidden).background(Ink.paper).navigationTitle("我的")
     }
 }
 
 private struct EpisodesView: View {
+    var query = ""
     @EnvironmentObject private var model: AppModel
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 Eyebrow(text: "每一段原音都在")
                 Text("声音档案")
-                    .font(.system(size: 31, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 if model.episodes.isEmpty {
                     Text("这里会保存你录下的原音和转写。即使没有抽出记忆，录音仍然在。")
                         .foregroundStyle(Ink.muted)
                         .journalCard()
                 }
-                ForEach(model.episodes) { episode in
+                ForEach(model.episodes.filter { query.isEmpty || ($0.transcript ?? "").localizedCaseInsensitiveContains(query) }) { episode in
                     NavigationLink { EpisodeDetailView(initial: episode) } label: {
                         VStack(alignment: .leading, spacing: 10) {
                             Eyebrow(text: episode.recorded_at.prefix(10).description)
                             Text(episode.transcript?.isEmpty == false ? (episode.transcript ?? "") : "一段正在等待处理的录音")
-                                .font(.system(size: 19, design: .serif))
+                                .font(.system(.body, design: .default).weight(.regular))
                                 .foregroundStyle(Ink.text)
                                 .lineLimit(3)
                                 .multilineTextAlignment(.leading)
-                            Text(episode.status == "ready" ? "已完成 · 点击播放原音" : "状态：\(episode.status)")
-                                .font(.footnote)
+                            Text(statusLabel(episode.status))
+                                .font(.subheadline)
                                 .foregroundStyle(episode.status == "failed" ? Ink.coral : Ink.muted)
                         }
-                        .journalCard()
+                        .padding(.vertical, 16)
                     }
                     .buttonStyle(.plain)
+                    Divider()
                 }
             }
             .padding(20)
         }
         .background(Ink.paper.ignoresSafeArea())
-        .navigationTitle("录音")
+        .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
 }
@@ -189,27 +259,26 @@ private struct EpisodeDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Eyebrow(text: "原始 Episode · \(episode.status)")
+                Eyebrow(text: "原始录音 · \(statusLabel(episode.status))")
                 Text("这一段，\n完整地留着。")
-                    .font(.system(size: 31, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 VStack(alignment: .leading, spacing: 12) {
                     Eyebrow(text: "原音")
-                    ActionButton(title: "播放原始录音", icon: "play.circle") {
-                        Task { await model.playOriginal(episodeID: episode.id) }
-                    }
+                    OriginalPlayer(episodeID: episode.id)
                     Text("录入时间：\(episode.recorded_at)")
-                        .font(.footnote).foregroundStyle(Ink.muted)
+                        .font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 .journalCard()
                 VStack(alignment: .leading, spacing: 12) {
                     Eyebrow(text: "原始转写")
                     Text(episode.transcript ?? "还没有转写。原音已保存，可以稍后再看。")
-                        .font(.system(size: 19, design: .serif))
+                        .font(.system(.body, design: .default).weight(.regular))
                         .foregroundStyle(Ink.text)
-                    Text("STT：\(episode.stt_model_version ?? "等待中") · AI：\(episode.model_version ?? "等待中")")
-                        .font(.caption)
-                        .foregroundStyle(Ink.muted)
+                    DisclosureGroup("处理详情") {
+                        Text("转写版本：\(episode.stt_model_version ?? "等待中") · 整理版本：\(episode.model_version ?? "等待中")")
+                            .font(.subheadline).foregroundStyle(Ink.muted)
+                    }
                 }
                 .journalCard()
                 if episode.status == "failed" {
@@ -238,12 +307,12 @@ private struct HomeView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Eyebrow(text: Date().formatted(.dateTime.month(.wide).day()))
                         Text("慢慢说，我在听。")
-                            .font(.system(size: 31, design: .serif))
+                            .font(.system(.title, design: .default).weight(.semibold))
                             .foregroundStyle(Ink.text)
                     }
                     Spacer()
                     Image(systemName: "circle.hexagongrid.fill")
-                        .font(.system(size: 28, weight: .ultraLight))
+                        .font(.system(.title2, design: .default).weight(.semibold))
                         .foregroundStyle(Ink.coral)
                 }
                 .padding(.top, 12)
@@ -251,12 +320,12 @@ private struct HomeView: View {
                 VStack(alignment: .leading, spacing: 15) {
                     Eyebrow(text: "你的声音，属于你")
                     Text("今天想留下什么？")
-                        .font(.system(size: 26, design: .serif))
+                        .font(.system(.title2, design: .default).weight(.semibold))
                         .foregroundStyle(Ink.text)
                     Text("一个念头、一段经历，或只是此刻的心情，都可以从这里开始。")
                         .font(.subheadline)
                         .foregroundStyle(Ink.muted)
-                    ActionButton(title: "开始自由录音", icon: "waveform") {
+                    ActionButton(title: "开始录音", icon: "waveform") {
                         selectedQuestion = nil
                         showRecorder = true
                     }
@@ -267,7 +336,7 @@ private struct HomeView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Eyebrow(text: "给你的一个小问题")
                         Text(question.text)
-                            .font(.system(size: 23, design: .serif))
+                            .font(.system(.title3, design: .default).weight(.semibold))
                             .foregroundStyle(Ink.text)
                         HStack(spacing: 12) {
                             Button {
@@ -293,7 +362,7 @@ private struct HomeView: View {
                 if model.draft != nil || model.episodeID != nil {
                     VStack(alignment: .leading, spacing: 12) {
                         Eyebrow(text: "未完成的记录")
-                        Text(model.processingStatus.isEmpty ? "录音保存在手机里，随时可以继续。" : "正在处理：\(model.processingStatus)")
+                        Text(model.processingStatus.isEmpty ? "录音保存在手机里，随时可以继续。" : "正在处理：\(statusLabel(model.processingStatus))")
                             .font(.subheadline)
                             .foregroundStyle(Ink.text)
                         Button("继续查看或重试") { showRecorder = true }
@@ -302,25 +371,27 @@ private struct HomeView: View {
                     .journalCard()
                 }
 
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Eyebrow(text: "正在认识你")
-                        Text("\(model.memories.count) 条记忆")
-                            .font(.system(size: 23, design: .serif))
-                            .foregroundStyle(Ink.text)
-                    }
-                    Spacer()
-                    Text("模型 v\(model.modelVersion)")
-                        .font(.footnote)
-                        .foregroundStyle(Ink.muted)
+                Text("最近留下的声音").font(.title3.weight(.semibold))
+                if model.episodes.isEmpty {
+                    Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
                 }
-                .journalCard()
+                ForEach(Array(model.episodes.prefix(3))) { episode in
+                    NavigationLink { EpisodeDetailView(initial: episode) } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(episode.transcript?.isEmpty == false ? String((episode.transcript ?? "").prefix(48)) : "一段原始录音")
+                                .font(.body.weight(.medium)).foregroundStyle(Ink.text)
+                            Text(String(episode.recorded_at.prefix(10)) + " · " + statusLabel(episode.status))
+                                .font(.subheadline).foregroundStyle(Ink.muted)
+                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 16)
+                    }.buttonStyle(.plain)
+                    Divider()
+                }
             }
             .padding(20)
         }
         .background(Ink.paper.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showRecorder) { RecorderView(question: selectedQuestion, calibration: nil) }
+        .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: selectedQuestion, calibration: nil) }
         .refreshable { await model.refresh() }
     }
 }
@@ -328,125 +399,150 @@ private struct HomeView: View {
 private struct RecorderView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let question: QuestionRecord?
     let calibration: CalibrationRecord?
     @State private var showConsent = false
+    @State private var showClose = false
+    @State private var showOrganizeConsent = false
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Eyebrow(text: calibration != nil ? "本人校准回答" :
-                            question == nil ? "自由录音" : "回答这个问题")
-                    Text(calibration?.question ?? question?.text ?? "把此刻，\n留在这里。")
-                        .font(.system(size: 32, design: .serif))
-                        .foregroundStyle(Ink.text)
-                        .fixedSize(horizontal: false, vertical: true)
-                    HStack(spacing: 7) {
-                        ForEach(0..<27, id: \.self) { index in
-                            Capsule()
-                                .fill(index.isMultiple(of: 4) ? Ink.coral : Ink.peach)
-                                .frame(width: 5, height: 14 + 72 * model.meterLevels[index])
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.28), value: model.meterLevels)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 100)
-                    .journalCard()
+                    Eyebrow(text: calibration != nil ? "本人校准回答" : question == nil ? "自由录音" : "回答这个问题")
+                    Text(calibration?.question ?? question?.text ?? "把此刻，留在这里。")
+                        .font(.title.weight(.semibold)).foregroundStyle(Ink.text)
+                    Text(model.isRecording ? (model.isPaused ? "已暂停" : "正在录音") : model.draft != nil ? "录音已保存在手机" : "由你决定什么时候开始")
+                        .foregroundStyle(Ink.muted).accessibilityAddTraits(.updatesFrequently)
                     Text(String(format: "%02d:%02d", model.recordedSeconds / 60, model.recordedSeconds % 60))
-                        .font(.system(size: 45, weight: .light, design: .monospaced))
-                        .foregroundStyle(Ink.text)
+                        .font(.system(.largeTitle, design: .monospaced)).monospacedDigit()
                         .frame(maxWidth: .infinity)
-                    if model.isRecording {
-                        HStack(spacing: 12) {
-                            Button(model.isPaused ? "继续" : "暂停") { model.pauseOrResume() }
-                                .buttonStyle(.bordered)
-                            ActionButton(title: "完成录音", icon: "stop.fill") { model.finishRecording() }
-                        }
-                    } else if model.isTranscriptReviewReady {
-                        VStack(alignment: .leading, spacing: 13) {
-                            Eyebrow(text: "先核对，再生成记忆")
-                            Text("这是本机识别出的文字。错字可以直接修改；确认后才会发送给 DeepSeek 提取记忆。")
-                                .font(.subheadline)
-                                .foregroundStyle(Ink.muted)
-                            if model.draft != nil {
-                                Button { model.togglePlayback() } label: {
-                                    Label(model.isPlaying ? "停止播放" : "边听原音边核对",
-                                          systemImage: model.isPlaying ? "stop.circle" : "play.circle")
-                                }
-                                .buttonStyle(.bordered)
+                    GeometryReader { geometry in
+                        HStack(spacing: 4) {
+                            ForEach(Array(model.meterLevels.enumerated()), id: \.offset) { _, level in
+                                Capsule().fill(Ink.coral)
+                                    .frame(width: max(1, (geometry.size.width - CGFloat(max(0, model.meterLevels.count - 1)) * 4) / CGFloat(max(1, model.meterLevels.count))), height: 8 + 72 * level)
                             }
-                            TextEditor(text: $model.transcriptDraft)
-                                .frame(minHeight: 170)
-                                .padding(9)
-                                .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
-                                .accessibilityLabel("核对并修改转写文字")
-                            ActionButton(title: model.isBusy ? "正在提交…" : "确认文字并生成记忆",
-                                         icon: "checkmark.circle") {
-                                Task { await model.submitTranscript() }
-                            }
-                            .disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        }
-                    } else if model.draft != nil {
-                        VStack(spacing: 12) {
-                            Button { model.togglePlayback() } label: {
-                                Label(model.isPlaying ? "停止播放" : "播放手机里的原音", systemImage: model.isPlaying ? "stop.circle" : "play.circle")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.bordered)
-                            ActionButton(title: model.isBusy ? "正在提交…" : "保存并转写", icon: "arrow.up.heart") {
-                                Task { await model.sendRecording() }
-                            }
-                            .disabled(model.isBusy)
-                        }
-                    } else {
-                        ActionButton(title: "开始录音", icon: "mic.fill") {
-                            showConsent = true
-                        }
+                        }.frame(height: 100)
+                    }
+                    .frame(height: 100)
+                    .accessibilityHidden(true)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: model.meterLevels)
+                    if model.draft != nil && !model.isRecording { OriginalPlayer(episodeID: nil) }
+                    if model.isTranscriptReviewReady {
+                        Text("先核对，再整理记忆").font(.title3.weight(.semibold))
+                        Text("修改识别不准确的地方。确认后才会把文字发送给 DeepSeek 提取记忆。").foregroundStyle(Ink.muted)
+                        TextEditor(text: $model.transcriptDraft)
+                            .onChange(of: model.transcriptDraft) { _, _ in model.saveTranscriptDraft() }
+                            .frame(minHeight: 220).padding(12)
+                            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+                            .accessibilityLabel("核对并修改转写文字")
                     }
                     if !model.processingStatus.isEmpty {
-                        Text("处理进度：\(model.processingStatus)")
-                            .font(.subheadline)
-                            .foregroundStyle(Ink.olive)
+                        Text(statusLabel(model.processingStatus)).foregroundStyle(Ink.coral)
                     }
-                    Text("原音先保存在这台 iPhone。上传后请核对转写文字，再生成记忆；网络中断时可以重试，同一段录音不会重复创建记录。")
-                        .font(.footnote)
-                        .foregroundStyle(Ink.muted)
-                }
-                .padding(24)
+                    if let error = model.errorMessage {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("操作未完成", systemImage: "exclamationmark.circle").font(.headline)
+                            Text(error).font(.body)
+                        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    Text("原音先留在手机。提交后传给配对的 Mac 转写；网络中断时可以重试，无需重录。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                }.padding(20)
             }
             .background(Ink.paper.ignoresSafeArea())
-            .navigationTitle("留下一段声音")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("留下一段声音").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
-                Button("完成") {
-                    if model.isRecording { model.finishRecording() }
-                    dismiss()
-                }
+                Button("关闭") { if model.isRecording { showClose = true } else { dismiss() } }
             } }
-            .task {
-                if model.episodeID != nil { await model.pollEpisode() }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 10) {
+                    if model.isRecording {
+                        Button(model.isPaused ? "继续录音" : "暂停录音") { model.pauseOrResume() }
+                            .frame(minHeight: 44).buttonStyle(.bordered)
+                        ActionButton(title: "完成并保存", icon: "stop.fill") { model.finishRecording() }
+                    } else if model.isTranscriptReviewReady {
+                        ActionButton(title: model.isBusy ? "正在提交…" : "确认文字并整理记忆", icon: "checkmark.circle") {
+                            showOrganizeConsent = true
+                        }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    } else if model.draft != nil {
+                        ActionButton(title: model.isBusy ? "正在处理…" : "提交并转成文字", icon: "text.bubble") {
+                            Task { await model.sendRecording() }
+                        }.disabled(model.isBusy)
+                    } else {
+                        ActionButton(title: "开始录音", icon: "mic.fill") { showConsent = true }
+                    }
+                }.padding(16).background(Ink.cream)
             }
-            .confirmationDialog("开始录下这段声音？", isPresented: $showConsent) {
-                Button("同意并开始录音") {
-                    Task { await model.startRecording(questionID: question?.id,
-                                                     calibrationID: calibration?.id) }
-                }
+            .interactiveDismissDisabled(model.isRecording)
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background { model.finishRecording(); model.pausePlayback() }
+            }
+            .task { if model.episodeID != nil { await model.pollEpisode() } }
+            .confirmationDialog("开始录下这段声音？", isPresented: $showConsent, titleVisibility: .visible) {
+                Button("同意并开始录音") { Task { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) } }
                 Button("取消", role: .cancel) { }
             } message: {
-                Text("原音会先留在这台 iPhone，提交后传给你配对的本机 Mac；Mac 转写后会把文字发给 DeepSeek 提取记忆。你可以暂停或结束录音。")
+                Text("原音先留在手机。提交后传给配对的 Mac 转写，确认文字后才交给 DeepSeek 整理。")
+            }
+            .confirmationDialog("要结束这段录音吗？", isPresented: $showClose, titleVisibility: .visible) {
+                Button("完成并保存") { model.finishRecording(); dismiss() }
+                Button("继续录音", role: .cancel) { }
+            }
+            .confirmationDialog("确认文字并整理记忆？", isPresented: $showOrganizeConsent, titleVisibility: .visible) {
+                Button("同意并整理") { Task { await model.submitTranscript() } }
+                Button("暂不整理，只保留文字", role: .cancel) { model.saveTranscriptDraft() }
+            } message: {
+                Text("配对的 Mac 会把你核对后的文字发送给 DeepSeek 提取记忆。原始录音不随本次操作发送给该服务。")
             }
         }
     }
 }
 
+private struct OriginalPlayer: View {
+    @EnvironmentObject private var model: AppModel
+    let episodeID: String?
+    private var identity: String { episodeID ?? model.draft?.id ?? "" }
+    private var selected: Bool { model.playbackID == identity }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Button {
+                    if selected { model.toggleCurrentPlayback() }
+                    else if let episodeID { Task { await model.playOriginal(episodeID: episodeID) } }
+                    else { model.togglePlayback() }
+                } label: {
+                    Image(systemName: selected && model.isPlaying ? "pause.fill" : "play.fill")
+                        .frame(width: 56, height: 56)
+                }
+                .buttonStyle(.borderedProminent).clipShape(Circle())
+                .disabled(model.playbackLoading)
+                .accessibilityLabel(selected && model.isPlaying ? "暂停原音" : "播放原音")
+                VStack(alignment: .leading) {
+                    Text("原始录音").font(.body.weight(.medium))
+                    Text(selected ? "\(Int(model.playbackPosition) / 60):\(String(format: "%02d", Int(model.playbackPosition) % 60)) / \(Int(model.playbackDuration) / 60):\(String(format: "%02d", Int(model.playbackDuration) % 60))" : "点击播放")
+                        .font(.subheadline).foregroundStyle(Ink.muted).monospacedDigit()
+                }
+            }
+            if selected {
+                Slider(value: Binding(get: { model.playbackPosition }, set: { model.seekPlayback($0) }), in: 0...max(1, model.playbackDuration))
+                    .accessibilityLabel("原音播放进度")
+            }
+        }.padding(16).background(Ink.peach, in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
 private struct MemoriesView: View {
+    var query = ""
     @EnvironmentObject private var model: AppModel
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 Eyebrow(text: "有据可循的记忆")
                 Text("说过的话，留下痕迹。")
-                    .font(.system(size: 30, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 VStack(alignment: .leading, spacing: 10) {
                     Eyebrow(text: "在自己的记忆里找")
@@ -461,7 +557,7 @@ private struct MemoriesView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(result.statement).font(.subheadline).foregroundStyle(Ink.text)
                                     Text(result.evidence.first?.excerpt ?? "查看记忆详情")
-                                        .font(.footnote).foregroundStyle(Ink.muted)
+                                        .font(.subheadline).foregroundStyle(Ink.muted)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -474,28 +570,29 @@ private struct MemoriesView: View {
                         .foregroundStyle(Ink.muted)
                         .journalCard()
                 }
-                ForEach(model.memories) { memory in
+                ForEach(model.memories.filter { query.isEmpty || $0.content.localizedCaseInsensitiveContains(query) }) { memory in
                     NavigationLink { MemoryDetailView(memory: memory) } label: {
                         VStack(alignment: .leading, spacing: 10) {
                             Eyebrow(text: memory.domain ?? memory.memory_type)
                             Text(memory.content)
-                                .font(.system(size: 20, design: .serif))
+                                .font(.system(.title3, design: .default).weight(.semibold))
                                 .foregroundStyle(Ink.text)
                                 .multilineTextAlignment(.leading)
                             Text(memory.evidence.first?.excerpt ?? "查看来源")
-                                .font(.footnote)
+                                .font(.subheadline)
                                 .foregroundStyle(Ink.muted)
                                 .lineLimit(2)
                         }
-                        .journalCard()
+                        .padding(.vertical, 16)
                     }
                     .buttonStyle(.plain)
+                    Divider()
                 }
             }
             .padding(20)
         }
         .background(Ink.paper.ignoresSafeArea())
-        .navigationTitle("记忆")
+        .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
 }
@@ -513,7 +610,7 @@ private struct TwinView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Eyebrow(text: "EVIDENCE TWIN")
                 Text("问一个关于自己的问题。")
-                    .font(.system(size: 30, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 Text("RM 会先找你真正说过的话；需要推测时会明确标出来，不知道时会说不知道。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
@@ -554,18 +651,18 @@ private struct TwinView: View {
                     Button("撤销云端 Twin 授权", role: .destructive) {
                         Task { await model.revokeCloudTwin() }
                     }
-                    .font(.footnote)
+                    .font(.subheadline)
                 }
                 if let answer = model.twinAnswer {
                     VStack(alignment: .leading, spacing: 13) {
                         Eyebrow(text: answer.response_type == "ORIGINAL" ? "原话" :
                                 answer.response_type == "SIMULATION" ? "根据记忆推测" : "目前无法确定")
                         Text(answer.answer)
-                            .font(.system(size: 23, design: .serif))
+                            .font(.system(.title3, design: .default).weight(.semibold))
                             .foregroundStyle(Ink.text)
                         if answer.stale {
                             Label("相关记忆已有变化，请重新提问。", systemImage: "arrow.clockwise")
-                                .font(.footnote).foregroundStyle(Ink.coral)
+                                .font(.subheadline).foregroundStyle(Ink.coral)
                         }
                         ForEach(answer.evidence) { source in
                             VStack(alignment: .leading, spacing: 6) {
@@ -586,17 +683,17 @@ private struct TwinView: View {
                                 .disabled(model.isBusy)
                             } else {
                                 Text("下方单独授权并录制声音样本后，可以点播个人声音。")
-                                    .font(.footnote).foregroundStyle(Ink.muted)
+                                    .font(.subheadline).foregroundStyle(Ink.muted)
                             }
                         }
                         Text("Person Model v\(answer.person_model_version) · \(answer.model_version)")
-                            .font(.caption2).foregroundStyle(Ink.muted)
+                            .font(.subheadline).foregroundStyle(Ink.muted)
                     }
                     .journalCard()
                     if answer.response_type != "UNKNOWN" && !answer.stale &&
                         model.calibrationRun?.twin_answer_id != answer.id {
                         Text("校准会先锁定这条回答，再录下你的真实回答并核对文字；比较只使用确认后的文字。")
-                            .font(.footnote).foregroundStyle(Ink.muted)
+                            .font(.subheadline).foregroundStyle(Ink.muted)
                         Button("用这条回答做一次校准") {
                             Task { await model.startCalibration() }
                         }
@@ -607,10 +704,10 @@ private struct TwinView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Eyebrow(text: "TWIN 校准 · \(run.status)")
                         Text(run.question)
-                            .font(.system(size: 22, design: .serif)).foregroundStyle(Ink.text)
+                            .font(.system(.title3, design: .default).weight(.semibold)).foregroundStyle(Ink.text)
                         if run.status == "stale" {
                             Text("原始证据或授权已有变化，请重新提问并锁定新回答。")
-                                .font(.footnote).foregroundStyle(Ink.coral)
+                                .font(.subheadline).foregroundStyle(Ink.coral)
                         } else {
                             Text("Twin 先回答并锁定：“\(run.locked_answer ?? "")”")
                                 .font(.subheadline).foregroundStyle(Ink.muted)
@@ -627,7 +724,7 @@ private struct TwinView: View {
                                     .disabled(model.isBusy)
                                 } else {
                                     Text("回答已保存。请核对转写并等待记忆处理完成；之后可重试比较。")
-                                        .font(.footnote).foregroundStyle(Ink.muted)
+                                        .font(.subheadline).foregroundStyle(Ink.muted)
                                 }
                             } else if run.status == "complete" {
                                 Text(run.summary ?? "校准完成")
@@ -637,19 +734,19 @@ private struct TwinView: View {
                                         Text("\(dimensionNames[dimension.dimension] ?? dimension.dimension) · \(alignmentNames[dimension.alignment] ?? dimension.alignment)")
                                             .font(.footnote.weight(.semibold)).foregroundStyle(Ink.coral)
                                         Text(dimension.note)
-                                            .font(.footnote).foregroundStyle(Ink.text)
+                                            .font(.subheadline).foregroundStyle(Ink.text)
                                         if let excerpt = dimension.human_excerpt {
                                             Text("本人原话：“\(excerpt)”")
-                                                .font(.footnote).foregroundStyle(Ink.muted)
+                                                .font(.subheadline).foregroundStyle(Ink.muted)
                                         }
                                     }
                                 }
                                 if let next = run.suggested_question {
                                     Button("继续追问：\(next)") { model.queryDraft = next }
-                                        .font(.footnote)
+                                        .font(.subheadline)
                                 }
                                 Text("比较模型：\(run.comparison_model_version ?? "未知")")
-                                    .font(.caption2).foregroundStyle(Ink.muted)
+                                    .font(.subheadline).foregroundStyle(Ink.muted)
                             }
                         }
                     }
@@ -660,7 +757,7 @@ private struct TwinView: View {
             .padding(20)
         }
         .background(Ink.paper.ignoresSafeArea())
-        .navigationTitle("Twin")
+        .navigationTitle("对话")
         .refreshable { await model.refresh() }
         .sheet(isPresented: $showCalibrationRecorder) {
             if let run = model.calibrationRun {
@@ -683,7 +780,7 @@ private struct VoiceSetupView: View {
                 Button("撤销声音授权并删除样本", role: .destructive) {
                     Task { await model.revokeVoice() }
                 }
-                .font(.footnote)
+                .font(.subheadline)
             } else {
                 Text("请在安静的地方自然地读 5–15 秒，例如：\n“\(guide)”")
                     .font(.subheadline).foregroundStyle(Ink.text)
@@ -699,11 +796,11 @@ private struct VoiceSetupView: View {
                 .buttonStyle(.bordered)
                 if model.isVoiceRecording {
                     Text("已录 \(model.auxiliarySeconds) 秒 · 目标 5–15 秒")
-                        .font(.footnote).foregroundStyle(Ink.coral)
+                        .font(.subheadline).foregroundStyle(Ink.coral)
                 }
                 if model.voiceSampleURL != nil {
                     Text("请对照录音核对实际说出的文字；普通记忆录音不会被用作声音样本。")
-                        .font(.footnote).foregroundStyle(Ink.muted)
+                        .font(.subheadline).foregroundStyle(Ink.muted)
                     TextEditor(text: $model.voiceSampleTranscript)
                         .frame(minHeight: 100)
                         .padding(8)
@@ -712,7 +809,7 @@ private struct VoiceSetupView: View {
                             UserDefaults.standard.set(text, forKey: "pending-voice-transcript")
                         }
                     Toggle("我确认样本中只有自己的声音", isOn: $ownVoiceConfirmed)
-                        .font(.footnote)
+                        .font(.subheadline)
                     ActionButton(title: model.isBusy ? "正在提交…" : "单独授权并保存声音样本",
                                  icon: "lock.shield") {
                         Task { await model.enrollVoice() }
@@ -724,7 +821,7 @@ private struct VoiceSetupView: View {
                     Button("撤销声音授权并删除样本", role: .destructive) {
                         Task { await model.revokeVoice() }
                     }
-                    .font(.footnote)
+                    .font(.subheadline)
                 }
             }
         }
@@ -741,27 +838,25 @@ private struct MemoryDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Eyebrow(text: "记忆 · \(memory.domain ?? memory.memory_type)")
+                Eyebrow(text: "记忆 · \(sourceLabel(memory.source_type))")
                 Text(memory.content)
-                    .font(.system(size: 29, design: .serif))
+                    .font(.system(.title2, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 VStack(alignment: .leading, spacing: 12) {
-                    Eyebrow(text: "当时你说")
-                    Button { Task { await model.playOriginal(memory) } } label: {
-                        Label("播放原始录音", systemImage: "play.circle")
-                    }
-                    .buttonStyle(.bordered)
+                    Eyebrow(text: "当时说过的话")
+                    OriginalPlayer(episodeID: memory.episode_id)
                     ForEach(memory.evidence) { evidence in
                         Text("“\(evidence.excerpt ?? "")”")
-                            .font(.system(size: 19, design: .serif))
+                            .font(.system(.body, design: .default).weight(.regular))
                             .foregroundStyle(Ink.text)
                     }
                     Text("原始转写：\(memory.transcript ?? "暂无")")
-                        .font(.footnote)
+                        .font(.subheadline)
                         .foregroundStyle(Ink.muted)
-                    Text("录入：\(memory.recorded_at) · STT \(memory.stt_model_version ?? "未知") · AI \(memory.model_version)")
-                        .font(.caption2)
-                        .foregroundStyle(Ink.muted)
+                    DisclosureGroup("来源与处理详情") {
+                        Text("录入：\(memory.recorded_at) · 转写版本 \(memory.stt_model_version ?? "未知") · 整理版本 \(memory.model_version)")
+                            .font(.subheadline).foregroundStyle(Ink.muted)
+                    }
                 }
                 .journalCard()
                 VStack(alignment: .leading, spacing: 12) {
@@ -770,11 +865,11 @@ private struct MemoryDetailView: View {
                         .lineLimit(3...6)
                         .textFieldStyle(.roundedBorder)
                     ActionButton(title: "保存纠正", icon: "checkmark") {
-                        Task { await model.correct(memory, to: correction); dismiss() }
+                        Task { if await model.correct(memory, to: correction) { dismiss() } }
                     }
                     .disabled(correction.trimmingCharacters(in: .whitespaces).isEmpty)
                     Button("删除这条记忆", role: .destructive) { showDelete = true }
-                        .font(.footnote)
+                        .font(.subheadline)
                 }
                 .journalCard()
             }
@@ -784,7 +879,7 @@ private struct MemoryDetailView: View {
         .navigationTitle("记忆详情")
         .confirmationDialog("删除这条记忆？原始录音和纠错记录仍会保留。", isPresented: $showDelete) {
             Button("删除记忆", role: .destructive) {
-                Task { await model.delete(memory); dismiss() }
+                Task { if await model.delete(memory) { dismiss() } }
             }
         }
     }
@@ -803,7 +898,7 @@ private struct ModelView: View {
             VStack(alignment: .leading, spacing: 15) {
                 Eyebrow(text: "PERSON MODEL · v\(model.modelVersion)")
                 Text("一点一点，\n拼成现在的你。")
-                    .font(.system(size: 31, design: .serif))
+                    .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 Text("七个维度会随着你的叙述慢慢丰富。矛盾的记忆会一起保留，等你确认。")
                     .font(.subheadline)
@@ -812,7 +907,7 @@ private struct ModelView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text(names[domain.domain] ?? domain.domain)
-                                .font(.system(size: 22, design: .serif))
+                                .font(.system(.title3, design: .default).weight(.semibold))
                                 .foregroundStyle(Ink.text)
                             Spacer()
                             Text("\(domain.traits.count)")
@@ -820,7 +915,7 @@ private struct ModelView: View {
                         }
                         if domain.traits.isEmpty {
                             Text("还没有足够的记录，留待以后慢慢补上。")
-                                .font(.footnote)
+                                .font(.subheadline)
                                 .foregroundStyle(Ink.muted)
                         }
                         ForEach(domain.traits) { trait in
@@ -830,7 +925,7 @@ private struct ModelView: View {
                                     .foregroundStyle(Ink.text)
                                 if trait.status == "unresolved" {
                                     Label("有不同说法，等待确认", systemImage: "questionmark.circle")
-                                        .font(.footnote)
+                                        .font(.subheadline)
                                         .foregroundStyle(Ink.coral)
                                 }
                             }
