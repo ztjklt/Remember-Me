@@ -16,7 +16,7 @@ import me.remember.app.feature.*
 @Composable fun RememberMeApp(audioCaptureService: AudioCaptureService, memoryRepository: MemoryRepository, speechToTextService: SpeechToTextService? = null, localAsrService: LocalAsrService? = null, titleGenerator: TitleGenerator? = null, orchestrator: MemoryAgentOrchestrator? = null){
     val nav=rememberNavController()
     val startDestination = remember(audioCaptureService) {
-        if (audioCaptureService.latestRecording() != null) Routes.Recording else Routes.Splash
+        if (audioCaptureService.latestRecording() != null) Routes.Home else Routes.Splash
     }
     NavHost(nav,startDestination){
         composable(Routes.Splash){SplashScreen{nav.navigate(Routes.Welcome){popUpTo(Routes.Splash){inclusive=true}}}}
