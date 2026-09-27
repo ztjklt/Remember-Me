@@ -2,6 +2,8 @@
 
 第六版 UI 对齐代码位于 `codex/ios-ui-alignment`，固定基于 #77 的 `e146ac56f080299676fed40653394b97a37bd270`，Draft PR 比较目标为 `feature/ios-calibration`。交接时 #77 仍为 OPEN / Draft，head 未变化；本次没有合并或发布。
 
+交接 PR：**[iOS #80](https://github.com/ztjklt/Remember-Me/pull/80)**；对应 **[Android / 设计资产 #79](https://github.com/ztjklt/Remember-Me/pull/79)**。远端状态见 Checks，自动运行的 Android CI 不能视作 iOS 编译验证。
+
 ## 交付和入口
 
 - [逐项改动与各轮检查](UI_ALIGNMENT.md)：导航、录音、播放、核对草稿、来源、浅深色、品牌、渐变和回忆图形。
