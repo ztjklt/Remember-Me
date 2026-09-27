@@ -1,15 +1,17 @@
-# Remember Me Android Prototype
+# Remember Me Android
 
-Remember Me 是一个以声音为入口、可追溯且可纠错的 Digital Twin 与数字托付产品。本仓库是第一阶段 Android 原生交互原型，重点验证 Onboarding、Capture、Twin Birth、Voice Seed、Creator Home 与 Legacy Mode 的产品体验；所有 AI、声音克隆、后端与硬件能力目前均为 Mock 或接口占位。
+当前入口是 UI v6 的「今天 / 档案 / 我的」。可以在手机录音、暂停、保存、播放、核对本机转写，并在档案中检索录音和已整理的记忆。#78 的画像与关系图页面代码仍在仓库中，但尚未接入真实数据，不能当作已生成的 Person Model。
+
+默认构建不配置记忆整理服务。核对后的文字只会在用户明确同意、且应用装配了 `ReviewedMemoryProcessor` 时发送；当前版本会提示服务未连接。本机 ASR 需要单独提供模型权重。DeepSeek 等供应商凭证只应配置在 Backend，不能放入 Android APK。
 
 ## 运行
 
-要求：Android Studio Stable、JDK 17、Android SDK 35、Android Emulator。使用 Android Studio 打开仓库根目录，等待 Gradle Sync，选择 `RememberMe_API_35`（或任意 API 35 手机模拟器），运行 `app`。
+要求：Android Studio、JDK 17、Android SDK 35。使用 Android Studio 打开 `apps/android`，等待 Gradle Sync，然后运行 `app`。
 
 命令行：
 
 ```bash
-./gradlew clean test assembleDebug
+./gradlew testDebugUnitTest assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n me.remember.app/.MainActivity
 ```
@@ -20,7 +22,7 @@ Capture requests `RECORD_AUDIO` at runtime after explaining that microphone audi
 
 ## 产品评审路径
 
-启动后依次完成 Welcome → Explanation → Consent → Introduce → Recording → Processing → Twin Birth → Voice Seed → Creator Home。Creator Home 右上角 `•••` 打开 Demo Menu，可直达 Calibration、Handover 和 Legacy Mode。
+「今天」→「开始录音」→ 保存并查看录音 → 本地播放／转写与核对 →「档案」。整理服务未连接时，录音与核对文字仍保留在手机，可稍后重试。
 
 ## 工程结构
 
@@ -29,10 +31,10 @@ Capture requests `RECORD_AUDIO` at runtime after explaining that microphone audi
 - `feature`：按体验区域拆分的页面
 - `navigation`：首期导航图
 - `model`：不把 Subject 与当前 Actor 写死的领域模型
-- `data/repository`：未来服务接口
-- `data/mock`：稳定且非真实个人信息的 Mock 数据
+- `data/repository`：本地录音、转写及可注入的记忆处理接口
+- `data/mock`：尚未接入的演示数据
 
-Mock/Real 切换的边界由 repository 与 service interfaces 定义。可以用构造注入替换 `MockRememberMeRepository`，无需修改页面的产品语义。
+记忆整理通过 `ReviewedMemoryProcessor` 接入。客户端必须经过共享 Backend Contract，不在构建配置或本地文件中保存供应商密钥。
 
 Phase 1 — Golden Path 已 COMMITTED，Android 必须通过 shared contract 接入 Backend：真实录音、上传、Episode 与 processing state、并展示真实 Memory。但 Android **不得直接调用** DeepSeek、STT、Voice API、Supabase 或 Work 3200 SDK，也不持有任何 provider secret——一律经 Backend Contract 与 Adapter。
 

@@ -1,4 +1,2 @@
-# Keep real values in local.properties or environment variables. Never commit secrets.
+# The Android client does not store provider API keys. Configure providers in the paired Backend.
 sdk.dir=C:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
-UNISOUND_API_KEY=
-DEEPSEEK_API_KEY=
