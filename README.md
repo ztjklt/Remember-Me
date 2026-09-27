@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-09-27 iOS UI 交接分支：** 本分支在 #77 上完成第六版界面对齐。获取方式、验证限制和后续执行单见 [apps/ios/UI_HANDOFF.md](apps/ios/UI_HANDOFF.md)。Windows 侧仅完成 Swift 语法与资产检查，尚未完成本分支的 Xcode 构建；下面继承的服务能力说明不代表新的 UI 已通过设备验收。
+
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
 ## Current status
