@@ -1,39 +1,50 @@
 package me.remember.app.core.designsystem
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object RememberMeColors {
-    val Paper = Color(0xFFF7F3EC); val Surface = Color(0xFFFFFCF7)
-    val Ink = Color(0xFF292A27); val Muted = Color(0xFF77736B)
-    val Moss = Color(0xFF68766A); val Clay = Color(0xFFB98268); val Line = Color(0xFFE1DBD1)
+    val Paper: Color @Composable get() = MaterialTheme.colorScheme.background
+    val Surface: Color @Composable get() = MaterialTheme.colorScheme.surface
+    val Ink: Color @Composable get() = MaterialTheme.colorScheme.onSurface
+    val Muted: Color @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+    val Moss: Color @Composable get() = MaterialTheme.colorScheme.primary
+    val Clay: Color @Composable get() = MaterialTheme.colorScheme.tertiary
+    val Line: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
 }
-object RememberMeSpacing { val xs=4.dp; val sm=8.dp; val md=16.dp; val lg=24.dp; val xl=36.dp; val xxl=56.dp }
-object RememberMeShapes { val small=8.dp; val medium=16.dp; val large=28.dp }
-
-private val scheme = lightColorScheme(
-    primary=RememberMeColors.Moss, onPrimary=Color.White, secondary=RememberMeColors.Clay,
-    background=RememberMeColors.Paper, onBackground=RememberMeColors.Ink,
-    surface=RememberMeColors.Surface, onSurface=RememberMeColors.Ink,
-    outline=RememberMeColors.Line
+object RememberMeSpacing { val xs=4.dp; val sm=8.dp; val md=16.dp; val lg=24.dp; val xl=32.dp; val xxl=48.dp }
+object RememberMeShapes { val small=8.dp; val medium=16.dp; val large=24.dp }
+private val light = lightColorScheme(
+    primary=Color(0xFF54685B), onPrimary=Color.White, primaryContainer=Color(0xFFE4EBE1), onPrimaryContainer=Color(0xFF263D2D),
+    secondary=Color(0xFF54685B), secondaryContainer=Color(0xFFE4EBE1), onSecondaryContainer=Color(0xFF263D2D),
+    tertiary=Color(0xFF975139), background=Color(0xFFF8F5EF), onBackground=Color(0xFF262923),
+    surface=Color(0xFFFFFDFA), onSurface=Color(0xFF262923), onSurfaceVariant=Color(0xFF61665F),
+    surfaceVariant=Color(0xFFEEEDE5), outline=Color(0xFF777D72), outlineVariant=Color(0xFFDCDDD3)
 )
+private val dark = darkColorScheme(
+    primary=Color(0xFFACC7AF), onPrimary=Color(0xFF203527), primaryContainer=Color(0xFF344D3B), onPrimaryContainer=Color(0xFFCEE5CB),
+    secondary=Color(0xFFACC7AF), secondaryContainer=Color(0xFF344D3B), onSecondaryContainer=Color(0xFFCEE5CB),
+    tertiary=Color(0xFFE8AC92), background=Color(0xFF1A1D1B), onBackground=Color(0xFFF1F2EC),
+    surface=Color(0xFF242925), onSurface=Color(0xFFF1F2EC), onSurfaceVariant=Color(0xFFB8C0B6),
+    surfaceVariant=Color(0xFF303830), outline=Color(0xFF939E91), outlineVariant=Color(0xFF465046)
+)
+private fun text(size: Int, line: Int, weight: FontWeight = FontWeight.Normal) =
+    TextStyle(fontFamily=FontFamily.SansSerif,fontSize=size.sp,lineHeight=line.sp,fontWeight=weight)
 private val type = Typography(
-    displayLarge=Typography().displayLarge.copy(fontFamily=FontFamily.Serif,fontSize=46.sp,lineHeight=54.sp,fontWeight=FontWeight.Normal),
-    headlineLarge=Typography().headlineLarge.copy(fontFamily=FontFamily.Serif,fontSize=34.sp,lineHeight=42.sp),
-    headlineMedium=Typography().headlineMedium.copy(fontFamily=FontFamily.Serif,fontSize=27.sp,lineHeight=35.sp),
-    titleLarge=Typography().titleLarge.copy(fontSize=20.sp,fontWeight=FontWeight.Medium),
-    bodyLarge=Typography().bodyLarge.copy(fontSize=17.sp,lineHeight=27.sp),
-    bodyMedium=Typography().bodyMedium.copy(fontSize=15.sp,lineHeight=23.sp),
-    labelLarge=Typography().labelLarge.copy(fontSize=15.sp,fontWeight=FontWeight.Medium)
+    displayLarge=text(32,40,FontWeight.SemiBold), headlineLarge=text(28,36,FontWeight.SemiBold),
+    headlineMedium=text(24,32,FontWeight.SemiBold), titleLarge=text(20,28,FontWeight.SemiBold),
+    titleMedium=text(17,26,FontWeight.Medium), bodyLarge=text(17,26),bodyMedium=text(17,26),
+    bodySmall=text(14,20),labelLarge=text(17,24,FontWeight.Medium),labelMedium=text(14,20,FontWeight.Medium),labelSmall=text(14,20)
 )
-@Composable
-fun RememberMeTheme(content: @Composable () -> Unit) = MaterialTheme(
-    colorScheme = scheme,
-    typography = type,
-    content = content
-)
+@Composable fun RememberMeTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme=if(darkTheme) dark else light, typography=type,
+        shapes=Shapes(small=RoundedCornerShape(8.dp),medium=RoundedCornerShape(16.dp),large=RoundedCornerShape(24.dp)),content=content)
+}
