@@ -63,3 +63,9 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 首页收紧间距，待处理入口改为整行操作，现有问题移到最近记录之后；首页与档案共用 EpisodeRow，保留原生 NavigationLink 并统一按压底色。播放器改为左侧状态/右侧控制，加载、暂停、结束使用真实模型状态，进度条保留 44 点最小高度并独立展示起止时间。没有添加模型中不存在的录音时长字段。背景蒙版向下更早收敛，按钮阴影减轻。
 
 四个 Swift 文件语法解析及 diff 检查通过；没有执行 Xcode 类型检查或设备运行。服务、数据结构和授权时机未改动。完整记录见 Android 分支 docs/mobile-ui/VISUAL_V5.md。
+
+## 第六轮：回忆图形（2026-09-27）
+
+六款 MemoryGlyph 共用 Android 分支 memory-elements/build.py 的原始轮廓。生成器将 SwiftUI Canvas 组件加入既有 Views.swift，已用于录音条目标记、待处理入口、空状态；Logo 和系统操作图标保持原样。小尺寸/减少透明度/增强对比度采用简化线稿，大尺寸才使用分层阴影。
+
+四个 Swift 文件通过语法解析；未在 Xcode 或设备验证。SwiftUI 与 SVG 滤镜表现不宣称像素一致，实际材质仍待真机校准。
