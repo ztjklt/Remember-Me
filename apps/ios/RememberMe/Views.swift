@@ -420,7 +420,9 @@ private struct HomeView: View {
                         selectedQuestion = nil
                         showRecorder = true
                     }
-                    Text("原音先留在手机").font(.subheadline).foregroundStyle(Ink.muted)
+                    Text("原音先留在手机 · 录音豆待连接")
+                        .font(.subheadline)
+                        .foregroundStyle(Ink.muted)
                 }
 
                 if model.draft != nil || model.episodeID != nil {
