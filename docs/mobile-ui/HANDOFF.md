@@ -2,6 +2,8 @@
 
 本次交付为第六版 UI 设计原型、Android 实现、iOS 对齐代码、品牌源资产和可复用回忆图形。用户已确认当前视觉方向可交接；这不代表原生真机验收或正式发布完成。两条工作线分别同步到原私有仓库 `ztjklt/Remember-Me`，以 Draft PR 保留供接手。
 
+GitHub 交接入口：**[Android / 设计资产 PR #79](https://github.com/ztjklt/Remember-Me/pull/79)**、**[iOS 对齐 PR #80](https://github.com/ztjklt/Remember-Me/pull/80)**。两者均为 Draft，未合并。远端检查由创建 PR 自动触发，实时结果以各自 Checks 为准；#80 中出现的 Android CI 不等于 iOS Xcode 编译。
+
 ## 1. 接手先看这里
 
 1. 先阅读本页的分支依赖和能力限制，再打开 [当前原型](prototype.html) 与 [图形组件库](memory-elements/preview.html)。网页需要本地 HTTP 服务，GitHub 文件页不会直接运行原型。
