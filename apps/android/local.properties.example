@@ -1,0 +1,4 @@
+# Keep real values in local.properties or environment variables. Never commit secrets.
+sdk.dir=C:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
+UNISOUND_API_KEY=
+DEEPSEEK_API_KEY=

@@ -1,18 +1,272 @@
 package me.remember.app.feature
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.remember.app.core.designsystem.RememberMeColors
 import me.remember.app.BuildConfig
-import me.remember.app.data.mock.MockRememberMeRepository
+import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.model.*
 import me.remember.app.navigation.Routes
 import me.remember.app.ui.components.*
+
+@Composable
+fun PortraitScreen(go: (String) -> Unit) {
+    val topics = listOf(
+        "Is this your psychological feeling?" to Routes.Memories,
+        "Things you mentioned these days" to Routes.Memories,
+        "Your physical health, checked by your voice" to Routes.Recording,
+        "Your identity defines who you are" to Routes.Memories,
+        "Maybe you will talk about it in this way" to Routes.Twin,
+        "What has been quietly changing?" to Routes.Memories,
+        "A person who appeared in your thoughts" to Routes.Memories,
+        "A decision worth remembering" to Routes.Memories
+    )
+    var visibleTopics by remember { mutableStateOf(topics.take(5)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(Random.nextLong(18_000L, 32_000L))
+            visibleTopics = topics.shuffled().take(5)
+        }
+    }
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("A quiet map of you", style = MaterialTheme.typography.headlineMedium)
+        }
+        Text("Portrait", style = MaterialTheme.typography.headlineLarge)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Thing memory", "events and facts", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Mood memory", "feelings over time", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Psycho memory", "patterns and values", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Filter memory", "search the archive", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Status memory", "health and life", Routes.Recording, go, Modifier.weight(1f))
+            PortraitCard("Environment", "places and context", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Identity memory", "who you are", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Expression", "how you speak", Routes.Memories, go, Modifier.weight(1f))
+        }
+        RmDivider()
+        Text("Today", style = MaterialTheme.typography.titleLarge)
+        Text("Topics for you", style = MaterialTheme.typography.bodyMedium, color = RememberMeColors.Muted)
+        visibleTopics.forEachIndexed { index, (topic, route) ->
+            Row(Modifier.fillMaxWidth().clickable { go(route) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("0${index + 1}", color = RememberMeColors.Clay, modifier = Modifier.width(34.dp))
+                Text(topic, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Text(">", color = RememberMeColors.Moss, style = MaterialTheme.typography.titleLarge)
+            }
+            if (index < visibleTopics.lastIndex) RmDivider()
+        }
+        BottomTabs(Routes.Portrait, go)
+    }
+}
+
+@Composable
+private fun PortraitCard(title: String, subtitle: String, route: String, go: (String) -> Unit, modifier: Modifier) {
+    Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface)
+        .clickable { go(route) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        Text(">", color = RememberMeColors.Moss, modifier = Modifier.align(Alignment.End))
+    }
+}
+
+@Composable
+private fun BottomTabs(selected: String, go: (String) -> Unit) {
+    val tabs = listOf("Portrait" to Routes.Portrait, "Graphs" to Routes.Graph, "Memories" to Routes.Memories, "Agents" to Routes.Agents, "Me" to Routes.Me)
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        tabs.forEach { (label, route) ->
+            TextButton({ go(route) }) { Text(label, color = if (selected == route) RememberMeColors.Clay else RememberMeColors.Muted) }
+        }
+    }
+}
+
+@Composable
+fun SimpleSectionScreen(title: String, subtitle: String, back: () -> Unit) {
+    RmPage {
+        TextButton(back) { Text("Back") }
+        Text(title, style = MaterialTheme.typography.headlineLarge)
+        Text(subtitle, color = RememberMeColors.Muted)
+        RmDivider()
+        Text("This section is ready for the corresponding agent data.", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+fun GraphDashboardScreen(go: (String) -> Unit) {
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("Memory relationships", style = MaterialTheme.typography.headlineMedium)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GraphMetricCard("Event flow", "timeline", Modifier.weight(1f))
+            GraphMetricCard("Mood weather", "emotions", Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GraphMetricCard("Decision + values", "patterns", Modifier.weight(1f))
+            GraphMetricCard("Expression style", "voice", Modifier.weight(1f))
+        }
+        RmDivider()
+        Text("How do these combine?", style = MaterialTheme.typography.titleLarge)
+        Text("Events become memories. Memories reveal moods, values and expression patterns. The graph keeps each connection traceable to its evidence.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
+        RelationshipVectorGraph()
+        BottomTabs(Routes.Graph, go)
+    }
+}
+
+@Composable
+fun MemoryDashboardScreen(memoryRepository: MemoryRepository, go: (String) -> Unit) {
+    val state by memoryRepository.memories().collectAsState(initial = Loadable.Loading)
+    val memories = (state as? Loadable.Content)?.value.orEmpty()
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Memories", color = RememberMeColors.Clay) }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("Memory shows who you are", style = MaterialTheme.typography.headlineMedium)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Memory", style = MaterialTheme.typography.titleLarge)
+            Text("Refresh history board", color = RememberMeColors.Moss, modifier = Modifier.clickable { })
+        }
+        Text("Here you can see when a memory changed and what it changed into.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
+        MemoryChangeBoard(memories)
+        RmDivider()
+        Text("Memory Control Board", style = MaterialTheme.typography.titleLarge)
+        MemoryControlRow("Memory change", "review and compare versions") { }
+        MemoryControlRow("Memory delete", "remove it from the portrait") { }
+        MemoryControlRow("Add memory", "write a memory manually") { }
+        BottomTabs(Routes.Memories, go)
+    }
+}
+
+@Composable
+private fun MemoryChangeBoard(memories: List<Memory>) {
+    Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        if (memories.isEmpty()) {
+            Text("No memory changes yet", color = RememberMeColors.Muted)
+            Text("New recordings and confirmed memories will appear here.", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        } else {
+            memories.take(5).forEachIndexed { index, memory ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.width(64.dp)) {
+                        Text(memory.date, style = MaterialTheme.typography.labelMedium, color = RememberMeColors.Clay)
+                        Text("v${index + 1}", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                    }
+                    Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(RememberMeColors.Moss))
+                    Spacer(Modifier.width(12.dp))
+                    Text(memory.story, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                }
+                if (index < memories.take(5).lastIndex) HorizontalDivider(color = RememberMeColors.Line)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoryControlRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        }
+        Text(">", color = RememberMeColors.Moss, style = MaterialTheme.typography.titleLarge)
+    }
+    RmDivider()
+}
+
+@Composable
+private fun GraphMetricCard(title: String, subtitle: String, modifier: Modifier) {
+    Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        Box(Modifier.fillMaxWidth().height(30.dp), contentAlignment = Alignment.BottomStart) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                listOf(0.35f, 0.7f, 0.48f, 0.86f, 0.62f).forEach { value ->
+                    Box(Modifier.width(9.dp).height((26 * value).dp).background(RememberMeColors.Moss.copy(alpha = .7f)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelationshipVectorGraph() {
+    Box(Modifier.fillMaxWidth().height(330.dp).clip(MaterialTheme.shapes.medium).background(RememberMeColors.Surface), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Memory Polygonal Relationship Vector Graph", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                GraphNode("values", RememberMeColors.Clay)
+                Text("—", color = RememberMeColors.Line)
+                GraphNode("decisions", RememberMeColors.Moss)
+                Text("—", color = RememberMeColors.Line)
+                GraphNode("events", RememberMeColors.Clay)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                GraphNode("mood", RememberMeColors.Moss)
+                Text("—  subject  —", color = RememberMeColors.Muted)
+                GraphNode("expression", RememberMeColors.Moss)
+            }
+            Text("Each edge points back to a Memory and its recording.", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        }
+    }
+}
+
+@Composable
+private fun GraphNode(label: String, color: androidx.compose.ui.graphics.Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.size(18.dp).clip(androidx.compose.foundation.shape.CircleShape).background(color))
+        Text(label, style = MaterialTheme.typography.labelMedium)
+    }
+}
 
 @Composable fun CreatorHomeScreen(go:(String)->Unit)=RmPage{
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("晚上好",color=RememberMeColors.Muted);Text("陈屿",style=MaterialTheme.typography.headlineLarge)};if(BuildConfig.DEBUG) Text("•••",Modifier.clickable{go(Routes.Debug)}.padding(12.dp))}
@@ -24,7 +278,7 @@ import me.remember.app.ui.components.*
 }
 @Composable private fun NavigationRow(go:(String)->Unit){Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.SpaceAround){listOf("Home" to Routes.Home,"Memories" to Routes.Memories,"Capture" to Routes.Recording,"Twin" to Routes.Twin).forEach{(label,r)->Text(label,Modifier.clickable{go(r)}.padding(10.dp),style=MaterialTheme.typography.labelMedium)}}}
 
-@Composable fun MemoriesScreen(back:()->Unit){val repo=remember{MockRememberMeRepository()};val state by repo.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("Memory Archive",style=MaterialTheme.typography.headlineLarge);Text("不是一份清单，是你留下的人生切片。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有记忆");is Loadable.Error->Text(s.message)}}}
+@Composable fun MemoriesScreen(memoryRepository:MemoryRepository,back:()->Unit){val state by memoryRepository.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("Memory Archive",style=MaterialTheme.typography.headlineLarge);Text("不是一份清单，是你留下的人生切片。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有记忆");is Loadable.Error->Text(s.message)}}}
 @Composable private fun MemoryItem(m:Memory){Column(Modifier.padding(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){Text("${m.date} · ${m.place}",color=RememberMeColors.Muted);Text("“${m.story}”",style=MaterialTheme.typography.titleLarge);Text((m.people+m.tags).joinToString("   "),style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted);RmVoicePlayer(m.duration);RmDivider()}}
 
 @Composable fun TwinScreen(back:()->Unit){var asked by remember{mutableStateOf(false)};RmPage{TextButton(back){Text("← 返回")};Text("我还在慢慢认识你。",style=MaterialTheme.typography.headlineLarge);Text("回答会区分你的原话与 AI Simulation。",color=RememberMeColors.Muted);OutlinedTextField("我小时候最喜欢什么？",{},Modifier.fillMaxWidth(),readOnly=true,label={Text("问一个问题")});RmPrimaryButton("问问 Twin",{asked=true},Modifier.fillMaxWidth());if(asked){RmSectionHeader("你曾经说过","ORIGINAL");RmVoicePlayer("外婆家窗边那只旧收音机","2012 · 襄阳 · 原始录音");RmDivider();RmSectionHeader("Based on what you’ve told me…","AI SIMULATION");Text("你珍惜的也许不是那台收音机本身，而是它让一家人安静地待在一起。",style=MaterialTheme.typography.bodyLarge)}}}
