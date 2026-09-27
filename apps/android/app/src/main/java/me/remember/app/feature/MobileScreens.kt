@@ -9,9 +9,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,9 +27,6 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -45,12 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import me.remember.app.data.repository.*
+import me.remember.app.core.designsystem.RememberMeBrand
+import me.remember.app.R
+import androidx.compose.ui.res.painterResource
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.math.cos
-import kotlin.math.sin
 
 fun durationLabel(milliseconds: Long): String = "%02d:%02d".format(milliseconds / 60000, milliseconds / 1000 % 60)
 fun dateLabel(value: String): String = runCatching {
@@ -79,10 +74,11 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     }
 }
 @Composable private fun Notice(title: String, body: String, error: Boolean=false) {
-    Surface(shape=MaterialTheme.shapes.medium, color=if(error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement=Arrangement.spacedBy(6.dp)) {
-            Text(title, fontWeight=FontWeight.Medium)
-            Text(body, style=MaterialTheme.typography.bodySmall)
+    Row(Modifier.fillMaxWidth().padding(vertical=12.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+        if(error) Icon(Icons.Outlined.ErrorOutline,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.error)
+        Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+            Text(title,style=MaterialTheme.typography.titleMedium,color=if(error)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
+            Muted(body)
         }
     }
 }
@@ -105,10 +101,10 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
         Scaffold(
             topBar={ if(detailPath != null) TopAppBar(title={Text(if(memoryID == null) "录音详情" else "记忆详情")},
                 navigationIcon={IconButton(onClick={back()}){Icon(Icons.AutoMirrored.Outlined.ArrowBack,"返回")}}) },
-            bottomBar={ if(detailPath == null) Surface(modifier=Modifier.navigationBarsPadding().padding(horizontal=12.dp,vertical=8.dp),shape=RoundedCornerShape(28.dp),shadowElevation=3.dp) {
-              NavigationBar(containerColor=MaterialTheme.colorScheme.surface,windowInsets=WindowInsets(0,0,0,0)) {
+            bottomBar={ if(detailPath == null) Surface(modifier=Modifier.navigationBarsPadding(),color=MaterialTheme.colorScheme.background) {
+              NavigationBar(containerColor=MaterialTheme.colorScheme.background,windowInsets=WindowInsets(0,0,0,0),tonalElevation=0.dp) {
                 listOf("今天" to Icons.Outlined.WbSunny, "档案" to Icons.AutoMirrored.Outlined.LibraryBooks, "我的" to Icons.Outlined.Person).forEachIndexed { index,item ->
-                    NavigationBarItem(selected=tab==index,onClick={tab=index},icon={Icon(item.second,null)},label={Text(item.first)},modifier=Modifier.testTag("tab.$index"))
+                    NavigationBarItem(selected=tab==index,onClick={tab=index},icon={Icon(item.second,null)},label={Text(item.first)},modifier=Modifier.testTag("tab.$index"),colors=NavigationBarItemDefaults.colors(indicatorColor=MaterialTheme.colorScheme.background,selectedIconColor=MaterialTheme.colorScheme.primary,selectedTextColor=MaterialTheme.colorScheme.primary))
                 }
             } } }
         ) { padding ->
@@ -134,69 +130,57 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
 
 @Composable private fun TodayPage(records: List<AudioRecording>,start:()->Unit,open:(AudioRecording)->Unit,archive:()->Unit) {
     Page {
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            Text("勿忘我",style=MaterialTheme.typography.titleMedium)
-            Muted(LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日 · EEEE")))
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
+            RememberMeBrand(size=32.dp)
+            Text("勿忘我",style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
+            Muted(LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日")))
         }
-        Heading("留住此刻的声音。")
-        VoiceSeal(Modifier.fillMaxWidth().height(if(LocalConfiguration.current.fontScale>=1.5f)90.dp else 140.dp))
-        Surface(onClick=start,modifier=Modifier.fillMaxWidth().testTag("home.record"),shape=RoundedCornerShape(48.dp),
-            color=MaterialTheme.colorScheme.surface,shadowElevation=4.dp,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)) {
-            Row(Modifier.padding(12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
-                Surface(shape=CircleShape,color=MaterialTheme.colorScheme.primary,modifier=Modifier.size(64.dp)) {
-                    Box(contentAlignment=Alignment.Center){Icon(Icons.Outlined.Mic,null,Modifier.size(28.dp))}
-                }
-                Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                    Text("开始录音",style=MaterialTheme.typography.titleLarge)
-                    Muted("原音先留在手机")
-                }
-                Icon(Icons.Outlined.ChevronRight,null)
-            }
+        Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            Heading("今天，想记住什么？")
+            Muted("一件小事，也可以慢慢说。")
+        }
+        Column(verticalArrangement=Arrangement.spacedBy(10.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+            Primary("开始录音",Icons.Outlined.Mic,tag="home.record",action=start)
+            Muted("原音先留在手机")
         }
         records.firstOrNull { it.processingStage != ProcessingStage.Complete }?.let { item ->
-            Surface(onClick={open(item)},shape=MaterialTheme.shapes.medium,color=MaterialTheme.colorScheme.background) {
-                Row(Modifier.padding(vertical=8.dp),verticalAlignment=Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.PendingActions,null); Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) { Text("继续处理",fontWeight=FontWeight.Medium); Muted(item.title+" · "+stageLabel(item.processingStage)) }
-                    Icon(Icons.Outlined.ChevronRight,null)
+            Column {
+                HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
+                Row(Modifier.fillMaxWidth().clickable(role=Role.Button){open(item)}.padding(vertical=16.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Outlined.PendingActions,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                        Text("继续处理",style=MaterialTheme.typography.titleMedium)
+                        Muted(item.title+" · "+stageLabel(item.processingStage))
+                    }
+                    Icon(Icons.Outlined.ChevronRight,null,Modifier.size(18.dp))
                 }
+                HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
             }
         }
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            Text("最近留下的声音",style=MaterialTheme.typography.titleLarge,modifier=Modifier.weight(1f).semantics{heading()}); TextButton(onClick=archive){Text("全部")}
-        }
-        if(records.isEmpty()) Notice("从第一段声音开始","不必准备完整的故事。录完之后，可以随时回来听。")
-        records.take(3).forEach { RecordingRow(it,onClick={open(it)}) }
-    }
-}
-/** Static brand engraving. It never represents recorded samples or microphone activity. */
-@Composable private fun VoiceSeal(modifier: Modifier=Modifier) {
-    val color=MaterialTheme.colorScheme.primary
-    Canvas(modifier.clearAndSetSemantics { }) {
-        repeat(32) { i ->
-            val r=.21+i*.024
-            val path=Path()
-            for(j in 0..120) {
-                val a=j/120.0*Math.PI*2
-                val k=1+.15*cos(3*a)+.07*sin(5*a)
-                val x=((170+123*r*k*cos(a))/340*size.width).toFloat()
-                val y=((101+73*r*k*sin(a)+20*r*cos(a))/210*size.height).toFloat()
-                if(j==0)path.moveTo(x,y) else path.lineTo(x,y)
+        Column {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                Text("最近记录",style=MaterialTheme.typography.titleLarge,modifier=Modifier.weight(1f).semantics{heading()})
+                TextButton(onClick=archive){Text("查看全部",style=MaterialTheme.typography.bodySmall)}
             }
-            path.close()
-            drawPath(path,color.copy(alpha=(.36f+i/54f).coerceAtMost(1f)),style=Stroke(width=1.dp.toPx()))
+            if(records.isEmpty()) {
+                RememberMeBrand(size=80.dp,materialPainter=painterResource(R.drawable.rm_brand_material))
+                Notice("从第一段声音开始","不必准备完整的故事。录完之后，可以随时回来听。")
+            }
+            records.take(3).forEach { RecordingRow(it,onClick={open(it)}) }
         }
     }
 }
 @Composable private fun RecordingRow(record: AudioRecording,onClick:()->Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick=onClick,role=Role.Button).padding(vertical=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment=Alignment.CenterVertically) {
-            Icon(Icons.Outlined.GraphicEq,null,Modifier.size(24.dp),tint=MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(12.dp)); Text(record.title,style=MaterialTheme.typography.titleMedium,modifier=Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight,null)
+    Column(Modifier.fillMaxWidth().clickable(onClick=onClick,role=Role.Button)) {
+        Row(Modifier.padding(vertical=20.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+            Icon(Icons.Outlined.GraphicEq,null,Modifier.size(22.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
+                Text(record.title,style=MaterialTheme.typography.titleMedium)
+                Muted("${dateLabel(record.createdAt)} · ${durationLabel(record.durationMillis)}")
+                Muted(stageLabel(record.processingStage))
+            }
+            Icon(Icons.Outlined.ChevronRight,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Muted("${dateLabel(record.createdAt)} · ${durationLabel(record.durationMillis)}")
-        Text(stageLabel(record.processingStage),style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.primary)
         HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
     }
 }
@@ -205,7 +189,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     var query by rememberSaveable { mutableStateOf("") }
     val matching=records.filter { query.isBlank() || (it.title+it.transcript+it.reviewedTranscript.orEmpty()+it.memories.filter { m->m.status=="active" }.joinToString { m->m.content }).contains(query.trim(),ignoreCase=true) }
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=pagePadding(),vertical=24.dp),verticalArrangement=Arrangement.spacedBy(16.dp)) {
-        item { Heading("声音与记忆") }
+        item { Heading("档案") }
         item { Muted("说过的话，完整留着。") }
         item { OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),label={Text("搜索标题、文字或记忆")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.medium) }
         item { TabRow(selectedTabIndex=mode,containerColor=MaterialTheme.colorScheme.background) {
@@ -278,14 +262,10 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
             Text(when(state.phase){CapturePhase.Recording->"正在录音";CapturePhase.Paused->"已暂停";CapturePhase.Saved->"录音已保存在手机";else->"由你决定什么时候开始"},color=MaterialTheme.colorScheme.onSurfaceVariant,modifier=Modifier.semantics { liveRegion=LiveRegionMode.Polite })
             Text(durationLabel(state.elapsedMillis),fontSize=52.sp,fontWeight=FontWeight.Light,fontFamily=FontFamily.Monospace)
             val color=MaterialTheme.colorScheme.primary
-            val rim=MaterialTheme.colorScheme.outlineVariant
-            val surface=MaterialTheme.colorScheme.surface
-            Canvas(Modifier.sizeIn(maxWidth=250.dp,maxHeight=250.dp).fillMaxWidth().aspectRatio(1f).clearAndSetSemantics { }) {
-                drawCircle(Brush.radialGradient(listOf(surface, surface.copy(alpha=.25f))))
-                drawCircle(rim,radius=size.minDimension/2-12.dp.toPx(),style=Stroke(1.dp.toPx()))
+            Canvas(Modifier.fillMaxWidth().height(130.dp).clearAndSetSemantics { }) {
                 val width=size.width*.72f
                 val step=width/state.levels.size.coerceAtLeast(1)
-                state.levels.forEachIndexed { i,level-> val height=6.dp.toPx()+level.coerceIn(0f,1f)*size.height*.32f
+                state.levels.forEachIndexed { i,level-> val height=6.dp.toPx()+level.coerceIn(0f,1f)*size.height*.72f
                     val x=size.width*.14f+step*(i+.5f)
                     drawLine(color,androidx.compose.ui.geometry.Offset(x,(size.height-height)/2),androidx.compose.ui.geometry.Offset(x,(size.height+height)/2),strokeWidth=step*.4f,cap=StrokeCap.Round)
                 }
@@ -310,15 +290,15 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     val selected=state.audioPath==record.audioPath
     val duration=if(selected && state.durationMillis>0)state.durationMillis else record.durationMillis
     var seek by remember(record.audioPath) { mutableStateOf<Float?>(null) }
-    Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface,shadowElevation=2.dp,border=BorderStroke(1.dp,MaterialTheme.colorScheme.outlineVariant)) {
+    Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface) {
         Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment=Alignment.CenterVertically) {
-                FilledIconButton(onClick={model.togglePlayback(record)},enabled=!(selected&&state.preparing),modifier=Modifier.size(56.dp).testTag("audio.play")) { Icon(if(selected&&state.playing)Icons.Filled.Pause else Icons.Filled.PlayArrow,if(selected&&state.playing)"暂停原音" else "播放原音") }
+                FilledIconButton(onClick={model.togglePlayback(record)},enabled=!(selected&&state.preparing),colors=IconButtonDefaults.filledIconButtonColors(containerColor=MaterialTheme.colorScheme.onSurface,contentColor=MaterialTheme.colorScheme.background),modifier=Modifier.size(48.dp).testTag("audio.play")) { Icon(if(selected&&state.playing)Icons.Filled.Pause else Icons.Filled.PlayArrow,if(selected&&state.playing)"暂停原音" else "播放原音") }
                 Spacer(Modifier.width(16.dp)); Column(Modifier.weight(1f)) { Text(if(selected&&state.preparing)"正在打开原音…" else "原始录音",fontWeight=FontWeight.Medium); Muted("${durationLabel(if(selected)state.positionMillis else 0)} / ${durationLabel(duration)}") }
             }
             Slider(value=seek ?: (if(selected)state.positionMillis.toFloat() else 0f),onValueChange={seek=it},
                 onValueChangeFinished={seek?.let{model.audio.seekPlayback(it.toLong())};seek=null},
-                valueRange=0f..duration.coerceAtLeast(1).toFloat(),enabled=selected&&duration>0&&!state.preparing&&state.error==null,
+                colors=SliderDefaults.colors(thumbColor=MaterialTheme.colorScheme.onSurface,activeTrackColor=MaterialTheme.colorScheme.onSurface),valueRange=0f..duration.coerceAtLeast(1).toFloat(),enabled=selected&&duration>0&&!state.preparing&&state.error==null,
                 modifier=Modifier.semantics { contentDescription="原音播放进度" })
             if(selected)state.error?.let { Text(it,color=MaterialTheme.colorScheme.error) }
         }
@@ -386,12 +366,12 @@ fun sourceLabel(source: String)=when(source){"SUBJECT"->"本人叙述";"THIRD_PA
     if(memory==null){Page{Notice("这条记忆已不在当前记录中","原始录音仍保留。")};return}
     Page {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            VoiceSeal(Modifier.size(72.dp,56.dp)); Muted(sourceLabel(memory.sourceType))
+            RememberMeBrand(size=24.dp); Muted(sourceLabel(memory.sourceType))
         }
         Text(memory.content,style=MaterialTheme.typography.headlineMedium.copy(lineHeight=38.sp,fontWeight=FontWeight.Medium))
         Section("当时说过的话")
         HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
-        Text(memory.evidence.ifBlank{"这条记忆没有可定位的引文，请听原音核对。"},style=MaterialTheme.typography.titleLarge.copy(lineHeight=34.sp,fontWeight=FontWeight.Normal),color=MaterialTheme.colorScheme.primary)
+        Text(memory.evidence.ifBlank{"这条记忆没有可定位的引文，请听原音核对。"},style=MaterialTheme.typography.bodyLarge.copy(lineHeight=32.sp),color=MaterialTheme.colorScheme.onSurface)
         HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
         Muted("来自：${record.title} · ${dateLabel(record.createdAt)}")
         AudioPlayer(model,record)
@@ -403,7 +383,7 @@ fun sourceLabel(source: String)=when(source){"SUBJECT"->"本人叙述";"THIRD_PA
 @Composable private fun ProfilePage(model: MobileViewModel) {
     val context=LocalContext.current
     Page {
-        Heading("由你决定留下什么。")
+        Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)){RememberMeBrand(size=32.dp);Heading("我的")}
         Notice("原音留在手机","录音与核对文字保存在此应用的私有空间。录音时不会自动上传。")
         Muted("本版不自动备份录音。卸载应用或清除应用数据会删除本机内容。")
         Section("数据与授权")

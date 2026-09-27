@@ -97,3 +97,16 @@ iOS 按 `apps/ios/UI_ALIGNMENT.md` 构建，然后覆盖 375 / 430 pt、大字�
 - iOS 4 个 Swift 文件通过 tree-sitter 语法解析；没有 Xcode 编译或设备验证。
 - 两个工作目录 git diff --check 通过。业务协调层、元数据、供应商、共享 Contract 均无改动。
 - 真机视觉、录音、TalkBack/VoiceOver、合成材质对比度与目标用户验证继续待执行，不能据上述结果视为完成。
+
+## 第三轮组件与品牌验证（2026-09-27）
+
+- 原型键盘交互回归通过：开始、同意、暂停/继续、保存、转写、核对并保留修改文字、整理确认、记忆来源、删除、搜索。仍为固定测试资料。
+- 48 组响应式布局检查通过：Android 360/412、iOS 375/430；普通浅色与 200% 深色/减少动态；六个核心页面。未发现横向溢出或底部操作超出实际视口。结果记录在 prototype-verification.json。
+- 额外检查空档案、失败重试与处理中；修复原型转写中仍能编辑/提交示例文字的问题，转写完成前禁用核对入口，并重新确认页面状态。
+- 查看首页、组件对照和大字页面截图。图标资源正确载入；本轮浏览器错误日志为空。截图仅代表 HTML 原型。
+- IAB 自动指针点击出现坐标偏移，不能作为触点验证通过的证据；核心流程采用实际键盘事件完成。手机触控体验继续待验证。
+- 22 组语义颜色对比度全部通过，最低 4.94:1；七组 iOS 颜色资源与 tokens 一致。
+- Android 完整构建与测试通过：testDebugUnitTest、assembleDebug、assembleDebugAndroidTest、lintDebug；18 tests / 0 failures / 0 errors。初次资源移动后出现增量链接失败及 lint 文件占用，停止构建 daemon 后完整重建成功。日志 output/android-validation-v3.txt；单色启动图标已补齐。
+- iOS 4 个 Swift 文件通过语法解析；未完成 Xcode 类型检查、模拟器或设备测试。AppIcon 浅深色资源已配置，系统实际呈现仍待设备确认。
+- 最终 lint 0 errors / 25 warnings（依赖版本提示及既有 SDK 检查）；移除空的旧图标版本目录后复验通过，日志 output/android-lint-v3.txt。
+- adb devices 无连接设备；前述真实 ASR 模型与整理适配器限制不变。双端业务服务、元数据和共享 Contract 未改动。没有把用户原始品牌包混入批量提交。
