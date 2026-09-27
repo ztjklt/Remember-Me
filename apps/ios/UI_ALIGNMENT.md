@@ -51,3 +51,9 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 设计参考 Pocket Casts 的音频控制、Read You 的列表排版和 Moe Memos 的原生层级，未复制这些第三方项目的源码或图形。完整取舍在 Android 分支 docs/mobile-ui/VISUAL_V3.md。
 
 4 个 Swift 文件语法解析与 git diff --check 通过；七组颜色核对通过，22 组指定文字色组合最低 4.94:1。Xcode 编译、Dynamic Type 真机布局、VoiceOver、AppIcon 深色呈现继续待验证。配对服务、证据纠正、Twin、校准与授权链路未修改。
+
+## 第四轮：雾光与按压（2026-09-27）
+
+背景改为雾蓝、灰紫、暖沙的静态颜色场，并用向下增强的背景蒙版降低阅读区色差。内容容器保持有色稳定表面。按钮增加高光、按压暗面和阴影收拢；减少动态时取消缩放与动画。减少透明度或增强对比度时 AtmosphereBackground 回退为有色实底，不绘制颜色场。
+
+四个 Swift 文件语法解析通过，浅深色令牌同步核对通过；基础色与渐变采样检查最低 4.57:1（包括按钮高光/按压色）。这些检查不能代替 Xcode 编译、系统材质合成色和真机触控体验。没有变更服务与数据语义。

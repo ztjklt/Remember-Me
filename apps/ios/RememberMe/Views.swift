@@ -21,9 +21,41 @@ private struct PressFeedbackStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(Ink.onPrimary)
             .background(fill, in: RoundedRectangle(cornerRadius: 16))
-            .opacity(enabled ? (configuration.isPressed ? 0.86 : 1) : 0.5)
+            .background {
+                RoundedRectangle(cornerRadius: 16)
+                    .shadow(color: Ink.coral.opacity(enabled ? 0.20 : 0), radius: configuration.isPressed ? 2 : 8, y: configuration.isPressed ? 1 : 5)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Color.white.opacity(configuration.isPressed ? 0 : 0.10), Color.black.opacity(configuration.isPressed ? 0.12 : 0.03)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .allowsHitTesting(false)
+            }
+            .opacity(enabled ? 1 : 0.5)
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.10), value: configuration.isPressed)
+    }
+}
+
+private struct AtmosphereBackground: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+    private var dark: Bool { scheme == .dark }
+    private func color(_ light: UInt32, _ night: UInt32) -> Color {
+        let value = dark ? night : light
+        return Color(red: Double((value >> 16) & 255)/255, green: Double((value >> 8) & 255)/255, blue: Double(value & 255)/255)
+    }
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Ink.paper
+                if !reduceTransparency && contrast != .increased {
+                    LinearGradient(colors: [color(0xD7E3F3,0x22324B), color(0xEEE5DE,0x202C34)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    RadialGradient(colors: [color(0xE6DFF0,0x302B43),color(0xE6DFF0,0x302B43).opacity(0)], center: UnitPoint(x: 1,y: 0.28), startRadius: 0, endRadius: max(geometry.size.width,geometry.size.height)*0.7)
+                    LinearGradient(colors: [Ink.paper.opacity(0),Ink.paper.opacity(0.3),Ink.paper], startPoint: .top, endPoint: .bottom)
+                }
+            }
+        }.allowsHitTesting(false).accessibilityHidden(true)
     }
 }
 
@@ -207,7 +239,7 @@ private struct PairingView: View {
             }
             .padding(24)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
     }
 }
 
@@ -233,7 +265,7 @@ private struct ArchiveView: View {
             }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.vertical, 12)
             if segment == 0 { EpisodesView(query: query) } else { MemoriesView(query: query) }
         }
-        .background(Ink.paper)
+        .background(AtmosphereBackground())
         .navigationTitle("档案")
         .searchable(text: $query, prompt: "搜索录音文字或记忆")
     }
@@ -260,7 +292,7 @@ private struct ProfileView: View {
             Section("外观") { LabeledContent("颜色与字号", value: "跟随系统") }
             Section("连接") { Text(model.pairing == nil ? "尚未配对" : "已配对本机服务") }
         }
-        .scrollContentBackground(.hidden).background(Ink.paper).navigationTitle("我的")
+        .scrollContentBackground(.hidden).background(AtmosphereBackground()).navigationTitle("我的")
     }
 }
 
@@ -300,7 +332,7 @@ private struct EpisodesView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
@@ -343,7 +375,7 @@ private struct EpisodeDetailView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("录音详情")
         .refreshable { await model.refresh() }
     }
@@ -437,7 +469,7 @@ private struct HomeView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: selectedQuestion, calibration: nil) }
         .refreshable { await model.refresh() }
@@ -502,7 +534,7 @@ private struct RecorderView: View {
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }.padding(20)
             }
-            .background(Ink.paper.ignoresSafeArea())
+            .background(AtmosphereBackground().ignoresSafeArea())
             .navigationTitle("留下一段声音").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
                 Button("关闭") { if model.isRecording { showClose = true } else { dismiss() } }
@@ -641,7 +673,7 @@ private struct MemoriesView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
@@ -806,7 +838,7 @@ private struct TwinView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("对话")
         .refreshable { await model.refresh() }
         .sheet(isPresented: $showCalibrationRecorder) {
@@ -930,7 +962,7 @@ private struct MemoryDetailView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("记忆详情")
         .confirmationDialog("删除这条记忆？原始录音和纠错记录仍会保留。", isPresented: $showDelete) {
             Button("删除记忆", role: .destructive) {
@@ -993,7 +1025,7 @@ private struct ModelView: View {
             }
             .padding(20)
         }
-        .background(Ink.paper.ignoresSafeArea())
+        .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("关于我")
         .refreshable { await model.refresh() }
     }
