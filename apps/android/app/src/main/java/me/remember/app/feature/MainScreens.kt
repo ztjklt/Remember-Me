@@ -152,6 +152,78 @@ fun GraphDashboardScreen(go: (String) -> Unit) {
 }
 
 @Composable
+fun MemoryDashboardScreen(memoryRepository: MemoryRepository, go: (String) -> Unit) {
+    val state by memoryRepository.memories().collectAsState(initial = Loadable.Loading)
+    val memories = (state as? Loadable.Content)?.value.orEmpty()
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Memories", color = RememberMeColors.Clay) }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("Memory shows who you are", style = MaterialTheme.typography.headlineMedium)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Memory", style = MaterialTheme.typography.titleLarge)
+            Text("Refresh history board", color = RememberMeColors.Moss, modifier = Modifier.clickable { })
+        }
+        Text("Here you can see when a memory changed and what it changed into.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
+        MemoryChangeBoard(memories)
+        RmDivider()
+        Text("Memory Control Board", style = MaterialTheme.typography.titleLarge)
+        MemoryControlRow("Memory change", "review and compare versions") { }
+        MemoryControlRow("Memory delete", "remove it from the portrait") { }
+        MemoryControlRow("Add memory", "write a memory manually") { }
+        BottomTabs(Routes.Memories, go)
+    }
+}
+
+@Composable
+private fun MemoryChangeBoard(memories: List<Memory>) {
+    Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface).padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        if (memories.isEmpty()) {
+            Text("No memory changes yet", color = RememberMeColors.Muted)
+            Text("New recordings and confirmed memories will appear here.", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        } else {
+            memories.take(5).forEachIndexed { index, memory ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.width(64.dp)) {
+                        Text(memory.date, style = MaterialTheme.typography.labelMedium, color = RememberMeColors.Clay)
+                        Text("v${index + 1}", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                    }
+                    Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(RememberMeColors.Moss))
+                    Spacer(Modifier.width(12.dp))
+                    Text(memory.story, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                }
+                if (index < memories.take(5).lastIndex) HorizontalDivider(color = RememberMeColors.Line)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemoryControlRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        }
+        Text(">", color = RememberMeColors.Moss, style = MaterialTheme.typography.titleLarge)
+    }
+    RmDivider()
+}
+
+@Composable
 private fun GraphMetricCard(title: String, subtitle: String, modifier: Modifier) {
     Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium)

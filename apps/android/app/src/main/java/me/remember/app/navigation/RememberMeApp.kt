@@ -38,7 +38,7 @@ composable(Routes.Recording){RecordingScreen(audioCaptureService, speechToTextSe
         composable(Routes.Graph){GraphDashboardScreen(nav::navigate)}
         composable(Routes.Agents){SimpleSectionScreen("Agents", "查看记忆、画像和回答所经过的智能分工", nav::popBackStack)}
         composable(Routes.Me){SimpleSectionScreen("我", "隐私、模型和数据管理", nav::popBackStack)}
-        composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
+        composable(Routes.Memories){MemoryDashboardScreen(memoryRepository, nav::navigate)}
         composable(Routes.Twin){TwinScreen{nav.popBackStack()}}
         composable(Routes.Calibration){CalibrationScreen{nav.popBackStack()}}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
