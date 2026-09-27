@@ -1,0 +1,118 @@
+{
+  "adapters/RememberMeBrand.kt": {
+    "bytes": 2490,
+    "sha256": "7066e8c032e8e27408cb38d433b7fac3338c5ddf0d139463be1d2a7b40f2a354"
+  },
+  "adapters/RememberMeBrand.swift": {
+    "bytes": 2746,
+    "sha256": "9cd715dce70d83d9421bc5faa26e086368f0159a23bd17a4307b1dc8b024885f"
+  },
+  "build_assets.py": {
+    "bytes": 3421,
+    "sha256": "2ce41e0302b60271a13b216ba196296bec4c6f11aaf0a6dcf262c5df0a807834"
+  },
+  "exports/app-foreground-1024.png": {
+    "bytes": 160511,
+    "sha256": "26ce4078cb9396a8a3af04a9e67833aa6dcb70e0bbfe2617b98f4c4aebce74a6"
+  },
+  "exports/app-icon-dark-1024.png": {
+    "bytes": 145845,
+    "sha256": "f9e7dadfe433f72df2dd17f3cb622d3da0bfa863647fce2405f6436a4eabeca9"
+  },
+  "exports/app-icon-light-1024.png": {
+    "bytes": 143378,
+    "sha256": "7600903745731ec48223e25fad02c80c7b90b667bfa9fc33ce67c0dec17485ab"
+  },
+  "exports/mark-flat-128.png": {
+    "bytes": 2050,
+    "sha256": "5a97605a0830689826fd5d90ca05054e9ddb5b591074ee2e59409f97cfd5b1be"
+  },
+  "exports/mark-flat-32.png": {
+    "bytes": 610,
+    "sha256": "78fac988a03a9042e2f41b7eb9b923fc43e9cf2c07f70facda9aeb6c07e83e9c"
+  },
+  "exports/mark-flat-512.png": {
+    "bytes": 10600,
+    "sha256": "d89f121aa3c75254cc8050c972e1ffb640fabd29b6d33d7c6221d17fbacc7c9d"
+  },
+  "exports/mark-flat-dark-128.png": {
+    "bytes": 1930,
+    "sha256": "b1934c8379add22f3fe2c508d01196d76b18f687dcf8fee523096b24b57ecbfc"
+  },
+  "exports/mark-material-1024.png": {
+    "bytes": 290912,
+    "sha256": "efb38d9544b10ad33344a9175ad37c568dfd012535aaa55e9bb378cd0ca6e17c"
+  },
+  "exports/mark-material-256.png": {
+    "bytes": 32692,
+    "sha256": "1893e0d8d0b0f0d81896694faf933dd803d9149ee3d45edbfafa4501c2d52895"
+  },
+  "exports/mark-mono-128.png": {
+    "bytes": 1586,
+    "sha256": "250158ec0a9209afdb1b96d955dd5680cc4f3fa37d7ae8e86c1542f3dce82316"
+  },
+  "GENERATION.md": {
+    "bytes": 1509,
+    "sha256": "66f7dd09ff2427f3b60b096cb754c552155e3674156f0a3ba7d39d1891ebef94"
+  },
+  "preview.html": {
+    "bytes": 9053,
+    "sha256": "709c23be4de89bc35c968bd150c0596704ce31a1e8e88626fe8d7871788dac64"
+  },
+  "provenance.json": {
+    "bytes": 587,
+    "sha256": "698be01dca41b9edad21eb63a0e46ab5436146534491f593b47eab22f9a2e0af"
+  },
+  "README.md": {
+    "bytes": 5328,
+    "sha256": "e67c8db9d124625bbc8aa2b64bba257edb8e2b4521f0000ee109a79913d902c5"
+  },
+  "references/concept-c.png": {
+    "bytes": 1134256,
+    "sha256": "3eeffe985c8abcc9e17b1b1cf7cd02bbb5dfd050b929621a3e8bb96a0ee593da"
+  },
+  "remember-me-brand.js": {
+    "bytes": 2581,
+    "sha256": "738717638cd57a41657f716f0f8847abb303836952e160d3de446c17e6cb88bf"
+  },
+  "svg/app-foreground.svg": {
+    "bytes": 2732,
+    "sha256": "35b9d607d77dbe5638782b48862550254d7570b81c44d9bb358a6c5a54c3aa83"
+  },
+  "svg/app-icon-dark.svg": {
+    "bytes": 2779,
+    "sha256": "691438b71ef96e75d10a1d2621c8d98e38ff381bde64f1cc99db0e74467153a2"
+  },
+  "svg/app-icon-light.svg": {
+    "bytes": 2779,
+    "sha256": "8ceb0f95d5c2811b9088246588417a5baa3b8903ab5c28f22ec8dcbd63f3e16c"
+  },
+  "svg/mark-flat-dark.svg": {
+    "bytes": 956,
+    "sha256": "384500ebc0de4165e5dcfb2063860aebece98aa2020855cf5d9e02c2f895ddda"
+  },
+  "svg/mark-flat.svg": {
+    "bytes": 956,
+    "sha256": "06b5a7b693ece7987744a5a9c48da015c872d726983369c143a074eb4d6d9c26"
+  },
+  "svg/mark-material.svg": {
+    "bytes": 2679,
+    "sha256": "0d1332ada9498560cf4d9454adb57a1f7a1fb386866e3719636c4dcdf38cdffb"
+  },
+  "svg/mark-mono.svg": {
+    "bytes": 985,
+    "sha256": "0e0f2efcc09bd942a690ff67c419e40676c2ae298bbd13d0d8fabf4af646ddd5"
+  },
+  "tokens.json": {
+    "bytes": 652,
+    "sha256": "461736d5c3b386fdc1a981a45b45b3f11fd7a5e4dcbf82e078bc02e4234a40ec"
+  },
+  "verification.json": {
+    "bytes": 2706,
+    "sha256": "7923f9db0fc97c8b581c82a57fa0033c53cd31d5b8434960ebc62d8d42d6a755"
+  },
+  "verify-browser.js": {
+    "bytes": 3245,
+    "sha256": "94bcf0ac0e2aa2975c86bcd4dfeb2cd994ec11b9065a88d7e4aa3976cab64e3a"
+  }
+}

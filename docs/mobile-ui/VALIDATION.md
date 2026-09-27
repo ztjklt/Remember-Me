@@ -1,8 +1,8 @@
 # 验证记录与设备验收
 
-日期：2026-09-27。当前为本地实现验证，未合并、推送、发布或启动远端 CI。
+日期：2026-09-27。本页保留各轮本地验证历史；第六轮为当前视觉版本。交接复核见 [handoff-verification.json](handoff-verification.json)，同步与分支依赖见 [HANDOFF.md](HANDOFF.md)。本地验证不代表远端 CI、真机或发布验收。
 
-## 本轮已执行
+## 第一轮已执行（历史记录）
 
 | 检查 | 结果 | 证明范围 |
 |---|---|---|
@@ -39,7 +39,7 @@ cd apps/android
 .\gradlew.bat testDebugUnitTest assembleDebug assembleDebugAndroidTest lintDebug --console=plain
 ```
 
-原型启动本地 HTTP 服务后：
+原型的早期 Playwright CLI 回归脚本如下；它记录第一至三轮流程检查，不作为本次交接已重跑 v6 全量浏览器测试的证据。v5/v6 结果分别见 components-verification.json 与 memory-elements/verification.json。颜色检查可独立重跑：
 
 ```powershell
 npx --yes --package @playwright/cli playwright-cli -s=remember-ui open http://127.0.0.1:8768/docs/mobile-ui/prototype.html --headed

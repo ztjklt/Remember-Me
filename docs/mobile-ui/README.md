@@ -1,5 +1,7 @@
 # 勿忘我 · 移动端 UI 实施包
 
+**接手入口：[2026-09-27 详细交接](HANDOFF.md)**。包含分支依赖、当前 v6 规范、获取/构建、组件维护、验证证据、数据影响与后续执行单。
+
 本包第六轮加入“回忆图形”组件：蒙版叠层、纸页柔影与六款原创图形；保留第五轮首页、档案和播放器布局，以及五瓣蓝花品牌。包含可点击原型与 Android 实现；当前组件取舍见 [VISUAL_V5.md](VISUAL_V5.md)，材质基础见 [VISUAL_V4.md](VISUAL_V4.md)。iOS 对齐单独保存在 `codex/ios-ui-alignment` 分支，不能把两个平台分支整体互相合并。
 
 ## 打开与检查
@@ -11,7 +13,7 @@
 - [验证记录](VALIDATION.md)：已跑检查、真实能力限制、设备验收步骤。
 - [设计令牌](tokens.json)、[颜色检查结果](contrast-verification.json)、[原型检查结果](prototype-verification.json)。
 
-可直接打开 HTML；也可以在仓库根目录运行 `python -m http.server 8768 --bind 127.0.0.1`，打开 `http://127.0.0.1:8768/docs/mobile-ui/prototype.html`。
+在仓库根目录运行 `python -m http.server 8768 --bind 127.0.0.1`，打开 `http://127.0.0.1:8768/docs/mobile-ui/prototype.html?v=6`。组件采用 ES module，请通过 HTTP 访问；直接用 file:// 打开不能可靠载入。
 
 ## 实施基线
 

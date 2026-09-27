@@ -41,7 +41,7 @@ Android 首批固定导航为“今天 / 档案 / 我的”；对话有真实能
 
 ## 视觉规范
 
-当前为第五轮：雾蓝 / 灰紫 / 暖沙静态渐变，内容蒙版与按压反馈。首页密度、条目与播放器已精修，详见 [VISUAL_V5.md](VISUAL_V5.md)。当前材质规范见 [VISUAL_V4.md](VISUAL_V4.md)，组件参考仍见 [VISUAL_V3.md](VISUAL_V3.md)。
+当前为第六轮：保留雾蓝 / 灰紫 / 暖沙静态渐变、内容蒙版与按压反馈，加入六款 [回忆图形](memory-elements/README.md)。首页密度、条目与播放器见 [VISUAL_V5.md](VISUAL_V5.md)，材质规范见 [VISUAL_V4.md](VISUAL_V4.md)。较早的 VISUAL_V2/V3 记录设计演进；当前参数以 tokens.json 和 v6 原型为准。完整接手说明见 [HANDOFF.md](HANDOFF.md)。
 
 
 颜色、字号和尺寸机器可读版本见 [tokens.json](tokens.json)。
