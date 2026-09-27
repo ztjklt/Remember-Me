@@ -4,15 +4,15 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
-The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
+The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Contract proposal](docs/architecture/twin-voice-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
 
-The Android prototype is runnable. The iOS track is authorized but has no app project in this repository yet. Feature readiness is tracked through the current PRs and the [roadmap](docs/roadmap/ROADMAP.md); a working Phase 1 demo requires a real recording through the shared processing path on one client.
+The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its current Mac stack uses local Whisper and DeepSeek V4 Flash behind the existing Backend and AI Core adapters. Audio remains local; transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
 
 | Phase | Status |
 | --- | --- |
 | Phase 1 — Golden Path | COMMITTED / NOW |
-| Phase 2 — Core Twin | PLANNED / NEXT |
-| Phase 3 — Calibration + Voice | PLANNED |
+| Phase 2 — Core Twin | iOS-first slice AUTHORIZED / IN PROGRESS |
+| Phase 3 — Calibration + Voice | Local Voice slice AUTHORIZED / IN PROGRESS; calibration PLANNED |
 | Phase 4 — Hardware + Legacy | BACKLOG / CONDITIONAL |
 
 ## Baseline documents
@@ -29,6 +29,7 @@ PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). The 20
 ## Repository map
 
 - `apps/android` — Android client (Kotlin, Jetpack Compose) and its build documentation
+- `apps/ios` — iOS SwiftUI client, local pairing and device runbook
 - `services/backend` — API, persistence, auth, jobs, and storage
 - `services/ai-core` — memory extraction, person model, Twin, calibration, and capture planning
 - `services/voice` — consent-gated voice dataset, clone, and TTS adapters
@@ -50,3 +51,5 @@ Android setup and build commands are in [apps/android/README.md](apps/android/RE
 cd apps/android
 ./gradlew test assembleDebug
 ```
+
+For the local iOS voice-to-Person-Model path, follow [apps/ios/README.md](apps/ios/README.md).

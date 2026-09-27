@@ -7,11 +7,13 @@ Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Prod
 | Phase | Status | Product goal | Exit gate |
 | --- | --- | --- | --- |
 | Phase 1 — Golden Path | **COMMITTED / NOW** | Make a real voice actually enter Remember Me | Real-device recording → Backend/STT → AI Memory → the same mobile client shows a real Memory |
-| Phase 2 — Core Twin | **PLANNED / NEXT** | Move from "it records" to "it is starting to understand me" | Person Model + Evidence Twin + Original Router demonstrable |
-| Phase 3 — Calibration + Voice | **PLANNED** | Verify fidelity and create a "sounds like me" perception | Calibration feeds the model back + Voice Seed/Clone/Twin Voice |
+| Phase 2 — Core Twin | **iOS-first slice AUTHORIZED / IN PROGRESS** | Move from "it records" to "it is starting to understand me" | Person Model + Evidence Twin + Original Router demonstrable |
+| Phase 3 — Calibration + Voice | **local Voice slice AUTHORIZED / IN PROGRESS; calibration PLANNED** | Create a "sounds like me" perception | Separate Voice grant + own sample + local Twin speech |
 | Phase 4 — Hardware + Legacy | **BACKLOG / CONDITIONAL** | Prove the recording device's value and complete the entrustment narrative | Hardware Capture + Handover/Grant/Legacy core path |
 
-Reading Phase 2–4 does not authorize starting them. Phase 1 Golden Path is the only committed workstream.
+Reading Phase 2–4 alone does not authorize starting them. The Product Owner has now explicitly authorized the iOS-first evidence Twin and local Voice slice recorded in [the Contract proposal](../architecture/twin-voice-contract-proposal.md). Full calibration, Legacy, and cloud deployment remain planned.
+
+**Approved iOS-first scope:** [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75) authorized local STT, evidence-backed memories and the seven-domain model. The later [Twin and Voice decision](../architecture/twin-voice-contract-proposal.md) authorizes evidence retrieval, Original/Simulation/Unknown routing, and separately consented local voice playback. It does not activate recipient accounts, Legacy, cloud deployment, or the full calibration phase.
 
 ## Phase 1 — Golden Path (COMMITTED)
 
@@ -21,11 +23,11 @@ Android and iOS are the two active client tracks. 刘修贤 leads Android; 张�
 
 Phase 1 is not complete until one real device records, uploads, and reads back a real extracted Memory — not a Mock or stubbed response. The other client track does not repeat this gate merely to release the first demo.
 
-## Phase 2 — Core Twin (PLANNED / NEXT)
+## Phase 2 — Core Twin (iOS-first slice authorized)
 
 Person Model and Temporal Memory Graph over real Episodes; Memories screen on real data; Evidence Retrieval; Twin Agent with explicit provenance; Original Router preferring direct subject statements over simulation; memory correction and deletion propagating to derived data.
 
-## Phase 3 — Calibration + Voice (PLANNED)
+## Phase 3 — Calibration + Voice (local Voice slice authorized; calibration planned)
 
 Calibration Agent comparing a locked Twin answer against the human answer across Decision, Reasoning, Value Priority, Emotional Reaction, and Expression; Capture Planner driven by Information Gain × Importance × Uncertainty × Time Urgency ÷ Interaction Cost; Voice consent gate, speaker verification, quality assessment, clean segment selection, dataset, profile, provider adapter, and Twin Voice playback.
 

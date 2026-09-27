@@ -12,18 +12,22 @@ duplicate result must not be written — and the tests reproduce each one rather
 than reasoning about it.
 """
 
+import json
+import logging
 import time
 from datetime import timedelta
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 
-from app.ai_core import FakeAiCoreClient
+from app.ai_core import FakeAiCoreClient, HttpAiCoreClient
 from app.errors import AiSchemaInvalid, AiUnavailable, SttUnavailable
+from app.logging_config import JsonFormatter
 from app.models import Episode, Evidence, Job, JobStage, JobState, MemoryItem, as_utc, utcnow
 from app.seed import seed_development_data
-from app.stt import FakeSttProvider, Transcript
+from app.stt import FakeSttProvider, HttpSttProvider, Transcript
 from app.worker import LeaseHeartbeat, ProcessingWorker
 
 AUDIO = b"RIFF\x00\x00\x00\x00WAVEfmt "
@@ -163,7 +167,7 @@ def test_processing_runs_to_a_readable_result(client, worker, session, uploaded,
     assert item["source_type"] == "AI_INFERENCE"
     assert item["model_version"] == "fake-ai-v1"
     assert item["prompt_version"] == "fake-prompt-v1"
-    assert item["schema_version"] == "integration-contract-v0.1"
+    assert item["schema_version"] == "integration-contract-v0.2"
 
     # The evidence a memory rests on was stored, and the id resolves.
     evidence = session.scalars(
@@ -274,6 +278,46 @@ def test_a_retryable_failure_is_retried_until_the_budget_is_gone(app, session, u
     assert episode_of(session, uploaded).error_code == "AI_UNAVAILABLE"
 
 
+@pytest.mark.parametrize(
+    ("status_code", "error_code", "attempts"),
+    [
+        (413, "AI_FAILED", 1),
+        (422, "AI_FAILED", 1),
+        (502, "AI_FAILED", 1),
+        (503, "AI_UNAVAILABLE", 3),
+        (504, "AI_TIMEOUT", 3),
+    ],
+)
+def test_ai_core_http_failure_persists_with_the_right_retry_budget(
+    app, session, uploaded, monkeypatch, status_code, error_code, attempts
+):
+    calls = []
+
+    def post(url, **kwargs):  # noqa: ANN001, ANN003, ANN202 - mirrors httpx.post
+        calls.append((url, kwargs))
+        return httpx.Response(status_code, text="provider error")
+
+    monkeypatch.setattr(httpx, "post", post)
+    ai = HttpAiCoreClient("http://ai-core.internal", "/process", 5.0)
+    worker = build_worker(app, ai=ai, max_attempts=3)
+
+    assert worker.run_once() == uploaded  # Transcription is committed first.
+    assert episode_of(session, uploaded).transcript
+    for _ in range(attempts):
+        worker.run_once()
+
+    job = job_of(session, uploaded)
+    episode = episode_of(session, uploaded)
+    assert job.state == str(JobState.FAILED)
+    assert job.attempts == attempts
+    assert job.last_error_code == error_code
+    assert episode.status == "failed"
+    assert episode.error_code == error_code
+    assert episode.transcript  # The failed AI step cannot discard the source.
+    assert app.state.object_store.get(episode.audio_object_key) == AUDIO
+    assert len(calls) == attempts
+
+
 def test_a_retryable_failure_leaves_the_episode_on_the_stage_it_is_stuck_on(
     app, session, uploaded
 ):
@@ -297,6 +341,52 @@ def test_a_retryable_failure_leaves_the_episode_on_the_stage_it_is_stuck_on(
     assert job.attempts == 1
     # Waiting, not retrying immediately: backoff is scheduled, not ignored.
     assert as_utc(job.available_at) > utcnow()
+
+
+@pytest.mark.parametrize(
+    ("status_code", "error_code", "attempts"),
+    [
+        (413, "STT_FAILED", 1),
+        (422, "STT_FAILED", 1),
+        (502, "STT_FAILED", 1),
+        (503, "STT_UNAVAILABLE", 3),
+        (504, "STT_TIMEOUT", 3),
+    ],
+)
+def test_an_stt_http_failure_persists_with_the_right_retry_budget(
+    app, session, uploaded, monkeypatch, status_code, error_code, attempts
+):
+    """What the provider answers decides the budget, and the audio survives either way.
+
+    The recording is stored before transcription is attempted (ADR-0001 D11), so
+    a transcription that fails cannot lose it. The two rows assert that together
+    because they are the same promise: the Episode records why, and the audio it
+    could not read is still in the object store for the retry or the operator.
+    """
+    calls = []
+
+    def post(url, **kwargs):  # noqa: ANN001, ANN003, ANN202 - mirrors httpx.post
+        calls.append((url, kwargs))
+        return httpx.Response(status_code, text="provider error")
+
+    monkeypatch.setattr(httpx, "post", post)
+    stt = HttpSttProvider("http://stt.internal", "/transcribe", 5.0)
+    worker = build_worker(app, stt=stt, max_attempts=3)
+
+    for _ in range(attempts):
+        worker.run_once()
+
+    job = job_of(session, uploaded)
+    episode = episode_of(session, uploaded)
+    assert job.state == str(JobState.FAILED)
+    assert job.attempts == attempts
+    assert job.last_error_code == error_code
+    assert episode.status == "failed"
+    assert episode.error_code == error_code
+    assert episode.transcript is None
+    assert app.state.object_store.get(episode.audio_object_key) == AUDIO
+    # One request per attempt: the adapter does not retry underneath the job.
+    assert len(calls) == attempts
 
 
 def test_a_missing_audio_object_is_named_as_such(app, session, uploaded):
@@ -515,3 +605,103 @@ def test_the_heartbeat_gives_up_a_lease_it_no_longer_holds(app, session, uploade
     heartbeat.stop()
 
     assert not heartbeat.alive
+
+
+@pytest.fixture
+def worker_log():
+    """The worker's own output, formatted as it is written.
+
+    `trace_id` is attached by the formatter from a context variable, so it has to
+    be read while the record is emitted — inspecting the LogRecord afterwards
+    would always find it cleared. This is also the shape that reaches disk, which
+    is what the "no transcript in the logs" rule is about.
+    """
+
+    class Capture(logging.Handler):
+        def __init__(self) -> None:
+            super().__init__()
+            self.payloads: list[dict] = []
+
+        def emit(self, record: logging.LogRecord) -> None:
+            self.payloads.append(json.loads(JsonFormatter().format(record)))
+
+    handler = Capture()
+    logger = logging.getLogger("app.worker")
+    previous_level = logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    try:
+        yield handler.payloads
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous_level)
+
+
+def test_a_completed_stage_is_logged_with_what_produced_it(worker, uploaded, worker_log):
+    """ADR-0001 D13 promises the transitions, the durations, and the versions.
+
+    A run that succeeds used to log nothing at all, which left the question worth
+    asking — "the Episode is stuck, what is the worker doing?" — with no answer in
+    the worker's own output.
+    """
+    advance(worker)
+
+    completed = [p for p in worker_log if p["message"] == "stage.completed"]
+
+    assert [p["stage"] for p in completed] == ["transcribe", "extract", "model"]
+    # The status names the stage that just ran, which is what a poller sees.
+    assert [p["status"] for p in completed] == ["transcribing", "extracting", "ready"]
+    assert {p["episode_id"] for p in completed} == {uploaded}
+    assert all(p["job_id"] and p["duration_ms"] >= 0 for p in completed)
+
+    # Each stage names its own producer. The transcript is still on the row when
+    # the extract stage runs, so reading "whichever version is set" would report
+    # the transcriber's model as the one that extracted the memories.
+    assert (completed[0]["provider"], completed[0]["model_version"]) == (
+        "fake",
+        "fake-stt-v1",
+    )
+    assert completed[1]["model_version"] == "fake-ai-v1"
+    assert completed[2]["model_version"] == "fake-ai-v1"
+
+
+def test_a_worker_line_carries_the_episodes_trace_id(worker, session, uploaded, worker_log):
+    """`infra/deployment.md` promises the two processes' logs are matchable.
+
+    That is the whole of the troubleshooting story: the client has an
+    `episode_id`, the log lines carry a `trace_id`, and the status endpoint is
+    what converts one into the other.
+    """
+    trace_id = episode_of(session, uploaded).trace_id
+
+    advance(worker)
+
+    completed = [p for p in worker_log if p["message"] == "stage.completed"]
+    assert completed, "the fixture must produce output to check"
+    assert {p["trace_id"] for p in completed} == {trace_id}
+
+
+def test_a_failed_stage_is_findable_from_the_episode(app, session, uploaded, worker_log):
+    class Unreachable(FakeAiCoreClient):
+        def process(self, payload):  # noqa: ANN001, ANN201
+            raise AiUnavailable("AI Core is unreachable")
+
+    trace_id = episode_of(session, uploaded).trace_id
+
+    advance(build_worker(app, ai=Unreachable()))
+
+    failed = [p for p in worker_log if p["message"] == "stage.failed"]
+    assert failed, "a stage that failed must say so"
+    assert {p["error_code"] for p in failed} == {"AI_UNAVAILABLE"}
+    assert {p["trace_id"] for p in failed} == {trace_id}
+
+
+def test_the_worker_logs_never_carry_the_transcript(worker, session, uploaded, worker_log):
+    """A transcript is the subject's speech; a log line is written to disk."""
+    advance(worker)
+
+    transcript = episode_of(session, uploaded).transcript
+    assert transcript, "the fixture must actually produce a transcript"
+
+    written = "\n".join(json.dumps(payload) for payload in worker_log)
+    assert transcript not in written

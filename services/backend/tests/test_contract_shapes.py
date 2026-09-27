@@ -26,7 +26,7 @@ SCHEMA_PATH = (
     / "packages"
     / "contracts"
     / "schemas"
-    / "integration-contract-v0.1.schema.json"
+    / "integration-contract-v0.2.schema.json"
 )
 
 # Every shape this service produces or consumes in Phase 1.
@@ -39,6 +39,8 @@ MIRRORED: dict[str, type[BaseModel]] = {
     "aiCoreInput": contracts.AICoreInput,
     "aiCoreOutput": contracts.AICoreOutput,
     "episodeResult": contracts.EpisodeResult,
+    "personTrait": contracts.PersonTrait,
+    "graphFact": contracts.GraphFact,
 }
 
 # Deliberately not mirrored: Phase 2, 3, and 4 shapes.
@@ -49,6 +51,8 @@ NOT_MIRRORED = {
     "voiceResponse",
     "calibrationInput",
     "calibrationOutput",
+    "personModelSnapshot",
+    "captureQuestion",
 }
 
 

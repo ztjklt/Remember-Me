@@ -97,10 +97,37 @@ class MemoryItem(ContractModel):
         return value.astimezone(timezone.utc) if value is not None else None
 
 
+class PersonTrait(ContractModel):
+    trait_id: str = Field(min_length=1)
+    domain: Literal["IDENTITY", "EPISODIC_MEMORY", "RELATIONSHIPS", "PREFERENCES", "VALUES_BELIEFS", "DECISION_PATTERNS", "EXPRESSION"]
+    statement: str = Field(min_length=1)
+    context: str | None = None
+    confidence: StrictFloat = Field(ge=0, le=1)
+    source_type: SourceType
+    evidence_ids: list[str]
+    counter_evidence_ids: list[str]
+    valid_from: AwareDatetime | None = None
+    valid_to: AwareDatetime | None = None
+    status: Literal["active", "unresolved", "superseded"]
+    model_version: str = Field(min_length=1)
+    memory_item_ids: list[str] | None = None
+
+
+class GraphFact(ContractModel):
+    fact_id: str = Field(min_length=1)
+    subject_id: str = Field(min_length=1)
+    kind: Literal["EVENT", "PERSON", "RELATIONSHIP"]
+    content: str = Field(min_length=1)
+    evidence_ids: list[str]
+    valid_from: AwareDatetime | None = None
+    valid_to: AwareDatetime | None = None
+    model_version: str = Field(min_length=1)
+
+
 class AICoreOutput(ContractModel):
     memory_items: list[MemoryItem]
-    graph_updates: list[dict[str, Any]]
-    persona_updates: list[dict[str, Any]]
+    graph_updates: list[GraphFact]
+    persona_updates: list[PersonTrait]
     evidence: list[Evidence]
     model_version: str = Field(min_length=1)
 

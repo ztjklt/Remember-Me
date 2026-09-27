@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # with the AI Core owner needs no code change.
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
+    embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    voice_url: str = "http://127.0.0.1:8300"
+    voice_timeout_seconds: float = 180.0
 
     # A placeholder provider is refused outside development and test. This is the
     # explicit way to say "yes, here too" — bringing an environment up end to end

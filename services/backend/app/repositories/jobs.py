@@ -140,7 +140,17 @@ class JobRepository:
             "lease_expires_at": None,
             "updated_at": now,
         }
-        if next_stage is None:
+        awaiting_transcript_review = (
+            JobStage(job.stage) is JobStage.TRANSCRIBE
+            and episode.source == "IOS_MIC"
+        )
+        if awaiting_transcript_review:
+            values.update(
+                state=str(JobState.WAITING),
+                stage=str(JobStage.EXTRACT),
+                attempts=0,
+            )
+        elif next_stage is None:
             values["state"] = str(JobState.SUCCEEDED)
         else:
             values.update(

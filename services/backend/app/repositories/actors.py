@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..errors import ActorNotFound
-from ..models import Actor
+from ..models import Actor, DeviceCredential
 from ..tokens import hash_actor_token
 
 
@@ -29,6 +29,10 @@ class ActorRepository:
 
         The token itself is never stored; lookup is by digest.
         """
-        return self.session.scalars(
+        actor = self.session.scalars(
             select(Actor).where(Actor.token_hash == hash_actor_token(token))
         ).one_or_none()
+        if actor is not None:
+            return actor
+        credential = self.session.get(DeviceCredential, hash_actor_token(token))
+        return self.session.get(Actor, credential.actor_id) if credential else None
