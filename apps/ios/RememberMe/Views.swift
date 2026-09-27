@@ -23,7 +23,7 @@ private struct PressFeedbackStyle: ButtonStyle {
             .background(fill, in: RoundedRectangle(cornerRadius: 16))
             .background {
                 RoundedRectangle(cornerRadius: 16)
-                    .shadow(color: Ink.coral.opacity(enabled ? 0.20 : 0), radius: configuration.isPressed ? 2 : 8, y: configuration.isPressed ? 1 : 5)
+                    .shadow(color: Ink.coral.opacity(enabled ? 0.20 : 0), radius: configuration.isPressed ? 2 : 5, y: configuration.isPressed ? 1 : 3)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
@@ -51,8 +51,8 @@ private struct AtmosphereBackground: View {
                 Ink.paper
                 if !reduceTransparency && contrast != .increased {
                     LinearGradient(colors: [color(0xD7E3F3,0x22324B), color(0xEEE5DE,0x202C34)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    RadialGradient(colors: [color(0xE6DFF0,0x302B43),color(0xE6DFF0,0x302B43).opacity(0)], center: UnitPoint(x: 1,y: 0.28), startRadius: 0, endRadius: max(geometry.size.width,geometry.size.height)*0.7)
-                    LinearGradient(colors: [Ink.paper.opacity(0),Ink.paper.opacity(0.3),Ink.paper], startPoint: .top, endPoint: .bottom)
+                    RadialGradient(colors: [color(0xE6DFF0,0x302B43),color(0xE6DFF0,0x302B43).opacity(0)], center: UnitPoint(x: 1,y: 0.15), startRadius: 0, endRadius: max(geometry.size.width,geometry.size.height)*0.5)
+                    LinearGradient(stops: [.init(color: Ink.paper.opacity(0),location: 0),.init(color: Ink.paper.opacity(0.3),location: 0.28),.init(color: Ink.paper,location: 0.68),.init(color: Ink.paper,location: 1)], startPoint: .top, endPoint: .bottom)
                 }
             }
         }.allowsHitTesting(false).accessibilityHidden(true)
@@ -296,15 +296,38 @@ private struct ProfileView: View {
     }
 }
 
+private struct RecordRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? Ink.coral.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct EpisodeRow: View {
+    let episode: EpisodeRecord
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "waveform").frame(width: 22).foregroundStyle(Ink.muted).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(episode.transcript?.isEmpty == false ? String((episode.transcript ?? "").prefix(48)) : "一段原始录音")
+                    .font(.body.weight(.medium)).foregroundStyle(Ink.text).lineLimit(2)
+                Text(String(episode.recorded_at.prefix(10))).font(.subheadline).foregroundStyle(Ink.muted)
+                if episode.status != "ready" {
+                    Text(statusLabel(episode.status)).font(.subheadline)
+                        .foregroundStyle(episode.status == "reviewing" || episode.status == "failed" ? Ink.coral : Ink.muted)
+                }
+            }.frame(maxWidth: .infinity,alignment: .leading)
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(Ink.muted).accessibilityHidden(true)
+        }.multilineTextAlignment(.leading).padding(.vertical,14).frame(minHeight: 48)
+    }
+}
+
 private struct EpisodesView: View {
     var query = ""
     @EnvironmentObject private var model: AppModel
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                Eyebrow(text: "每一段原音都在")
-                Text("声音档案")
-                    .font(.system(.title, design: .default).weight(.semibold))
+            LazyVStack(alignment: .leading, spacing: 0) {
                     .foregroundStyle(Ink.text)
                 if model.episodes.isEmpty {
                     Text("这里会保存你录下的原音和转写。即使没有抽出记忆，录音仍然在。")
@@ -313,20 +336,9 @@ private struct EpisodesView: View {
                 }
                 ForEach(model.episodes.filter { query.isEmpty || ($0.transcript ?? "").localizedCaseInsensitiveContains(query) }) { episode in
                     NavigationLink { EpisodeDetailView(initial: episode) } label: {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Eyebrow(text: episode.recorded_at.prefix(10).description)
-                            Text(episode.transcript?.isEmpty == false ? (episode.transcript ?? "") : "一段正在等待处理的录音")
-                                .font(.system(.body, design: .default).weight(.regular))
-                                .foregroundStyle(Ink.text)
-                                .lineLimit(3)
-                                .multilineTextAlignment(.leading)
-                            Text(statusLabel(episode.status))
-                                .font(.subheadline)
-                                .foregroundStyle(episode.status == "failed" ? Ink.coral : Ink.muted)
-                        }
-                        .padding(.vertical, 16)
+                        EpisodeRow(episode: episode)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(RecordRowStyle())
                     Divider()
                 }
             }
@@ -389,7 +401,7 @@ private struct HomeView: View {
     private let speaker = AVSpeechSynthesizer()
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 23) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     RememberMeBrand(size: 32)
                     Text("勿忘我").font(.body.weight(.medium)).foregroundStyle(Ink.text)
@@ -397,13 +409,13 @@ private struct HomeView: View {
                     Text(Date().formatted(.dateTime.month(.wide).day()))
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }
-                .padding(.top, 12)
+                .padding(.top, 4)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("今天，想记住什么？").font(.title2.weight(.medium)).foregroundStyle(Ink.text)
                     Text("一件小事，也可以慢慢说。").font(.subheadline).foregroundStyle(Ink.muted)
                 }
-                VStack(spacing: 10) {
+                VStack(spacing: 6) {
                     ActionButton(title: "开始录音", icon: "mic") {
                         selectedQuestion = nil
                         showRecorder = true
@@ -411,6 +423,32 @@ private struct HomeView: View {
                     Text("原音先留在手机").font(.subheadline).foregroundStyle(Ink.muted)
                 }
 
+                if model.draft != nil || model.episodeID != nil {
+                    Button { showRecorder = true } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "doc.text").accessibilityHidden(true)
+                            VStack(alignment: .leading,spacing: 4) {
+                                Text("继续查看或重试").font(.body.weight(.medium)).foregroundStyle(Ink.text)
+                                Text(model.processingStatus.isEmpty ? "原音已保存在手机" : statusLabel(model.processingStatus))
+                                    .font(.subheadline).foregroundStyle(Ink.muted)
+                            }.frame(maxWidth: .infinity,alignment: .leading)
+                            Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+                        }.padding(.vertical,12).frame(minHeight: 48)
+                    }.buttonStyle(RecordRowStyle())
+                    Divider()
+                }
+
+                Text("最近记录").font(.headline.weight(.medium))
+                if model.episodes.isEmpty {
+                    RememberMeBrand(size: 80, materialAsset: "RmBrandMaterial")
+                    Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
+                }
+                ForEach(Array(model.episodes.prefix(3))) { episode in
+                    NavigationLink { EpisodeDetailView(initial: episode) } label: {
+                        EpisodeRow(episode: episode)
+                    }.buttonStyle(RecordRowStyle())
+                    Divider()
+                }
                 if let question = model.questions.first {
                     VStack(alignment: .leading, spacing: 16) {
                         Eyebrow(text: "给你的一个小问题")
@@ -438,34 +476,6 @@ private struct HomeView: View {
                     .padding(.vertical, 12)
                 }
 
-                if model.draft != nil || model.episodeID != nil {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Eyebrow(text: "未完成的记录")
-                        Text(model.processingStatus.isEmpty ? "录音保存在手机里，随时可以继续。" : "正在处理：\(statusLabel(model.processingStatus))")
-                            .font(.subheadline)
-                            .foregroundStyle(Ink.text)
-                        Button("继续查看或重试") { showRecorder = true }
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .padding(.vertical, 12)
-                }
-
-                Text("最近记录").font(.headline.weight(.medium))
-                if model.episodes.isEmpty {
-                    RememberMeBrand(size: 80, materialAsset: "RmBrandMaterial")
-                    Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
-                }
-                ForEach(Array(model.episodes.prefix(3))) { episode in
-                    NavigationLink { EpisodeDetailView(initial: episode) } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(episode.transcript?.isEmpty == false ? String((episode.transcript ?? "").prefix(48)) : "一段原始录音")
-                                .font(.body.weight(.medium)).foregroundStyle(Ink.text)
-                            Text(String(episode.recorded_at.prefix(10)) + " · " + statusLabel(episode.status))
-                                .font(.subheadline).foregroundStyle(Ink.muted)
-                        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 16)
-                    }.buttonStyle(.plain)
-                    Divider()
-                }
             }
             .padding(20)
         }
@@ -588,31 +598,37 @@ private struct OriginalPlayer: View {
     let episodeID: String?
     private var identity: String { episodeID ?? model.draft?.id ?? "" }
     private var selected: Bool { model.playbackID == identity }
+    private func clock(_ seconds: Double) -> String { String(format: "%02d:%02d",Int(seconds)/60,Int(seconds)%60) }
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("原始录音").font(.body.weight(.medium))
+                    Text(model.playbackLoading ? "正在打开原音…" : selected && model.isPlaying ? "正在播放" : selected && model.playbackDuration > 0 && model.playbackPosition >= model.playbackDuration ? "播放完毕" : selected && model.playbackPosition > 0 ? "已暂停" : "准备好回听")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                }.frame(maxWidth: .infinity,alignment: .leading)
+
                 Button {
                     if selected { model.toggleCurrentPlayback() }
                     else if let episodeID { Task { await model.playOriginal(episodeID: episodeID) } }
                     else { model.togglePlayback() }
                 } label: {
-                    Image(systemName: selected && model.isPlaying ? "pause.fill" : "play.fill")
-                        .frame(width: 48, height: 48)
+                    Group {
+                        if model.playbackLoading { ProgressView().tint(Ink.paper) }
+                        else { Image(systemName: selected && model.isPlaying ? "pause.fill" : "play.fill") }
+                    }.frame(width: 48, height: 48)
                 }
                 .buttonStyle(.borderedProminent).tint(Ink.text).foregroundStyle(Ink.paper).clipShape(Circle())
                 .disabled(model.playbackLoading)
                 .accessibilityLabel(selected && model.isPlaying ? "暂停原音" : "播放原音")
-                VStack(alignment: .leading) {
-                    Text("原始录音").font(.body.weight(.medium))
-                    Text(selected ? "\(Int(model.playbackPosition) / 60):\(String(format: "%02d", Int(model.playbackPosition) % 60)) / \(Int(model.playbackDuration) / 60):\(String(format: "%02d", Int(model.playbackDuration) % 60))" : "点击播放")
-                        .font(.subheadline).foregroundStyle(Ink.muted).monospacedDigit()
-                }
+
             }
             if selected {
                 Slider(value: Binding(get: { model.playbackPosition }, set: { model.seekPlayback($0) }), in: 0...max(1, model.playbackDuration))
-                    .accessibilityLabel("原音播放进度")
+                    .frame(minHeight: 44).accessibilityLabel("原音播放进度")
+                HStack { Text(clock(model.playbackPosition)); Spacer(); Text(clock(model.playbackDuration)) }.font(.subheadline).foregroundStyle(Ink.muted).monospacedDigit()
             }
-        }.padding(16).background(Ink.peach, in: RoundedRectangle(cornerRadius: 16))
+        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
