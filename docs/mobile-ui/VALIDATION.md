@@ -86,3 +86,14 @@ iOS 按 `apps/ios/UI_ALIGNMENT.md` 构建，然后覆盖 375 / 430 pt、大字�
 | 参与者 | 三任务完成情况 | 是否提示 | 犹豫点 / 误解 | 改进建议 |
 |---|---|---|---|---|
 | 待招募 1–5 | 待执行 | 待记录 | 待记录 | 待记录 |
+
+## 第二轮视觉打磨验证（2026-09-27）
+
+- 原型流程复测通过：开始、同意、暂停/继续、保存、核对、保留编辑文字、整理确认、来源详情、删除与搜索。
+- 48 组布局检查通过：Android 360/412、iOS 375/430；普通浅色与 200% 深色/减少动态；六个核心页面。无页面横向溢出，固定操作区未超出视口。大字页面允许滚动。
+- 查看了首页、核对、深色大字录音页截图；修复装饰 SVG 拦截点击，并收缩大字下装饰高度。截图为 HTML 原型，非原生界面。
+- 22 组语义颜色对比度全部 >= 4.5:1，最低 4.75:1；iOS 七组颜色资产与 tokens.json 一致。
+- Android testDebugUnitTest、assembleDebug、assembleDebugAndroidTest、lintDebug 成功；18 tests / 0 failures / 0 errors，lint 0 errors / 25 warnings。最后构建日志 output/android-validation-v2.txt。
+- iOS 4 个 Swift 文件通过 tree-sitter 语法解析；没有 Xcode 编译或设备验证。
+- 两个工作目录 git diff --check 通过。业务协调层、元数据、供应商、共享 Contract 均无改动。
+- 真机视觉、录音、TalkBack/VoiceOver、合成材质对比度与目标用户验证继续待执行，不能据上述结果视为完成。

@@ -23,18 +23,18 @@ object RememberMeColors {
 object RememberMeSpacing { val xs=4.dp; val sm=8.dp; val md=16.dp; val lg=24.dp; val xl=32.dp; val xxl=48.dp }
 object RememberMeShapes { val small=8.dp; val medium=16.dp; val large=24.dp }
 private val light = lightColorScheme(
-    primary=Color(0xFF54685B), onPrimary=Color.White, primaryContainer=Color(0xFFE4EBE1), onPrimaryContainer=Color(0xFF263D2D),
-    secondary=Color(0xFF54685B), secondaryContainer=Color(0xFFE4EBE1), onSecondaryContainer=Color(0xFF263D2D),
-    tertiary=Color(0xFF975139), background=Color(0xFFF8F5EF), onBackground=Color(0xFF262923),
-    surface=Color(0xFFFFFDFA), onSurface=Color(0xFF262923), onSurfaceVariant=Color(0xFF61665F),
-    surfaceVariant=Color(0xFFEEEDE5), outline=Color(0xFF777D72), outlineVariant=Color(0xFFDCDDD3)
+    primary=Color(0xFF325CCB), onPrimary=Color.White, primaryContainer=Color(0xFFDDE6FA), onPrimaryContainer=Color(0xFF17243B),
+    secondary=Color(0xFF325CCB), secondaryContainer=Color(0xFFDDE6FA), onSecondaryContainer=Color(0xFF17243B),
+    tertiary=Color(0xFF325CCB), background=Color(0xFFEEF1F6), onBackground=Color(0xFF17243B),
+    surface=Color(0xFFFCFDFF), onSurface=Color(0xFF17243B), onSurfaceVariant=Color(0xFF56647B),
+    surfaceVariant=Color(0xFFE4EAF4), outline=Color(0xFF677994), outlineVariant=Color(0xFFCCD5E5)
 )
 private val dark = darkColorScheme(
-    primary=Color(0xFFACC7AF), onPrimary=Color(0xFF203527), primaryContainer=Color(0xFF344D3B), onPrimaryContainer=Color(0xFFCEE5CB),
-    secondary=Color(0xFFACC7AF), secondaryContainer=Color(0xFF344D3B), onSecondaryContainer=Color(0xFFCEE5CB),
-    tertiary=Color(0xFFE8AC92), background=Color(0xFF1A1D1B), onBackground=Color(0xFFF1F2EC),
-    surface=Color(0xFF242925), onSurface=Color(0xFFF1F2EC), onSurfaceVariant=Color(0xFFB8C0B6),
-    surfaceVariant=Color(0xFF303830), outline=Color(0xFF939E91), outlineVariant=Color(0xFF465046)
+    primary=Color(0xFFA9C0FF), onPrimary=Color(0xFF152B59), primaryContainer=Color(0xFF243755), onPrimaryContainer=Color(0xFFEDF2FF),
+    secondary=Color(0xFFA9C0FF), secondaryContainer=Color(0xFF243755), onSecondaryContainer=Color(0xFFEDF2FF),
+    tertiary=Color(0xFFA9C0FF), background=Color(0xFF101722), onBackground=Color(0xFFEDF2FF),
+    surface=Color(0xFF192333), onSurface=Color(0xFFEDF2FF), onSurfaceVariant=Color(0xFFABBAD3),
+    surfaceVariant=Color(0xFF243044), outline=Color(0xFF98ABC8), outlineVariant=Color(0xFF354764)
 )
 private fun text(size: Int, line: Int, weight: FontWeight = FontWeight.Normal) =
     TextStyle(fontFamily=FontFamily.SansSerif,fontSize=size.sp,lineHeight=line.sp,fontWeight=weight)

@@ -4,157 +4,157 @@
       "mode": "light",
       "foreground": "text",
       "background": "background",
-      "ratio": 13.55,
+      "ratio": 13.72,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "text",
       "background": "surface",
-      "ratio": 14.53,
+      "ratio": 15.26,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "text",
       "background": "soft",
-      "ratio": 12.13,
+      "ratio": 12.41,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "muted",
       "background": "background",
-      "ratio": 5.4,
+      "ratio": 5.29,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "muted",
       "background": "surface",
-      "ratio": 5.79,
+      "ratio": 5.89,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "muted",
       "background": "soft",
-      "ratio": 4.83,
+      "ratio": 4.79,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "primary",
       "background": "background",
-      "ratio": 5.5,
+      "ratio": 5.26,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "primary",
       "background": "surface",
-      "ratio": 5.9,
+      "ratio": 5.85,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "primary",
       "background": "soft",
-      "ratio": 4.92,
+      "ratio": 4.75,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "onPrimary",
       "background": "primary",
-      "ratio": 5.99,
+      "ratio": 5.95,
       "passes": true
     },
     {
       "mode": "light",
       "foreground": "accent",
       "background": "surface",
-      "ratio": 5.82,
+      "ratio": 5.85,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "text",
       "background": "background",
-      "ratio": 15.1,
+      "ratio": 16.05,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "text",
       "background": "surface",
-      "ratio": 13.15,
+      "ratio": 14.1,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "text",
       "background": "soft",
-      "ratio": 8.21,
+      "ratio": 10.7,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "muted",
       "background": "background",
-      "ratio": 9.11,
+      "ratio": 9.16,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "muted",
       "background": "surface",
-      "ratio": 7.93,
+      "ratio": 8.04,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "muted",
       "background": "soft",
-      "ratio": 4.96,
+      "ratio": 6.1,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "primary",
       "background": "background",
-      "ratio": 9.34,
+      "ratio": 9.99,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "primary",
       "background": "surface",
-      "ratio": 8.13,
+      "ratio": 8.78,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "primary",
       "background": "soft",
-      "ratio": 5.08,
+      "ratio": 6.66,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "onPrimary",
       "background": "primary",
-      "ratio": 7.21,
+      "ratio": 7.67,
       "passes": true
     },
     {
       "mode": "dark",
       "foreground": "accent",
       "background": "surface",
-      "ratio": 7.57,
+      "ratio": 8.78,
       "passes": true
     }
   ],
-  "minimum": 4.83,
+  "minimum": 4.75,
   "allPassed": true
 }

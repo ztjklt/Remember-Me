@@ -8,9 +8,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -21,7 +21,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 572
+      "scrollArea": 627
     },
     {
       "platform": "android",
@@ -30,9 +30,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -43,7 +43,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 514
+      "scrollArea": 569
     },
     {
       "platform": "android",
@@ -54,7 +54,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "android",
@@ -63,9 +63,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -74,9 +74,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "android",
@@ -87,7 +87,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 552
+      "scrollArea": 606
     },
     {
       "platform": "android",
@@ -96,9 +96,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "android",
@@ -109,7 +109,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 447
+      "scrollArea": 498
     },
     {
       "platform": "android",
@@ -120,7 +120,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "android",
@@ -129,9 +129,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "android",
@@ -140,9 +140,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -153,7 +153,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 572
+      "scrollArea": 627
     },
     {
       "platform": "android",
@@ -162,9 +162,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -175,7 +175,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 514
+      "scrollArea": 569
     },
     {
       "platform": "android",
@@ -186,7 +186,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "android",
@@ -195,9 +195,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 769,
+      "dockBottom": 764,
       "viewport": 850,
-      "scrollArea": 582
+      "scrollArea": 632
     },
     {
       "platform": "android",
@@ -206,9 +206,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "android",
@@ -219,7 +219,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 552
+      "scrollArea": 606
     },
     {
       "platform": "android",
@@ -228,9 +228,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "android",
@@ -241,7 +241,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 491
+      "scrollArea": 543
     },
     {
       "platform": "android",
@@ -252,7 +252,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "android",
@@ -261,9 +261,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 754,
+      "dockBottom": 746,
       "viewport": 850,
-      "scrollArea": 567
+      "scrollArea": 614
     },
     {
       "platform": "ios",
@@ -272,7 +272,40 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 756,
+      "dockBottom": 760,
+      "viewport": 850,
+      "scrollArea": 628
+    },
+    {
+      "platform": "ios",
+      "width": 375,
+      "large": false,
+      "page": "record",
+      "horizontalOverflow": false,
+      "viewportOverflow": false,
+      "dockBottom": 850,
+      "viewport": 850,
+      "scrollArea": 627
+    },
+    {
+      "platform": "ios",
+      "width": 375,
+      "large": false,
+      "page": "archive",
+      "horizontalOverflow": false,
+      "viewportOverflow": false,
+      "dockBottom": 760,
+      "viewport": 850,
+      "scrollArea": 628
+    },
+    {
+      "platform": "ios",
+      "width": 375,
+      "large": false,
+      "page": "review",
+      "horizontalOverflow": false,
+      "viewportOverflow": false,
+      "dockBottom": 850,
       "viewport": 850,
       "scrollArea": 569
     },
@@ -280,45 +313,12 @@
       "platform": "ios",
       "width": 375,
       "large": false,
-      "page": "record",
-      "horizontalOverflow": false,
-      "viewportOverflow": false,
-      "dockBottom": 850,
-      "viewport": 850,
-      "scrollArea": 572
-    },
-    {
-      "platform": "ios",
-      "width": 375,
-      "large": false,
-      "page": "archive",
-      "horizontalOverflow": false,
-      "viewportOverflow": false,
-      "dockBottom": 756,
-      "viewport": 850,
-      "scrollArea": 569
-    },
-    {
-      "platform": "ios",
-      "width": 375,
-      "large": false,
-      "page": "review",
-      "horizontalOverflow": false,
-      "viewportOverflow": false,
-      "dockBottom": 850,
-      "viewport": 850,
-      "scrollArea": 514
-    },
-    {
-      "platform": "ios",
-      "width": 375,
-      "large": false,
       "page": "memory",
       "horizontalOverflow": false,
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "ios",
@@ -327,9 +327,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 756,
+      "dockBottom": 760,
       "viewport": 850,
-      "scrollArea": 569
+      "scrollArea": 628
     },
     {
       "platform": "ios",
@@ -338,9 +338,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     },
     {
       "platform": "ios",
@@ -351,7 +351,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 552
+      "scrollArea": 606
     },
     {
       "platform": "ios",
@@ -360,9 +360,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     },
     {
       "platform": "ios",
@@ -373,7 +373,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 447
+      "scrollArea": 498
     },
     {
       "platform": "ios",
@@ -384,7 +384,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "ios",
@@ -393,9 +393,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     },
     {
       "platform": "ios",
@@ -404,9 +404,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 756,
+      "dockBottom": 760,
       "viewport": 850,
-      "scrollArea": 569
+      "scrollArea": 628
     },
     {
       "platform": "ios",
@@ -417,7 +417,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 572
+      "scrollArea": 627
     },
     {
       "platform": "ios",
@@ -426,9 +426,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 756,
+      "dockBottom": 760,
       "viewport": 850,
-      "scrollArea": 569
+      "scrollArea": 628
     },
     {
       "platform": "ios",
@@ -439,7 +439,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 514
+      "scrollArea": 569
     },
     {
       "platform": "ios",
@@ -450,7 +450,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "ios",
@@ -459,9 +459,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 756,
+      "dockBottom": 760,
       "viewport": 850,
-      "scrollArea": 569
+      "scrollArea": 628
     },
     {
       "platform": "ios",
@@ -470,9 +470,9 @@
       "page": "home",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     },
     {
       "platform": "ios",
@@ -483,7 +483,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 552
+      "scrollArea": 606
     },
     {
       "platform": "ios",
@@ -492,9 +492,9 @@
       "page": "archive",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     },
     {
       "platform": "ios",
@@ -505,7 +505,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 491
+      "scrollArea": 543
     },
     {
       "platform": "ios",
@@ -516,7 +516,7 @@
       "viewportOverflow": false,
       "dockBottom": 850,
       "viewport": 850,
-      "scrollArea": 663
+      "scrollArea": 718
     },
     {
       "platform": "ios",
@@ -525,9 +525,9 @@
       "page": "profile",
       "horizontalOverflow": false,
       "viewportOverflow": false,
-      "dockBottom": 741,
+      "dockBottom": 742,
       "viewport": 850,
-      "scrollArea": 554
+      "scrollArea": 610
     }
   ],
   "flow": "passed",
