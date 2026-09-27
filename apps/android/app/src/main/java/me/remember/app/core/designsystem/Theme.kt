@@ -19,6 +19,11 @@ object RememberMeColors {
     val Moss: Color @Composable get() = MaterialTheme.colorScheme.primary
     val Clay: Color @Composable get() = MaterialTheme.colorScheme.tertiary
     val Line: Color @Composable get() = MaterialTheme.colorScheme.outlineVariant
+    val SageTint: Color @Composable get() = MaterialTheme.colorScheme.primaryContainer
+    val ClayTint: Color @Composable get() = MaterialTheme.colorScheme.secondaryContainer
+    val SkyTint: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
+    val LilacTint: Color @Composable get() = MaterialTheme.colorScheme.tertiaryContainer
+    val GoldTint: Color @Composable get() = MaterialTheme.colorScheme.surfaceVariant
 }
 object RememberMeSpacing { val xs=4.dp; val sm=8.dp; val md=16.dp; val lg=24.dp; val xl=32.dp; val xxl=48.dp }
 object RememberMeShapes { val small=8.dp; val medium=16.dp; val large=24.dp }
