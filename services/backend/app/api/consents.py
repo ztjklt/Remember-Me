@@ -36,7 +36,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from ..db import get_session
-from ..models import Actor, Consent, ConsentScope, VoiceProfile, as_utc
+from ..models import Actor, CalibrationRun, Consent, ConsentScope, VoiceProfile, as_utc
 from ..retrieval import invalidate_answers
 from ..repositories.consents import ConsentRepository
 from ..repositories.subjects import SubjectRepository
@@ -204,5 +204,11 @@ def revoke_consent(
             discard_profile(session, request.app.state.object_store, profile)
     elif consent.scope == ConsentScope.CLOUD_TWIN:
         invalidate_answers(session, request.app.state.object_store, consent.subject_id)
+        for run in session.scalars(select(CalibrationRun).where(
+            CalibrationRun.subject_id == consent.subject_id,
+            CalibrationRun.actor_id == actor.actor_id,
+            CalibrationRun.status != "stale",
+        )):
+            run.status = "stale"
     session.commit()
     return ConsentResponse.of(consent)

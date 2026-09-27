@@ -11,7 +11,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
 from .ai_core import build_ai_client
-from .api import consents, episodes, health, session, person_model, pairing, twin, voice
+from .api import consents, episodes, health, session, person_model, pairing, twin, voice, calibration
 from .config import Settings, get_settings
 from .db import Database
 from .errors import REQUEST_INVALID, AppError
@@ -21,6 +21,7 @@ from .stt import build_stt_provider
 from .retrieval import LocalEncoder
 from .twin_client import TwinClient
 from .voice_client import VoiceClient
+from .calibration_client import CalibrationClient
 
 access_logger = logging.getLogger("app.access")
 
@@ -150,6 +151,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.embedding_encoder = LocalEncoder(settings.embedding_model)
     app.state.twin_client = TwinClient(settings.ai_core_url, settings.ai_timeout_seconds)
     app.state.voice_client = VoiceClient(settings.voice_url, settings.voice_timeout_seconds)
+    app.state.calibration_client = CalibrationClient(settings.ai_core_url, settings.ai_timeout_seconds)
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)
@@ -162,6 +164,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(pairing.router)
     app.include_router(twin.router)
     app.include_router(voice.router)
+    app.include_router(calibration.router)
     return app
 
 

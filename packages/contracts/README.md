@@ -1,4 +1,6 @@
-# Integration Contract v0.3
+# Integration Contract v0.4
+
+Version `0.4.0` adds a locked Twin calibration start, a completion request after a confirmed human Episode, and a typed result with five comparison dimensions. `calibration_id` is optional capture metadata for iOS recordings; old Android and iOS request shapes remain valid. The [calibration proposal](../../docs/architecture/calibration-contract-proposal.md) records the Product Owner direction and provenance boundary. See `schemas/integration-contract-v0.4.schema.json`.
 
 Version `0.3.0` adds the approved iOS-first Twin query/answer, evidence provenance, `UNKNOWN` routing, and local Voice profile/speech status in `schemas/integration-contract-v0.3.schema.json`. It is additive: v0.1 and v0.2 schemas remain available for Android and earlier iOS consumers. The [cross-module proposal](../../docs/architecture/twin-voice-contract-proposal.md) records Product Owner authorization and the sensitive-data boundary.
 
@@ -6,9 +8,9 @@ Version `0.2.0` adds the iOS voice-to-Person-Model closure authorized in [Issue 
 
 The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps the schema version that produced it. Only evidence that resolves to an original transcript span enters AI Core output. Backend correction evidence is separately attributed to a calibration audit record.
 
-This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0` and `0.3.0` add the approved iOS capabilities without changing that older file.
+This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.4.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.3.schema.json`; v0.1 and v0.2 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.4.schema.json`; v0.1–v0.3 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 
@@ -23,7 +25,7 @@ Phase status describes when a contract is expected to be implemented. It does no
 | Capture Question | P2 approved slice | current model gaps or contradictions | target domain, reason, evidence, and status |
 | Episode Result | P1 COMMITTED | `episode_id` | ready state + typed `memory_items[]` + `model_version` |
 | Twin Query | iOS-first approved slice, v0.3 | `subject_id` + reviewed query + `CLOUD_TWIN` consent | answer ID + Original/Simulation/Unknown + evidence + model/revision |
-| Calibration | P3 PLANNED | question + `locked_twin_answer` + `human_answer` | `dimension_diffs` + `model_updates` + `followup_questions` |
+| Calibration | iOS-first approved slice, v0.4 | saved locked Twin answer ID, then a linked confirmed human Episode | five typed dimension diffs, human excerpts, suggested next question; Episode modeling updates traits |
 | Voice Synthesis | local iOS-first approved slice, v0.3 | saved Twin answer ID + active `VOICE` profile/consent | private audio asset ID + status + model version |
 
 ## Shared rules

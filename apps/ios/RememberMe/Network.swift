@@ -137,6 +137,27 @@ struct MemorySearchRecord: Decodable, Identifiable {
     var id: String { memory_item_id }
 }
 struct MemorySearchReply: Decodable { let items: [MemorySearchRecord] }
+struct CalibrationDimensionRecord: Decodable, Identifiable {
+    let dimension: String
+    let alignment: String
+    let note: String
+    let human_excerpt: String?
+    var id: String { dimension }
+}
+struct CalibrationRecord: Decodable, Identifiable {
+    let calibration_id: String
+    let twin_answer_id: String
+    let question: String
+    let locked_answer: String?
+    let status: String
+    let human_episode_id: String?
+    let summary: String?
+    let dimensions: [CalibrationDimensionRecord]
+    let suggested_question: String?
+    let comparison_model_version: String?
+    var id: String { calibration_id }
+}
+struct CalibrationListReply: Decodable { let items: [CalibrationRecord] }
 
 enum APIError: LocalizedError {
     case invalidURL, invalidCertificate, server(Int, String), invalidResponse
@@ -308,6 +329,25 @@ final class APIClient: @unchecked Sendable {
     func speechAudio(subjectID: String, assetID: String) async throws -> Data {
         try await request("/api/v1/subjects/\(subjectID)/voice/assets/\(assetID)/audio")
     }
+    func calibrations(subjectID: String) async throws -> [CalibrationRecord] {
+        try JSONDecoder().decode(CalibrationListReply.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/calibrations")).items
+    }
+    func startCalibration(subjectID: String, answerID: String,
+                          cloudConsentID: String) async throws -> CalibrationRecord {
+        let body = try JSONSerialization.data(withJSONObject: ["twin_answer_id": answerID,
+                                                               "cloud_consent_id": cloudConsentID])
+        return try JSONDecoder().decode(CalibrationRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/calibrations", method: "POST", body: body,
+            contentType: "application/json"))
+    }
+    func completeCalibration(subjectID: String, calibrationID: String,
+                             cloudConsentID: String) async throws -> CalibrationRecord {
+        let body = try JSONSerialization.data(withJSONObject: ["cloud_consent_id": cloudConsentID])
+        return try JSONDecoder().decode(CalibrationRecord.self, from: await request(
+            "/api/v1/subjects/\(subjectID)/calibrations/\(calibrationID)/complete",
+            method: "POST", body: body, contentType: "application/json"))
+    }
 
     func upload(_ draft: RecordingDraft, pairing: Pairing) async throws -> String {
         let audio = try Data(contentsOf: draft.fileURL)
@@ -325,6 +365,7 @@ final class APIClient: @unchecked Sendable {
         field("duration_ms", String(draft.durationMS))
         var metadata: [String: String] = ["consent_confirmed_at": ISO8601DateFormatter().string(from: draft.consentConfirmedAt)]
         if let questionID = draft.questionID { metadata["question_id"] = questionID }
+        if let calibrationID = draft.calibrationID { metadata["calibration_id"] = calibrationID }
         let metadataData = try JSONSerialization.data(withJSONObject: metadata)
         field("metadata", String(data: metadataData, encoding: .utf8) ?? "{}")
         body.append(Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n".utf8))

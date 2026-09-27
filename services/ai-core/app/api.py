@@ -19,6 +19,7 @@ from .providers.deepseek import DeepSeekProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
+from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
 
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
@@ -63,10 +64,15 @@ def create_app(
     *,
     extractor: MemoryExtractor | None = None,
     twin_provider: DeepSeekTwinProvider | None = None,
+    calibration_provider: DeepSeekCalibrationProvider | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
     active_twin = twin_provider or (DeepSeekTwinProvider(
+        base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
+        model=settings.model, timeout_seconds=settings.timeout_seconds,
+    ) if settings.provider == "deepseek" else None)
+    active_calibration = calibration_provider or (DeepSeekCalibrationProvider(
         base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
         model=settings.model, timeout_seconds=settings.timeout_seconds,
     ) if settings.provider == "deepseek" else None)
@@ -84,6 +90,8 @@ def create_app(
                     close()
             if twin_provider is None and active_twin is not None:
                 active_twin.close()
+            if calibration_provider is None and active_calibration is not None:
+                active_calibration.close()
 
     app = FastAPI(title="Remember Me AI Core", version="0.2.0", lifespan=lifespan)
     app.add_middleware(RequestSizeLimit, max_bytes=settings.max_request_bytes)
@@ -140,6 +148,17 @@ def create_app(
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_twin.answer(payload)
+        finally:
+            slots.release()
+
+    @app.post("/calibrate", response_model=CalibrationOutput)
+    def calibrate(payload: CalibrationInput) -> CalibrationOutput:
+        if active_calibration is None:
+            raise ProviderUnavailable("Calibration requires the configured DeepSeek adapter")
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable("AI Core capacity is busy")
+        try:
+            return active_calibration.compare(payload)
         finally:
             slots.release()
 
