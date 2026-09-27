@@ -9,6 +9,14 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import me.remember.app.core.designsystem.atmosphere
+import me.remember.app.core.designsystem.actionGradient
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,8 +76,15 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
 @Composable private fun Heading(text: String) { Text(text, style=MaterialTheme.typography.headlineLarge, modifier=Modifier.semantics { heading() }) }
 @Composable private fun Section(text: String) { Text(text, style=MaterialTheme.typography.titleLarge, modifier=Modifier.semantics { heading() }) }
 @Composable private fun Primary(label: String, icon: ImageVector, enabled: Boolean=true, tag: String="", action: () -> Unit) {
-    Button(onClick=action, enabled=enabled, shape=MaterialTheme.shapes.medium,
-        modifier=Modifier.fillMaxWidth().heightIn(min=56.dp).testTag(tag), contentPadding=PaddingValues(16.dp)) {
+    val interactions = remember { MutableInteractionSource() }
+    val pressed by interactions.collectIsPressedAsState()
+    val shape = MaterialTheme.shapes.medium
+    Button(onClick=action, enabled=enabled, shape=shape, interactionSource=interactions,
+        colors=ButtonDefaults.buttonColors(containerColor=Color.Transparent),
+        modifier=Modifier.fillMaxWidth().heightIn(min=56.dp).testTag(tag)
+            .shadow(if(!enabled) 0.dp else if(pressed) 1.dp else 5.dp,shape)
+            .clip(shape).then(if(enabled) Modifier.background(actionGradient(pressed)) else Modifier),
+        contentPadding=PaddingValues(16.dp)) {
         Icon(icon, contentDescription=null); Spacer(Modifier.width(12.dp)); Text(label)
     }
 }
@@ -98,7 +113,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     if (recordingOpen) {
         CapturePage(model, close={recordingOpen=false}, openDetail={detailPath=it.audioPath; recordingOpen=false})
     } else {
-        Scaffold(
+        Scaffold(modifier=Modifier.atmosphere(),containerColor=Color.Transparent,
             topBar={ if(detailPath != null) TopAppBar(title={Text(if(memoryID == null) "录音详情" else "记忆详情")},
                 navigationIcon={IconButton(onClick={back()}){Icon(Icons.AutoMirrored.Outlined.ArrowBack,"返回")}}) },
             bottomBar={ if(detailPath == null) Surface(modifier=Modifier.navigationBarsPadding(),color=MaterialTheme.colorScheme.background) {
@@ -237,7 +252,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     val active=state.phase in listOf(CapturePhase.Recording,CapturePhase.Paused)
     fun requestClose() { if(active)closing=true else if(state.phase !in listOf(CapturePhase.Starting,CapturePhase.Saving))close() }
     BackHandler { requestClose() }
-    Scaffold(topBar={TopAppBar(title={Text("留下一段声音")},navigationIcon={IconButton(onClick={requestClose()}){Icon(Icons.Outlined.Close,"关闭录音")}})},
+    Scaffold(modifier=Modifier.atmosphere(),containerColor=Color.Transparent,topBar={TopAppBar(title={Text("留下一段声音")},navigationIcon={IconButton(onClick={requestClose()}){Icon(Icons.Outlined.Close,"关闭录音")}})},
         bottomBar={ Surface(tonalElevation=2.dp) {
             Column(Modifier.navigationBarsPadding().padding(horizontal=20.dp,vertical=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 when(state.phase) {

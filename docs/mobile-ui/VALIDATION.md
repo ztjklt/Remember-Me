@@ -110,3 +110,7 @@ iOS 按 `apps/ios/UI_ALIGNMENT.md` 构建，然后覆盖 375 / 430 pt、大字�
 - iOS 4 个 Swift 文件通过语法解析；未完成 Xcode 类型检查、模拟器或设备测试。AppIcon 浅深色资源已配置，系统实际呈现仍待设备确认。
 - 最终 lint 0 errors / 25 warnings（依赖版本提示及既有 SDK 检查）；移除空的旧图标版本目录后复验通过，日志 output/android-lint-v3.txt。
 - adb devices 无连接设备；前述真实 ASR 模型与整理适配器限制不变。双端业务服务、元数据和共享 Contract 未改动。没有把用户原始品牌包混入批量提交。
+
+## 第四轮材质验证（2026-09-27）
+
+见 [VISUAL_V4.md](VISUAL_V4.md) 的本轮结果与边界。基础颜色与渐变采样重新通过检查；Android 构建、单元测试和 lint 通过。原型只对录音路径及 360/412 大字首页/录音布局复验，上一轮 48 组结果保留为历史记录。

@@ -1,0 +1,36 @@
+{
+  "version": 4,
+  "flow": "keyboard start / consent / pause / resume / save passed",
+  "cases": [
+    {
+      "height": 900,
+      "navBottom": 900.0000305175781,
+      "overflow": false,
+      "page": "home",
+      "width": 360
+    },
+    {
+      "dockBottom": 900.0000381469727,
+      "height": 900,
+      "overflow": false,
+      "page": "record",
+      "width": 360
+    },
+    {
+      "height": 900,
+      "navBottom": 900.0000305175781,
+      "overflow": false,
+      "page": "home",
+      "width": 412
+    },
+    {
+      "dockBottom": 900.0000381469727,
+      "height": 900,
+      "overflow": false,
+      "page": "record",
+      "width": 412
+    }
+  ],
+  "pointerAutomation": "not validated",
+  "note": "Only home and recording at 360/412 CSS width; dark, 200% text, reduced motion."
+}
