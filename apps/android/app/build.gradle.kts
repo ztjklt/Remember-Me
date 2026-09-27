@@ -1,14 +1,3 @@
-import java.util.Properties
-
-val localSecrets = Properties().apply {
-    val secretsFile = rootProject.file("local.properties")
-    if (secretsFile.isFile) secretsFile.inputStream().use { load(it) }
-}
-fun secret(name: String): String = localSecrets.getProperty(name)
-    ?: System.getenv(name)
-    ?: ""
-fun buildConfigString(value: String): String = "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -27,11 +16,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes { release { isMinifyEnabled = false } }
-    defaultConfig {
-        buildConfigField("String", "UNISOUND_API_KEY", buildConfigString(secret("UNISOUND_API_KEY")))
-        buildConfigField("String", "DEEPSEEK_API_KEY", buildConfigString(secret("DEEPSEEK_API_KEY")))
-        buildConfigField("String", "DEEPSEEK_TITLE_MODEL", "\"deepseek-v4-flash\"")
-    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
@@ -43,6 +27,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.icons)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -54,4 +39,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.json)
 }

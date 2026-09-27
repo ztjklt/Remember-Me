@@ -2,10 +2,14 @@ package me.remember.app.data.repository
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.media.MediaMetadataRetriever
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.SystemClock
-import org.json.JSONObject
+import android.util.AtomicFile
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.time.Instant
 import java.util.UUID
@@ -19,10 +23,32 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
     private var elapsedBeforeResume = 0L
     private var player: MediaPlayer? = null
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var playbackJob: Job? = null
+    private val playbackState = MutableStateFlow(PlaybackState())
+    override val playback = playbackState.asStateFlow()
+    private val archive = MutableStateFlow<List<AudioRecording>>(emptyList())
+    override fun observeRecordings() = archive.asStateFlow()
+
+    init {
+        val initial = recordings().map { item ->
+            val recovered = RecordingMetadata.recoverInterrupted(item)
+            if (recovered != item) runCatching { updateRecording(recovered) }
+            recovered
+        }
+        // Read access and playback still work when storage cannot accept a recovery write.
+        archive.value = initial
+    }
+
+    private fun refreshArchive() { archive.value = recordings() }
+    override fun amplitude(): Float = if (activeStartedAt == 0L) 0f else
+        runCatching { ((recorder?.maxAmplitude ?: 0) / 32767f).coerceIn(0f, 1f) }.getOrDefault(0f)
+
     override suspend fun start(): AudioRecording {
         check(recorder == null) { "A recording is already active." }
         check(recordingsDir.isDirectory) { "App storage is unavailable." }
 
+        stopPlayback()
         val audioFile = File(recordingsDir, "${UUID.randomUUID()}.m4a")
         val createdAt = Instant.now().toString()
         val newRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -122,26 +148,50 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             channelCount = CHANNEL_COUNT,
             createdAt = createdAt
         )
-        try {
-            File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json").writeText(recording.toJson().toString())
-        } catch (error: Exception) {
-            audioFile.delete()
-            throw IllegalStateException("Could not save recording metadata: ${error.message ?: "unknown error"}", error)
+        // A metadata failure must never remove a successfully recorded audio file.
+        try { updateRecording(recording) }
+        catch (error: Exception) {
+            refreshArchive()
+            throw IllegalStateException("原音文件已保留，但记录信息未能保存。可从档案中的恢复录音继续。", error)
         }
         return recording
     }
 
     override fun latestRecording(): AudioRecording? = recordings().firstOrNull()
 
-    override fun recordings(): List<AudioRecording> = recordingsDir.listFiles { file -> file.extension == "json" }
-        ?.mapNotNull { sidecar -> runCatching { sidecar.readText().let(::JSONObject).toRecording() }.getOrNull() }
-        ?.filter { File(it.audioPath).isFile }
+    override fun recordings(): List<AudioRecording> = recordingsDir.listFiles { file -> file.extension == "m4a" && file != activeAudioFile }
+        ?.mapNotNull { file ->
+            val sidecar = AtomicFile(File(recordingsDir, "${file.nameWithoutExtension}.json"))
+            runCatching { sidecar.openRead().bufferedReader().use { RecordingMetadata.decode(it.readText()) } }
+                .getOrNull()?.copy(audioPath = file.absolutePath) ?: recoverAudioFile(file)
+        }
         ?.sortedByDescending { it.createdAt }
         ?: emptyList()
 
+    // A interrupted metadata write must not hide a valid original audio file.
+    private fun recoverAudioFile(file: File): AudioRecording? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(file.absolutePath)
+            val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: return null
+            AudioRecording(file.absolutePath, duration, MIME_TYPE, file.length(), SAMPLE_RATE, CHANNEL_COUNT,
+                Instant.ofEpochMilli(file.lastModified()).toString(), title = "恢复的录音", processingStage = ProcessingStage.Failed,
+                processingError = "原音已恢复。记录信息缺失或损坏，可以播放或重新转写。")
+        } catch (_: Exception) { null } finally { retriever.release() }
+    }
+
     override fun updateRecording(recording: AudioRecording) {
         val audioFile = File(recording.audioPath)
-        File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json").writeText(recording.toJson().toString())
+        val atomic = AtomicFile(File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json"))
+        val stream = atomic.startWrite()
+        try {
+            stream.write(RecordingMetadata.encode(recording).toByteArray(Charsets.UTF_8))
+            atomic.finishWrite(stream)
+        } catch (error: Exception) {
+            atomic.failWrite(stream)
+            throw error
+        }
+        refreshArchive()
     }
 
     override fun deleteMemory(recording: AudioRecording, memoryId: String) {
@@ -152,83 +202,80 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
 
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
         stopPlayback()
-        val audioFile = File(recording.audioPath)
-        check(audioFile.isFile) { "The saved audio file no longer exists." }
-        val newPlayer = MediaPlayer()
+        val file = File(recording.audioPath)
+        check(file.isFile) { "原始录音文件不存在。" }
+        val next = MediaPlayer()
+        player = next
+        playbackState.value = PlaybackState(recording.audioPath, durationMillis = recording.durationMillis, preparing = true)
         try {
-            newPlayer.setDataSource(audioFile.absolutePath)
-            newPlayer.setOnCompletionListener {
-                stopPlayback()
+            next.setDataSource(file.absolutePath)
+            next.setOnPreparedListener {
+                if (player !== next) return@setOnPreparedListener
+                next.start()
+                playbackState.value = playbackState.value.copy(playing = true, preparing = false, durationMillis = next.duration.toLong())
+                watchPlayer()
+            }
+            next.setOnCompletionListener {
+                playbackJob?.cancel()
+                playbackState.value = playbackState.value.copy(playing = false, positionMillis = playbackState.value.durationMillis)
                 onComplete()
             }
-            newPlayer.setOnErrorListener { _, _, _ ->
+            next.setOnErrorListener { _, _, _ ->
                 stopPlayback()
-                onError("Audio playback failed. The saved file may be damaged or unsupported.")
+                playbackState.value = PlaybackState(recording.audioPath, error = "原音播放失败，请检查文件后重试。")
+                onError("原音播放失败，请检查文件后重试。")
                 true
             }
-            newPlayer.prepare()
-            newPlayer.start()
-            player = newPlayer
+            next.prepareAsync()
         } catch (error: Exception) {
-            runCatching { newPlayer.release() }
-            throw IllegalStateException("Could not play the saved recording: ${error.message ?: "unknown error"}", error)
+            stopPlayback()
+            playbackState.value = PlaybackState(recording.audioPath, error = "无法打开原音。")
+            onError("无法打开原音。")
         }
     }
 
-    override fun stopPlayback() {
-        player?.let { current ->
-            runCatching { if (current.isPlaying) current.stop() }
-            current.release()
+    private fun watchPlayer() {
+        playbackJob?.cancel()
+        playbackJob = scope.launch {
+            while (isActive) {
+                val current = player ?: break
+                runCatching { playbackState.value = playbackState.value.copy(
+                    positionMillis = current.currentPosition.toLong(), playing = current.isPlaying) }
+                delay(200)
+            }
         }
-        player = null
     }
+    override fun pausePlayback() {
+        if (playbackState.value.preparing) return
+        player?.let { runCatching { it.pause() } }
+        playbackState.value = playbackState.value.copy(playing = false)
+    }
+    override fun resumePlayback() {
+        if (playbackState.value.preparing) return
+        player?.let { current -> runCatching {
+            if (current.currentPosition >= current.duration) current.seekTo(0)
+            current.start()
+            playbackState.value = playbackState.value.copy(playing = true)
+            watchPlayer()
+        } }
+    }
+    override fun seekPlayback(positionMillis: Long) {
+        if (playbackState.value.preparing) return
+        val position = positionMillis.coerceIn(0, playbackState.value.durationMillis)
+        player?.let { runCatching { it.seekTo(position.toInt()) } }
+        playbackState.value = playbackState.value.copy(positionMillis = position)
+    }
+    override fun stopPlayback() {
+        playbackJob?.cancel()
+        player?.let { current -> runCatching { current.release() } }
+        player = null
+        playbackState.value = PlaybackState()
+    }
+    fun release() { stopPlayback(); scope.cancel() }
 
     companion object {
         const val MIME_TYPE = "audio/mp4"
         const val SAMPLE_RATE = 44_100
         const val CHANNEL_COUNT = 1
-
-        private fun AudioRecording.toJson() = JSONObject().apply {
-            put("audioPath", audioPath)
-            put("durationMillis", durationMillis)
-            put("mimeType", mimeType)
-            put("byteSize", byteSize)
-            put("sampleRate", sampleRate)
-            put("channelCount", channelCount)
-            put("created_at", createdAt)
-            put("title", title)
-            put("transcript", transcript)
-            put("summary", summary)
-            put("asrStatus", asrStatus.name)
-            put("personModelVersion", personModelVersion)
-            put("memories", org.json.JSONArray().apply {
-                memories.forEach { memory -> put(org.json.JSONObject().apply {
-                    put("id", memory.id); put("kind", memory.kind); put("content", memory.content)
-                    put("evidence", memory.evidence); put("confidence", memory.confidence.toDouble())
-                    put("sourceType", memory.sourceType); put("status", memory.status)
-                }) }
-            })
-        }
-
-        private fun JSONObject.toRecording() = AudioRecording(
-            audioPath = getString("audioPath"),
-            durationMillis = getLong("durationMillis"),
-            mimeType = getString("mimeType"),
-            byteSize = getLong("byteSize"),
-            sampleRate = getInt("sampleRate"),
-            channelCount = getInt("channelCount"),
-            createdAt = optString("created_at", optString("createdAt")),
-            title = optString("title", "未命名录音"),
-            transcript = optString("transcript"),
-            summary = optString("summary"),
-            asrStatus = runCatching { AsrStatus.valueOf(optString("asrStatus", AsrStatus.NotRequested.name)) }.getOrDefault(AsrStatus.NotRequested),
-            personModelVersion = optString("personModelVersion"),
-            memories = optJSONArray("memories")?.let { array -> buildList {
-                for (i in 0 until array.length()) {
-                    val item = array.optJSONObject(i) ?: continue
-                    add(ExtractedMemory(item.optString("id"), item.optString("kind"), item.optString("content"), item.optString("evidence"), item.optDouble("confidence", 0.5).toFloat(), item.optString("sourceType", "SUBJECT"), item.optString("status", "active")))
-                }
-            } } ?: emptyList()
-        )
     }
 }

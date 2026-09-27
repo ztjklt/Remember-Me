@@ -1,14 +1,14 @@
 package me.remember.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import me.remember.app.model.Loadable
 import me.remember.app.model.Memory
 import java.time.Instant
 
 class LocalMemoryRepository(private val audioCaptureService: AudioCaptureService) : MemoryRepository {
-    override fun memories(): Flow<Loadable<List<Memory>>> = flow {
-        val values = audioCaptureService.recordings().flatMap { recording ->
+    override fun memories(): Flow<Loadable<List<Memory>>> = audioCaptureService.observeRecordings().map { recordings ->
+        val values = recordings.flatMap { recording ->
             recording.memories.filter { it.status == "active" }.map { memory ->
                 Memory(
                     id = memory.id,
@@ -17,11 +17,12 @@ class LocalMemoryRepository(private val audioCaptureService: AudioCaptureService
                     story = memory.content,
                     people = if (memory.kind == "person" || memory.kind == "relationship") listOf(memory.kind) else emptyList(),
                     tags = listOf(memory.kind),
-                    duration = formatDuration(recording.durationMillis)
+                    duration = formatDuration(recording.durationMillis),
+                    sourceRecordingPath = recording.audioPath, evidence = memory.evidence, sourceType = memory.sourceType
                 )
             }
         }
-        emit(if (values.isEmpty()) Loadable.Empty else Loadable.Content(values))
+        if (values.isEmpty()) Loadable.Empty else Loadable.Content(values)
     }
 
     private fun formatDuration(durationMillis: Long): String {

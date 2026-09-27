@@ -1,0 +1,248 @@
+{
+  "version": 5,
+  "player": "keyboard play/pause, End seek, replay and focus passed; simulated audio only",
+  "cases": [
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "home",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "archive",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 636,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "home",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "archive",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "Android",
+      "large": false,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 636,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "home",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "archive",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 636,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "home",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "archive",
+      "bottom": 900.0000686645508,
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "platform": "iOS",
+      "large": false,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 636,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "home",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "archive",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 563,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "home",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "archive",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "Android",
+      "large": true,
+      "screen": "review",
+      "bottom": 900.0000152587891,
+      "contentHeight": 608,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "home",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "archive",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "review",
+      "bottom": 900.0000305175781,
+      "contentHeight": 563,
+      "height": 900,
+      "overflow": false,
+      "width": 375
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "home",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "archive",
+      "bottom": 900.0000305175781,
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "platform": "iOS",
+      "large": true,
+      "screen": "review",
+      "bottom": 900.0000152587891,
+      "contentHeight": 608,
+      "height": 900,
+      "overflow": false,
+      "width": 430
+    }
+  ],
+  "failures": [],
+  "pointer": "not verified; inherited IAB coordinate offset"
+}

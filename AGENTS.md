@@ -1,5 +1,9 @@
 # Coding Agent Instructions
 
+## UI handoff branch context — 2026-09-27
+
+This branch is an explicitly requested dual-client UI handoff based on PR #78 at `f63f7ef`, not current develop. Read `docs/mobile-ui/HANDOFF.md` before continuing. The Android-only wording and older staffing/branch rules below are inherited baseline history; the user authorized parallel Android and iOS UI work, with iOS delivered separately on `codex/ios-ui-alignment`. Do not merge the two branches wholesale or silently replace newer #78 dashboard work. The handoff does not authorize a provider-route or shared Contract change. Native device verification remains pending.
+
 You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V3_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, `docs/team/PHASE1_KICKOFF.md`, the task brief for the affected owner, `docs/roadmap/ROADMAP.md`, and `packages/contracts/README.md`.
 
 ## Source of truth

@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-09-27 移动 UI 交接分支：** 当前第六版原型、Android 实现、品牌及图形源资产的入口在 [docs/mobile-ui/HANDOFF.md](docs/mobile-ui/HANDOFF.md)。iOS 代码在独立的 `codex/ios-ui-alignment` 分支。本分支固定基于 #78 的旧提交，下面继承的 Android-only 状态文字属于上游历史；双端安排、当前能力和未完成验证请以交接说明为准。此分支不是 main/develop 的发布状态。
+
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. This repository contains the Android client and the shared baseline for backend, AI Core, voice, infrastructure, and team integration.
 
 ## Current status
