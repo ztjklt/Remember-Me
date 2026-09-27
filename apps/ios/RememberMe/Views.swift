@@ -328,7 +328,6 @@ private struct EpisodesView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                    .foregroundStyle(Ink.text)
                 if model.episodes.isEmpty {
                     MemoryGlyph(kind: .archive,size: 88)
                     Text("这里会保存你录下的原音和转写。即使没有抽出记忆，录音仍然在。")
@@ -405,7 +404,7 @@ private struct HomeView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     RememberMeBrand(size: 32)
-                    Text("勿忘我").font(.body.weight(.medium)).foregroundStyle(Ink.text)
+                    Text("Remember Me").font(.body.weight(.medium)).foregroundStyle(Ink.text)
                     Spacer()
                     Text(Date().formatted(.dateTime.month(.wide).day()))
                         .font(.subheadline).foregroundStyle(Ink.muted)

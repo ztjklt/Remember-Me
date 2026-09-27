@@ -155,7 +155,7 @@ final class AppModel: ObservableObject {
             AVAudioApplication.requestRecordPermission { continuation.resume(returning: $0) }
         }
         guard granted else {
-            errorMessage = "麦克风权限已拒绝。请在系统设置中允许勿忘我使用麦克风，然后再试。"
+            errorMessage = "麦克风权限已拒绝。请在系统设置中允许 Remember Me 使用麦克风，然后再试。"
             return
         }
         do {

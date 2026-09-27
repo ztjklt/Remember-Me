@@ -1,6 +1,6 @@
 # iOS 移动 UI 交接 · 2026-09-27
 
-第六版 UI 对齐代码位于 `codex/ios-ui-alignment`，固定基于 #77 的 `e146ac56f080299676fed40653394b97a37bd270`，Draft PR 比较目标为 `feature/ios-calibration`。交接时 #77 仍为 OPEN / Draft，head 未变化；本次没有合并或发布。
+第六版 UI 对齐代码来自 `codex/ios-ui-alignment`，固定基于 #77 的 `e146ac56f080299676fed40653394b97a37bd270`。这份交接原稿记录了 PR 创建时的基线；后续集成状态以仓库当前分支和 PR 为准。
 
 交接 PR：**[iOS #80](https://github.com/ztjklt/Remember-Me/pull/80)**；对应 **[Android / 设计资产 #79](https://github.com/ztjklt/Remember-Me/pull/79)**。远端状态见 Checks，自动运行的 Android CI 不能视作 iOS 编译验证。
 
@@ -36,7 +36,7 @@ python docs/mobile-ui/verify-design.py --ios-root ../remember-me-ios-ui
 
 ## 接手执行单
 
-- [ ] Mac/Xcode 编译，修复真实类型或资源错误后再声明构建通过。
+- [x] 2026-09-27 在 Mac 使用 Xcode 27 执行 `xcodebuild -project RememberMe.xcodeproj -scheme RememberMe -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build -quiet`；修复 `Views.swift` 中单独悬空的 `.foregroundStyle` 后构建通过。真机验证另记。
 - [ ] 375/430 pt、普通/大字、浅深色、减少动态/透明度、增强对比度与 VoiceOver；检查原生图形阴影和 AppIcon。
 - [ ] 录音开始/暂停/继续/关闭/后台保存、拒绝及恢复权限、回听/暂停/定位、异步下载切换与录音互斥。
 - [ ] 配对 Mac 转写、核对草稿刷新保留、明确同意整理、删除和纠正失败可恢复；回归证据、Twin、校准和独立声音授权。

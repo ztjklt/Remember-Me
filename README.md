@@ -1,6 +1,6 @@
 # Remember Me
 
-> **2026-09-27 iOS UI 交接分支：** 本分支在 #77 上完成第六版界面对齐。获取方式、验证限制和后续执行单见 [apps/ios/UI_HANDOFF.md](apps/ios/UI_HANDOFF.md)。Windows 侧仅完成 Swift 语法与资产检查，尚未完成本分支的 Xcode 构建；下面继承的服务能力说明不代表新的 UI 已通过设备验收。
+> **2026-09-27 双端集成：** Android 的 #78／#79 与 iOS 的 #76／#77／#80 已在集成分支接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。
 
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
@@ -8,7 +8,7 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Twin proposal](docs/architecture/twin-voice-contract-proposal.md), followed by a locked-answer [calibration slice](docs/architecture/calibration-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
 
-The Android prototype is runnable. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its current Mac stack uses local Whisper and DeepSeek V4 Flash behind the existing Backend and AI Core adapters. Audio remains local; transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
+The Android UI v6 records, plays and reviews local audio. Its real memory-processing adapter is not connected in the default build; the Android APK contains no provider credentials. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its paired Mac stack uses local Whisper and DeepSeek V4 Flash behind Backend and AI Core adapters. Audio remains local; confirmed transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
 
 | Phase | Status |
 | --- | --- |

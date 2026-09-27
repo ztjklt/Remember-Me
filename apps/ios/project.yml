@@ -27,7 +27,7 @@ targets:
     info:
       path: RememberMe/Info.plist
       properties:
-        CFBundleDisplayName: 拾光
+        CFBundleDisplayName: Remember Me
         UIRequiresFullScreen: true
         NSMicrophoneUsageDescription: 录下你的原话，保存为你自己的记忆。
         NSLocalNetworkUsageDescription: 连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。
