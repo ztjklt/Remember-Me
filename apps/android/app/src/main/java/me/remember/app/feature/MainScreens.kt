@@ -1,10 +1,13 @@
 package me.remember.app.feature
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.remember.app.core.designsystem.RememberMeColors
@@ -13,6 +16,105 @@ import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.model.*
 import me.remember.app.navigation.Routes
 import me.remember.app.ui.components.*
+
+@Composable
+fun PortraitScreen(go: (String) -> Unit) {
+    val topics = listOf(
+        "Is this your psychological feeling?" to Routes.Memories,
+        "Things you mentioned these days" to Routes.Memories,
+        "Your physical health, checked by your voice" to Routes.Recording,
+        "Your identity defines who you are" to Routes.Memories,
+        "Maybe you will talk about it in this way" to Routes.Twin,
+        "What has been quietly changing?" to Routes.Memories,
+        "A person who appeared in your thoughts" to Routes.Memories,
+        "A decision worth remembering" to Routes.Memories
+    )
+    var visibleTopics by remember { mutableStateOf(topics.take(5)) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(Random.nextLong(18_000L, 32_000L))
+            visibleTopics = topics.shuffled().take(5)
+        }
+    }
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("A quiet map of you", style = MaterialTheme.typography.headlineMedium)
+        }
+        Text("Portrait", style = MaterialTheme.typography.headlineLarge)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Thing memory", "events and facts", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Mood memory", "feelings over time", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Psycho memory", "patterns and values", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Filter memory", "search the archive", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Status memory", "health and life", Routes.Recording, go, Modifier.weight(1f))
+            PortraitCard("Environment", "places and context", Routes.Memories, go, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PortraitCard("Identity memory", "who you are", Routes.Memories, go, Modifier.weight(1f))
+            PortraitCard("Expression", "how you speak", Routes.Memories, go, Modifier.weight(1f))
+        }
+        RmDivider()
+        Text("Today", style = MaterialTheme.typography.titleLarge)
+        Text("Topics for you", style = MaterialTheme.typography.bodyMedium, color = RememberMeColors.Muted)
+        visibleTopics.forEachIndexed { index, (topic, route) ->
+            Row(Modifier.fillMaxWidth().clickable { go(route) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("0${index + 1}", color = RememberMeColors.Clay, modifier = Modifier.width(34.dp))
+                Text(topic, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                Text(">", color = RememberMeColors.Moss, style = MaterialTheme.typography.titleLarge)
+            }
+            if (index < visibleTopics.lastIndex) RmDivider()
+        }
+        BottomTabs(Routes.Portrait, go)
+    }
+}
+
+@Composable
+private fun PortraitCard(title: String, subtitle: String, route: String, go: (String) -> Unit, modifier: Modifier) {
+    Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface)
+        .clickable { go(route) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        Text(">", color = RememberMeColors.Moss, modifier = Modifier.align(Alignment.End))
+    }
+}
+
+@Composable
+private fun BottomTabs(selected: String, go: (String) -> Unit) {
+    val tabs = listOf("Portrait" to Routes.Portrait, "Graphs" to Routes.Graph, "Memories" to Routes.Memories, "Agents" to Routes.Agents, "Me" to Routes.Me)
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        tabs.forEach { (label, route) ->
+            TextButton({ go(route) }) { Text(label, color = if (selected == route) RememberMeColors.Clay else RememberMeColors.Muted) }
+        }
+    }
+}
+
+@Composable
+fun SimpleSectionScreen(title: String, subtitle: String, back: () -> Unit) {
+    RmPage {
+        TextButton(back) { Text("Back") }
+        Text(title, style = MaterialTheme.typography.headlineLarge)
+        Text(subtitle, color = RememberMeColors.Muted)
+        RmDivider()
+        Text("This section is ready for the corresponding agent data.", style = MaterialTheme.typography.bodyLarge)
+    }
+}
 
 @Composable fun CreatorHomeScreen(go:(String)->Unit)=RmPage{
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("晚上好",color=RememberMeColors.Muted);Text("陈屿",style=MaterialTheme.typography.headlineLarge)};if(BuildConfig.DEBUG) Text("•••",Modifier.clickable{go(Routes.Debug)}.padding(12.dp))}
