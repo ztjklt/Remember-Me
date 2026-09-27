@@ -12,6 +12,8 @@ object RememberMeColors {
     val Paper = Color(0xFFF7F3EC); val Surface = Color(0xFFFFFCF7)
     val Ink = Color(0xFF292A27); val Muted = Color(0xFF77736B)
     val Moss = Color(0xFF68766A); val Clay = Color(0xFFB98268); val Line = Color(0xFFE1DBD1)
+    val SageTint = Color(0xFFE7EEE6); val ClayTint = Color(0xFFF3E4DB)
+    val SkyTint = Color(0xFFE2ECEC); val LilacTint = Color(0xFFEAE6F0); val GoldTint = Color(0xFFF3EACF)
 }
 object RememberMeSpacing { val xs=4.dp; val sm=8.dp; val md=16.dp; val lg=24.dp; val xl=36.dp; val xxl=56.dp }
 object RememberMeShapes { val small=8.dp; val medium=16.dp; val large=28.dp }

@@ -1,0 +1,234 @@
+package me.remember.app.data.repository
+
+import android.content.Context
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.os.Build
+import android.os.SystemClock
+import org.json.JSONObject
+import java.io.File
+import java.time.Instant
+import java.util.UUID
+
+class AndroidAudioCaptureService(private val context: Context) : AudioCaptureService {
+    private val recordingsDir = File(context.filesDir, "recordings").apply { mkdirs() }
+    private var recorder: MediaRecorder? = null
+    private var activeAudioFile: File? = null
+    private var activeCreatedAt: String? = null
+    private var activeStartedAt = 0L
+    private var elapsedBeforeResume = 0L
+    private var player: MediaPlayer? = null
+
+    override suspend fun start(): AudioRecording {
+        check(recorder == null) { "A recording is already active." }
+        check(recordingsDir.isDirectory) { "App storage is unavailable." }
+
+        val audioFile = File(recordingsDir, "${UUID.randomUUID()}.m4a")
+        val createdAt = Instant.now().toString()
+        val newRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+
+        try {
+            newRecorder.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(SAMPLE_RATE)
+                setAudioChannels(CHANNEL_COUNT)
+                setAudioEncodingBitRate(96_000)
+                setOutputFile(audioFile.absolutePath)
+                prepare()
+                start()
+            }
+        } catch (error: Exception) {
+            runCatching { newRecorder.release() }
+            audioFile.delete()
+            throw IllegalStateException("Could not start microphone recording: ${error.message ?: "unknown error"}", error)
+        }
+
+        stopPlayback()
+        recorder = newRecorder
+        activeAudioFile = audioFile
+        activeCreatedAt = createdAt
+        activeStartedAt = SystemClock.elapsedRealtime()
+        elapsedBeforeResume = 0L
+        return AudioRecording(audioFile.absolutePath, 0L, MIME_TYPE, 0L, SAMPLE_RATE, CHANNEL_COUNT, createdAt)
+    }
+
+    override suspend fun pause() {
+        val active = checkNotNull(recorder) { "No recording is active." }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            throw IllegalStateException("Pause and resume require Android 7.0 or newer.")
+        }
+        try {
+            active.pause()
+            elapsedBeforeResume += SystemClock.elapsedRealtime() - activeStartedAt
+            activeStartedAt = 0L
+        } catch (error: Exception) {
+            throw IllegalStateException("Could not pause recording: ${error.message ?: "unknown error"}", error)
+        }
+    }
+
+    override suspend fun resume() {
+        val active = checkNotNull(recorder) { "No recording is active." }
+        try {
+            active.resume()
+            activeStartedAt = SystemClock.elapsedRealtime()
+        } catch (error: Exception) {
+            throw IllegalStateException("Could not resume recording: ${error.message ?: "unknown error"}", error)
+        }
+    }
+
+    override fun elapsedMillis(): Long = elapsedBeforeResume + if (activeStartedAt > 0L) {
+        SystemClock.elapsedRealtime() - activeStartedAt
+    } else 0L
+
+    override suspend fun stop(): AudioRecording {
+        val active = checkNotNull(recorder) { "No recording is active." }
+        val audioFile = checkNotNull(activeAudioFile)
+        val createdAt = checkNotNull(activeCreatedAt)
+        val duration = elapsedMillis()
+
+        try {
+            active.stop()
+        } catch (error: Exception) {
+            audioFile.delete()
+            throw IllegalStateException("Recording could not be finalized: ${error.message ?: "audio was too short"}", error)
+        } finally {
+            runCatching { active.reset() }
+            active.release()
+            recorder = null
+            activeAudioFile = null
+            activeCreatedAt = null
+            activeStartedAt = 0L
+            elapsedBeforeResume = 0L
+        }
+
+        if (!audioFile.isFile || audioFile.length() == 0L) {
+            audioFile.delete()
+            throw IllegalStateException("The recording file is empty.")
+        }
+
+        val recording = AudioRecording(
+            audioPath = audioFile.absolutePath,
+            durationMillis = duration,
+            mimeType = MIME_TYPE,
+            byteSize = audioFile.length(),
+            sampleRate = SAMPLE_RATE,
+            channelCount = CHANNEL_COUNT,
+            createdAt = createdAt
+        )
+        try {
+            File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json").writeText(recording.toJson().toString())
+        } catch (error: Exception) {
+            audioFile.delete()
+            throw IllegalStateException("Could not save recording metadata: ${error.message ?: "unknown error"}", error)
+        }
+        return recording
+    }
+
+    override fun latestRecording(): AudioRecording? = recordings().firstOrNull()
+
+    override fun recordings(): List<AudioRecording> = recordingsDir.listFiles { file -> file.extension == "json" }
+        ?.mapNotNull { sidecar -> runCatching { sidecar.readText().let(::JSONObject).toRecording() }.getOrNull() }
+        ?.filter { File(it.audioPath).isFile }
+        ?.sortedByDescending { it.createdAt }
+        ?: emptyList()
+
+    override fun updateRecording(recording: AudioRecording) {
+        val audioFile = File(recording.audioPath)
+        File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json").writeText(recording.toJson().toString())
+    }
+
+    override fun deleteMemory(recording: AudioRecording, memoryId: String) {
+        updateRecording(recording.copy(memories = recording.memories.map { memory ->
+            if (memory.id == memoryId) memory.copy(status = "deleted") else memory
+        }))
+    }
+
+    override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
+        stopPlayback()
+        val audioFile = File(recording.audioPath)
+        check(audioFile.isFile) { "The saved audio file no longer exists." }
+        val newPlayer = MediaPlayer()
+        try {
+            newPlayer.setDataSource(audioFile.absolutePath)
+            newPlayer.setOnCompletionListener {
+                stopPlayback()
+                onComplete()
+            }
+            newPlayer.setOnErrorListener { _, _, _ ->
+                stopPlayback()
+                onError("Audio playback failed. The saved file may be damaged or unsupported.")
+                true
+            }
+            newPlayer.prepare()
+            newPlayer.start()
+            player = newPlayer
+        } catch (error: Exception) {
+            runCatching { newPlayer.release() }
+            throw IllegalStateException("Could not play the saved recording: ${error.message ?: "unknown error"}", error)
+        }
+    }
+
+    override fun stopPlayback() {
+        player?.let { current ->
+            runCatching { if (current.isPlaying) current.stop() }
+            current.release()
+        }
+        player = null
+    }
+
+    companion object {
+        const val MIME_TYPE = "audio/mp4"
+        const val SAMPLE_RATE = 44_100
+        const val CHANNEL_COUNT = 1
+
+        private fun AudioRecording.toJson() = JSONObject().apply {
+            put("audioPath", audioPath)
+            put("durationMillis", durationMillis)
+            put("mimeType", mimeType)
+            put("byteSize", byteSize)
+            put("sampleRate", sampleRate)
+            put("channelCount", channelCount)
+            put("created_at", createdAt)
+            put("title", title)
+            put("transcript", transcript)
+            put("summary", summary)
+            put("asrStatus", asrStatus.name)
+            put("personModelVersion", personModelVersion)
+            put("memories", org.json.JSONArray().apply {
+                memories.forEach { memory -> put(org.json.JSONObject().apply {
+                    put("id", memory.id); put("kind", memory.kind); put("content", memory.content)
+                    put("evidence", memory.evidence); put("confidence", memory.confidence.toDouble())
+                    put("sourceType", memory.sourceType); put("status", memory.status)
+                }) }
+            })
+        }
+
+        private fun JSONObject.toRecording() = AudioRecording(
+            audioPath = getString("audioPath"),
+            durationMillis = getLong("durationMillis"),
+            mimeType = getString("mimeType"),
+            byteSize = getLong("byteSize"),
+            sampleRate = getInt("sampleRate"),
+            channelCount = getInt("channelCount"),
+            createdAt = optString("created_at", optString("createdAt")),
+            title = optString("title", "未命名录音"),
+            transcript = optString("transcript"),
+            summary = optString("summary"),
+            asrStatus = runCatching { AsrStatus.valueOf(optString("asrStatus", AsrStatus.NotRequested.name)) }.getOrDefault(AsrStatus.NotRequested),
+            personModelVersion = optString("personModelVersion"),
+            memories = optJSONArray("memories")?.let { array -> buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.optJSONObject(i) ?: continue
+                    add(ExtractedMemory(item.optString("id"), item.optString("kind"), item.optString("content"), item.optString("evidence"), item.optDouble("confidence", 0.5).toFloat(), item.optString("sourceType", "SUBJECT"), item.optString("status", "active")))
+                }
+            } } ?: emptyList()
+        )
+    }
+}
