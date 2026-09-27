@@ -33,7 +33,11 @@ composable(Routes.Recording){RecordingScreen(audioCaptureService, speechToTextSe
         composable(Routes.Processing){ProcessingScreen{nav.navigate(Routes.Birth)}}
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
-        composable(Routes.Home){CreatorHomeScreen(nav::navigate)}
+        composable(Routes.Home){PortraitScreen(nav::navigate)}
+        composable(Routes.Portrait){PortraitScreen(nav::navigate)}
+        composable(Routes.Graph){SimpleSectionScreen("关系图", "查看人物、关系和变化轨迹", nav::popBackStack)}
+        composable(Routes.Agents){SimpleSectionScreen("Agents", "查看记忆、画像和回答所经过的智能分工", nav::popBackStack)}
+        composable(Routes.Me){SimpleSectionScreen("我", "隐私、模型和数据管理", nav::popBackStack)}
         composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
         composable(Routes.Twin){TwinScreen{nav.popBackStack()}}
         composable(Routes.Calibration){CalibrationScreen{nav.popBackStack()}}
