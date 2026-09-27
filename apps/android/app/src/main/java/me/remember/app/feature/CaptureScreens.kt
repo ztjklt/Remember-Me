@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -21,19 +22,29 @@ import kotlinx.coroutines.launch
 import me.remember.app.core.designsystem.RememberMeColors
 import me.remember.app.data.repository.AudioCaptureService
 import me.remember.app.data.repository.AudioRecording
+import me.remember.app.data.repository.AsrStatus
+import me.remember.app.data.repository.SpeechToTextService
+import me.remember.app.data.repository.LocalAsrService
+import me.remember.app.data.repository.TitleGenerator
+import me.remember.app.data.repository.MemoryAgentOrchestrator
 import me.remember.app.ui.components.*
 import java.io.File
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
-fun RecordingScreen(audioCaptureService: AudioCaptureService) {
+fun RecordingScreen(audioCaptureService: AudioCaptureService, speechToTextService: SpeechToTextService? = null, localAsrService: LocalAsrService? = null, titleGenerator: TitleGenerator? = null, orchestrator: MemoryAgentOrchestrator? = null, openDetail: (AudioRecording) -> Unit = {}) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val savedRecording = remember(audioCaptureService) { audioCaptureService.latestRecording() }
+    var recordings by remember(audioCaptureService) { mutableStateOf(audioCaptureService.recordings()) }
     var captureState by remember { mutableStateOf(if (savedRecording == null) CaptureState.Idle else CaptureState.Saved) }
     var recording by remember { mutableStateOf<AudioRecording?>(savedRecording) }
     var elapsedMillis by remember { mutableLongStateOf(savedRecording?.durationMillis ?: 0L) }
     var playing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var asrMessage by remember { mutableStateOf<String?>(null) }
     var permissionGranted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
@@ -111,6 +122,7 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
                         try {
                             recording = audioCaptureService.stop()
                             elapsedMillis = recording?.durationMillis ?: 0L
+                            recordings = audioCaptureService.recordings()
                             transition(CaptureEvent.Save)
                         } catch (error: Exception) {
                             errorMessage = error.message ?: "Recording could not be saved."
@@ -133,6 +145,7 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
                         try {
                             recording = audioCaptureService.stop()
                             elapsedMillis = recording?.durationMillis ?: 0L
+                            recordings = audioCaptureService.recordings()
                             transition(CaptureEvent.Save)
                         } catch (error: Exception) {
                             errorMessage = error.message ?: "Recording could not be saved."
@@ -146,7 +159,8 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
                 recording?.let { saved ->
                     Text("时长 ${formatDuration(saved.durationMillis)} · ${saved.byteSize} bytes", style = MaterialTheme.typography.bodyMedium)
                     Text("${saved.mimeType} · ${saved.sampleRate} Hz · ${saved.channelCount} ch", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
-                    Text("${File(saved.audioPath).name}\n${saved.createdAt}", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                    Text("${saved.title}\n${saved.createdAt}", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                    RmSecondaryButton("查看录音详情") { openDetail(saved) }
                     RmPrimaryButton(if (playing) "正在播放" else "播放刚才的录音", {
                         try {
                             playing = true
@@ -174,10 +188,123 @@ fun RecordingScreen(audioCaptureService: AudioCaptureService) {
         }
 
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        asrMessage?.let { Text(it, color = RememberMeColors.Muted) }
+        if (recordings.isNotEmpty()) {
+            RmDivider()
+            Text("所有录音", style = MaterialTheme.typography.titleLarge)
+            recordings.forEach { saved ->
+                RecordingListItem(saved, audioCaptureService, openDetail)
+            }
+        }
         if (captureState == CaptureState.Idle || captureState == CaptureState.Failed) {
             Text("你可以说", style = MaterialTheme.typography.titleLarge)
             listOf("我是谁", "我现在的生活", "对我重要的人", "我最近在想什么").forEach {
                 Text("“$it”", color = RememberMeColors.Muted)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecordingListItem(recording: AudioRecording, audioCaptureService: AudioCaptureService, openDetail: (AudioRecording) -> Unit) {
+    var playing by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(recording.title, style = MaterialTheme.typography.titleMedium)
+                Text(formatCreatedAt(recording.createdAt), style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                Text(formatDuration(recording.durationMillis), style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+            }
+            RmSecondaryButton(if (playing) "正在播放" else "播放") {
+                playing = true
+                audioCaptureService.play(recording, { playing = false }, { playing = false })
+            }
+        }
+        Text("查看详情", Modifier.fillMaxWidth().clickable { openDetail(recording) }.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.primary)
+        RmDivider()
+    }
+}
+
+private fun formatCreatedAt(createdAt: String): String = runCatching {
+    Instant.parse(createdAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+}.getOrDefault(createdAt)
+
+@Composable
+fun AudioDetailScreen(recording: AudioRecording, audioCaptureService: AudioCaptureService, speechToTextService: SpeechToTextService?, localAsrService: LocalAsrService?, titleGenerator: TitleGenerator?, orchestrator: MemoryAgentOrchestrator?, back: () -> Unit) {
+    var playing by remember { mutableStateOf(false) }
+    var current by remember { mutableStateOf(recording) }
+    var requesting by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    RmPage {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            TextButton(back) { Text("返回") }
+            TextButton({}) { Text("分享") }
+        }
+        Text(current.title, style = MaterialTheme.typography.headlineLarge)
+        Text("ASR", style = MaterialTheme.typography.titleMedium)
+        Text(current.transcript.ifBlank { "点击下方按钮运行端侧 ASR。" }, color = RememberMeColors.Muted)
+        RmDivider()
+        Text("Summary", style = MaterialTheme.typography.titleMedium)
+        Text(current.summary.ifBlank { "ASR 完成后显示云端摘要。" }, color = RememberMeColors.Muted)
+        RmDivider()
+        Text("00:00  ━━━━━━━━━━━━━━━━━━━━━  ${formatDuration(recording.durationMillis)}", style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            RmSecondaryButton(if (playing) "正在播放" else "播放") {
+                playing = true
+                audioCaptureService.play(current, { playing = false }, { playing = false })
+            }
+            RmSecondaryButton("1×") {}
+        }
+        RmPrimaryButton(if (requesting) "处理中" else "端侧转写并命名", {
+            if (!requesting && orchestrator != null) {
+                requesting = true
+                message = null
+                scope.launch {
+                    try {
+                        current = orchestrator.process(current)
+                        audioCaptureService.updateRecording(current)
+                    } catch (error: Exception) {
+                        message = error.message ?: "端侧 ASR 失败"
+                    }
+                    requesting = false
+                }
+            } else if (orchestrator == null) {
+                message = "尚未配置本地 Agent 编排器。"
+            }
+        })
+        RmPrimaryButton(if (requesting) "请求处理中" else "请求云端 ASR 与摘要", {
+            if (!requesting && speechToTextService != null) {
+                requesting = true
+                message = null
+                scope.launch {
+                    try {
+                        val result = speechToTextService.transcribe(current.audioPath)
+                        current = current.copy(transcript = result.transcript, summary = result.summary, asrStatus = AsrStatus.Ready)
+                        audioCaptureService.updateRecording(current)
+                    } catch (error: Exception) {
+                        message = error.message ?: "ASR 请求失败"
+                    }
+                    requesting = false
+                }
+            } else if (speechToTextService == null) {
+                message = "未配置云知声服务。"
+            }
+        })
+        message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (current.memories.isNotEmpty()) {
+            RmDivider()
+            Text("提取的 Memory", style = MaterialTheme.typography.titleMedium)
+            current.memories.forEach { memory ->
+                if (memory.status == "active") {
+                    Text("${memory.kind}: ${memory.content}", style = MaterialTheme.typography.bodyMedium)
+                    Text("证据：${memory.evidence} · ${"%.0f".format(memory.confidence * 100)}%", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                    TextButton({
+                        audioCaptureService.deleteMemory(current, memory.id)
+                        current = current.copy(memories = current.memories.map { item -> if (item.id == memory.id) item.copy(status = "deleted") else item })
+                        orchestrator?.rebuildDerivedData(audioCaptureService.recordings())
+                    }) { Text("删除这条记忆") }
+                }
             }
         }
     }

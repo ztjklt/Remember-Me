@@ -17,3 +17,6 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+
+# Downloaded sherpa-onnx model weights are too large for normal GitHub blobs.
+apps/android/app/src/main/assets/paraformer/model.int8.onnx

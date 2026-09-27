@@ -131,14 +131,24 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
         return recording
     }
 
-    override fun latestRecording(): AudioRecording? = recordingsDir.listFiles { file -> file.extension == "json" }
-        ?.sortedByDescending(File::lastModified)
-        ?.firstNotNullOfOrNull { sidecar ->
-            runCatching {
-                val recording = sidecar.readText().let(::JSONObject).toRecording()
-                recording.takeIf { File(it.audioPath).isFile }
-            }.getOrNull()
-        }
+    override fun latestRecording(): AudioRecording? = recordings().firstOrNull()
+
+    override fun recordings(): List<AudioRecording> = recordingsDir.listFiles { file -> file.extension == "json" }
+        ?.mapNotNull { sidecar -> runCatching { sidecar.readText().let(::JSONObject).toRecording() }.getOrNull() }
+        ?.filter { File(it.audioPath).isFile }
+        ?.sortedByDescending { it.createdAt }
+        ?: emptyList()
+
+    override fun updateRecording(recording: AudioRecording) {
+        val audioFile = File(recording.audioPath)
+        File(audioFile.parentFile, "${audioFile.nameWithoutExtension}.json").writeText(recording.toJson().toString())
+    }
+
+    override fun deleteMemory(recording: AudioRecording, memoryId: String) {
+        updateRecording(recording.copy(memories = recording.memories.map { memory ->
+            if (memory.id == memoryId) memory.copy(status = "deleted") else memory
+        }))
+    }
 
     override fun play(recording: AudioRecording, onComplete: () -> Unit, onError: (String) -> Unit) {
         stopPlayback()
@@ -186,6 +196,18 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             put("sampleRate", sampleRate)
             put("channelCount", channelCount)
             put("created_at", createdAt)
+            put("title", title)
+            put("transcript", transcript)
+            put("summary", summary)
+            put("asrStatus", asrStatus.name)
+            put("personModelVersion", personModelVersion)
+            put("memories", org.json.JSONArray().apply {
+                memories.forEach { memory -> put(org.json.JSONObject().apply {
+                    put("id", memory.id); put("kind", memory.kind); put("content", memory.content)
+                    put("evidence", memory.evidence); put("confidence", memory.confidence.toDouble())
+                    put("sourceType", memory.sourceType); put("status", memory.status)
+                }) }
+            })
         }
 
         private fun JSONObject.toRecording() = AudioRecording(
@@ -195,7 +217,18 @@ class AndroidAudioCaptureService(private val context: Context) : AudioCaptureSer
             byteSize = getLong("byteSize"),
             sampleRate = getInt("sampleRate"),
             channelCount = getInt("channelCount"),
-            createdAt = optString("created_at", optString("createdAt"))
+            createdAt = optString("created_at", optString("createdAt")),
+            title = optString("title", "未命名录音"),
+            transcript = optString("transcript"),
+            summary = optString("summary"),
+            asrStatus = runCatching { AsrStatus.valueOf(optString("asrStatus", AsrStatus.NotRequested.name)) }.getOrDefault(AsrStatus.NotRequested),
+            personModelVersion = optString("personModelVersion"),
+            memories = optJSONArray("memories")?.let { array -> buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.optJSONObject(i) ?: continue
+                    add(ExtractedMemory(item.optString("id"), item.optString("kind"), item.optString("content"), item.optString("evidence"), item.optDouble("confidence", 0.5).toFloat(), item.optString("sourceType", "SUBJECT"), item.optString("status", "active")))
+                }
+            } } ?: emptyList()
         )
     }
 }
