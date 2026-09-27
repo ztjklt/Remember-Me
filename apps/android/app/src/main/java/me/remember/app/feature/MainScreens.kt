@@ -116,6 +116,86 @@ fun SimpleSectionScreen(title: String, subtitle: String, back: () -> Unit) {
     }
 }
 
+@Composable
+fun GraphDashboardScreen(go: (String) -> Unit) {
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                TextButton({ go(Routes.Twin) }) { Text("Chat") }
+                TextButton({ go(Routes.Memories) }) { Text("Search") }
+                TextButton({}) { Text("Export") }
+            }
+            TextButton({ go(Routes.Memories) }) { Text("History") }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("REMEMBER ME", style = MaterialTheme.typography.labelLarge, color = RememberMeColors.Moss)
+            Text("Memory relationships", style = MaterialTheme.typography.headlineMedium)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GraphMetricCard("Event flow", "timeline", Modifier.weight(1f))
+            GraphMetricCard("Mood weather", "emotions", Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GraphMetricCard("Decision + values", "patterns", Modifier.weight(1f))
+            GraphMetricCard("Expression style", "voice", Modifier.weight(1f))
+        }
+        RmDivider()
+        Text("How do these combine?", style = MaterialTheme.typography.titleLarge)
+        Text("Events become memories. Memories reveal moods, values and expression patterns. The graph keeps each connection traceable to its evidence.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
+        RelationshipVectorGraph()
+        BottomTabs(Routes.Graph, go)
+    }
+}
+
+@Composable
+private fun GraphMetricCard(title: String, subtitle: String, modifier: Modifier) {
+    Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        Box(Modifier.fillMaxWidth().height(30.dp), contentAlignment = Alignment.BottomStart) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
+                listOf(0.35f, 0.7f, 0.48f, 0.86f, 0.62f).forEach { value ->
+                    Box(Modifier.width(9.dp).height((26 * value).dp).background(RememberMeColors.Moss.copy(alpha = .7f)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RelationshipVectorGraph() {
+    Box(Modifier.fillMaxWidth().height(330.dp).clip(MaterialTheme.shapes.medium).background(RememberMeColors.Surface), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Memory Polygonal Relationship Vector Graph", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                GraphNode("values", RememberMeColors.Clay)
+                Text("—", color = RememberMeColors.Line)
+                GraphNode("decisions", RememberMeColors.Moss)
+                Text("—", color = RememberMeColors.Line)
+                GraphNode("events", RememberMeColors.Clay)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                GraphNode("mood", RememberMeColors.Moss)
+                Text("—  subject  —", color = RememberMeColors.Muted)
+                GraphNode("expression", RememberMeColors.Moss)
+            }
+            Text("Each edge points back to a Memory and its recording.", style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+        }
+    }
+}
+
+@Composable
+private fun GraphNode(label: String, color: androidx.compose.ui.graphics.Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.size(18.dp).clip(androidx.compose.foundation.shape.CircleShape).background(color))
+        Text(label, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
 @Composable fun CreatorHomeScreen(go:(String)->Unit)=RmPage{
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){Column{Text("晚上好",color=RememberMeColors.Muted);Text("陈屿",style=MaterialTheme.typography.headlineLarge)};if(BuildConfig.DEBUG) Text("•••",Modifier.clickable{go(Routes.Debug)}.padding(12.dp))}
     Spacer(Modifier.height(12.dp));Text("今天想留下些什么？",style=MaterialTheme.typography.headlineMedium);Box(Modifier.fillMaxWidth(),contentAlignment=Alignment.Center){RmCaptureOrb{go(Routes.Recording)}}
