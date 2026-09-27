@@ -6,6 +6,8 @@ pluginManagement {
         maven("https://maven.aliyun.com/repository/public")
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://jitpack.io") }
         gradlePluginPortal()
     }
 }
