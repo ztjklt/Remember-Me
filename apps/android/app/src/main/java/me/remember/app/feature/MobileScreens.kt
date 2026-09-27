@@ -201,7 +201,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
         HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
     }
 }
-@Composable private fun ArchivePage(records: List<AudioRecording>,open:(AudioRecording)->Unit,openMemory:(AudioRecording,String)->Unit) {
+@Composable fun ArchivePage(records: List<AudioRecording>,open:(AudioRecording)->Unit,openMemory:(AudioRecording,String)->Unit) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
     val matching=records.filter { query.isBlank() || (it.title+it.transcript+it.reviewedTranscript.orEmpty()+it.memories.filter { m->m.status=="active" }.joinToString { m->m.content }).contains(query.trim(),ignoreCase=true) }
@@ -330,7 +330,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     }
 }
 
-@Composable private fun DetailPage(model: MobileViewModel,record: AudioRecording,openMemory:(String)->Unit) {
+@Composable fun DetailPage(model: MobileViewModel,record: AudioRecording,openMemory:(String)->Unit) {
     val pending by model.pending.collectAsState()
     val busy=record.audioPath in pending
     var text by rememberSaveable(record.audioPath,record.transcript) { mutableStateOf(record.reviewedTranscript ?: record.transcript) }
@@ -384,7 +384,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
         dismissButton={TextButton(onClick={showConsent=false;model.saveReview(record.audioPath,text)}){Text("只保存文字")}})
 }
 fun sourceLabel(source: String)=when(source){"SUBJECT"->"本人叙述";"THIRD_PARTY"->"他人提供";"AI_INFERENCE"->"AI 推测";else->"来源待核对"}
-@Composable private fun MemoryPage(model: MobileViewModel,record: AudioRecording,id: String,onDeleted:()->Unit) {
+@Composable fun MemoryPage(model: MobileViewModel,record: AudioRecording,id: String,onDeleted:()->Unit) {
     val memory=record.memories.firstOrNull { it.id==id&&it.status=="active" }
     var confirm by remember { mutableStateOf(false) }
     val pending by model.pending.collectAsState()
