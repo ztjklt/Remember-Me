@@ -1,5 +1,7 @@
 # iOS 移动 UI 对齐
 
+接手从 [UI_HANDOFF.md](UI_HANDOFF.md) 开始；下文保留各轮实现和验证历史，当前为第六轮。
+
 基线：PR #77，`e146ac56f080299676fed40653394b97a37bd270`；本地分支 `codex/ios-ui-alignment`。本次没有修改 `Network.swift`、Backend Contract、供应商 SDK 或共享后端。
 
 ## 已实现
