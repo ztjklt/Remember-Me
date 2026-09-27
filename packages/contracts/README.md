@@ -1,8 +1,16 @@
-# Integration Contract v0.1
+# Integration Contract v0.4
 
-This package is the source of truth for cross-module payloads. Version `0.1.2` freezes the minimum Phase 1 vocabulary without selecting providers or implementing unapproved business logic.
+Version `0.4.0` adds a locked Twin calibration start, a completion request after a confirmed human Episode, and a typed result with five comparison dimensions. `calibration_id` is optional capture metadata for iOS recordings; old Android and iOS request shapes remain valid. The [calibration proposal](../../docs/architecture/calibration-contract-proposal.md) records the Product Owner direction and provenance boundary. See `schemas/integration-contract-v0.4.schema.json`.
 
-The machine-readable schema is `schemas/integration-contract-v0.1.schema.json`. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes are breaking and require an Issue plus Product and Integration Owner approval.
+Version `0.3.0` adds the approved iOS-first Twin query/answer, evidence provenance, `UNKNOWN` routing, and local Voice profile/speech status in `schemas/integration-contract-v0.3.schema.json`. It is additive: v0.1 and v0.2 schemas remain available for Android and earlier iOS consumers. The [cross-module proposal](../../docs/architecture/twin-voice-contract-proposal.md) records Product Owner authorization and the sensitive-data boundary.
+
+Version `0.2.0` adds the iOS voice-to-Person-Model closure authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The prior v0.1 schema is retained for existing Android fixtures. The v0.2 schema adds `IOS_MIC`, typed graph facts and person traits, a seven-domain model snapshot, and a capture question. Existing Android capture fields and values remain valid.
+
+The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps the schema version that produced it. Only evidence that resolves to an original transcript span enters AI Core output. Backend correction evidence is separately attributed to a calibration audit record.
+
+This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.4.0` add the approved iOS capabilities without changing that older file.
+
+The current machine-readable schema is `schemas/integration-contract-v0.4.schema.json`; v0.1–v0.3 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 
@@ -12,11 +20,13 @@ Phase status describes when a contract is expected to be implemented. It does no
 | --- | --- | --- | --- |
 | Capture / Create Episode | P1 COMMITTED | audio + subject/actor + recording consent + idempotency + source + time + metadata | `episode_id` + `upload_status` |
 | Processing Status | P1 COMMITTED | `episode_id` | status + progress + error |
-| AI Process | P1/P2 | `episode_id` + transcript + `existing_model_version` + optional trace | typed `memory_items[]` + planned graph/persona arrays + `evidence[]` + `model_version` |
+| AI Process | P1/P2 approved slice | `episode_id` + transcript + `existing_model_version` + optional trace | typed `memory_items[]`, `graph_updates[]`, `persona_updates[]`, `evidence[]`, and `model_version` |
+| Person Model Snapshot | P2 approved slice | `subject_id` | seven domains with evidence-linked traits and optional graph facts |
+| Capture Question | P2 approved slice | current model gaps or contradictions | target domain, reason, evidence, and status |
 | Episode Result | P1 COMMITTED | `episode_id` | ready state + typed `memory_items[]` + `model_version` |
-| Twin Query | P2 PLANNED | `subject_id` + query + actor/policy context | answer + `response_type` + `evidence[]` + `confidence` |
-| Calibration | P3 PLANNED | question + `locked_twin_answer` + `human_answer` | `dimension_diffs` + `model_updates` + `followup_questions` |
-| Voice Synthesis | P3 PLANNED | `subject_id` + `authorized_text` + `voice_profile_id` + `voice_consent_id` | `audio_ref` + status + `provider_metadata` |
+| Twin Query | iOS-first approved slice, v0.3 | `subject_id` + reviewed query + `CLOUD_TWIN` consent | answer ID + Original/Simulation/Unknown + evidence + model/revision |
+| Calibration | iOS-first approved slice, v0.4 | saved locked Twin answer ID, then a linked confirmed human Episode | five typed dimension diffs, human excerpts, suggested next question; Episode modeling updates traits |
+| Voice Synthesis | local iOS-first approved slice, v0.3 | saved Twin answer ID + active `VOICE` profile/consent | private audio asset ID + status + model version |
 
 ## Shared rules
 
@@ -27,9 +37,9 @@ Phase status describes when a contract is expected to be implemented. It does no
 - `trace_id` is an optional infrastructure correlation identifier on Processing Status. Backend generates and propagates it, AI Core preserves it in execution context and logs, and Android must not depend on it as a product identifier.
 - `episode_id` remains the durable product-domain identifier. `job_id` is deliberately not exposed in Contract v0.1.1.
 - Evidence includes a source reference, source type, and optional excerpt and confidence.
-- Evidence source types distinguish `SUBJECT`, `THIRD_PARTY`, `AI_INFERENCE`, `OBJECTIVE`, and future `CALIBRATION` material. Optional span offsets locate evidence in a transcript.
-- Each Memory item carries its kind, content, source type, one or more evidence identifiers, confidence, and model/prompt/schema versions. Graph and persona update depth remains Phase 2 work.
-- Twin `response_type` is `ORIGINAL` only when direct source content answers the query; otherwise it is `SIMULATION`.
+- Evidence source types distinguish `SUBJECT`, `THIRD_PARTY`, `AI_INFERENCE`, `OBJECTIVE`, and `CALIBRATION` material. Optional span offsets locate transcript evidence; a correction instead points to its audit record.
+- Each Memory item carries its kind, content, source type, one or more evidence identifiers, confidence, and model/prompt/schema versions. In v0.2 graph and persona proposals are typed and evidence-linked.
+- In v0.3, Twin `response_type` is `ORIGINAL` only for a verified SUBJECT transcript span, `SIMULATION` for labeled inference with evidence, and `UNKNOWN` when evidence is insufficient or contradictory. v0.2's shallow two-value shape remains for old consumers.
 - Voice requests require an explicit granted voice-consent reference. Recording consent alone is insufficient.
 
 ## Approved v0.1.1 clarification
@@ -45,5 +55,5 @@ Issue #36 corrected the boundary before module implementations existed. It adds 
 These are recorded rather than silently resolved. None may be changed without an Issue and Product and Integration Owner approval, because the schema sets `additionalProperties: false` and every one of these is a breaking change.
 
 - **`job_id` visibility.** A Processing Job is distinct from an Episode and from an execution trace, but Phase 1 does not require Android to inspect job identity or retry history. Keep it internal to Backend until a concrete cross-module consumer requires a versioned proposal.
-- **Graph, persona, Twin, and Calibration shapes are shallow.** `graph_updates`, `persona_updates`, `dimension_diffs`, `model_updates`, and `followup_questions` remain generic. Deepening them is Phase 2/3 work and requires a versioned proposal.
+- **Twin and Calibration shapes are shallow.** The v0.2 graph and person-trait proposals are typed. Twin, `dimension_diffs`, `model_updates`, and `followup_questions` remain later-phase work and require a versioned proposal.
 - **Voice Synthesis provider metadata is open-ended.** `provider_metadata` intentionally allows any properties so no provider is presumed; treat its contents as non-normative.

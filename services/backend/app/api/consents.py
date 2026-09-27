@@ -30,12 +30,14 @@ grant would leave no way to obtain the authority the rest of this file enforces
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
+from sqlalchemy import select
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from ..db import get_session
-from ..models import Actor, Consent, ConsentScope, as_utc
+from ..models import Actor, CalibrationRun, Consent, ConsentScope, VoiceProfile, as_utc
+from ..retrieval import invalidate_answers
 from ..repositories.consents import ConsentRepository
 from ..repositories.subjects import SubjectRepository
 from ..security import current_actor
@@ -180,6 +182,7 @@ def read_consent(
 @router.post("/{consent_id}/revoke", response_model=ConsentResponse)
 def revoke_consent(
     consent_id: str,
+    request: Request,
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> ConsentResponse:
@@ -194,5 +197,18 @@ def revoke_consent(
     consent = repository.revoke(
         repository.require_for(consent_id, actor_id=actor.actor_id)
     )
+    if consent.scope == ConsentScope.VOICE:
+        from .voice import discard_profile
+        for profile in session.scalars(select(VoiceProfile).where(
+            VoiceProfile.voice_consent_id == consent_id, VoiceProfile.revoked_at.is_(None))):
+            discard_profile(session, request.app.state.object_store, profile)
+    elif consent.scope == ConsentScope.CLOUD_TWIN:
+        invalidate_answers(session, request.app.state.object_store, consent.subject_id)
+        for run in session.scalars(select(CalibrationRun).where(
+            CalibrationRun.subject_id == consent.subject_id,
+            CalibrationRun.actor_id == actor.actor_id,
+            CalibrationRun.status != "stale",
+        )):
+            run.status = "stale"
     session.commit()
     return ConsentResponse.of(consent)

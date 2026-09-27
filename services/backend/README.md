@@ -1,6 +1,16 @@
 # Backend Service
 
-Owner: 王昊宇 (`qingtian-4`). Phase 1 — COMMITTED. See the [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md).
+## iOS-first Twin and local Voice slice
+
+Migration `0006_twin_voice` adds subject-scoped local memory vectors, evidence-linked Twin answer snapshots, and separately consented voice profiles/audio. Run `uv sync --extra retrieval` before using memory search or Twin; this loads `BAAI/bge-small-zh-v1.5` locally on first query. `REMEMBER_EMBEDDING_MODEL` can point to an already downloaded local model directory. Twin uses the existing loopback AI Core at `POST /twin` and requires a `CLOUD_TWIN` consent in addition to recording access. Only selected memory snippets leave Backend for DeepSeek. `REMEMBER_VOICE_URL` defaults to `http://127.0.0.1:8300`, must stay on loopback, and calls the local adapter in `services/voice` only after a separate `VOICE` grant.
+
+The new Subject API provides `/memory-search`, `/twin/transcribe-query`, `/twin/answers`, `/voice/profile`, and answer-bound `/speech` plus private audio readback. Question audio is transient and never creates an Episode. Correction, deletion, a new model revision, or cloud-consent revocation invalidates saved answers and derived audio. VOICE revocation removes the dedicated sample and generated audio. A sample accepted by the sidecar is checked for duration/level; its own-speaker status is the Subject's explicit confirmation, not an automatic verification claim.
+
+Migration `0007_calibration` adds locked-answer calibration runs. `POST /subjects/{id}/calibrations` locks a non-stale Twin answer before the human response; a linked iOS Episode carries optional `metadata.calibration_id`. Only an Episode by the same Actor/Subject that has reached `ready` after transcript review can complete the comparison. AI Core receives the locked answer and the confirmed human transcript, returns five evidence-checked dimensions and a suggested question. The human Episode's ordinary modeling updates Person Model; calibration diagnostics do not create Subject memories. Source correction/deletion or cloud-consent revocation marks the run stale.
+
+The shared Backend supports the Android Golden Path and the Product Owner's approved iOS voice-to-Person-Model slice. Current ownership follows the [two-client delivery model](../../docs/team/00_TEAM_OWNERSHIP.md); the old [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md) records the original Phase 1 foundation.
+
+The iOS extension adds `IOS_MIC`, a loopback Whisper sidecar, one-time HTTPS pairing, seven-domain derived traits and graph facts, post-recording questions, and audited correction/deletion. See the [iOS local runbook](../../apps/ios/README.md) for the complete four-process setup. Existing Android requests remain valid.
 
 Platform decisions — language, data layer, object storage, auth boundary, job model, provider boundaries, client security, failure model, and the local verification path — are recorded in [ADR-0001](../../docs/architecture/backend-adr.md). Do not invent a platform decision outside it.
 
@@ -16,17 +26,20 @@ Inputs and outputs must conform to [`packages/contracts`](../../packages/contrac
 | `app/logging_config.py` | JSON log formatter and the trace-id context |
 | `app/errors.py` | Backend-owned error codes, and whether the work is worth retrying |
 | `app/db.py` | Engine and session factory |
-| `app/models.py` | `Subject`, `Actor`, `Consent`, `Episode`, `Job`, `Evidence`, `MemoryItem` |
+| `app/models.py` | `Subject`, `Actor`, `Consent`, `Episode`, `Job`, `Evidence`, `MemoryItem`, Person Model and pairing records |
 | `app/contracts.py` | The Phase 1 contract shapes as Pydantic models |
 | `app/repositories/` | All structured-data access |
 | `app/security.py`, `app/tokens.py` | Token-to-Actor resolution |
 | `app/storage/` | `ObjectStore` boundary: local filesystem, in-memory, and S3-compatible |
 | `app/stt.py` | Speech-to-text boundary: the deterministic fake and the HTTP transport |
+| `app/local_stt.py` | Loopback FFmpeg + multilingual Whisper HTTP sidecar |
 | `app/ai_core.py` | AI Core boundary: the fake and the HTTP transport |
 | `app/providers.py` | The one rule both provider boundaries share: where a fake may run |
 | `app/worker.py` | The processing worker: one stage per tick, under a renewable lease |
 | `app/api/` | HTTP surface |
 | `app/seed.py` | Local development seed |
+| `app/local_pair.py` | Issue a one-time HTTPS iPhone pairing code |
+| `docs/android-client.md` | Pointing the Android client at a running Backend: the reachable address, the seeded credential, the limits, and troubleshooting |
 | `migrations/` | Alembic environment and the migrations |
 | `tests/` | The local verification suite |
 
@@ -185,7 +198,11 @@ URL paths are Backend-owned. Payload shapes belong to the contract: Capture, Pro
 
 A response carries only fields the contract defines, and omits the optional ones rather than sending `null` — the schema types them as strings and numbers, so an explicit null would not validate. `job_id` is internal and never appears in a response; clients address work by `episode_id`.
 
+The HTTP AI Core adapter applies the same rule to outbound `aiCoreInput`: absent `trace_id` or `subject_context` is omitted, while a present value is sent unchanged. The provider tests validate both wire shapes against the frozen Contract v0.1 schema.
+
 Every response carries an `X-Request-ID`. The value is generated at the request boundary and is the identifier Issue #1 propagates as the contract's `trace_id`.
+
+A client integrating against these endpoints should start from [docs/android-client.md](docs/android-client.md): which address to point at, the seeded credential, the upload limits, and what each failure means.
 
 ## Configuration
 
@@ -254,19 +271,23 @@ Errors return `{"error_code", "error_message", "request_id"}`. The envelope is B
 | `EPISODE_NOT_READY` | 409 | The result was asked for before the Episode finished processing |
 | `STORAGE_UNAVAILABLE` | 503 | Object storage refused the upload. No Episode is written: a record whose audio never arrived would claim to hold something it does not have |
 | `AUDIO_UNAVAILABLE` | 503 | The audio an Episode points at could not be read from object storage |
-| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached |
-| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio |
-| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time |
+| `STT_UNAVAILABLE` | 503 | No speech-to-text provider could be reached or answered HTTP 503 |
+| `STT_FAILED` | 502 | The provider ran and could not produce a transcript for this audio, including HTTP 413, 422, and 502 |
+| `STT_TIMEOUT` | 504 | The speech-to-text provider did not answer in time or answered HTTP 504 |
 | `STT_EMPTY_TRANSCRIPT` | 422 | The provider returned no text, so there is nothing to extract |
-| `AI_UNAVAILABLE` | 503 | AI Core could not be reached |
-| `AI_FAILED` | 502 | AI Core ran and refused the request |
-| `AI_TIMEOUT` | 504 | AI Core did not answer in time |
+| `AI_UNAVAILABLE` | 503 | AI Core could not be reached or answered HTTP 503 |
+| `AI_FAILED` | 502 | AI Core refused the request, including HTTP 413, 422, and 502 |
+| `AI_TIMEOUT` | 504 | AI Core did not answer in time or answered HTTP 504 |
 | `AI_SCHEMA_INVALID` | 502 | AI Core answered with something that is not a valid `aiCoreOutput`, including a field v0.1 does not define |
 | `INTERNAL` | 500 | A stage raised something outside this taxonomy. Recorded on the Episode like any other failure |
 
 A processing failure is not a request failure: it is recorded **on the Episode** as `error_code` and `error_message`, and the Episode stays readable. The codes that a stage can fail with are also the ones the worker decides about, and `retryable` is part of the code rather than a decision each call site makes: `AUDIO_UNAVAILABLE`, `STORAGE_UNAVAILABLE`, `STT_UNAVAILABLE`, `STT_TIMEOUT`, `AI_UNAVAILABLE`, `AI_TIMEOUT`, and `INTERNAL` are worth asking again, while `STT_EMPTY_TRANSCRIPT`, `STT_FAILED`, `AI_FAILED`, and `AI_SCHEMA_INVALID` would fail the same way twice and end the Episode immediately.
 
+The AI Core HTTP adapter makes one request per worker attempt. Its 503 and 504 responses use the worker's bounded retry and backoff; 413, 422, and 502 end the AI stage without retrying. The original audio and transcript remain on the Episode when extraction fails.
+
 The codes are Backend-owned: the contract types `error_code` and `error_message` as free strings, so adding one is not a contract change, while renaming one a client branches on is a compatibility concern. ADR-0001 D11 is the decision record for this taxonomy.
+
+Both HTTP adapters map a provider's own status onto that taxonomy the same way, so `retryable` means one thing regardless of which stage is running: 503 and 504 go back to the bounded retry budget, while 413, 422, and 502 end the stage. Transcription runs before extraction, so a failed transcription leaves the Episode with no transcript but never without its audio, and a failed extraction leaves both.
 
 ## Data model
 

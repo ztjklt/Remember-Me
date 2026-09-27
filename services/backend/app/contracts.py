@@ -25,7 +25,7 @@ from .models import CaptureSource, EpisodeStatus, MemoryType, SourceType
 # The contract revision these shapes mirror. Written onto every memory item as
 # `schema_version`, so a stored memory says which shape it was validated against
 # rather than which one happens to be current when it is read back.
-SCHEMA_VERSION = "integration-contract-v0.1"
+SCHEMA_VERSION = "integration-contract-v0.2"
 
 # Annotated rather than a shared Field(...) instance: the same constraint applies
 # to several fields, and a FieldInfo reused across models is state they would
@@ -83,6 +83,33 @@ class MemoryItem(ContractModel):
         if len(set(value)) != len(value):
             raise ValueError("evidence_ids must be unique")
         return value
+
+
+class PersonTrait(ContractModel):
+    trait_id: str = Field(min_length=1)
+    domain: Literal["IDENTITY", "EPISODIC_MEMORY", "RELATIONSHIPS", "PREFERENCES", "VALUES_BELIEFS", "DECISION_PATTERNS", "EXPRESSION"]
+    statement: str = Field(min_length=1)
+    context: str | None = None
+    confidence: Confidence
+    source_type: SourceType
+    evidence_ids: list[str]
+    counter_evidence_ids: list[str]
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    status: Literal["active", "unresolved", "superseded"]
+    model_version: str = Field(min_length=1)
+    memory_item_ids: list[str] | None = None
+
+
+class GraphFact(ContractModel):
+    fact_id: str = Field(min_length=1)
+    subject_id: str = Field(min_length=1)
+    kind: Literal["EVENT", "PERSON", "RELATIONSHIP"]
+    content: str = Field(min_length=1)
+    evidence_ids: list[str]
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    model_version: str = Field(min_length=1)
 
 
 class CaptureEpisode(ContractModel):
@@ -144,8 +171,8 @@ class AICoreOutput(ContractModel):
     """
 
     memory_items: list[MemoryItem]
-    graph_updates: list[dict[str, Any]]
-    persona_updates: list[dict[str, Any]]
+    graph_updates: list[GraphFact]
+    persona_updates: list[PersonTrait]
     evidence: list[Evidence]
     model_version: str = Field(min_length=1)
 

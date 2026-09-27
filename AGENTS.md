@@ -1,6 +1,6 @@
 # Coding Agent Instructions
 
-You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V3_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, `docs/roadmap/ROADMAP.md`, and `packages/contracts/README.md`. Read an Issue-specific brief when working on a delegated task.
+You are working in the Remember Me monorepo. Before changing code, read `README.md`, `CONTRIBUTING.md`, `docs/PRD/PRD_V3_SUMMARY.md`, `docs/team/00_TEAM_OWNERSHIP.md`, `docs/team/PHASE1_KICKOFF.md`, the affected owner's brief, `docs/roadmap/ROADMAP.md`, and `packages/contracts/README.md`.
 
 ## Source of truth
 
@@ -10,8 +10,8 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 
 ## Phase discipline
 
-- Phase 1 — Golden Path is COMMITTED / NOW and is the only committed workstream.
-- Phase 2 — Core Twin is PLANNED / NEXT. Phases 3 and 4 are PLANNED and BACKLOG / CONDITIONAL.
+- Phase 1 — Golden Path is COMMITTED / NOW. Issue #75 authorized iOS Person Model. The Product Owner subsequently authorized the evidence Twin and local Voice slice in `docs/architecture/twin-voice-contract-proposal.md`, and locked-answer calibration in `docs/architecture/calibration-contract-proposal.md`.
+- Phase 2 — Core Twin and Phase 3 — Calibration + Voice have authorized iOS-first slices in progress. Phase 4 remains BACKLOG / CONDITIONAL.
 - A planned phase is not authorization to build it. Do not start Phase 2–4 implementation because the roadmap documents them. Preparing non-blocking skeletons such as UI shells, schemas, adapters, or test fixtures is allowed; freezing a cross-module implementation alone is not.
 - Do not assume undecided external dependencies are settled. Work 3200 SDK capability, the STT provider, and the Voice provider are all open — keep them behind adapters with capability fallback.
 

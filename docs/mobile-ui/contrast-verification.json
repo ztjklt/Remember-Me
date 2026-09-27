@@ -1,0 +1,219 @@
+{
+  "pairs": [
+    {
+      "mode": "light",
+      "foreground": "text",
+      "background": "background",
+      "ratio": 12.77,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 13.63,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "text",
+      "background": "soft",
+      "ratio": 12.39,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "muted",
+      "background": "background",
+      "ratio": 5.16,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "muted",
+      "background": "surface",
+      "ratio": 5.51,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "muted",
+      "background": "soft",
+      "ratio": 5.01,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 4.88,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 5.21,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "primary",
+      "background": "soft",
+      "ratio": 4.74,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "onPrimary",
+      "background": "primary",
+      "ratio": 5.95,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "accent",
+      "background": "surface",
+      "ratio": 5.21,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "text",
+      "background": "background",
+      "ratio": 14.58,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "text",
+      "background": "surface",
+      "ratio": 12.23,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "text",
+      "background": "soft",
+      "ratio": 10.93,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "muted",
+      "background": "background",
+      "ratio": 7.82,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "muted",
+      "background": "surface",
+      "ratio": 6.56,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "muted",
+      "background": "soft",
+      "ratio": 5.87,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary",
+      "background": "background",
+      "ratio": 9.15,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary",
+      "background": "surface",
+      "ratio": 7.67,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary",
+      "background": "soft",
+      "ratio": 6.86,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "onPrimary",
+      "background": "primary",
+      "ratio": 7.67,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "accent",
+      "background": "surface",
+      "ratio": 7.67,
+      "passes": true
+    }
+  ],
+  "gradientSamples": 1676,
+  "gradientWorstPairs": [
+    {
+      "mode": "light",
+      "foreground": "text",
+      "background": "#E4DFF0",
+      "ratio": 11.93,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "muted",
+      "background": "#DAE2F2",
+      "ratio": 4.83,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "primary",
+      "background": "#DAE2F2",
+      "ratio": 4.57,
+      "passes": true
+    },
+    {
+      "mode": "light",
+      "foreground": "onPrimary",
+      "background": "#466CD0",
+      "ratio": 4.87,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "text",
+      "background": "#22324B",
+      "ratio": 11.44,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "muted",
+      "background": "#22324B",
+      "ratio": 6.14,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "primary",
+      "background": "#22324B",
+      "ratio": 7.18,
+      "passes": true
+    },
+    {
+      "mode": "dark",
+      "foreground": "onPrimary",
+      "background": "#95A9E0",
+      "ratio": 5.93,
+      "passes": true
+    }
+  ],
+  "minimum": 4.57,
+  "allPassed": true
+}

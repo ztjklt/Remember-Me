@@ -29,7 +29,7 @@ class Settings(BaseSettings):
             "ENVIRONMENT",
         ),
     )
-    provider: Literal["fixture", "openai_compatible"] = Field(
+    provider: Literal["fixture", "openai_compatible", "ollama", "deepseek"] = Field(
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
@@ -96,6 +96,21 @@ class Settings(BaseSettings):
             self.model.startswith("fixture-ai-") or self.model_version.startswith("fixture-ai-")
         ):
             raise ValueError("real providers require explicit AI_MODEL and AI_MODEL_VERSION")
+        if self.provider == "ollama":
+            if self.model.startswith("fixture-ai-"):
+                raise ValueError("Ollama requires an explicit installed AI_MODEL")
+            parsed = urlsplit(self.base_url)
+            if parsed.hostname not in {"127.0.0.1", "localhost", "::1"} or parsed.path not in {"", "/"}:
+                raise ValueError("Ollama must listen on this Mac's loopback address")
+        if self.provider == "deepseek":
+            parsed = urlsplit(self.base_url)
+            if (parsed.scheme != "https" or parsed.hostname != "api.deepseek.com"
+                    or parsed.path not in {"", "/"} or parsed.port is not None):
+                raise ValueError("DeepSeek credentials may only be sent to https://api.deepseek.com")
+            if self.model not in {"deepseek-v4-flash", "deepseek-flash"}:
+                raise ValueError("DeepSeek Flash requires its official model name")
+            if not self.api_key.get_secret_value().strip():
+                raise ValueError("DeepSeek requires AI_API_KEY")
         return self
 
 

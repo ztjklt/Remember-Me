@@ -1,0 +1,164 @@
+{
+  "date": "2026-09-27",
+  "errors": [],
+  "exports": [
+    {
+      "name": "mark-material",
+      "size": 256
+    },
+    {
+      "name": "mark-material",
+      "size": 1024
+    },
+    {
+      "name": "mark-flat",
+      "size": 32
+    },
+    {
+      "name": "mark-flat",
+      "size": 128
+    },
+    {
+      "name": "mark-flat",
+      "size": 512
+    },
+    {
+      "name": "mark-flat-dark",
+      "size": 128
+    },
+    {
+      "name": "mark-mono",
+      "size": 128
+    },
+    {
+      "name": "app-icon-light",
+      "size": 1024
+    },
+    {
+      "name": "app-icon-dark",
+      "size": 1024
+    },
+    {
+      "name": "app-foreground",
+      "size": 1024
+    }
+  ],
+  "checks": 96,
+  "failures": [],
+  "copyStatus": "已复制组件用法。",
+  "animationCount": 0,
+  "native": "Compose and SwiftUI adapters supplied; neither integrated nor compiled in client apps.",
+  "pngValidation": [
+    {
+      "file": "exports\\app-foreground-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\app-icon-dark-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha": [
+        255,
+        255
+      ]
+    },
+    {
+      "file": "exports\\app-icon-light-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha": [
+        255,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-flat-128.png",
+      "size": [
+        128,
+        128
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-flat-32.png",
+      "size": [
+        32,
+        32
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-flat-512.png",
+      "size": [
+        512,
+        512
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-flat-dark-128.png",
+      "size": [
+        128,
+        128
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-material-1024.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-material-256.png",
+      "size": [
+        256,
+        256
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    },
+    {
+      "file": "exports\\mark-mono-128.png",
+      "size": [
+        128,
+        128
+      ],
+      "alpha": [
+        0,
+        255
+      ]
+    }
+  ],
+  "swiftSyntaxParse": "passed; not an Xcode build"
+}

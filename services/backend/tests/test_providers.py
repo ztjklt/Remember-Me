@@ -12,9 +12,11 @@ visible in the test rather than described in a comment.
 """
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
+from jsonschema import Draft202012Validator, FormatChecker
 
 from app.ai_core import (
     FAKE_MODEL_VERSION,
@@ -76,6 +78,21 @@ VALID_OUTPUT = {
     ],
     "model_version": "ai-core-v1",
 }
+
+CONTRACT_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "packages"
+    / "contracts"
+    / "schemas"
+    / "integration-contract-v0.1.schema.json"
+)
+
+
+@pytest.fixture(scope="module")
+def contract_validator() -> Draft202012Validator:
+    schema = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    return Draft202012Validator(schema, format_checker=FormatChecker())
 
 
 @pytest.fixture
@@ -192,16 +209,40 @@ def test_a_transcript_with_no_lines_yields_no_memories():
     assert output.model_version == FAKE_MODEL_VERSION
 
 
-def test_the_request_that_is_sent_is_the_contract_shape(http_post):
+def test_the_request_that_is_sent_is_the_contract_shape(http_post, contract_validator):
     sent = http_post(lambda request: httpx.Response(200, json=VALID_OUTPUT))
 
     client_for().process(INPUT)
 
     body = sent[0].read()
     assert sent[0].url == httpx.URL("http://ai-core.internal/process")
-    assert json.loads(body) == INPUT.model_dump(mode="json")
+    request = json.loads(body)
+    assert request == {
+        "episode_id": "ep_0000000000000001",
+        "subject_id": "subj_ada",
+        "transcript": "We walked by the river.\n\nShe said the water was cold.",
+        "existing_model_version": "none",
+        "trace_id": "trace-0001",
+    }
+    contract_validator.validate(request)
     # The job id is internal and never leaves this process.
-    assert "job_id" not in INPUT.model_dump(mode="json")
+    assert "job_id" not in request
+
+
+def test_optional_ai_context_is_sent_only_when_present(http_post, contract_validator):
+    sent = http_post(lambda request: httpx.Response(200, json=VALID_OUTPUT))
+    payload = INPUT.model_copy(update={
+        "trace_id": None,
+        "subject_context": {"language": "en"},
+    })
+
+    client_for().process(payload)
+
+    body = json.loads(sent[0].read())
+    assert "trace_id" not in body
+    assert body["subject_context"] == {"language": "en"}
+    assert all(value is not None for value in body.values())
+    contract_validator.validate(body)
 
 
 def test_a_valid_answer_is_parsed_into_the_contract_shape(http_post):
@@ -239,16 +280,28 @@ def test_an_unreachable_ai_core_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_ai_core_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+@pytest.mark.parametrize(
+    ("status_code", "error_type", "retryable"),
+    [
+        (413, AiFailed, False),
+        (422, AiFailed, False),
+        (502, AiFailed, False),
+        (503, AiUnavailable, True),
+        (504, AiTimeout, True),
+        (500, AiFailed, False),
+    ],
+)
+def test_ai_core_http_errors_keep_the_retry_boundary(
+    http_post, status_code, error_type, retryable
+):
+    http_post(lambda request: httpx.Response(status_code, text="provider error"))
 
-    with pytest.raises(AiFailed) as raised:
+    with pytest.raises(error_type) as raised:
         client_for().process(INPUT)
 
-    assert "500" in raised.value.message
-    assert "traceback" in raised.value.message
-    # AI Core ran and refused: the same request would be refused again.
-    assert not raised.value.retryable
+    assert str(status_code) in raised.value.message
+    assert "provider error" in raised.value.message
+    assert raised.value.retryable is retryable
 
 
 def test_a_response_that_is_not_json_is_a_schema_problem(http_post):
@@ -438,16 +491,40 @@ def test_an_unreachable_provider_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_the_provider_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+@pytest.mark.parametrize(
+    ("status_code", "error_type", "retryable"),
+    [
+        (413, SttFailed, False),
+        (422, SttFailed, False),
+        (500, SttFailed, False),
+        (502, SttFailed, False),
+        (503, SttUnavailable, True),
+        (504, SttTimeout, True),
+    ],
+)
+def test_the_status_a_provider_answers_keeps_the_retry_boundary(
+    http_post, status_code, error_type, retryable
+):
+    """A refusal and a provider that is not ready yet are not the same failure.
 
-    with pytest.raises(SttFailed) as raised:
+    This is the same table the AI Core boundary keeps, deliberately: one worker
+    decides whether to retry using `retryable` alone, so a status that meant
+    "retry" on one provider and "stop" on the other would make the worker's
+    behaviour depend on which stage it happened to be running.
+
+    503 is the one that matters in practice. A model server that is still
+    loading answers 503, and treating that as terminal ends the Episode on a
+    condition that clears by itself — with the audio already stored, and two
+    unused attempts left in the budget.
+    """
+    http_post(lambda request: httpx.Response(status_code, text="provider error"))
+
+    with pytest.raises(error_type) as raised:
         stt_for().transcribe(AUDIO, "audio/mp4")
 
-    assert raised.value.code == "STT_FAILED"
-    assert "500" in raised.value.message
-    # The provider ran and refused: the same audio would be refused again.
-    assert not raised.value.retryable
+    assert str(status_code) in raised.value.message
+    assert "provider error" in raised.value.message
+    assert raised.value.retryable is retryable
 
 
 def test_a_response_that_is_not_json_is_a_failed_call(http_post):

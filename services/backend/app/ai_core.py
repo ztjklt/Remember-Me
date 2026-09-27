@@ -117,7 +117,8 @@ class HttpAiCoreClient:
         try:
             response = httpx.post(
                 url,
-                json=payload.model_dump(mode="json"),
+                # Contract v0.1 permits these fields to be absent, not null.
+                json=payload.model_dump(mode="json", exclude_none=True),
                 timeout=httpx.Timeout(self.timeout_seconds),
             )
         except httpx.TimeoutException as error:
@@ -126,10 +127,15 @@ class HttpAiCoreClient:
             raise AiUnavailable(f"AI Core is unreachable at {url}: {error}") from error
 
         if response.status_code >= 400:
-            raise AiFailed(
+            message = (
                 f"AI Core answered {response.status_code}: "
                 f"{response.text[:_ERROR_EXCERPT]}"
             )
+            if response.status_code == 503:
+                raise AiUnavailable(message)
+            if response.status_code == 504:
+                raise AiTimeout(message)
+            raise AiFailed(message)
 
         try:
             body = response.json()

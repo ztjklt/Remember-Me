@@ -1,7 +1,7 @@
 """Versioned prompt and schema identifiers for the Phase 1 extractor."""
 
-PROMPT_VERSION = "memory-extractor-v2"
-SCHEMA_VERSION = "integration-contract-v0.1.2"
+PROMPT_VERSION = "memory-extractor-v3"
+SCHEMA_VERSION = "integration-contract-v0.2"
 
 
 def build_system_prompt() -> str:

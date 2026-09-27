@@ -25,7 +25,16 @@ class LocalObjectStore:
     def put(self, key: str, data: bytes, content_type: str) -> StoredObject:
         path = self._path(key)
         path.parent.mkdir(parents=True, exist_ok=True)
+        # These are a person's original recordings. A permissive shell umask
+        # must not make them readable to other accounts on the same Mac.
+        directory = path.parent
+        while directory.is_relative_to(self.root):
+            directory.chmod(0o700)
+            if directory == self.root:
+                break
+            directory = directory.parent
         path.write_bytes(data)
+        path.chmod(0o600)
         return StoredObject(
             key=key,
             size_bytes=len(data),

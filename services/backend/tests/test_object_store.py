@@ -78,6 +78,8 @@ def test_the_local_store_creates_nested_directories(tmp_path):
     store.put(KEY, PAYLOAD, "audio/wav")
 
     assert (root / KEY).read_bytes() == PAYLOAD
+    assert ((root / KEY).stat().st_mode & 0o777) == 0o600
+    assert ((root / KEY).parent.stat().st_mode & 0o777) == 0o700
 
 
 def test_the_local_store_leaves_no_probe_behind(tmp_path):

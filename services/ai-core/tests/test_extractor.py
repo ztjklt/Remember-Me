@@ -111,7 +111,7 @@ def test_versions_are_stamped_by_the_service_not_invented_by_the_model() -> None
     assert output.model_version == "deployment-2026-09"
     assert output.memory_items[0].model_version == "deployment-2026-09"
     assert output.memory_items[0].prompt_version.startswith("memory-extractor-")
-    assert output.memory_items[0].schema_version == "integration-contract-v0.1.2"
+    assert output.memory_items[0].schema_version == "integration-contract-v0.2"
 
 
 def test_whitespace_transcript_never_calls_a_paid_provider() -> None:

@@ -1,18 +1,20 @@
 # Remember Me
 
+> **2026-09-27 双端集成：** Android 的 #78／#79 与 iOS 的 #76／#77／#80 已在集成分支接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。
+
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
 ## Current status
 
-The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory on the recording client`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
+The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Twin proposal](docs/architecture/twin-voice-contract-proposal.md), followed by a locked-answer [calibration slice](docs/architecture/calibration-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
 
-The Android prototype is runnable. The iOS track is authorized but has no app project in this repository yet. Feature readiness is tracked through the current PRs and the [roadmap](docs/roadmap/ROADMAP.md); a working Phase 1 demo requires a real recording through the shared processing path on one client.
+The Android UI v6 records, plays and reviews local audio. Its real memory-processing adapter is not connected in the default build; the Android APK contains no provider credentials. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its paired Mac stack uses local Whisper and DeepSeek V4 Flash behind Backend and AI Core adapters. Audio remains local; confirmed transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
 
 | Phase | Status |
 | --- | --- |
 | Phase 1 — Golden Path | COMMITTED / NOW |
-| Phase 2 — Core Twin | PLANNED / NEXT |
-| Phase 3 — Calibration + Voice | PLANNED |
+| Phase 2 — Core Twin | iOS-first slice AUTHORIZED / IN PROGRESS |
+| Phase 3 — Calibration + Voice | iOS-first calibration and local Voice slices AUTHORIZED / IN PROGRESS |
 | Phase 4 — Hardware + Legacy | BACKLOG / CONDITIONAL |
 
 ## Baseline documents
@@ -29,6 +31,7 @@ PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). The 20
 ## Repository map
 
 - `apps/android` — Android client (Kotlin, Jetpack Compose) and its build documentation
+- `apps/ios` — iOS SwiftUI client, local pairing and device runbook
 - `services/backend` — API, persistence, auth, jobs, and storage
 - `services/ai-core` — memory extraction, person model, Twin, calibration, and capture planning
 - `services/voice` — consent-gated voice dataset, clone, and TTS adapters
@@ -50,3 +53,5 @@ Android setup and build commands are in [apps/android/README.md](apps/android/RE
 cd apps/android
 ./gradlew test assembleDebug
 ```
+
+For the local iOS voice-to-Person-Model path, follow [apps/ios/README.md](apps/ios/README.md).

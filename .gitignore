@@ -1,12 +1,17 @@
 *.iml
 .gradle/
+.kotlin/
 .idea/
 local.properties
 build/
 **/build/
 node_modules/
+__pycache__/
+.venv/
 .DS_Store
 captures/
+.playwright-cli/
+output/
 *.jks
 *.keystore
 secrets.properties
@@ -16,3 +21,9 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+
+# Downloaded sherpa-onnx model weights are too large for normal GitHub blobs.
+apps/android/app/src/main/assets/paraformer/model.int8.onnx
+
+# Expanded brand sources are tracked; keep the duplicate portable archive local.
+/assets/brand/forget-me-not/remember-me-brand-v1.zip

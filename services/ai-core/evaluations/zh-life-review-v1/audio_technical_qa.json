@@ -1,0 +1,142 @@
+{
+  "checked_at_utc": "2026-09-25T04:30:33+00:00",
+  "technical_pass": true,
+  "total_duration_seconds": 921.12,
+  "segments": [
+    {
+      "id": "E01",
+      "duration_seconds": 88.32,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 4239404,
+      "rms": 1672.1,
+      "peak": 21788,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E02",
+      "duration_seconds": 76.48,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3671084,
+      "rms": 1899.59,
+      "peak": 21536,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E03",
+      "duration_seconds": 78.72,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3778604,
+      "rms": 1578.01,
+      "peak": 18627,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E04",
+      "duration_seconds": 80.8,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3878444,
+      "rms": 1599.58,
+      "peak": 24110,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E05",
+      "duration_seconds": 79.04,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3793964,
+      "rms": 1759.25,
+      "peak": 27183,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E06",
+      "duration_seconds": 69.44,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3333164,
+      "rms": 1691.13,
+      "peak": 18129,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E07",
+      "duration_seconds": 73.28,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3517484,
+      "rms": 1876.68,
+      "peak": 23392,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E08",
+      "duration_seconds": 78.24,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3755564,
+      "rms": 1568.84,
+      "peak": 24060,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E09",
+      "duration_seconds": 75.52,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3625004,
+      "rms": 1485.74,
+      "peak": 15847,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E10",
+      "duration_seconds": 71.68,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3440684,
+      "rms": 1778.04,
+      "peak": 19321,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E11",
+      "duration_seconds": 73.76,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3540524,
+      "rms": 1596.41,
+      "peak": 19034,
+      "clipped_fraction": 0.0
+    },
+    {
+      "id": "E12",
+      "duration_seconds": 75.84,
+      "sample_rate_hz": 24000,
+      "channels": 1,
+      "sample_width_bytes": 2,
+      "bytes": 3640364,
+      "rms": 1809.22,
+      "peak": 23338,
+      "clipped_fraction": 0.0
+    }
+  ],
+  "human_listening_complete": false,
+  "transcript_verified_complete": false,
+  "acceptance_boundary": "AI synthetic test material only; technical WAV checks are not content/listening verification, real-user recording, real-device, or Phase 1 Golden Path acceptance."
+}

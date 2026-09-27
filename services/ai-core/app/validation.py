@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .contracts import AICoreInput, AICoreOutput, Evidence
+from .contracts import AICoreInput, AICoreOutput, Evidence, GraphFact, PersonTrait
 from .errors import AIOutputInvalid, EvidenceInvalid
 
 
@@ -54,10 +54,20 @@ def validate_output(payload: AICoreInput, output: AICoreOutput) -> AICoreOutput:
 
     evidence_by_id = _validate_evidence(payload, output)
 
-    if output.graph_updates:
-        raise AIOutputInvalid("graph_updates must be empty during Phase 1")
-    if output.persona_updates:
-        raise AIOutputInvalid("persona_updates must be empty during Phase 1")
+    for trait in output.persona_updates:
+        if not isinstance(trait, PersonTrait):
+            raise AIOutputInvalid("persona_updates must be typed person traits")
+        if not trait.evidence_ids or any(eid not in evidence_by_id for eid in trait.evidence_ids):
+            raise EvidenceInvalid("person trait has unverified evidence")
+        if any(eid not in evidence_by_id for eid in trait.counter_evidence_ids):
+            raise EvidenceInvalid("person trait has unverified counter evidence")
+    for fact in output.graph_updates:
+        if not isinstance(fact, GraphFact):
+            raise AIOutputInvalid("graph_updates must be typed graph facts")
+        if fact.subject_id != payload.subject_id:
+            raise AIOutputInvalid("graph fact belongs to another subject")
+        if not fact.evidence_ids or any(eid not in evidence_by_id for eid in fact.evidence_ids):
+            raise EvidenceInvalid("graph fact has unverified evidence")
 
     for memory in output.memory_items:
         if not memory.content.strip():

@@ -40,10 +40,13 @@ from .errors import (
     SttEmptyTranscript,
     SttUnavailable,
 )
+from .logging_config import trace_id_var
 from .models import Episode, JobStage, JobState
 from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
+from .repositories.person_model import PersonModelRepository
+from .retrieval import invalidate_answers
 from .stt import SttProvider, build_stt_provider
 from .storage import build_object_store
 from .storage.base import ObjectStore
@@ -214,6 +217,12 @@ class ProcessingWorker:
             self._record_failure(
                 job_id, UnexpectedFailure(str(error) or type(error).__name__)
             )
+        finally:
+            # `_run_stage` adopts the Episode's trace id so that a line written
+            # here — the failure line above included — is findable from the
+            # Episode alone. Clearing it keeps an idle tick from carrying the
+            # last Episode's correlation into an unrelated line.
+            trace_id_var.set(None)
         return None
 
     def _claim(self) -> str | None:
@@ -249,6 +258,11 @@ class ProcessingWorker:
             # Captured before any rollback, because an expired Episode object
             # cannot be read back for its id without starting a new transaction.
             episode_id = episode.episode_id
+            # The request boundary set this for the upload; the worker adopts the
+            # Episode's own copy for the stage, which is what makes "episode
+            # ep_… is stuck" answerable from the worker's log without a lookup
+            # from a client identifier to the internal job (ADR-0001 D13).
+            trace_id_var.set(episode.trace_id)
 
             if not self._still_holds_the_lease(job):
                 # The lease expired before the stage started and someone else owns
@@ -261,13 +275,14 @@ class ProcessingWorker:
                 return episode_id
 
             stage = JobStage(job.stage)
+            started = time.monotonic()
             with self._heartbeat(job_id):
                 if stage is JobStage.TRANSCRIBE:
                     self._transcribe(episode)
                 elif stage is JobStage.EXTRACT:
                     self._extract(session, episode)
                 else:
-                    self._model(episode)
+                    self._model(session, episode)
 
                 if not jobs.complete_stage(job, self.owner, episode):
                     # The lease lapsed while the stage ran and another worker has
@@ -280,7 +295,15 @@ class ProcessingWorker:
                         extra={"extra_fields": {"job_id": job_id, "owner": self.owner}},
                     )
                     return episode_id
+                # Read before the commit: afterwards the instance is expired and
+                # reading it would issue another query, whose failure would turn
+                # a stage that committed fine into a crash the operator sees.
+                fields = self._stage_fields(stage, episode, started, job_id)
                 session.commit()
+                logger.info(
+                    "stage.completed",
+                    extra={"extra_fields": fields},
+                )
             return episode_id
         finally:
             session.close()
@@ -308,6 +331,36 @@ class ProcessingWorker:
             and job.lease_expires_at is not None
         )
 
+    @staticmethod
+    def _stage_fields(
+        stage: JobStage, episode: Episode, started: float, job_id: str
+    ) -> dict[str, object]:
+        """One line per stage, carrying what produced the record it just wrote.
+
+        A successful run used to log nothing at all, which left the one question
+        worth asking — "the Episode is stuck, what is the worker doing?" — with
+        no answer in the worker's own output. The fields are the record's, not
+        the audio's: the transcript is deliberately absent, because a log line is
+        written to disk and a transcript is the subject's speech.
+        """
+        fields: dict[str, object] = {
+            "job_id": job_id,
+            "episode_id": episode.episode_id,
+            "stage": str(stage),
+            "status": episode.status,
+            "duration_ms": round((time.monotonic() - started) * 1000, 1),
+        }
+        # The stage names its own producer. Reading "whichever version is set"
+        # would report the transcript's version on the extract stage, because the
+        # transcript is still on the row — it is the record's history, not the
+        # stage's output.
+        if stage is JobStage.TRANSCRIBE:
+            fields["provider"] = episode.stt_backend
+            fields["model_version"] = episode.stt_model_version
+        else:
+            fields["model_version"] = episode.model_version
+        return fields
+
     def _transcribe(self, episode: Episode) -> None:
         try:
             audio = self.object_store.get(episode.audio_object_key)
@@ -330,6 +383,7 @@ class ProcessingWorker:
             )
 
         episode.transcript = transcript.text
+        episode.stt_transcript = transcript.text
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
 
@@ -360,19 +414,23 @@ class ProcessingWorker:
         output = self.ai.process(payload)
         MemoryRepository(session).store_result(episode, output)
 
-    def _model(self, episode: Episode) -> None:
-        """The last stage: an Episode becomes ready only past this point.
+    def _model(self, session, episode: Episode) -> None:
+        """Apply verified Memory and AI proposals to the seven-domain model.
 
-        Thin in Phase 1 on purpose. The graph and persona updates this stage will
-        own are Phase 2 shapes and are not committed yet, so what it does now is
-        hold the boundary: `ready` is reachable only from a stage that requires a
-        stored result, which is why an Episode cannot be reported ready while its
-        memories are still missing.
+        A correction or deletion later uses the same rebuild routine, so derived
+        traits and questions can never outlive the Memory that supports them.
+        The stage and job transition commit in one transaction.
         """
         if episode.model_version is None:
             raise UnexpectedFailure(
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
+        metadata = episode.capture_metadata or {}
+        PersonModelRepository(session).rebuild(
+            episode.subject_id,
+            answered_question_id=metadata.get("question_id"),
+        )
+        invalidate_answers(session, self.object_store, episode.subject_id)
 
     def _record_failure(self, job_id: str, error: AppError) -> None:
         """Retry the stage or give up, in its own transaction.
