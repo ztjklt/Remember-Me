@@ -43,3 +43,11 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 统一为雾银背景 / 勿忘我蓝语义色。HomeView 用静态刻线品牌印记与独立录音入口；Dynamic Type 无障碍尺寸下缩小装饰。RecorderView 的真实电平进入圆形表面，计时、暂停、保存、核对与授权不变。MemoryDetailView 去掉证据区的重复卡片，改为正文、分隔引文和原音来源。TabView 保持原生表现。
 
 本轮 4 个 Swift 文件通过 tree-sitter 语法解析，七组颜色资产通过跨端令牌一致性检查，22 组指定颜色对比度最低 4.75:1。没有执行 Xcode 编译、模拟器或真机验证；新增 SwiftUI 视图的类型检查及 Dynamic Type 实机布局仍待验证。没有修改共享 Contract 或服务链路。
+
+## 第三轮组件与品牌更新（2026-09-27）
+
+本轮取代第二轮装饰：中性浅深背景、系统可缩放文字、减少重复卡片、48 点播放控制和横向电平区域。首页使用标准录音按钮与简化花形；空状态使用材质花形。用户提供的 C / 留声品牌包来自 Android 工作目录 assets/brand/forget-me-not/v1；路径组件整合到既有 Views.swift，浅/深色启动图标和材质图片放入既有资产目录，没有添加未注册的源文件。
+
+设计参考 Pocket Casts 的音频控制、Read You 的列表排版和 Moe Memos 的原生层级，未复制这些第三方项目的源码或图形。完整取舍在 Android 分支 docs/mobile-ui/VISUAL_V3.md。
+
+4 个 Swift 文件语法解析与 git diff --check 通过；七组颜色核对通过，22 组指定文字色组合最低 4.94:1。Xcode 编译、Dynamic Type 真机布局、VoiceOver、AppIcon 深色呈现继续待验证。配对服务、证据纠正、Twin、校准与授权链路未修改。

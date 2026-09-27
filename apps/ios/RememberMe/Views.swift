@@ -52,8 +52,7 @@ private extension View {
     func journalCard() -> some View {
         self.padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 24))
-            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Ink.peach.opacity(0.55), lineWidth: 1))
+            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
     }
 }
 
@@ -61,40 +60,63 @@ private struct Eyebrow: View {
     let text: String
     var body: some View {
         Text(text)
-            .font(.system(.subheadline, design: .default).weight(.semibold))
-            .foregroundStyle(Ink.coral)
+            .font(.system(.subheadline, design: .default).weight(.regular))
+            .foregroundStyle(Ink.muted)
     }
 }
 
-// Static brand engraving; microphone levels are rendered separately in RecorderView.
-private struct VoiceSeal: View {
+
+
+enum BrandTreatment { case automatic, material, flat, monochrome }
+
+/// Import mark-material-1024.png into an Image Set and pass that asset's name.
+/// This is a static brand image, never a microphone or processing indicator.
+struct RememberMeBrand: View {
+    var size: CGFloat = 48
+    var treatment: BrandTreatment = .automatic
+    @Environment(\.colorScheme) private var colorScheme
+    private var darkBackground: Bool { colorScheme == .dark }
+    var materialAsset: String? = nil
+    var bundle: Bundle? = nil
+    var monochromeColor: Color = .primary
+    var label: String? = nil
+
+    private var dimension: CGFloat { max(16, size) }
+    private var useMaterial: Bool {
+        materialAsset != nil && (treatment == .material || (treatment == .automatic && dimension >= 64))
+    }
     var body: some View {
-        Canvas { context, size in
-            for i in 0..<32 {
-                let r = 0.21 + Double(i) * 0.024
-                var path = Path()
-                for j in 0...120 {
-                    let a = Double(j) / 120 * Double.pi * 2
-                    let k = 1 + 0.15 * cos(3 * a) + 0.07 * sin(5 * a)
-                    let x = (170 + 123 * r * k * cos(a)) / 340
-                    let y = (101 + 73 * r * k * sin(a) + 20 * r * cos(a)) / 210
-                    let point = CGPoint(x: x * size.width, y: y * size.height)
-                    if j == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        Group {
+            if useMaterial, let asset = materialAsset {
+                Image(asset, bundle: bundle).resizable().scaledToFit()
+            } else {
+                Canvas { context, canvas in
+                    let mono = treatment == .monochrome
+                    let blue = darkBackground ? Color(red: 174/255, green: 196/255, blue: 1) : Color(red: 50/255, green: 92/255, blue: 203/255)
+                    var petal = Path()
+                    petal.move(to: CGPoint(x: 128, y: 125))
+                    petal.addCurve(to: CGPoint(x: 88, y: 71), control1: CGPoint(x: 111, y: 119), control2: CGPoint(x: 91, y: 96))
+                    petal.addCurve(to: CGPoint(x: 122, y: 22), control1: CGPoint(x: 85, y: 45), control2: CGPoint(x: 98, y: 23))
+                    petal.addCurve(to: CGPoint(x: 166, y: 70), control1: CGPoint(x: 148, y: 20), control2: CGPoint(x: 168, y: 43))
+                    petal.addCurve(to: CGPoint(x: 132, y: 125), control1: CGPoint(x: 164, y: 94), control2: CGPoint(x: 145, y: 118))
+                    petal.closeSubpath()
+                    context.scaleBy(x: canvas.width / 256, y: canvas.height / 256)
+                    for i in 0..<5 {
+                        var layer = context
+                        layer.translateBy(x: 128, y: 128)
+                        layer.rotate(by: .degrees(Double(i) * 72))
+                        layer.translateBy(x: -128, y: -128)
+                        layer.fill(petal, with: .color(mono ? monochromeColor : blue))
+                    }
+                    let r: CGFloat = mono ? 9 : 12
+                    let heart = Path(ellipseIn: CGRect(x: 128-r, y: 128-r, width: 2*r, height: 2*r))
+                    context.fill(heart, with: .color(mono ? monochromeColor : Color(red: 233/255, green: 184/255, blue: 91/255)))
                 }
-                path.closeSubpath()
-                context.stroke(path, with: .color(Ink.coral.opacity(min(1, 0.36 + Double(i) / 54))), lineWidth: 1)
             }
-        }.accessibilityHidden(true)
-    }
-}
-
-private struct RecordEntryStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.82 : 1)
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.1), value: configuration.isPressed)
+        }
+        .frame(width: dimension, height: dimension)
+        .accessibilityLabel(Text(label ?? ""))
+        .accessibilityHidden(label == nil)
     }
 }
 
@@ -106,7 +128,7 @@ private struct ActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(.body, design: .default).weight(.semibold))
+                .font(.system(.body, design: .default).weight(.medium))
                 .frame(maxWidth: .infinity)
                 .padding(16)
                 .frame(minHeight: 56)
@@ -337,36 +359,25 @@ private struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 23) {
                 HStack {
-                    Text("勿忘我").font(.headline).foregroundStyle(Ink.text)
+                    RememberMeBrand(size: 32)
+                    Text("勿忘我").font(.body.weight(.medium)).foregroundStyle(Ink.text)
                     Spacer()
                     Text(Date().formatted(.dateTime.month(.wide).day()))
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 .padding(.top, 12)
 
-                Text("留住此刻的声音。")
-                    .font(.title.weight(.medium)).foregroundStyle(Ink.text)
-                VoiceSeal().frame(height: dynamicTypeSize.isAccessibilitySize ? 90 : 140)
-                Button {
-                    selectedQuestion = nil
-                    showRecorder = true
-                } label: {
-                    HStack(spacing: 16) {
-                        Image(systemName: "mic")
-                            .font(.title2).foregroundStyle(Ink.onPrimary)
-                            .frame(width: 64, height: 64).background(Ink.coral, in: Circle())
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("开始录音").font(.title3.weight(.semibold)).foregroundStyle(Ink.text)
-                            Text("原音先留在手机").font(.subheadline).foregroundStyle(Ink.muted)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
-                        Image(systemName: "chevron.right").foregroundStyle(Ink.muted)
-                    }
-                    .padding(12)
-                    .background(LinearGradient(colors: [Ink.cream, Ink.paper], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 48))
-                    .overlay(RoundedRectangle(cornerRadius: 48).stroke(Ink.cream, lineWidth: 1))
-                    .shadow(color: Ink.text.opacity(0.06), radius: 12, y: 6)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("今天，想记住什么？").font(.title2.weight(.medium)).foregroundStyle(Ink.text)
+                    Text("一件小事，也可以慢慢说。").font(.subheadline).foregroundStyle(Ink.muted)
                 }
-                .buttonStyle(RecordEntryStyle())
+                VStack(spacing: 10) {
+                    ActionButton(title: "开始录音", icon: "mic") {
+                        selectedQuestion = nil
+                        showRecorder = true
+                    }
+                    Text("原音先留在手机").font(.subheadline).foregroundStyle(Ink.muted)
+                }
 
                 if let question = model.questions.first {
                     VStack(alignment: .leading, spacing: 16) {
@@ -392,7 +403,7 @@ private struct HomeView: View {
                             .buttonStyle(.borderedProminent)
                         }
                     }
-                    .journalCard()
+                    .padding(.vertical, 12)
                 }
 
                 if model.draft != nil || model.episodeID != nil {
@@ -404,11 +415,12 @@ private struct HomeView: View {
                         Button("继续查看或重试") { showRecorder = true }
                             .font(.subheadline.weight(.semibold))
                     }
-                    .journalCard()
+                    .padding(.vertical, 12)
                 }
 
-                Text("最近留下的声音").font(.title3.weight(.semibold))
+                Text("最近记录").font(.headline.weight(.medium))
                 if model.episodes.isEmpty {
+                    RememberMeBrand(size: 80, materialAsset: "RmBrandMaterial")
                     Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
                 }
                 ForEach(Array(model.episodes.prefix(3))) { episode in
@@ -448,7 +460,7 @@ private struct RecorderView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     Eyebrow(text: calibration != nil ? "本人校准回答" : question == nil ? "自由录音" : "回答这个问题")
                     Text(calibration?.question ?? question?.text ?? "把此刻，留在这里。")
-                        .font(.title.weight(.semibold)).foregroundStyle(Ink.text)
+                        .font(.title2.weight(.medium)).foregroundStyle(Ink.text)
                     Text(model.isRecording ? (model.isPaused ? "已暂停" : "正在录音") : model.draft != nil ? "录音已保存在手机" : "由你决定什么时候开始")
                         .foregroundStyle(Ink.muted).accessibilityAddTraits(.updatesFrequently)
                     Text(String(format: "%02d:%02d", model.recordedSeconds / 60, model.recordedSeconds % 60))
@@ -462,10 +474,8 @@ private struct RecorderView: View {
                             }
                         }.frame(height: 100)
                     }
-                    .padding(36)
-                    .frame(maxWidth: 250).frame(height: 250)
-                    .background(RadialGradient(colors: [Ink.cream, Ink.paper], center: .topLeading, startRadius: 0, endRadius: 280), in: Circle())
-                    .overlay(Circle().inset(by: 12).stroke(Ink.peach, lineWidth: 1))
+                    .padding(.horizontal, 12)
+                    .frame(height: 130)
                     .frame(maxWidth: .infinity)
                     .accessibilityHidden(true)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: model.meterLevels)
@@ -555,9 +565,9 @@ private struct OriginalPlayer: View {
                     else { model.togglePlayback() }
                 } label: {
                     Image(systemName: selected && model.isPlaying ? "pause.fill" : "play.fill")
-                        .frame(width: 56, height: 56)
+                        .frame(width: 48, height: 48)
                 }
-                .buttonStyle(.borderedProminent).clipShape(Circle())
+                .buttonStyle(.borderedProminent).tint(Ink.text).foregroundStyle(Ink.paper).clipShape(Circle())
                 .disabled(model.playbackLoading)
                 .accessibilityLabel(selected && model.isPlaying ? "暂停原音" : "播放原音")
                 VStack(alignment: .leading) {
@@ -879,7 +889,7 @@ private struct MemoryDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 14) {
-                    VoiceSeal().frame(width: 72, height: 56)
+                    RememberMeBrand(size: 24)
                     Eyebrow(text: "记忆 · \(sourceLabel(memory.source_type))")
                 }
                 Text(memory.content)
@@ -891,8 +901,7 @@ private struct MemoryDetailView: View {
                     Divider()
                     ForEach(memory.evidence) { evidence in
                         Text("“\(evidence.excerpt ?? "")”")
-                            .font(.system(.title3, design: .default).weight(.regular))
-                            .lineSpacing(8).foregroundStyle(Ink.coral)
+                            .font(.body).lineSpacing(8).foregroundStyle(Ink.text)
                     }
                     Divider()
                     OriginalPlayer(episodeID: memory.episode_id)
