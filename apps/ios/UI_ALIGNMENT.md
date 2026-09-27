@@ -37,3 +37,9 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 随后检查 375 / 430 pt、普通及约 200% 字号、浅深色、减少动态 / 透明度、VoiceOver；再连接配对服务检查录音、后台保存、核对授权、真实播放、删除和纠正。现有 Twin、声音与校准流程也要回归，不能只验首页。
 
 完整设计原型和 Android 测试包在另一条基于 #78 的 `codex/mobile-ui-core` 分支 `docs/mobile-ui/`。两条分支基线不同，应分别审阅；不要为了对齐 UI 整体互相合并。
+
+## 第二轮视觉更新（2026-09-27）
+
+统一为雾银背景 / 勿忘我蓝语义色。HomeView 用静态刻线品牌印记与独立录音入口；Dynamic Type 无障碍尺寸下缩小装饰。RecorderView 的真实电平进入圆形表面，计时、暂停、保存、核对与授权不变。MemoryDetailView 去掉证据区的重复卡片，改为正文、分隔引文和原音来源。TabView 保持原生表现。
+
+本轮 4 个 Swift 文件通过 tree-sitter 语法解析，七组颜色资产通过跨端令牌一致性检查，22 组指定颜色对比度最低 4.75:1。没有执行 Xcode 编译、模拟器或真机验证；新增 SwiftUI 视图的类型检查及 Dynamic Type 实机布局仍待验证。没有修改共享 Contract 或服务链路。

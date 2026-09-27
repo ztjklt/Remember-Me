@@ -66,6 +66,38 @@ private struct Eyebrow: View {
     }
 }
 
+// Static brand engraving; microphone levels are rendered separately in RecorderView.
+private struct VoiceSeal: View {
+    var body: some View {
+        Canvas { context, size in
+            for i in 0..<32 {
+                let r = 0.21 + Double(i) * 0.024
+                var path = Path()
+                for j in 0...120 {
+                    let a = Double(j) / 120 * Double.pi * 2
+                    let k = 1 + 0.15 * cos(3 * a) + 0.07 * sin(5 * a)
+                    let x = (170 + 123 * r * k * cos(a)) / 340
+                    let y = (101 + 73 * r * k * sin(a) + 20 * r * cos(a)) / 210
+                    let point = CGPoint(x: x * size.width, y: y * size.height)
+                    if j == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                }
+                path.closeSubpath()
+                context.stroke(path, with: .color(Ink.coral.opacity(min(1, 0.36 + Double(i) / 54))), lineWidth: 1)
+            }
+        }.accessibilityHidden(true)
+    }
+}
+
+private struct RecordEntryStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
 private struct ActionButton: View {
     let title: String
     let icon: String
@@ -297,6 +329,7 @@ private struct EpisodeDetailView: View {
 
 private struct HomeView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showRecorder = false
     @State private var selectedQuestion: QuestionRecord?
     private let speaker = AVSpeechSynthesizer()
@@ -304,33 +337,36 @@ private struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 23) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Eyebrow(text: Date().formatted(.dateTime.month(.wide).day()))
-                        Text("慢慢说，我在听。")
-                            .font(.system(.title, design: .default).weight(.semibold))
-                            .foregroundStyle(Ink.text)
-                    }
+                    Text("勿忘我").font(.headline).foregroundStyle(Ink.text)
                     Spacer()
-                    Image(systemName: "circle.hexagongrid.fill")
-                        .font(.system(.title2, design: .default).weight(.semibold))
-                        .foregroundStyle(Ink.coral)
+                    Text(Date().formatted(.dateTime.month(.wide).day()))
+                        .font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 .padding(.top, 12)
 
-                VStack(alignment: .leading, spacing: 15) {
-                    Eyebrow(text: "你的声音，属于你")
-                    Text("今天想留下什么？")
-                        .font(.system(.title2, design: .default).weight(.semibold))
-                        .foregroundStyle(Ink.text)
-                    Text("一个念头、一段经历，或只是此刻的心情，都可以从这里开始。")
-                        .font(.subheadline)
-                        .foregroundStyle(Ink.muted)
-                    ActionButton(title: "开始录音", icon: "waveform") {
-                        selectedQuestion = nil
-                        showRecorder = true
+                Text("留住此刻的声音。")
+                    .font(.title.weight(.medium)).foregroundStyle(Ink.text)
+                VoiceSeal().frame(height: dynamicTypeSize.isAccessibilitySize ? 90 : 140)
+                Button {
+                    selectedQuestion = nil
+                    showRecorder = true
+                } label: {
+                    HStack(spacing: 16) {
+                        Image(systemName: "mic")
+                            .font(.title2).foregroundStyle(Ink.onPrimary)
+                            .frame(width: 64, height: 64).background(Ink.coral, in: Circle())
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("开始录音").font(.title3.weight(.semibold)).foregroundStyle(Ink.text)
+                            Text("原音先留在手机").font(.subheadline).foregroundStyle(Ink.muted)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.right").foregroundStyle(Ink.muted)
                     }
+                    .padding(12)
+                    .background(LinearGradient(colors: [Ink.cream, Ink.paper], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 48))
+                    .overlay(RoundedRectangle(cornerRadius: 48).stroke(Ink.cream, lineWidth: 1))
+                    .shadow(color: Ink.text.opacity(0.06), radius: 12, y: 6)
                 }
-                .journalCard()
+                .buttonStyle(RecordEntryStyle())
 
                 if let question = model.questions.first {
                     VStack(alignment: .leading, spacing: 16) {
@@ -426,7 +462,11 @@ private struct RecorderView: View {
                             }
                         }.frame(height: 100)
                     }
-                    .frame(height: 100)
+                    .padding(36)
+                    .frame(maxWidth: 250).frame(height: 250)
+                    .background(RadialGradient(colors: [Ink.cream, Ink.paper], center: .topLeading, startRadius: 0, endRadius: 280), in: Circle())
+                    .overlay(Circle().inset(by: 12).stroke(Ink.peach, lineWidth: 1))
+                    .frame(maxWidth: .infinity)
                     .accessibilityHidden(true)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: model.meterLevels)
                     if model.draft != nil && !model.isRecording { OriginalPlayer(episodeID: nil) }
@@ -838,18 +878,24 @@ private struct MemoryDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Eyebrow(text: "记忆 · \(sourceLabel(memory.source_type))")
+                HStack(spacing: 14) {
+                    VoiceSeal().frame(width: 72, height: 56)
+                    Eyebrow(text: "记忆 · \(sourceLabel(memory.source_type))")
+                }
                 Text(memory.content)
-                    .font(.system(.title2, design: .default).weight(.semibold))
+                    .font(.system(.title2, design: .default).weight(.medium))
+                    .lineSpacing(8)
                     .foregroundStyle(Ink.text)
                 VStack(alignment: .leading, spacing: 12) {
                     Eyebrow(text: "当时说过的话")
-                    OriginalPlayer(episodeID: memory.episode_id)
+                    Divider()
                     ForEach(memory.evidence) { evidence in
                         Text("“\(evidence.excerpt ?? "")”")
-                            .font(.system(.body, design: .default).weight(.regular))
-                            .foregroundStyle(Ink.text)
+                            .font(.system(.title3, design: .default).weight(.regular))
+                            .lineSpacing(8).foregroundStyle(Ink.coral)
                     }
+                    Divider()
+                    OriginalPlayer(episodeID: memory.episode_id)
                     Text("原始转写：\(memory.transcript ?? "暂无")")
                         .font(.subheadline)
                         .foregroundStyle(Ink.muted)
@@ -858,7 +904,7 @@ private struct MemoryDetailView: View {
                             .font(.subheadline).foregroundStyle(Ink.muted)
                     }
                 }
-                .journalCard()
+                .padding(.vertical, 12)
                 VStack(alignment: .leading, spacing: 12) {
                     Eyebrow(text: "如果我理解错了")
                     TextField("写下正确的说法", text: $correction, axis: .vertical)
