@@ -20,8 +20,8 @@ fun Modifier.atmosphere(): Modifier {
     return drawWithCache {
         val field = Brush.linearGradient(listOf(blue, sand), end=Offset(size.width, size.height))
         val glow = Brush.radialGradient(listOf(violet, violet.copy(alpha=0f)),
-            center=Offset(size.width, size.height*.28f),radius=size.maxDimension*.7f)
-        val veil = Brush.verticalGradient(listOf(base.copy(alpha=0f),base.copy(alpha=.3f),base))
+            center=Offset(size.width, size.height*.15f),radius=size.maxDimension*.5f)
+        val veil = Brush.verticalGradient(0f to base.copy(alpha=0f),.28f to base.copy(alpha=.3f),.68f to base,1f to base)
         onDrawBehind { drawRect(field); drawRect(glow); drawRect(veil) }
     }
 }
