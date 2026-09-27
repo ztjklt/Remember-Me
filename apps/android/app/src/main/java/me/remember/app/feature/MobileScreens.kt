@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import me.remember.app.data.repository.*
+import me.remember.app.core.designsystem.MemoryGlyph
+import me.remember.app.core.designsystem.MemoryGlyphKind
 import me.remember.app.core.designsystem.RememberMeBrand
 import me.remember.app.R
 import androidx.compose.ui.res.painterResource
@@ -162,7 +164,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
             Column {
                 HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
                 Row(Modifier.fillMaxWidth().clickable(role=Role.Button){open(item)}.padding(vertical=12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Outlined.PendingActions,null,Modifier.size(20.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
+                    MemoryGlyph(MemoryGlyphKind.Review,size=40.dp)
                     Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                         Text(if(item.processingStage==ProcessingStage.NeedsReview) "继续核对" else "继续处理",style=MaterialTheme.typography.titleMedium)
                         Muted(item.title+" · "+stageLabel(item.processingStage))
@@ -178,7 +180,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
                 TextButton(onClick=archive){Text("查看全部",style=MaterialTheme.typography.bodySmall)}
             }
             if(records.isEmpty()) {
-                RememberMeBrand(size=80.dp,materialPainter=painterResource(R.drawable.rm_brand_material))
+                MemoryGlyph(MemoryGlyphKind.Memory,size=88.dp)
                 Notice("从第一段声音开始","不必准备完整的故事。录完之后，可以随时回来听。")
             }
             records.take(3).forEach { RecordingRow(it,onClick={open(it)}) }
@@ -188,7 +190,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
 @Composable private fun RecordingRow(record: AudioRecording,onClick:()->Unit) {
     Column(Modifier.fillMaxWidth().clickable(onClick=onClick,role=Role.Button)) {
         Row(Modifier.padding(vertical=14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
-            Icon(Icons.Outlined.GraphicEq,null,Modifier.size(22.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
+            MemoryGlyph(MemoryGlyphKind.Voice,size=24.dp)
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Text(record.title,style=MaterialTheme.typography.titleMedium)
                 Muted("${dateLabel(record.createdAt)} · ${durationLabel(record.durationMillis)}")
@@ -204,7 +206,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     var query by rememberSaveable { mutableStateOf("") }
     val matching=records.filter { query.isBlank() || (it.title+it.transcript+it.reviewedTranscript.orEmpty()+it.memories.filter { m->m.status=="active" }.joinToString { m->m.content }).contains(query.trim(),ignoreCase=true) }
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=pagePadding(),vertical=24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        item { Heading("档案") }
+        item { Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){MemoryGlyph(MemoryGlyphKind.Archive,size=48.dp);Heading("档案")} }
         item { Muted("说过的话，完整留着。") }
         item { OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),label={Text("搜索标题、文字或记忆")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.medium) }
         item { TabRow(selectedTabIndex=mode,containerColor=MaterialTheme.colorScheme.background) {
@@ -389,7 +391,7 @@ fun sourceLabel(source: String)=when(source){"SUBJECT"->"本人叙述";"THIRD_PA
     if(memory==null){Page{Notice("这条记忆已不在当前记录中","原始录音仍保留。")};return}
     Page {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            RememberMeBrand(size=24.dp); Muted(sourceLabel(memory.sourceType))
+            MemoryGlyph(MemoryGlyphKind.Quote,size=40.dp); Muted(sourceLabel(memory.sourceType))
         }
         Text(memory.content,style=MaterialTheme.typography.headlineMedium.copy(lineHeight=38.sp,fontWeight=FontWeight.Medium))
         Section("当时说过的话")

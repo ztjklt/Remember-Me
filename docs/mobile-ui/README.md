@@ -1,8 +1,10 @@
 # 勿忘我 · 移动端 UI 实施包
 
-本包已完成第五轮：首页信息密度、档案条目和播放器进一步统一，保留雾光背景和五瓣蓝花品牌。包含可点击原型与 Android 实现；当前组件取舍见 [VISUAL_V5.md](VISUAL_V5.md)，材质基础见 [VISUAL_V4.md](VISUAL_V4.md)。iOS 对齐单独保存在 `codex/ios-ui-alignment` 分支，不能把两个平台分支整体互相合并。
+本包第六轮加入“回忆图形”组件：蒙版叠层、纸页柔影与六款原创图形；保留第五轮首页、档案和播放器布局，以及五瓣蓝花品牌。包含可点击原型与 Android 实现；当前组件取舍见 [VISUAL_V5.md](VISUAL_V5.md)，材质基础见 [VISUAL_V4.md](VISUAL_V4.md)。iOS 对齐单独保存在 `codex/ios-ui-alignment` 分支，不能把两个平台分支整体互相合并。
 
 ## 打开与检查
+
+- [回忆图形组件](memory-elements/preview.html)：六款原创 SVG，浅深色、单色/双色/柔影、尺寸交互预览；[组件与搜索参考](memory-elements/README.md)。已接入第六版原型和双端部分位置。
 
 - [交互原型](prototype.html)：纯 HTML，固定示例资料，不采集声音、不发送资料。可切换 Android / iOS、浅色 / 深色、200% 文字、减少动态，以及空 / 处理 / 失败状态。
 - [设计规格](DESIGN.md)：导航、页面、组件、状态与后续功能边界。

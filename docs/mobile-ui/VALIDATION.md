@@ -118,3 +118,12 @@ iOS 按 `apps/ios/UI_ALIGNMENT.md` 构建，然后覆盖 375 / 430 pt、大字�
 ## 第五轮组件验证（2026-09-27）
 
 [本轮结果](VISUAL_V5.md)：24 组实际手机宽度布局检查通过，原型播放器键盘定位/重播/焦点检查通过。Android 构建、18 项单元测试及 lint 通过；iOS 语法检查通过。未将历史全量流程检查或真机触控标成已在本轮执行。
+
+## 第六轮：回忆图形（2026-09-27）
+
+- 六款原创图形，共 36 个 SVG，全部 XML 解析通过；共享路径生成 Web、Compose 与 SwiftUI 版本。
+- 图形库 24 个展示实例载入成功；24px 单色切换、96px 自动材质、恢复默认、浅深色显式模式及应用内深色空状态同步检查通过。
+- 图形接入后复验 12 组原型布局：首页/档案/核对页，360/412 实际 CSS 宽度，普通浅色和 200% 深色，未发现横向溢出或正文可用空间小于 100px。结果 memory-elements/verification.json。
+- Android testDebugUnitTest、assembleDebug、assembleDebugAndroidTest、lintDebug 通过；18 tests / 0 failures / 0 errors。lint 0 errors / 26 warnings，其中新增一项是旧花形材质 PNG 暂未使用；原始素材及兼容资源保留。日志 output/android-validation-v6.txt。
+- iOS 四个 Swift 文件语法解析通过；Xcode、原生阴影观感、真机触控、平台读屏和辅助设置切换仍待验证。Web 的滤镜与原生近似绘图不宣称像素一致。
+- 原型与图形库均无远端图片依赖；业务服务、数据与授权流程未改动。原始品牌交付目录未纳入本轮提交。
