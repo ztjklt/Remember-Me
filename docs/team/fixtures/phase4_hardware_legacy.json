@@ -1,0 +1,63 @@
+{
+  "fixture_id": "phase4-hardware-legacy-v0",
+  "notice": "Synthetic acceptance scenario only; not an approved API, schema, Work 3200 capability claim, or Phase 4 activation",
+  "subject_id": "subj_demo_ada",
+  "hardware": {
+    "official_capability_evidence": "PENDING",
+    "acceptance_checks": [
+      {
+        "check_id": "phone_without_device",
+        "expectation": "With no external device paired, phone recording, local save, upload, and the same Episode processing path remain usable."
+      },
+      {
+        "check_id": "unsupported_feature_hidden",
+        "expectation": "A capability not confirmed by the official SDK, including marker, live audio, or background recording, is unavailable in the adapter and UI."
+      },
+      {
+        "check_id": "disconnect_and_duplicate_sync",
+        "expectation": "For capabilities the official SDK actually confirms, reconnect and repeated fetch preserve one Episode per recording and expose recoverable errors without discarding local audio."
+      },
+      {
+        "check_id": "real_device_gate",
+        "expectation": "A real supported device must record and sync through the same Episode path. A fake adapter or phone-only run cannot pass the hardware portion of Phase 4."
+      }
+    ]
+  },
+  "legacy": {
+    "subject_id": "subj_demo_ada",
+    "steward_id": "actor_steward",
+    "recipient_id": "actor_recipient_life",
+    "unrelated_actor_id": "actor_unrelated",
+    "intended_access": "The Recipient may see selected life memories after authorized activation; original audio and Voice are outside this grant.",
+    "acceptance_checks": [
+      {
+        "check_id": "before_activation_denied",
+        "expectation": "A configured future grant alone does not expose Legacy content before its activation policy is satisfied."
+      },
+      {
+        "check_id": "activation_authorized_and_idempotent",
+        "expectation": "Only an authorized activation path changes state. Repeating it does not create a second baseline or duplicate activation event; repeated attempts remain auditable."
+      },
+      {
+        "check_id": "baseline_frozen",
+        "expectation": "Activation records an immutable Personality Baseline version. Later world or Recipient context stays separate from the historical Subject model."
+      },
+      {
+        "check_id": "scope_and_actor_isolation",
+        "expectation": "The granted Recipient sees only the selected memories; original audio and Voice remain denied, and an unrelated Actor sees nothing. Every access checks Actor, Subject, relationship, consent, grant scope, and Legacy state."
+      },
+      {
+        "check_id": "recipient_cannot_mutate_subject",
+        "expectation": "Recipient conversation, correction, upload, and attempted policy changes cannot rewrite the Subject baseline or create new authority, intent, or legal direction."
+      },
+      {
+        "check_id": "revocation_and_cache_invalidation",
+        "expectation": "Revoking the grant denies subsequent API, cached, and UI access. Previously allowed content is not returned from a stale cache."
+      },
+      {
+        "check_id": "audit_without_overexposure",
+        "expectation": "Grant, activation, denial, access, and revocation have traceable audit events without exposing private content or credentials in logs."
+      }
+    ]
+  }
+}
