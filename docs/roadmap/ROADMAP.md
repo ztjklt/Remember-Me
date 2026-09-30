@@ -2,6 +2,8 @@
 
 Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Product goals: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx). This file records phase status and exit gates; staffing is assigned per delegated Issue, not by phase or service.
 
+The ordered work, dependencies, verification, and 2026-09-26 target for the later phases are recorded in the [Phase 2–4 execution plan](PHASE2_4_EXECUTION_PLAN.md). That target does not change the phase statuses or waive their exit gates.
+
 ## Phase status
 
 | Phase | Status | Product goal | Exit gate |
