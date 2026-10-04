@@ -117,7 +117,7 @@ class HttpAiCoreClient:
         try:
             response = httpx.post(
                 url,
-                json=payload.model_dump(mode="json"),
+                json=payload.model_dump(mode="json", exclude_none=True),
                 timeout=httpx.Timeout(self.timeout_seconds),
             )
         except httpx.TimeoutException as error:
@@ -125,10 +125,13 @@ class HttpAiCoreClient:
         except httpx.TransportError as error:
             raise AiUnavailable(f"AI Core is unreachable at {url}: {error}") from error
 
+        if response.status_code in {408, 504}:
+            raise AiTimeout("AI Core request timed out")
+        if response.status_code == 429 or response.status_code >= 500:
+            raise AiUnavailable("AI Core is temporarily unavailable")
         if response.status_code >= 400:
             raise AiFailed(
-                f"AI Core answered {response.status_code}: "
-                f"{response.text[:_ERROR_EXCERPT]}"
+                f"AI Core rejected the request (HTTP {response.status_code})"
             )
 
         try:

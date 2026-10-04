@@ -128,6 +128,10 @@ class HttpSttProvider:
                 f"The speech-to-text provider is unreachable at {url}: {error}"
             ) from error
 
+        if response.status_code in {408, 504}:
+            raise SttTimeout("STT request timed out")
+        if response.status_code == 429 or response.status_code >= 500:
+            raise SttUnavailable("STT is temporarily unavailable")
         if response.status_code >= 400:
             raise SttFailed(
                 f"The speech-to-text provider answered {response.status_code}: "

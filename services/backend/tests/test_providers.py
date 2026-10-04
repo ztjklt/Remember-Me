@@ -199,7 +199,7 @@ def test_the_request_that_is_sent_is_the_contract_shape(http_post):
 
     body = sent[0].read()
     assert sent[0].url == httpx.URL("http://ai-core.internal/process")
-    assert json.loads(body) == INPUT.model_dump(mode="json")
+    assert json.loads(body) == INPUT.model_dump(mode="json", exclude_none=True)
     # The job id is internal and never leaves this process.
     assert "job_id" not in INPUT.model_dump(mode="json")
 
@@ -239,16 +239,21 @@ def test_an_unreachable_ai_core_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_ai_core_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
+@pytest.mark.parametrize("status,error_type", [(429,AiUnavailable),(500,AiUnavailable),(503,AiUnavailable),(504,AiTimeout),(408,AiTimeout)])
+def test_transient_ai_status_is_retryable_and_redacted(http_post,status,error_type):
+    http_post(lambda request: httpx.Response(status,text="private transcript traceback"))
+    with pytest.raises(error_type) as raised:
+        client_for().process(INPUT)
+    assert raised.value.retryable
+    assert "private" not in raised.value.message
 
+
+def test_permanent_ai_refusal_does_not_retry(http_post):
+    http_post(lambda request: httpx.Response(422,text="private transcript"))
     with pytest.raises(AiFailed) as raised:
         client_for().process(INPUT)
-
-    assert "500" in raised.value.message
-    assert "traceback" in raised.value.message
-    # AI Core ran and refused: the same request would be refused again.
     assert not raised.value.retryable
+    assert "private" not in raised.value.message
 
 
 def test_a_response_that_is_not_json_is_a_schema_problem(http_post):
@@ -438,16 +443,13 @@ def test_an_unreachable_provider_is_reported_as_unavailable(http_post):
     assert raised.value.retryable
 
 
-def test_a_refusal_from_the_provider_is_a_failed_call(http_post):
-    http_post(lambda request: httpx.Response(500, text="<html>traceback</html>"))
-
-    with pytest.raises(SttFailed) as raised:
-        stt_for().transcribe(AUDIO, "audio/mp4")
-
-    assert raised.value.code == "STT_FAILED"
-    assert "500" in raised.value.message
-    # The provider ran and refused: the same audio would be refused again.
-    assert not raised.value.retryable
+@pytest.mark.parametrize("status,error_type",[(429,SttUnavailable),(500,SttUnavailable),(503,SttUnavailable),(504,SttTimeout),(408,SttTimeout)])
+def test_transient_stt_status_is_retryable_and_redacted(http_post,status,error_type):
+    http_post(lambda request: httpx.Response(status,text="private audio traceback"))
+    with pytest.raises(error_type) as raised:
+        stt_for().transcribe(AUDIO,"audio/mp4")
+    assert raised.value.retryable
+    assert "private" not in raised.value.message
 
 
 def test_a_response_that_is_not_json_is_a_failed_call(http_post):
