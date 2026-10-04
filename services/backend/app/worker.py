@@ -40,7 +40,10 @@ from .errors import (
     SttEmptyTranscript,
     SttUnavailable,
 )
-from .models import Episode, JobStage, JobState
+from .models import Episode, JobStage, JobState, AgentState, ConsentScope
+from .agent_service import AgentService
+from .agent_client import AgentClient
+from .repositories.consents import ConsentRepository
 from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
@@ -175,11 +178,13 @@ class ProcessingWorker:
         lease_seconds: int = 60,
         owner: str | None = None,
         heartbeat_interval_seconds: float | None = None,
+        agent: AgentClient | None = None,
     ) -> None:
         self.database = database
         self.object_store = object_store
         self.stt = stt
         self.ai = ai
+        self.agent = agent
         self.max_attempts = max_attempts
         self.backoff_seconds = backoff_seconds
         self.lease_seconds = lease_seconds
@@ -260,6 +265,8 @@ class ProcessingWorker:
                 )
                 return episode_id
 
+            ConsentRepository(session).require_active(episode.recording_consent_id,
+                subject_id=episode.subject_id,scope=ConsentScope.RECORDING,actor_id=episode.actor_id)
             stage = JobStage(job.stage)
             with self._heartbeat(job_id):
                 if stage is JobStage.TRANSCRIBE:
@@ -268,7 +275,17 @@ class ProcessingWorker:
                     self._extract(session, episode)
                 else:
                     self._model(episode)
+                    if self.agent is not None:
+                        svc = AgentService(session,self.agent)
+                        state = session.get(AgentState,svc.key(episode.subject_id,episode.actor_id))
+                        if state is not None and state.active:
+                            svc.require(episode.subject_id,episode.actor_id)
+                            svc.refresh(state,include_episode_id=episode.episode_id)
 
+                consent = ConsentRepository(session).require_for(episode.recording_consent_id,actor_id=episode.actor_id)
+                session.refresh(consent)
+                ConsentRepository(session).require_active(episode.recording_consent_id,
+                    subject_id=episode.subject_id,scope=ConsentScope.RECORDING,actor_id=episode.actor_id)
                 if not jobs.complete_stage(job, self.owner, episode):
                     # The lease lapsed while the stage ran and another worker has
                     # the work — it may already have committed a result for it.
@@ -419,6 +436,7 @@ def build_worker(database: Database, settings: Settings) -> ProcessingWorker:
         max_attempts=settings.job_max_attempts,
         backoff_seconds=settings.job_retry_backoff_seconds,
         lease_seconds=settings.job_lease_seconds,
+        agent=AgentClient(settings.ai_core_url,settings.agent_timeout_seconds) if settings.agent_enabled else None,
     )
 
 

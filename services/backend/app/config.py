@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     # fixes the payload shapes, not the endpoint. Configurable so confirming it
     # with the AI Core owner needs no code change.
     ai_core_path: str = "/process"
+    agent_enabled: bool = False
+    agent_timeout_seconds: float = 45.0
     ai_timeout_seconds: float = 30.0
 
     # A placeholder provider is refused outside development and test. This is the

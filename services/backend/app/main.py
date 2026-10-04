@@ -11,6 +11,8 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
 from .ai_core import build_ai_client
+from .agent_client import AgentClient
+from .api import agent
 from .api import consents, episodes, health, session
 from .config import Settings, get_settings
 from .db import Database
@@ -144,6 +146,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.object_store = object_store
     app.state.stt_provider = stt_provider
     app.state.ai_client = ai_client
+    if settings.agent_enabled:
+        app.state.agent_client = AgentClient(settings.ai_core_url,settings.agent_timeout_seconds)
+        app.include_router(agent.router)
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)

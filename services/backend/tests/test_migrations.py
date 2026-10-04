@@ -5,6 +5,7 @@ from conftest import alembic_config, upgrade_to_head
 from app.models import Base
 
 EXPECTED_TABLES = {
+    "agent_states", "agent_revisions", "agent_calibrations", "agent_materials",
     "alembic_version",
     "subjects",
     "actors",

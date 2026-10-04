@@ -293,3 +293,6 @@ Migrations under `migrations/` are the only schema authority; the application ne
 - The PostgreSQL driver, which a deployment adds as a prerequisite — see [infra/deployment.md](../../infra/deployment.md).
 - Anything that processes voice — Phase 3. Phase 1 defines the consent boundary and the third-party exclusion rule only.
 - Person Model, Twin, and Memory/Graph/Persona APIs — Phase 2.
+## Opt-in Agent core loop
+
+`REMEMBER_AGENT_ENABLED=true` enables `/experimental/agent/v1` and the Persona step in the existing Model Job. Apply migration `0004_agent_loop` first. The default remains disabled. See [Agent loop setup and validation](../../docs/architecture/AGENT_CORE_LOOP.md) for the one-command fixture HTTP cycle, Android integration, real providers, isolated self-declared grant policy and prototype limits. Existing `/api/v1` contract shapes remain unchanged.

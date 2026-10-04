@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Remember Me Backend — Phase 1 service foundation (see docs/architecture/backend-adr.md)"
 requires-python = ">=3.12"
 dependencies = [
+    "remember-me-contracts",
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "sqlalchemy>=2.0.30",
@@ -34,3 +35,6 @@ package = false
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+
+[tool.uv.sources]
+remember-me-contracts = { path = "../../packages/contracts", editable = true }

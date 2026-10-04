@@ -854,6 +854,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
+    { name = "remember-me-contracts" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -872,6 +873,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic-settings", specifier = ">=2.3" },
     { name = "python-multipart", specifier = ">=0.0.32" },
+    { name = "remember-me-contracts", editable = "../../packages/contracts" },
     { name = "sqlalchemy", specifier = ">=2.0.30" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
@@ -881,6 +883,17 @@ dev = [
     { name = "moto", extras = ["s3"], specifier = ">=5.0" },
     { name = "pytest", specifier = ">=8.2" },
 ]
+
+[[package]]
+name = "remember-me-contracts"
+version = "0.2.0a1"
+source = { editable = "../../packages/contracts" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
 
 [[package]]
 name = "requests"

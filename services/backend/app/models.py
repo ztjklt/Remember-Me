@@ -420,3 +420,52 @@ class MemoryItem(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
+
+class AgentState(Base):
+    """Experimental self-declared session, isolated by Actor and Subject."""
+    __tablename__ = "agent_states"
+    state_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.subject_id", ondelete="RESTRICT"))
+    actor_id: Mapped[str] = mapped_column(ForeignKey("actors.actor_id", ondelete="RESTRICT"))
+    recording_consent_id: Mapped[str] = mapped_column(ForeignKey("consents.consent_id", ondelete="RESTRICT"))
+    active: Mapped[bool] = mapped_column(default=True)
+    generation: Mapped[str] = mapped_column(String(32))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    excluded_episode_ids: Mapped[list] = mapped_column(JSON, default=list)
+    granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AgentRevision(Base):
+    __tablename__ = "agent_revisions"
+    revision_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    state_id: Mapped[str] = mapped_column(ForeignKey("agent_states.state_id", ondelete="CASCADE"), index=True)
+    revision: Mapped[int] = mapped_column(Integer)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    processed_evidence_ids: Mapped[list] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class CalibrationRecord(Base):
+    __tablename__ = "agent_calibrations"
+    calibration_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    state_id: Mapped[str] = mapped_column(ForeignKey("agent_states.state_id", ondelete="CASCADE"), index=True)
+    question: Mapped[str] = mapped_column(Text)
+    locked_answer: Mapped[dict] = mapped_column(JSON)
+    locked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    lock_digest: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(16), default="LOCKED")
+    human_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comparison: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    resulting_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class AgentMaterial(Base):
+    __tablename__ = "agent_materials"
+    evidence_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    state_id: Mapped[str] = mapped_column(ForeignKey("agent_states.state_id", ondelete="CASCADE"), index=True)
+    calibration_id: Mapped[str] = mapped_column(ForeignKey("agent_calibrations.calibration_id", ondelete="CASCADE"))
+    excerpt: Mapped[str] = mapped_column(Text)
+    context: Mapped[str] = mapped_column(Text)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
