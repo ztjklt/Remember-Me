@@ -7,6 +7,8 @@ key or leave two versions of the same result behind.
 """
 
 from uuid import uuid4
+from remember_contracts.provenance import canonical_evidence_id
+from ..errors import AiSchemaInvalid
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -20,12 +22,16 @@ class MemoryRepository:
         self.session = session
 
     def store_result(self, episode: Episode, output: AICoreOutput) -> None:
+        mapping = {e.evidence_id: canonical_evidence_id(episode.episode_id, e) for e in output.evidence}
+        if len(mapping) != len(output.evidence) or len(set(mapping.values())) != len(mapping):
+            raise AiSchemaInvalid("Duplicate evidence IDs")
+        if any(not set(m.evidence_ids) <= mapping.keys() for m in output.memory_items):
+            raise AiSchemaInvalid("Unknown evidence references")
         self.clear_result(episode.episode_id)
-
         for source in output.evidence:
             self.session.add(
                 Evidence(
-                    evidence_id=source.evidence_id,
+                    evidence_id=mapping[source.evidence_id],
                     episode_id=episode.episode_id,
                     source_type=str(source.source_type),
                     source_ref=source.source_ref,
@@ -45,10 +51,9 @@ class MemoryRepository:
                     memory_type=str(item.memory_type),
                     content=item.content,
                     source_type=str(item.source_type),
-                    # The model's own claim about what it rested on, stored as
-                    # given. Resolving it is a read-time question: evidence can
-                    # come from an earlier Episode as well as this one.
-                    evidence_ids=list(item.evidence_ids),
+                    # Canonical server IDs preserve the model's evidence links
+                    # while preventing another Episode from reusing its IDs.
+                    evidence_ids=[mapping[eid] for eid in item.evidence_ids],
                     confidence=item.confidence,
                     model_version=item.model_version,
                     prompt_version=item.prompt_version,
