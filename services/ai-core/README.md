@@ -119,3 +119,7 @@ failure state. It should call `POST /process` with `episode_id`, `subject_id`,
 `transcript`, `existing_model_version`, and optional `trace_id`. AI Core never
 creates or mutates `episode_id` and never writes a database. See
 `docs/team/02_KANGXIN_AI_CORE_HANDOFF.md` for the complete handoff checklist.
+
+## Opt-in Agent core loop
+
+`AI_AGENT_ENABLED=true` enables experimental Persona, Twin and Compare schema workers, reusing this service's one model/provider and concurrency/size limits. The P1 `/process` contract stays unchanged. See [Agent loop setup and validation](../../docs/architecture/AGENT_CORE_LOOP.md) and [the proposal](../../docs/proposals/AGENT_CORE_LOOP.md). Persona revision and consent are Backend-owned; AI Core never writes the database. `remember-me-contracts` is a local shared dependency; wheel deployments must package it alongside this service.

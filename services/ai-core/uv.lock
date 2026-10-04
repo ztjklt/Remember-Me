@@ -346,6 +346,7 @@ dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "remember-me-contracts" },
     { name = "uvicorn" },
 ]
 
@@ -361,6 +362,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "pydantic-settings", specifier = ">=2.3" },
+    { name = "remember-me-contracts", editable = "../../packages/contracts" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
 
@@ -369,6 +371,17 @@ dev = [
     { name = "jsonschema", specifier = ">=4.23" },
     { name = "pytest", specifier = ">=8.2" },
 ]
+
+[[package]]
+name = "remember-me-contracts"
+version = "0.2.0a1"
+source = { editable = "../../packages/contracts" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.9" }]
 
 [[package]]
 name = "rpds-py"

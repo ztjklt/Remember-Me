@@ -13,6 +13,8 @@ from .errors import AICoreError, AIOutputInvalid
 from .prompts import PROMPT_VERSION, SCHEMA_VERSION, build_system_prompt
 from .providers.base import ModelRequest, StructuredModelProvider
 from .validation import validate_output
+from remember_contracts.provenance import canonical_evidence_id
+from .errors import EvidenceInvalid
 
 logger = logging.getLogger("remember_me.ai_core")
 
@@ -77,7 +79,15 @@ class MemoryExtractor:
             memory.model_version = self.model_version
             memory.prompt_version = self.prompt_version
             memory.schema_version = self.schema_version
-        return validate_output(payload, output)
+        validate_output(payload, output)
+        mapping = {e.evidence_id: canonical_evidence_id(payload.episode_id, e) for e in output.evidence}
+        if len(set(mapping.values())) != len(mapping):
+            raise EvidenceInvalid("Duplicate canonical evidence")
+        for evidence in output.evidence:
+            evidence.evidence_id = mapping[evidence.evidence_id]
+        for memory in output.memory_items:
+            memory.evidence_ids = [mapping[eid] for eid in memory.evidence_ids]
+        return output
 
 
 __all__ = ["MemoryExtractor"]

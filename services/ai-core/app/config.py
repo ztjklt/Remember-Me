@@ -60,6 +60,8 @@ class Settings(BaseSettings):
         min_length=1,
         validation_alias="AI_SCHEMA_VERSION",
     )
+    agent_enabled: bool = Field(default=False, validation_alias="AI_AGENT_ENABLED")
+
     max_concurrent_requests: int = Field(default=4, ge=1, validation_alias="AI_MAX_CONCURRENT_REQUESTS")
     max_request_bytes: int = Field(default=1_048_576, ge=1, validation_alias="AI_MAX_REQUEST_BYTES")
     max_response_bytes: int = Field(default=1_048_576, ge=1, validation_alias="AI_MAX_RESPONSE_BYTES")

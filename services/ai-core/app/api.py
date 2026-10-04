@@ -14,6 +14,8 @@ from .contracts import AICoreInput, AICoreOutput
 from .errors import AIOutputInvalid, EvidenceInvalid, ProviderTimeout, ProviderUnavailable
 from .extractor import MemoryExtractor
 from .limits import RequestSizeLimit
+from .agent.orchestrator import AgentOrchestrator
+from remember_contracts.agent import PersonaInput, PersonaResult, TwinInput, TwinAnswer, CompareInput, Comparison
 from .providers.fixture import FixtureProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 
@@ -114,6 +116,24 @@ def create_app(
         finally:
             slots.release()
 
+    if settings.agent_enabled:
+        agent = AgentOrchestrator(active_extractor)
+        def run_worker(fn, payload):
+            if not slots.acquire(blocking=False):
+                raise ProviderUnavailable("AI Core worker capacity is busy")
+            try:
+                return fn(payload)
+            finally:
+                slots.release()
+        @app.post("/experimental/agent/v1/persona", response_model=PersonaResult)
+        def persona(payload: PersonaInput):
+            return run_worker(agent.persona, payload)
+        @app.post("/experimental/agent/v1/twin", response_model=TwinAnswer)
+        def twin(payload: TwinInput):
+            return run_worker(agent.twin, payload)
+        @app.post("/experimental/agent/v1/compare", response_model=Comparison)
+        def compare(payload: CompareInput):
+            return run_worker(agent.compare, payload)
     return app
 
 

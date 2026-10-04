@@ -72,6 +72,7 @@ class OpenAICompatibleProvider:
                     "content": json.dumps(
                         # No verified context-evidence resolver exists in Phase 1.
                         # Keep subject_context, subject_id and trace_id local.
+                        request.worker_input if request.worker_input is not None else
                         {"episode_id": request.payload.episode_id, "transcript": request.payload.transcript},
                         ensure_ascii=True,
                     ),

@@ -18,6 +18,9 @@ class FixtureProvider:
     _instruction_markers = ("忽略", "系统提示", "改写记忆", "ignore", "system prompt", "invent a memory")
 
     def generate(self, request: ModelRequest) -> dict[str, Any]:
+        if request.worker_input is not None:
+            from ..agent.fixture import generate
+            return generate(request)
         payload = request.payload
         output = self._empty_output(request)
         seen = set()

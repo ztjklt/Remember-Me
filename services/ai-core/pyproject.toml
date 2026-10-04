@@ -7,6 +7,7 @@ name = "remember-me-ai-core"
 version = "0.2.0"
 requires-python = ">=3.12"
 dependencies = [
+    "remember-me-contracts",
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "pydantic>=2.9",
@@ -29,3 +30,6 @@ packages = ["app"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "fixtures" = "app/fixtures"
+
+[tool.uv.sources]
+remember-me-contracts = { path = "../../packages/contracts", editable = true }

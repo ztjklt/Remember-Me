@@ -17,6 +17,8 @@ class ModelRequest:
     model_version: str
     prompt_version: str
     schema_version: str
+    task: str = "memory"
+    worker_input: dict[str, Any] | None = None
 
 
 class StructuredModelProvider(Protocol):
