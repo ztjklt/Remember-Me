@@ -47,3 +47,7 @@ These are recorded rather than silently resolved. None may be changed without an
 - **`job_id` visibility.** A Processing Job is distinct from an Episode and from an execution trace, but Phase 1 does not require Android to inspect job identity or retry history. Keep it internal to Backend until a concrete cross-module consumer requires a versioned proposal.
 - **Graph, persona, Twin, and Calibration shapes are shallow.** `graph_updates`, `persona_updates`, `dimension_diffs`, `model_updates`, and `followup_questions` remain generic. Deepening them is Phase 2/3 work and requires a versioned proposal.
 - **Voice Synthesis provider metadata is open-ended.** `provider_metadata` intentionally allows any properties so no provider is presumed; treat its contents as non-normative.
+
+## Agent loop experiment (2026-10-03)
+
+The user-authorized branch `feature/ai-agent-core-loop` adds an **experimental, not frozen** contract alongside v0.1.2. See [the scoped proposal](../../docs/proposals/AGENT_CORE_LOOP.md). Python services share `remember_contracts.agent`; the generated JSON schema is `schemas/agent-loop-v0.2-experimental.schema.json`. Backend routes use `/experimental/agent/v1`, are disabled by default, and do not extend existing strict EpisodeResult payloads. Android uses only Backend, never the worker API. Approval of the team's shared contract remains a separate integration decision.

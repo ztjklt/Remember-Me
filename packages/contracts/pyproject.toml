@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "remember-me-contracts"
+version = "0.2.0a1"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.9"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["remember_contracts"]

@@ -1,0 +1,881 @@
+{
+  "$defs": {
+    "CalibrationSubmit": {
+      "additionalProperties": false,
+      "properties": {
+        "human_answer": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Human Answer",
+          "type": "string"
+        },
+        "expected_revision": {
+          "minimum": 0,
+          "title": "Expected Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "human_answer",
+        "expected_revision"
+      ],
+      "title": "CalibrationSubmit",
+      "type": "object"
+    },
+    "CalibrationView": {
+      "additionalProperties": false,
+      "properties": {
+        "calibration_id": {
+          "title": "Calibration Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "locked_answer": {
+          "$ref": "#/$defs/TwinAnswer"
+        },
+        "locked_at": {
+          "format": "date-time",
+          "title": "Locked At",
+          "type": "string"
+        },
+        "lock_digest": {
+          "title": "Lock Digest",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "LOCKED",
+            "COMPLETED",
+            "INVALIDATED"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "comparison": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Comparison"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resulting_revision": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resulting Revision"
+        }
+      },
+      "required": [
+        "calibration_id",
+        "question",
+        "locked_answer",
+        "locked_at",
+        "lock_digest",
+        "state"
+      ],
+      "title": "CalibrationView",
+      "type": "object"
+    },
+    "Change": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "ADD",
+            "SUPPORT",
+            "CONFLICT",
+            "CHANGE"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "target_trait_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Trait Id"
+        },
+        "domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ],
+          "title": "Domain",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "context": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Context",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "reason": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "domain",
+        "statement",
+        "evidence_ids",
+        "confidence",
+        "reason"
+      ],
+      "title": "Change",
+      "type": "object"
+    },
+    "CompareInput": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "locked_answer": {
+          "$ref": "#/$defs/TwinAnswer"
+        },
+        "human_answer": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Human Answer",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "question",
+        "locked_answer",
+        "human_answer"
+      ],
+      "title": "CompareInput",
+      "type": "object"
+    },
+    "Comparison": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension_diffs": {
+          "items": {
+            "$ref": "#/$defs/DimensionDiff"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "title": "Dimension Diffs",
+          "type": "array"
+        },
+        "cause": {
+          "enum": [
+            "INSUFFICIENT_MATERIAL",
+            "MODEL_ERROR",
+            "CONTEXT_DEPENDENT",
+            "CHANGED_VIEW",
+            "UNCERTAIN"
+          ],
+          "title": "Cause",
+          "type": "string"
+        },
+        "followup_questions": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 4,
+          "title": "Followup Questions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "dimension_diffs",
+        "cause"
+      ],
+      "title": "Comparison",
+      "type": "object"
+    },
+    "DimensionDiff": {
+      "additionalProperties": false,
+      "properties": {
+        "dimension": {
+          "enum": [
+            "DECISION",
+            "REASONING",
+            "VALUE_PRIORITY",
+            "EMOTIONAL_REACTION",
+            "EXPRESSION"
+          ],
+          "title": "Dimension",
+          "type": "string"
+        },
+        "assessment": {
+          "enum": [
+            "ALIGNED",
+            "DIFFERENT",
+            "UNCERTAIN"
+          ],
+          "title": "Assessment",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimension",
+        "assessment",
+        "reason"
+      ],
+      "title": "DimensionDiff",
+      "type": "object"
+    },
+    "GrantRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "recording_consent_id": {
+          "minLength": 1,
+          "title": "Recording Consent Id",
+          "type": "string"
+        },
+        "cloud_twin_consent": {
+          "const": true,
+          "title": "Cloud Twin Consent",
+          "type": "boolean"
+        },
+        "subject_single_speaker": {
+          "const": true,
+          "title": "Subject Single Speaker",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "recording_consent_id",
+        "cloud_twin_consent",
+        "subject_single_speaker"
+      ],
+      "title": "GrantRequest",
+      "type": "object"
+    },
+    "Material": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "episode_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Episode Id"
+        },
+        "excerpt": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ],
+          "title": "Source Type",
+          "type": "string"
+        },
+        "source_ref": {
+          "minLength": 1,
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "memory_type": {
+          "default": "EVENT",
+          "title": "Memory Type",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "context": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Context",
+          "type": "string"
+        },
+        "speaker_authority": {
+          "default": "UNVERIFIED",
+          "enum": [
+            "SELF_ATTESTED",
+            "UNVERIFIED"
+          ],
+          "title": "Speaker Authority",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "excerpt",
+        "source_type",
+        "source_ref",
+        "observed_at"
+      ],
+      "title": "Material",
+      "type": "object"
+    },
+    "PersonaInput": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "materials": {
+          "items": {
+            "$ref": "#/$defs/Material"
+          },
+          "maxItems": 160,
+          "title": "Materials",
+          "type": "array"
+        },
+        "new_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "title": "New Evidence Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_id",
+        "snapshot",
+        "materials",
+        "new_evidence_ids"
+      ],
+      "title": "PersonaInput",
+      "type": "object"
+    },
+    "PersonaProposal": {
+      "additionalProperties": false,
+      "properties": {
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/Change"
+          },
+          "maxItems": 40,
+          "title": "Changes",
+          "type": "array"
+        }
+      },
+      "title": "PersonaProposal",
+      "type": "object"
+    },
+    "PersonaResult": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "base_revision": {
+          "title": "Base Revision",
+          "type": "integer"
+        },
+        "traits": {
+          "items": {
+            "$ref": "#/$defs/Trait"
+          },
+          "maxItems": 160,
+          "title": "Traits",
+          "type": "array"
+        },
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/Change"
+          },
+          "maxItems": 40,
+          "title": "Changes",
+          "type": "array"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "agent-loop-v0.2-experimental",
+          "default": "agent-loop-v0.2-experimental",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "base_revision",
+        "traits",
+        "changes",
+        "model_version",
+        "prompt_version"
+      ],
+      "title": "PersonaResult",
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "target_domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ],
+          "title": "Target Domain",
+          "type": "string"
+        },
+        "related_trait_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Trait Ids",
+          "type": "array"
+        },
+        "scoring_method": {
+          "const": "HEURISTIC",
+          "default": "HEURISTIC",
+          "title": "Scoring Method",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject_id",
+        "revision",
+        "question",
+        "reason",
+        "target_domain"
+      ],
+      "title": "Plan",
+      "type": "object"
+    },
+    "QuestionRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "title": "QuestionRequest",
+      "type": "object"
+    },
+    "Snapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "revision": {
+          "minimum": 0,
+          "title": "Revision",
+          "type": "integer"
+        },
+        "traits": {
+          "items": {
+            "$ref": "#/$defs/Trait"
+          },
+          "maxItems": 160,
+          "title": "Traits",
+          "type": "array"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "agent-loop-v0.2-experimental",
+          "default": "agent-loop-v0.2-experimental",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_id",
+        "revision",
+        "model_version",
+        "prompt_version"
+      ],
+      "title": "Snapshot",
+      "type": "object"
+    },
+    "Trait": {
+      "additionalProperties": false,
+      "properties": {
+        "trait_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Trait Id",
+          "type": "string"
+        },
+        "domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ],
+          "title": "Domain",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "context": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Context",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "counter_evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 40,
+          "title": "Counter Evidence Ids",
+          "type": "array"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "status": {
+          "default": "CANDIDATE",
+          "enum": [
+            "CANDIDATE",
+            "SUPPORTED",
+            "CONFLICTED",
+            "SUPERSEDED"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "valid_from": {
+          "format": "date-time",
+          "title": "Valid From",
+          "type": "string"
+        },
+        "valid_to": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Valid To"
+        }
+      },
+      "required": [
+        "trait_id",
+        "domain",
+        "statement",
+        "evidence_ids",
+        "confidence",
+        "valid_from"
+      ],
+      "title": "Trait",
+      "type": "object"
+    },
+    "TwinAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION",
+            "INSUFFICIENT"
+          ],
+          "title": "Response Type",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Limitations",
+          "type": "array"
+        },
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "revision": {
+          "title": "Revision",
+          "type": "integer"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/Material"
+          },
+          "maxItems": 12,
+          "title": "Evidence",
+          "type": "array"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "agent-loop-v0.2-experimental",
+          "default": "agent-loop-v0.2-experimental",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "response_type",
+        "answer",
+        "subject_id",
+        "revision",
+        "model_version",
+        "prompt_version"
+      ],
+      "title": "TwinAnswer",
+      "type": "object"
+    },
+    "TwinDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION",
+            "INSUFFICIENT"
+          ],
+          "title": "Response Type",
+          "type": "string"
+        },
+        "answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "response_type",
+        "answer"
+      ],
+      "title": "TwinDecision",
+      "type": "object"
+    },
+    "TwinInput": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "materials": {
+          "items": {
+            "$ref": "#/$defs/Material"
+          },
+          "maxItems": 160,
+          "title": "Materials",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_id",
+        "question",
+        "snapshot",
+        "materials"
+      ],
+      "title": "TwinInput",
+      "type": "object"
+    }
+  },
+  "title": "Remember Me Agent Loop v0.2 experimental",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember.me/contracts/agent-loop-v0.2-experimental.schema.json"
+}
