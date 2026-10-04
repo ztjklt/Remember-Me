@@ -28,3 +28,7 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 ## Delivery flow
 
 Work from `develop` on the owner-specific feature prefixes listed in `CONTRIBUTING.md`. Keep changes reviewable, update tests and docs with behavior, and disclose contract impact in every Pull Request. Never push directly to `main`.
+
+- Follow the commit guidelines in `CONTRIBUTING.md`: one reviewable change per commit, concise Conventional Commits subjects, and optional short bodies.
+- Before committing, review the complete staged diff and file count, including new or imported files. Report Git's actual scope rather than an editor's edit count.
+- Keep full verification evidence in the Pull Request or linked docs. Verify remote history before reworking local commits; coordinate changes to published history.

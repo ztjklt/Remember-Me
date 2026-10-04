@@ -14,6 +14,14 @@ Create feature branches from `develop` and open Pull Requests back to `develop`.
 
 The current owner-by-owner starting order and suggested branch names are recorded in [the Phase 1 kickoff](docs/team/PHASE1_KICKOFF.md).
 
+## Commits
+
+- Keep each commit focused on one reviewable change, with its relevant tests and documentation. Separate independent fixes from features and order dependent changes so each commit can build. Do not split coupled changes just to meet a file-count target.
+- Use a concise [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) subject: `type(scope): summary`. Use the imperative and aim for at most 72 characters, for example `fix(backend): retry transient provider failures`.
+- The body is optional. Add only the reason or necessary compatibility/migration details. Keep development chronology and full verification logs in the Pull Request or linked documentation.
+- Stage explicit paths. Before committing, inspect `git status --short`, `git diff --cached` and `git diff --cached --stat`, then run `git diff --cached --check`. Report the complete Git change, including new and imported files; an editor's file count is not the commit scope.
+- Rework unpublished local commits when needed. Check remote history first and coordinate any rewrite of published commits. These practices follow the [Git contribution guidelines](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project).
+
 ## Pull Request contract
 
 Every Pull Request must state what changed, how it was tested, whether `packages/contracts` changed, and any consent, privacy, migration, or rollback impact. Cross-module contract changes require an Issue or proposal before implementation.
