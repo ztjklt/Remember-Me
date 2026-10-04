@@ -2,6 +2,8 @@ package me.remember.app.navigation
 
 import androidx.compose.runtime.*
 import androidx.navigation.compose.*
+import me.remember.app.data.repository.AgentRepository
+import me.remember.app.data.repository.EpisodeUiState
 import me.remember.app.data.repository.AudioCaptureService
 import me.remember.app.data.repository.AudioRecording
 import me.remember.app.data.repository.EpisodeFlow
@@ -12,7 +14,8 @@ import kotlinx.coroutines.launch
 @Composable fun RememberMeApp(
     audioCaptureService: AudioCaptureService,
     memoryRepository: MemoryRepository,
-    episodeFlow: EpisodeFlow
+    episodeFlow: EpisodeFlow,
+    agentRepository: AgentRepository
 ){
     val nav=rememberNavController()
     val scope=rememberCoroutineScope()
@@ -32,9 +35,14 @@ import kotlinx.coroutines.launch
         }}
         composable(Routes.Connection){
             val recording = recordingForUpload
-            if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }) { settings ->
+            if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }, initialConnection = agentRepository.currentConnection()) { settings ->
                 nav.navigate(Routes.Processing)
-                scope.launch { episodeFlow.submit(recording, settings) }
+                scope.launch {
+                    agentRepository.bind(settings)
+                    if (settings.subjectSingleSpeaker) agentRepository.enable(settings)
+                    episodeFlow.submit(recording, settings)
+                    if (settings.subjectSingleSpeaker && episodeFlow.state.value is EpisodeUiState.Ready) agentRepository.refresh()
+                }
             }
         }
         composable(Routes.Processing){
@@ -43,15 +51,17 @@ import kotlinx.coroutines.launch
                 state = state,
                 back = { nav.popBackStack() },
                 retry = { scope.launch { episodeFlow.retry() } },
+                showUnderstanding = { nav.navigate(Routes.Understanding) },
                 showMemories = { nav.navigate(Routes.Memories) }
             )
         }
+        composable(Routes.Understanding){ AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }) }
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
         composable(Routes.Home){CreatorHomeScreen(memoryRepository,nav::navigate)}
         composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
-        composable(Routes.Twin){TwinScreen{nav.popBackStack()}}
-        composable(Routes.Calibration){CalibrationScreen{nav.popBackStack()}}
+        composable(Routes.Twin){AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) })}
+        composable(Routes.Calibration){AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) })}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
         composable(Routes.Legacy){LegacyHomeScreen{nav.navigate(Routes.Twin)}}
         composable(Routes.Debug){DemoMenuScreen(nav::navigate){nav.popBackStack()}}

@@ -39,3 +39,7 @@ Phase 1 — Golden Path 已 COMMITTED，Android 必须通过 shared contract 接
 更多信息见 [架构](docs/ARCHITECTURE.md)、[开发说明](docs/DEVELOPMENT.md)、[CI](docs/CI.md) 和 [下一阶段](docs/NEXT_PHASE.md)；Phase 规划见 [Task Brief](../../docs/team/01_LIUXIUXIAN_ANDROID_HARDWARE.md) 与 [Roadmap](../../docs/roadmap/ROADMAP.md)。
 
 Phase 1 真实上传、状态查询与 Memory 展示的本地配置和验收步骤见 [Backend 联调说明](docs/BACKEND_INTEGRATION.md)。该路径需要 Backend Actor Token、Subject ID、有效录音同意 ID 和运行中的 worker；fixture 路径不能代替真实 STT/AI 与真机验收。
+
+## Agent loop integration
+
+The existing recording shell can opt into the experimental Cloud Twin loop. After upload, the Agent page displays Backend snapshots, quoted evidence, a real query field, server-side answer locks and calibration results. Setup and tested commands: [Agent loop guide](../../docs/architecture/AGENT_CORE_LOOP.md). Provider credentials stay server-side; the session token stays in memory. Fixture STT/AI are wiring checks, not speech/personality acceptance.

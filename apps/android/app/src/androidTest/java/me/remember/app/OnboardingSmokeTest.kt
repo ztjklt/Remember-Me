@@ -10,6 +10,8 @@ import androidx.compose.ui.test.performClick
 import me.remember.app.core.designsystem.RememberMeTheme
 import me.remember.app.data.repository.AudioCaptureService
 import me.remember.app.data.repository.AudioRecording
+import me.remember.app.data.repository.AgentRepository
+import me.remember.app.data.repository.HttpAgentGateway
 import me.remember.app.data.repository.EpisodeFlow
 import me.remember.app.data.repository.EpisodeMemoryRepository
 import me.remember.app.data.repository.HttpEpisodeGateway
@@ -27,7 +29,14 @@ class OnboardingSmokeTest {
         val audioService = OnboardingAudioCaptureService()
         val memories = EpisodeMemoryRepository()
         composeRule.activity.setContent {
-            RememberMeTheme { RememberMeApp(audioService, memories, EpisodeFlow(HttpEpisodeGateway(), memories)) }
+            RememberMeTheme {
+                RememberMeApp(
+                    audioService,
+                    memories,
+                    EpisodeFlow(HttpEpisodeGateway(), memories),
+                    AgentRepository(HttpAgentGateway())
+                )
+            }
         }
 
         composeRule.waitUntilAtLeastOneExists(hasText("开始"), 3_000)

@@ -46,6 +46,7 @@ class HttpEpisodeGateway : EpisodeGateway {
                     "audio_ref" to file.name,
                     "duration_ms" to recording.durationMillis.toString(),
                     "metadata" to JSONObject()
+                        .put("agent_subject_single_speaker", connection.subjectSingleSpeaker)
                         .put("sample_rate", recording.sampleRate)
                         .put("channel_count", recording.channelCount)
                         .put("byte_size", file.length())

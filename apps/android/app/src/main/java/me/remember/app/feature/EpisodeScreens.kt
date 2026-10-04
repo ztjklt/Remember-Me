@@ -14,19 +14,20 @@ import me.remember.app.data.repository.BackendConnection
 import me.remember.app.data.repository.EpisodeStage
 import me.remember.app.data.repository.EpisodeUiState
 import me.remember.app.ui.components.RmPage
-import me.remember.app.ui.components.RmPrimaryButton
 import me.remember.app.ui.components.RmSecondaryButton
 
 @Composable
 fun BackendConnectionScreen(
     recording: AudioRecording,
     back: () -> Unit,
+    initialConnection: BackendConnection? = null,
     upload: (BackendConnection) -> Unit
 ) {
-    var baseUrl by rememberSaveable { mutableStateOf("") }
-    var actorToken by remember { mutableStateOf("") }
-    var subjectId by rememberSaveable { mutableStateOf("") }
-    var consentId by rememberSaveable { mutableStateOf("") }
+    var baseUrl by rememberSaveable { mutableStateOf(initialConnection?.baseUrl.orEmpty()) }
+    var actorToken by remember { mutableStateOf(initialConnection?.actorToken.orEmpty()) }
+    var subjectId by rememberSaveable { mutableStateOf(initialConnection?.subjectId.orEmpty()) }
+    var cloudTwin by rememberSaveable { mutableStateOf(initialConnection?.subjectSingleSpeaker ?: false) }
+    var consentId by rememberSaveable { mutableStateOf(initialConnection?.recordingConsentId.orEmpty()) }
 
     RmPage {
         TextButton(back) { Text("← 返回录音") }
@@ -66,11 +67,12 @@ fun BackendConnectionScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth().testTag("backend.consent")
         )
+        Row { Checkbox(cloudTwin, { cloudTwin = it }); Text("同意 Cloud Twin 处理，并声明为本人单人录音") }
         Button(
             onClick = {
                 upload(
                     BackendConnection(
-                        baseUrl.trim(), actorToken.trim(), subjectId.trim(), consentId.trim()
+                        baseUrl.trim(), actorToken.trim(), subjectId.trim(), consentId.trim(), cloudTwin
                     )
                 )
             },
@@ -85,6 +87,7 @@ fun ProcessingScreen(
     state: EpisodeUiState,
     back: () -> Unit,
     retry: () -> Unit,
+    showUnderstanding: () -> Unit,
     showMemories: () -> Unit
 ) {
     RmPage {
@@ -108,7 +111,9 @@ fun ProcessingScreen(
             is EpisodeUiState.Ready -> {
                 Text("Episode：${state.episodeId}", style = MaterialTheme.typography.bodySmall)
                 Text("处理完成，得到 ${state.memoryCount} 条真实 Memory。", modifier = Modifier.testTag("episode.ready"))
-                RmPrimaryButton("查看记忆", showMemories, Modifier.fillMaxWidth())
+                // The Episode is understood; the record itself is the secondary destination.
+                UnderstandingInviteCard(showUnderstanding)
+                RmSecondaryButton("查看全部记忆", Modifier.fillMaxWidth(), showMemories)
             }
             is EpisodeUiState.Error -> {
                 state.episodeId?.let { Text("Episode：$it", style = MaterialTheme.typography.bodySmall) }

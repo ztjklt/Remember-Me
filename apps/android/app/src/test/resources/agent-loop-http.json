@@ -1,0 +1,277 @@
+{
+  "mode": "OFFLINE_FIXTURE",
+  "warning": "Speech and semantic quality are not verified; WAV is silence.",
+  "first_episode_id": "ep_bafb1b9e234541a9",
+  "memory_count": 1,
+  "initial_revision": 1,
+  "initial_model": {
+    "subject_id": "subj_04d8aad0dc58431b",
+    "revision": 1,
+    "traits": [
+      {
+        "trait_id": "trait_3b8a64e9f377fc7e02f69900171710ec",
+        "domain": "PREFERENCES",
+        "statement": "工作日下班后我喜欢一个人待着。",
+        "context": "工作日下班后",
+        "evidence_ids": [
+          "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T00:00:00Z",
+        "valid_to": null
+      }
+    ],
+    "model_version": "fixture-ai-v2",
+    "prompt_version": "agent-workers-v1",
+    "schema_version": "agent-loop-v0.2-experimental",
+    "updated_at": "2026-10-03T11:14:01.727276Z",
+    "limitations": [
+      "本人来源为操作人声明，未完成身份或说话人认证。",
+      "人格理解是有证据的候选，不是完整人格复刻。"
+    ]
+  },
+  "corrected_model": {
+    "subject_id": "subj_04d8aad0dc58431b",
+    "revision": 2,
+    "traits": [
+      {
+        "trait_id": "trait_3b8a64e9f377fc7e02f69900171710ec",
+        "domain": "PREFERENCES",
+        "statement": "工作日下班后我喜欢一个人待着。",
+        "context": "工作日下班后",
+        "evidence_ids": [
+          "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T00:00:00Z",
+        "valid_to": null
+      },
+      {
+        "trait_id": "trait_d7fba2b5af6dba92c0f70c7185d9bf58",
+        "domain": "PREFERENCES",
+        "statement": "我现在喜欢先和家人聊聊天，再自己待一会儿。",
+        "context": "工作日下班后喜欢怎么度过？",
+        "evidence_ids": [
+          "cev_edcff5d22ec35977c0df3e5c81ed7b17"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T11:14:02.614020Z",
+        "valid_to": null
+      }
+    ],
+    "model_version": "fixture-ai-v2",
+    "prompt_version": "agent-workers-v1",
+    "schema_version": "agent-loop-v0.2-experimental",
+    "updated_at": "2026-10-03T11:14:02.624807Z",
+    "limitations": [
+      "本人来源为操作人声明，未完成身份或说话人认证。",
+      "人格理解是有证据的候选，不是完整人格复刻。"
+    ]
+  },
+  "twin": {
+    "response_type": "ORIGINAL",
+    "answer": "工作日下班后我喜欢一个人待着。",
+    "evidence_ids": [
+      "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+    ],
+    "limitations": [
+      "本人来源为操作人声明，尚未认证说话人。"
+    ],
+    "subject_id": "subj_04d8aad0dc58431b",
+    "revision": 1,
+    "evidence": [
+      {
+        "evidence_id": "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3",
+        "episode_id": "ep_bafb1b9e234541a9",
+        "excerpt": "工作日下班后我喜欢一个人待着。",
+        "source_type": "SUBJECT",
+        "source_ref": "episode:ep_bafb1b9e234541a9#span:0-15",
+        "memory_type": "PREFERENCE",
+        "observed_at": "2026-10-03T00:00:00Z",
+        "context": "",
+        "speaker_authority": "SELF_ATTESTED"
+      }
+    ],
+    "model_version": "fixture-ai-v2",
+    "prompt_version": "agent-workers-v1",
+    "schema_version": "agent-loop-v0.2-experimental"
+  },
+  "locked_calibration": {
+    "calibration_id": "cal_a65496c0cd814d63aa76f7a286f2dd3d",
+    "question": "工作日下班后喜欢怎么度过？",
+    "locked_answer": {
+      "response_type": "ORIGINAL",
+      "answer": "工作日下班后我喜欢一个人待着。",
+      "evidence_ids": [
+        "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+      ],
+      "limitations": [
+        "本人来源为操作人声明，尚未认证说话人。"
+      ],
+      "subject_id": "subj_04d8aad0dc58431b",
+      "revision": 1,
+      "evidence": [
+        {
+          "evidence_id": "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3",
+          "episode_id": "ep_bafb1b9e234541a9",
+          "excerpt": "工作日下班后我喜欢一个人待着。",
+          "source_type": "SUBJECT",
+          "source_ref": "episode:ep_bafb1b9e234541a9#span:0-15",
+          "memory_type": "PREFERENCE",
+          "observed_at": "2026-10-03T00:00:00Z",
+          "context": "",
+          "speaker_authority": "SELF_ATTESTED"
+        }
+      ],
+      "model_version": "fixture-ai-v2",
+      "prompt_version": "agent-workers-v1",
+      "schema_version": "agent-loop-v0.2-experimental"
+    },
+    "locked_at": "2026-10-03T11:14:02.086372Z",
+    "lock_digest": "5affd880404dee11ded424b4be5ec0d6949b10b374837d468464ca7519972814",
+    "state": "LOCKED",
+    "comparison": null,
+    "resulting_revision": null
+  },
+  "completed_calibration": {
+    "calibration_id": "cal_a65496c0cd814d63aa76f7a286f2dd3d",
+    "question": "工作日下班后喜欢怎么度过？",
+    "locked_answer": {
+      "response_type": "ORIGINAL",
+      "answer": "工作日下班后我喜欢一个人待着。",
+      "evidence_ids": [
+        "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+      ],
+      "limitations": [
+        "本人来源为操作人声明，尚未认证说话人。"
+      ],
+      "subject_id": "subj_04d8aad0dc58431b",
+      "revision": 1,
+      "evidence": [
+        {
+          "evidence_id": "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3",
+          "episode_id": "ep_bafb1b9e234541a9",
+          "excerpt": "工作日下班后我喜欢一个人待着。",
+          "source_type": "SUBJECT",
+          "source_ref": "episode:ep_bafb1b9e234541a9#span:0-15",
+          "memory_type": "PREFERENCE",
+          "observed_at": "2026-10-03T00:00:00Z",
+          "context": "",
+          "speaker_authority": "SELF_ATTESTED"
+        }
+      ],
+      "model_version": "fixture-ai-v2",
+      "prompt_version": "agent-workers-v1",
+      "schema_version": "agent-loop-v0.2-experimental"
+    },
+    "locked_at": "2026-10-03T11:14:02.086372Z",
+    "lock_digest": "5affd880404dee11ded424b4be5ec0d6949b10b374837d468464ca7519972814",
+    "state": "COMPLETED",
+    "comparison": {
+      "dimension_diffs": [
+        {
+          "dimension": "DECISION",
+          "assessment": "UNCERTAIN",
+          "reason": "[fixture] 文本不同，无法判定语义差异"
+        },
+        {
+          "dimension": "REASONING",
+          "assessment": "UNCERTAIN",
+          "reason": "[fixture] 文本不同，无法判定语义差异"
+        },
+        {
+          "dimension": "VALUE_PRIORITY",
+          "assessment": "UNCERTAIN",
+          "reason": "[fixture] 文本不同，无法判定语义差异"
+        },
+        {
+          "dimension": "EMOTIONAL_REACTION",
+          "assessment": "UNCERTAIN",
+          "reason": "[fixture] 文本不同，无法判定语义差异"
+        },
+        {
+          "dimension": "EXPRESSION",
+          "assessment": "UNCERTAIN",
+          "reason": "[fixture] 文本不同，无法判定语义差异"
+        }
+      ],
+      "cause": "UNCERTAIN",
+      "followup_questions": [
+        "这个回答适用于什么时间和情境？"
+      ]
+    },
+    "resulting_revision": 2
+  },
+  "plan": {
+    "subject_id": "subj_04d8aad0dc58431b",
+    "revision": 2,
+    "question": "最近一次你觉得很重要的选择是什么？为什么？",
+    "reason": "按领域缺口的固定优先顺序选择一个问题；启发式，不是已测信息增益",
+    "target_domain": "VALUES",
+    "related_trait_ids": [],
+    "scoring_method": "HEURISTIC"
+  },
+  "next_episode_id": "ep_d5527cf585fd4b3a",
+  "final_model": {
+    "subject_id": "subj_04d8aad0dc58431b",
+    "revision": 3,
+    "traits": [
+      {
+        "trait_id": "trait_3b8a64e9f377fc7e02f69900171710ec",
+        "domain": "PREFERENCES",
+        "statement": "工作日下班后我喜欢一个人待着。",
+        "context": "工作日下班后",
+        "evidence_ids": [
+          "ev_c49cc6043df30e7541476e4a60ec0b65d5b899a3"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T00:00:00Z",
+        "valid_to": null
+      },
+      {
+        "trait_id": "trait_d7fba2b5af6dba92c0f70c7185d9bf58",
+        "domain": "PREFERENCES",
+        "statement": "我现在喜欢先和家人聊聊天，再自己待一会儿。",
+        "context": "工作日下班后喜欢怎么度过？",
+        "evidence_ids": [
+          "cev_edcff5d22ec35977c0df3e5c81ed7b17"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T11:14:02.614020Z",
+        "valid_to": null
+      },
+      {
+        "trait_id": "trait_ee9bced3aaa1219e5910fc3596e7eb23",
+        "domain": "PREFERENCES",
+        "statement": "周末我喜欢和家人一起吃饭。",
+        "context": "周末",
+        "evidence_ids": [
+          "ev_2220354e3ceebb9a94efdddf33f1b4585220eaca"
+        ],
+        "counter_evidence_ids": [],
+        "confidence": 0.55,
+        "status": "CANDIDATE",
+        "valid_from": "2026-10-03T00:00:00Z",
+        "valid_to": null
+      }
+    ],
+    "model_version": "fixture-ai-v2",
+    "prompt_version": "agent-workers-v1",
+    "schema_version": "agent-loop-v0.2-experimental",
+    "updated_at": "2026-10-03T11:14:05.534897Z",
+    "limitations": [
+      "本人来源为操作人声明，未完成身份或说话人认证。",
+      "人格理解是有证据的候选，不是完整人格复刻。"
+    ]
+  }
+}

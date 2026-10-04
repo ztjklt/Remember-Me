@@ -3,6 +3,7 @@ package me.remember.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.ViewModelProvider
 import me.remember.app.data.repository.EpisodeFlow
 import me.remember.app.data.repository.EpisodeMemoryRepository
 import me.remember.app.data.repository.HttpEpisodeGateway
@@ -18,6 +19,12 @@ class MainActivity : ComponentActivity() {
         val audioCaptureService = SelectingAudioCaptureService(phoneFallbackAdapter)
         val memoryRepository = EpisodeMemoryRepository()
         val episodeFlow = EpisodeFlow(HttpEpisodeGateway(), memoryRepository)
-        setContent { RememberMeTheme { RememberMeApp(audioCaptureService, memoryRepository, episodeFlow) } }
+        val agentRepository = ViewModelProvider(this)[AgentSessionViewModel::class.java].repository
+        setContent {
+            RememberMeTheme {
+                RememberMeApp(audioCaptureService, memoryRepository, episodeFlow, agentRepository)
+            }
+        }
     }
+
 }

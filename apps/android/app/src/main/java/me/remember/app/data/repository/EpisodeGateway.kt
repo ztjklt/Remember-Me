@@ -6,7 +6,8 @@ data class BackendConnection(
     val baseUrl: String,
     val actorToken: String,
     val subjectId: String,
-    val recordingConsentId: String
+    val recordingConsentId: String,
+    val subjectSingleSpeaker: Boolean = false
 )
 
 data class EpisodeCreated(val episodeId: String, val uploadStatus: String)
