@@ -14,6 +14,7 @@ import tempfile
 import time
 import wave
 from fastapi import Request
+from pydantic import SecretStr
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "services/backend"
@@ -196,7 +197,8 @@ def main():
         action="store_true",
         help="Keep API, AI Core and worker running for Android",
     )
-    parser.add_argument("--mode", choices=["fixture", "configured"], default="fixture")
+    parser.add_argument("--mode", choices=["fixture", "configured"],
+                        help="--serve defaults to configured; one-shot defaults to fixture")
     parser.add_argument("--backend-port", type=int, default=8000)
     parser.add_argument("--ai-port", type=int, default=8100)
     parser.add_argument("--stt-port", type=int, default=8200)
@@ -204,6 +206,8 @@ def main():
     args = parser.parse_args()
     if args.internal_fixture_stt:
         return fixture_stt(args.internal_fixture_stt)
+    if args.mode is None:
+        args.mode = "configured" if args.serve else "fixture"
     from alembic import command
     from alembic.config import Config
     from app.config import Settings
@@ -261,9 +265,9 @@ def main():
                 database_url=f"sqlite:///{run_dir / 'remember.db'}",
                 object_store_root=str(run_dir / "audio"),
             )
-            if settings.stt_backend != "http":
+            if settings.stt_backend not in {"http", "dashscope"}:
                 parser.error(
-                    "configure a real REMEMBER_STT_BACKEND=http bridge in services/backend/.env"
+                    "configure REMEMBER_STT_BACKEND=http or dashscope in services/backend/.env"
                 )
             # AI Core reads its own .env. Explicitly refuse fixture in configured mode.
             ai_env["AI_ENVIRONMENT"] = "staging"
@@ -296,7 +300,7 @@ def main():
         backend_env = os.environ.copy()
         backend_env.update(
             {
-                "REMEMBER_" + k.upper(): str(v)
+                "REMEMBER_" + k.upper(): v.get_secret_value() if isinstance(v, SecretStr) else str(v)
                 for k, v in settings.model_dump().items()
                 if v is not None
             }

@@ -50,7 +50,7 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py
 services/backend/.venv/bin/python scripts/run_agent_demo.py --serve
 ```
 
-这会持续运行服务与 Worker，数据库、音频和开发会话保存在 `build/agent-demo/fixture/`。会话字段在本地 `session.json`（文件权限 0600，整个 build 目录被忽略）。重启复用同一 Subject，Ctrl-C 结束服务。
+`--serve` 默认使用 `.env` 中的真实 Provider，持续运行服务与 Worker。数据库、音频和开发会话保存在 `build/agent-demo/configured/`，会话字段在该目录的 `session.json`（文件权限 0600，整个 build 目录被忽略）。重启复用同一 Subject，Ctrl-C 结束服务。
 
 1. 安装 `apps/android/app/build/outputs/apk/debug/app-debug.apk`。
 2. USB 调试连接后 `adb reverse tcp:8000 tcp:8000`，Backend 填 `http://127.0.0.1:8000`。模拟器也可用 `http://10.0.2.2:8000`，需要确认模拟器能访问所在主机/WSL 服务。
@@ -59,7 +59,7 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py --serve
 5. 点击“先锁定，再校准”，等服务端返回 LOCKED 与 calibration ID 后，页面才显示本人答案输入框。提交后显示五维差异和新的 revision。
 6. 点击“下一次可以聊什么”，再录一段。会话内上传参数可复用。撤回 Cloud Twin 后不再读取或生成 Agent 结果。
 
-Fixture STT 对手机实际录音仍返回固定的测试句，因此手机 fixture 联调也不能作为真实语音验收。
+需要离线接线测试时，显式运行 `--serve --mode fixture`，使用 `build/agent-demo/fixture/session.json`。Fixture STT 对手机实际录音仍返回固定的测试句，不能作为真实语音验收。两种模式使用独立数据库和凭据；切换到真实模式时，更新 App 的 Actor Token、Subject ID、RECORDING consent，重新上传录音。旧 fixture 的记忆不会自动改成真实结果。
 
 ## 切换真实 Provider
 
@@ -72,7 +72,7 @@ AI_MODEL=<供应商实际模型名>
 AI_MODEL_VERSION=<团队定义的部署版本>
 AI_BASE_URL=<支持 chat/completions 与 strict json_schema 的 /v1 地址>
 AI_API_KEY=<仅服务端配置>
-AI_TIMEOUT_SECONDS=45
+AI_TIMEOUT_SECONDS=90
 ```
 
 部分 compatible 供应商不支持严格 JSON Schema；需实际联调验证，不只凭“兼容”命名判断。Persona/Twin 输入为结构化材料和当前快照，Memory 输入保持旧接口。任何供应商钥匙均不进入 Android。
@@ -89,6 +89,24 @@ REMEMBER_STT_PATH=/transcribe
 ```
 
 STT bridge 必须接受 `POST` 的原始音频 bytes 和音频 Content-Type，返回 `{"text":"中文转写","model_version":"实际STT版本"}`。该 raw-body 协议不直接等于任意商业 STT 接口；需要 bridge 完成鉴权和供应商格式转换。Voice 与硬件供应商仍独立。
+
+使用千问 `qwen-audio-3.0-asr-flash` 时，可直接选择 Backend 的 DashScope adapter，无需额外 bridge：
+
+```dotenv
+REMEMBER_STT_BACKEND=dashscope
+REMEMBER_STT_URL=https://<工作空间>.cn-beijing.maas.aliyuncs.com
+REMEMBER_STT_PATH=/api/v1/services/aigc/multimodal-generation/generation
+REMEMBER_STT_MODEL=qwen-audio-3.0-asr-flash
+REMEMBER_STT_API_KEY=<仅服务端配置>
+REMEMBER_STT_TIMEOUT_SECONDS=90
+REMEMBER_AI_TIMEOUT_SECONDS=90
+REMEMBER_AGENT_TIMEOUT_SECONDS=90
+```
+
+该 ASR 使用 [原生 DashScope 接口](https://help.aliyun.com/zh/model-studio/non-realtime-speech-recognition-user-guide)，地址不包含 `/compatible-mode/v1`。它只负责转写；记忆提取与 Agent 仍需文本模型。同一工作空间的文本模型通过 `AI_BASE_URL=https://<工作空间>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` 调用。本次配置的文本模型是 `qwen3.8-flash`，设置 `AI_ENABLE_THINKING=false`。这个可选参数只在配置时发送，其他兼容供应商可省略。
+
+Memory 提取使用 `memory-extractor-v3`：程序提供原文全文的准确 span，模型复用该原文证据；原文与位置校验仍执行。身份类提问补充检索当前 IDENTITY Trait 的授权证据，最终回答仍由 Twin 判断相关性并引用原文。中文原文直接传入模型，摘要保持输入语言。
+若已有 `.env` 显式设置 `AI_PROMPT_VERSION`，同步改为 `memory-extractor-v3`。2026-10-05 的真实录音验证及失败记录见 [千问联调记录](../verification/QWEN_ASR_2026_10_05.md)。
 
 ```bash
 services/backend/.venv/bin/python scripts/run_agent_demo.py --serve --mode configured
