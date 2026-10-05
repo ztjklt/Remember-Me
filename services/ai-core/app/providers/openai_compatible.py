@@ -40,12 +40,14 @@ class OpenAICompatibleProvider:
         base_url: str,
         api_key: str,
         timeout_seconds: float = 30.0,
+        enable_thinking: bool | None = None,
         max_response_bytes: int = 1_048_576,
         client: httpx.Client | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/") + "/"
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self.enable_thinking = enable_thinking
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
         self._client = client or httpx.Client(
@@ -63,6 +65,14 @@ class OpenAICompatibleProvider:
             "prompt_version": request.prompt_version,
             "schema_version": request.schema_version,
         })
+        schema = _strict_schema(request.response_schema)
+        if request.task == "memory":
+            # This worker generates summaries, while verbatim attribution stays
+            # on Evidence. Constrain the provider projection accordingly without
+            # changing the shared integration contract.
+            memory = schema.get("$defs", {}).get("MemoryItem")
+            if memory is not None:
+                memory["properties"]["source_type"]["enum"] = ["AI_INFERENCE"]
         body = {
             "model": request.model,
             "messages": [
@@ -73,8 +83,14 @@ class OpenAICompatibleProvider:
                         # No verified context-evidence resolver exists in Phase 1.
                         # Keep subject_context, subject_id and trace_id local.
                         request.worker_input if request.worker_input is not None else
-                        {"episode_id": request.payload.episode_id, "transcript": request.payload.transcript},
-                        ensure_ascii=True,
+                        {"episode_id": request.payload.episode_id, "transcript": request.payload.transcript,
+                         "evidence_spans": [{
+                             "excerpt": request.payload.transcript,
+                             "span_start": 0,
+                             "span_end": len(request.payload.transcript),
+                             "source_ref": f"episode:{request.payload.episode_id}#span:0-{len(request.payload.transcript)}",
+                         }]},
+                        ensure_ascii=False,
                     ),
                 },
             ],
@@ -83,10 +99,13 @@ class OpenAICompatibleProvider:
                 "json_schema": {
                     "name": "remember_me_ai_core_output",
                     "strict": True,
-                    "schema": _strict_schema(request.response_schema),
+                    "schema": schema,
                 },
             },
         }
+        # Optional compatible-provider extension, sent only when configured.
+        if self.enable_thinking is not None:
+            body["enable_thinking"] = self.enable_thinking
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"

@@ -45,6 +45,7 @@ class Settings(BaseSettings):
         allow_inf_nan=False,
         validation_alias="AI_TIMEOUT_SECONDS",
     )
+    enable_thinking: bool | None = Field(default=None, validation_alias="AI_ENABLE_THINKING")
     model_version: str = Field(
         default=FixtureProvider.default_model_version,
         min_length=1,

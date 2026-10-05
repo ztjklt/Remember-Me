@@ -72,7 +72,16 @@ def test_openai_compatible_provider_sends_schema_and_parses_json_content() -> No
     assert seen["request"]["model"] == "test-model"
     assert seen["request"]["response_format"]["type"] == "json_schema"
     assert seen["request"]["response_format"]["json_schema"]["strict"] is True
+    projected = seen["request"]["response_format"]["json_schema"]["schema"]
+    assert projected["$defs"]["MemoryItem"]["properties"]["source_type"]["enum"] == ["AI_INFERENCE"]
+    assert "SUBJECT" in AICoreOutput.model_json_schema()["$defs"]["MemoryItem"]["properties"]["source_type"]["enum"]
     assert seen["request"]["messages"][1]["role"] == "user"
+    assert "enable_thinking" not in seen["request"]
+    user = json.loads(seen["request"]["messages"][1]["content"])
+    span = user["evidence_spans"][0]
+    assert span["excerpt"] == _request().payload.transcript
+    assert user["transcript"][span["span_start"]:span["span_end"]] == span["excerpt"]
+    assert "喜欢" in seen["request"]["messages"][1]["content"]
 
 
 def test_openai_compatible_provider_rejects_invalid_json_content() -> None:
@@ -137,6 +146,16 @@ def _http_provider(handler, **kwargs):
         base_url="https://provider.test/v1", api_key="test-secret",
         client=httpx.Client(base_url="https://provider.test/v1/", transport=httpx.MockTransport(handler)), **kwargs,
     )
+
+
+@pytest.mark.parametrize("thinking", [False, True])
+def test_provider_sends_thinking_extension_only_when_configured(thinking):
+    def handler(request):
+        assert json.loads(request.content)["enable_thinking"] is thinking
+        return httpx.Response(200, json={"choices": [{
+            "finish_reason": "stop", "message": {"content": json.dumps(_provider_response())},
+        }]})
+    assert _http_provider(handler, enable_thinking=thinking).generate(_request()) == _provider_response()
 
 
 def _assert_strict_schema(node):

@@ -30,6 +30,7 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
             base_url=settings.base_url,
             api_key=settings.api_key.get_secret_value(),
             timeout_seconds=settings.timeout_seconds,
+            enable_thinking=settings.enable_thinking,
             max_response_bytes=settings.max_response_bytes,
         )
 
