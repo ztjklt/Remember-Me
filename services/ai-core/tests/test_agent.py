@@ -85,6 +85,28 @@ def test_separate_contexts_remain_separate_candidate_traits():
     assert all(t.status == "CANDIDATE" for t in two.traits)
 
 
+@pytest.mark.parametrize("rewrite_context", [False, True])
+def test_repeated_recording_support_preserves_exact_trait_context(rewrite_context):
+    first, second = material(), material("e2", "工作日下班后我还是喜欢一个人待着。")
+    baseline = orchestrator().persona(PersonaInput(subject_id="subject-a", snapshot=snapshot(),
+        materials=[first], new_evidence_ids=[first.evidence_id])).traits[0]
+    change = dict(action="SUPPORT", target_trait_id=baseline.trait_id, domain=baseline.domain,
+        statement=baseline.statement, context=baseline.context + ("，本次录音" if rewrite_context else ""),
+        evidence_ids=[second.evidence_id], confidence=0.8, reason="重复表述同一情境的偏好")
+    agent = orchestrator(Static({"changes": [change]}))
+    payload = PersonaInput(subject_id="subject-a", snapshot=snapshot([baseline]),
+        materials=[first, second], new_evidence_ids=[second.evidence_id])
+    if rewrite_context:
+        with pytest.raises(EvidenceInvalid, match="Different contexts"):
+            agent.persona(payload)
+    else:
+        result = agent.persona(payload)
+        assert len(result.traits) == 1
+        assert result.traits[0].context == baseline.context
+        assert result.traits[0].evidence_ids == [first.evidence_id, second.evidence_id]
+        assert result.traits[0].status == "SUPPORTED"
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
