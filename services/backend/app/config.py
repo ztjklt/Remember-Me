@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_prefix="REMEMBER_",
         extra="ignore",
+        hide_input_in_errors=True,
     )
 
     environment: Literal["development", "staging", "test"] = "development"
@@ -40,12 +42,14 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http"] = "fake"
+    stt_backend: Literal["fake", "http", "dashscope"] = "fake"
     stt_url: str = "http://127.0.0.1:8200"
     stt_path: str = "/transcribe"
     # Transcription is slower than inference per byte of input, so this budget is
     # larger than AI Core's. A timeout is a failure the retry budget handles.
     stt_timeout_seconds: float = 60.0
+    stt_model: str = ""
+    stt_api_key: SecretStr = SecretStr("")
     ai_backend: Literal["fake", "http"] = "fake"
     ai_core_url: str = "http://127.0.0.1:8100"
     # AI Core's URL path is its own surface, not the contract's: the contract

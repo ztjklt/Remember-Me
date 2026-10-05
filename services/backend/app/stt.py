@@ -172,4 +172,14 @@ def build_stt_provider(settings: Settings) -> SttProvider:
             settings.stt_path,
             settings.stt_timeout_seconds,
         )
+    if settings.stt_backend == "dashscope":
+        from .stt_dashscope import DashScopeSttProvider
+
+        return DashScopeSttProvider(
+            base_url=settings.stt_url,
+            path=settings.stt_path,
+            model=settings.stt_model,
+            api_key=settings.stt_api_key.get_secret_value(),
+            timeout_seconds=settings.stt_timeout_seconds,
+        )
     raise ValueError(f"Unsupported STT backend: {settings.stt_backend!r}")
