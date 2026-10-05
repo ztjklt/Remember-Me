@@ -44,6 +44,18 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py
 
 不打印 token。结果保存到 `build/agent-demo/fixture/last-loop.json`，日志在同一目录。一次性验证的数据库放在临时目录并自动清理，保存的报告不包含凭据。
 
+## 电脑浏览器调试 Agent
+
+Agent 开发优先使用电脑 Chrome / Edge 和耳机麦克风，避免每次构建 APK 与连接手机：
+
+```bash
+services/backend/.venv/bin/python scripts/run_agent_demo.py --serve
+```
+
+打开 `http://localhost:8000/debug/agent/`，加载会话，允许并选择麦克风，录音、试听、明确同意后上传。处理走原有 Backend / STT / AI Core，页面显示记忆、快照与原文。问 Twin、先锁定后校准、恢复锁定和下一次问题均复用现有实验 API。浏览器来源使用既有 `IMPORT`，没有新契约或 Android 供应商依赖。
+
+前端修改后刷新；服务端代码或 `.env` 修改后停止并重启 demo。该入口只用于本机开发，Android 仍是产品客户端。详细步骤见 [调试台说明](../../scripts/agent_console/README.md)，浏览器与真实供应商的验证见 [验证记录](../verification/BROWSER_AGENT_2026_10_05.md)。
+
 ## Android 壳联调
 
 ```bash
@@ -58,6 +70,8 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py --serve
 4. Processing ready 后点击“查看 AI 的理解”，进入 Agent 页面。可以刷新模型、填写问题、问 Twin、查看原文与来源。
 5. 点击“先锁定，再校准”，等服务端返回 LOCKED 与 calibration ID 后，页面才显示本人答案输入框。提交后显示五维差异和新的 revision。
 6. 点击“下一次可以聊什么”，再录一段。会话内上传参数可复用。撤回 Cloud Twin 后不再读取或生成 Agent 结果。
+
+手机端 UI / 录音验收可以改用 [Android 11 及以上的 Wi-Fi 配对调试](https://developer.android.com/studio/run/device#connect-to-your-device-using-wi-fi)，电脑与手机连接同一无线网络，在 Android Studio 中配对设备后无线安装与调试。安装包分发也可使用 [Android 官方支持的网站或私有渠道](https://developer.android.com/distribute/marketing-tools/alternative-distribution)，但包分发与手机访问 Backend 是两项配置；目前这个 demo 仍监听本机回环地址。后续面向团队的安装包更新需维护签名和递增版本，当前工作没有建立发布或自动更新渠道。
 
 需要离线接线测试时，显式运行 `--serve --mode fixture`，使用 `build/agent-demo/fixture/session.json`。Fixture STT 对手机实际录音仍返回固定的测试句，不能作为真实语音验收。两种模式使用独立数据库和凭据；切换到真实模式时，更新 App 的 Actor Token、Subject ID、RECORDING consent，重新上传录音。旧 fixture 的记忆不会自动改成真实结果。
 

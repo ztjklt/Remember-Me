@@ -2,12 +2,38 @@
 
 从项目根目录运行 `services/backend/.venv/bin/python scripts/run_agent_demo.py --serve`，在电脑 Chrome 或 Edge 打开 `http://localhost:8000/debug/agent/`。
 
-加载本地演示会话，允许麦克风并选择耳机输入，录音、播放检查、确认同意后上传。页面显示异步处理状态、真实 Memory、Person Model 和授权原文。也可选择音频文件或用 Episode ID 继续查看处理。`--serve --mode fixture` 只验证接线，会明确显示固定测试材料提示。
+1. 点击“加载本地演示会话”，确认页面显示“真实模式”。无需手动复制 token。
+2. 点击“允许麦克风并列出设备”，允许浏览器权限，选择耳机麦克风。
+3. 开始录音、停止录音，先播放检查声音，再确认录音处理同意和 Cloud Twin 本人单人声明，点击上传。
+4. 等待处理完成，查看 Memory、Person Model 和授权原文；用“我是谁？”等问题核对 Twin 的回答与证据。
+5. 点击“先锁定，再校准”，待本人答案输入框出现后填写自己的答案并提交，查看五维差异和新 revision；读取下次问题，再录音继续循环。
+
+也可选择音频文件或用 Episode ID 继续查看处理。录音最长 5 分钟、上传上限 7 MB；页面关闭会丢弃尚未上传的音频。`--serve --mode fixture` 只验证接线，会明确显示固定测试材料提示。已有服务在运行时直接打开页面，不必重复启动。
 
 页面只调用现有 Backend API，音频来源使用现有 `IMPORT`；供应商密钥仍只在服务端。凭据不写入浏览器存储，切换会话会清空结果。调试入口只挂载在 demo 启动器，正常 `app.main:app` 不提供演示会话文件。
 
 处理完成后可以问 Twin 并核对原文，点击“先锁定，再校准”后才显示本人答案输入框；提交显示五维差异和新 revision。保留 Calibration ID 可在刷新页面后恢复锁定。理解版本变化后需要重新锁定，不能用旧答案校准新模型。可以读取下次问题，或明确撤回 Cloud Twin 同意。
 
-验证：`PYTHONPATH=scripts services/backend/.venv/bin/python -m pytest scripts/agent_console/tests/test_server.py`。前端为无依赖 JavaScript modules，可用 `node --check scripts/agent_console/static/capture.js` 检查语法。浏览器麦克风需要本机 localhost 或 HTTPS，不能把此 HTTP 调试地址换成手机上的普通局域网地址。
+浏览器使用电脑系统的麦克风，因此 Windows Chrome / Edge 可使用 Windows 耳机设备，WSL 服务通过 localhost 提供页面。如果地址无法访问，先检查 demo 启动日志和 WSL localhost 转发。出现麦克风拒绝时，检查浏览器的站点权限和系统麦克风隐私设置，也可以先导入音频定位服务端问题。[浏览器录音需要 localhost 或 HTTPS](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)，此 HTTP 调试地址不直接用于手机局域网录音。
 
-浏览器回归使用独立环境安装 `playwright` 和 Chromium，先启动 `scripts/run_agent_demo.py --serve --mode fixture --backend-port 8001 --ai-port 8101 --stt-port 8201`，再执行 `python scripts/agent_console/tests/browser_capture.py`。可通过 `REMEMBER_CHROMIUM_PATH` 指定已有 Chromium。这个测试使用浏览器模拟麦克风和 fixture 服务，不作为真实语音验收。
+前端静态文件修改后刷新页面；Python 代码或服务端 `.env` 修改后，用 Ctrl-C 停止原 demo 再启动。调试台的固定地址与会话会复用。供应商、原始音频和数据库仍由原有服务管理。
+
+验证：`PYTHONPATH=scripts services/backend/.venv/bin/python -m pytest scripts/agent_console/tests/test_server.py`。前端为无依赖 JavaScript modules，可用 `node --check` 分别检查 `static/capture.js` 和 `static/agent.js`。仓库未为此工具配置独立 lint、format 或 typecheck。
+
+浏览器回归使用独立环境，避免新增服务运行依赖：
+
+```bash
+uv venv /tmp/remember-console-venv
+uv pip install --python /tmp/remember-console-venv/bin/python playwright
+/tmp/remember-console-venv/bin/python -m playwright install chromium
+services/backend/.venv/bin/python scripts/run_agent_demo.py --serve --mode fixture --backend-port 8001 --ai-port 8101 --stt-port 8201
+```
+
+保持该 fixture 终端运行，在另一个终端按顺序执行：
+
+```bash
+/tmp/remember-console-venv/bin/python scripts/agent_console/tests/browser_capture.py
+/tmp/remember-console-venv/bin/python scripts/agent_console/tests/browser_agent.py
+```
+
+第二个测试依赖第一个创建的 fixture 材料，结束时撤回该测试会话的同意；重新运行时仍按这个顺序。可通过 `REMEMBER_CHROMIUM_PATH` 指定已有 Chromium。这些测试使用模拟麦克风和 fixture 服务，不作为真实语音验收。真实供应商和浏览器音频传输的实测见 [验证记录](../../docs/verification/BROWSER_AGENT_2026_10_05.md)。
