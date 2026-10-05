@@ -1,0 +1,10 @@
+body { font: 16px/1.6 system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 20px; color: #20252a; }
+section, details { border: 1px solid #d5dce2; border-radius: 8px; padding: 16px; margin: 16px 0; }
+label { display: block; margin: 10px 0; }
+input:not([type=checkbox]), select, textarea { box-sizing: border-box; padding: 8px; width: min(100%, 660px); }
+button { padding: 8px 14px; margin: 5px 8px 5px 0; cursor: pointer; }
+button:disabled { cursor: default; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f3f5f7; padding: 12px; }
+#status, #mode { padding: 10px; background: #edf3f9; }
+#status[data-error=true] { color: #a12626; background: #ffeded; }
+[hidden] { display: none !important; }

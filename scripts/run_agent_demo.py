@@ -306,6 +306,7 @@ def main():
             }
         )
         backend_url = f"http://127.0.0.1:{args.backend_port}"
+        backend_env.update(REMEMBER_DEMO_SESSION_FILE=str(credential_file), REMEMBER_DEMO_MODE=args.mode)
         if args.mode == "fixture":
             stt = launch(
                 stack,
@@ -343,7 +344,10 @@ def main():
                 str(BACKEND / ".venv/bin/python"),
                 "-m",
                 "uvicorn",
-                "app.main:app",
+                "agent_console.server:create_app",
+                "--factory",
+                "--app-dir",
+                str(ROOT / "scripts"),
                 "--host",
                 "127.0.0.1",
                 "--port",
@@ -363,7 +367,7 @@ def main():
                 state_dir / "worker.log",
             )
             print(
-                f"Android Backend: {backend_url}\nLocal session values: {credential_file}\nCtrl-C stops the demo; the database remains for reconnect.",
+                f"Browser console: {backend_url}/debug/agent/\nAndroid Backend: {backend_url}\nLocal session values: {credential_file}\nCtrl-C stops the demo; the database remains for reconnect.",
                 flush=True,
             )
             try:

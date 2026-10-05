@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remember Me · Agent 调试</title>
+<link rel="stylesheet" href="style.css">
+<body>
+<h1>Remember Me · Agent 调试</h1>
+<p>用电脑或耳机麦克风录音，查看记忆、当前理解和原文。录音先保存在此页面，点击上传后才发送。</p>
+<p id="mode">尚未连接</p>
+<button id="connect">加载本地演示会话</button>
+<details><summary>当前会话</summary><fieldset id="session-fields">
+<label>Actor Token <input id="token" type="password" autocomplete="off"></label>
+<label>Subject ID <input id="subject" autocomplete="off"></label>
+<label>录音 consent ID <input id="consent" autocomplete="off"></label>
+</fieldset></details>
+<p id="status" role="status" aria-live="polite">先加载会话，再录音或选择音频文件。</p>
+<section>
+<h2>录音与记忆</h2>
+<label>麦克风 <select id="microphone"><option value="">系统默认麦克风</option></select></label>
+<button id="devices">允许麦克风并列出设备</button>
+<button id="record">开始录音</button><button id="stop" disabled>停止录音</button>
+<p>每段最长 5 分钟。可先播放检查声音，再上传。</p>
+<audio id="preview" controls></audio>
+<label>或选择音频文件 <input id="file" type="file" accept="audio/*"></label>
+<label><input id="recording-consent" type="checkbox">我同意上传并处理此录音</label>
+<label><input id="cloud-consent" type="checkbox">我同意 Cloud Twin 处理，并声明这是本人单人录音</label>
+<button id="upload">上传并处理</button>
+<label>Episode ID <input id="episode" autocomplete="off"></label>
+<button id="check">继续查看处理</button><button id="refresh">刷新理解与原文</button>
+<h3>记忆</h3><pre id="memories">尚未上传</pre>
+<h3>当前理解</h3><pre id="model">尚未读取</pre>
+<h3>原文证据</h3><pre id="evidence">尚未读取</pre>
+</section>
+<script type="module" src="capture.js"></script>
+</body>
+</html>
