@@ -32,6 +32,23 @@
 <h3>当前理解</h3><pre id="model">尚未读取</pre>
 <h3>原文证据</h3><pre id="evidence">尚未读取</pre>
 </section>
+<section>
+<h2>Twin 与校准</h2>
+<label>问题 <textarea id="question" rows="2">我是谁？</textarea></label>
+<button id="ask">问 Twin</button><button id="lock">先锁定，再校准</button>
+<pre id="answer">尚未提问</pre>
+<p id="lock-note">先锁定 Twin 答案，再填写本人答案。</p>
+<label>Calibration ID <input id="lock-id" autocomplete="off"></label>
+<button id="recover">恢复锁定记录</button>
+<div id="human-panel" hidden>
+<label>本人答案 <textarea id="human-answer" rows="3"></textarea></label>
+<button id="submit" disabled>比较并更新理解</button>
+</div>
+<pre id="calibration">尚未锁定</pre>
+<button id="next">下一次可以聊什么</button><pre id="plan">尚未读取</pre>
+<button id="revoke">撤回 Cloud Twin 同意</button>
+</section>
 <script type="module" src="capture.js"></script>
+<script type="module" src="agent.js"></script>
 </body>
 </html>
