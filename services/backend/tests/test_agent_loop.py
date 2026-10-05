@@ -31,11 +31,13 @@ def ai_url():
     env.update(
         AI_AGENT_ENABLED="true",
         AI_PROVIDER="fixture",
+        AI_MODEL="fixture-ai-v2",
+        AI_MODEL_VERSION="fixture-ai-v2",
         AI_ENVIRONMENT="test",
         REMEMBER_ENVIRONMENT="test",
     )
     # Do not let optional user credentials/provider settings alter the fixture process.
-    for key in ("AI_MODEL", "AI_MODEL_VERSION", "AI_BASE_URL", "AI_API_KEY"):
+    for key in ("AI_BASE_URL", "AI_API_KEY"):
         env.pop(key, None)
     process = subprocess.Popen(
         [
