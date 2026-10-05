@@ -163,6 +163,21 @@ def test_unknown_question_returns_insufficient_without_provider_call():
     assert not provider.requests
 
 
+@pytest.mark.parametrize("question", ["我是谁？", "我的研究方向是什么？", "我做什么工作？"])
+def test_identity_intent_retrieves_typed_evidence_without_literal_overlap(question):
+    source = material(text="陈安，研发工程师，专攻智能体的长期记忆。")
+    proposal = Static({"changes": [dict(action="ADD", target_trait_id=None, domain="IDENTITY",
+        statement="研发工程师", context="", evidence_ids=["e1"], confidence=0.8, reason="本人介绍")]})
+    traits = orchestrator(proposal).persona(PersonaInput(subject_id="subject-a", snapshot=snapshot(),
+        materials=[source], new_evidence_ids=["e1"])).traits
+    twin = Static(dict(response_type="ORIGINAL", answer=source.excerpt, evidence_ids=["e1"], limitations=[]))
+    answer = orchestrator(twin).twin(TwinInput(subject_id="subject-a", question=question,
+        snapshot=snapshot(traits), materials=[source]))
+    assert answer.answer == source.excerpt
+    assert answer.evidence_ids == ["e1"]
+    assert len(twin.requests) == 1
+
+
 def test_original_cannot_be_a_paraphrase_or_foreign_quote():
     p = Static(
         dict(

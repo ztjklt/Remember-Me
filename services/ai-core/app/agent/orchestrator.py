@@ -55,6 +55,12 @@ def _tokens(text):
 def retrieve(payload: TwinInput):
     """Bounded transparent retrieval baseline; evaluated embeddings can replace it later."""
     query = _tokens(payload.question)
+    question = re.sub(r"[\W_]+", "", payload.question.casefold())
+    identity_query = any(term in question for term in (
+        "我是谁", "我叫什么", "我的名字", "我的身份", "我的职业",
+        "什么工作", "研究方向", "我的专业", "我的学历", "哪所大学",
+        "什么学校", "whoami", "myname", "myoccupation",
+    ))
     active = [t for t in payload.snapshot.traits if t.status != "SUPERSEDED"]
     blocked = {eid for t in active for eid in t.counter_evidence_ids}
     blocked |= {
@@ -80,6 +86,11 @@ def retrieve(payload: TwinInput):
                 score = max(
                     score, len(query & _tokens(trait.statement + trait.context))
                 )
+                # Identity questions often share no literal bigrams with a
+                # self-introduction. Retrieve its typed, cited identity facts;
+                # the worker still checks whether they actually answer it.
+                if identity_query and trait.domain == "IDENTITY":
+                    score = max(score, 1)
         if score:
             ranked.append((score, material.observed_at, material))
     ranked.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
