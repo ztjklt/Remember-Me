@@ -26,11 +26,12 @@ assert Path(app.__file__).is_relative_to(Path(sys.argv[1]))
 from app.contracts import load_fixture
 from app.api import create_app
 from app.config import Settings
+from app.prompts import PROMPT_VERSION, SCHEMA_VERSION
 from fastapi.testclient import TestClient
 settings = Settings(
     environment='test', provider='fixture', agent_enabled=True, model='fixture-ai-v2',
-    model_version='fixture-ai-v2', prompt_version='memory-extractor-v2',
-    schema_version='integration-contract-v0.1.2', _env_file=None,
+    model_version='fixture-ai-v2', prompt_version=PROMPT_VERSION,
+    schema_version=SCHEMA_VERSION, _env_file=None,
 )
 with TestClient(create_app(settings)) as client:
     assert client.get('/health').status_code == 200
