@@ -27,6 +27,19 @@ def test_preflight_releases_available_ports():
         listener.bind(("127.0.0.1", port))
 
 
+def test_preflight_allows_restart_after_server_closes_connection():
+    with socket.socket() as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen()
+        port = listener.getsockname()[1]
+        with socket.create_connection(("127.0.0.1", port)) as client:
+            connection, _ = listener.accept()
+            connection.close()
+            assert client.recv(1) == b""
+    check_ports([port])
+
+
 @pytest.mark.parametrize("name", ["backend", "ai", "worker", "stt"])
 def test_every_child_exit_reports_code_and_log(name, tmp_path):
     processes = {key: Mock() for key in ["backend", "ai", "worker", "stt"]}
