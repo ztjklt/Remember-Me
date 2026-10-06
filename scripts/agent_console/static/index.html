@@ -28,9 +28,11 @@
 <button id="upload">上传并处理</button>
 <label>Episode ID <input id="episode" autocomplete="off"></label>
 <button id="check">继续查看处理</button><button id="refresh">刷新理解与原文</button>
-<h3>记忆</h3><pre id="memories">尚未上传</pre>
+<h3>本次录音的历史提取结果</h3>
+<p>这里保留提取时的结果。本人校准会更新下方当前理解和后续问答，原始转写与历史结果保持可追溯。</p>
+<pre id="memories">尚未上传</pre>
 <h3>当前理解</h3><pre id="model">尚未读取</pre>
-<h3>原文证据</h3><pre id="evidence">尚未读取</pre>
+<h3>转写与本人校准证据</h3><pre id="evidence">尚未读取</pre>
 </section>
 <section>
 <h2>Twin 与校准</h2>
@@ -42,6 +44,7 @@
 <button id="recover">恢复锁定记录</button>
 <div id="human-panel" hidden>
 <label>本人答案 <textarea id="human-answer" rows="3"></textarea></label>
+<p>误识别可以直接更正，例如“我的姓名识别错了，我叫……”。只更正需要修改的事实即可。</p>
 <button id="submit" disabled>比较并更新理解</button>
 </div>
 <pre id="calibration">尚未锁定</pre>

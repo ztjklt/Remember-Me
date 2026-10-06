@@ -38,6 +38,8 @@ with sync_playwright() as p:
     page.locator("#submit").click()
     page.wait_for_function("() => document.querySelector('#calibration').textContent.includes('COMPLETED')")
     completed = json.loads(page.locator("#calibration").inner_text())
+    page.wait_for_function("() => document.querySelector('#status').textContent.includes('校准已保存')")
+    assert "校准已保存" in page.locator("#answer").inner_text()
     assert len(completed["comparison"]["dimension_diffs"]) == 5
     assert completed["locked_answer"] == locked["locked_answer"]
     assert completed["resulting_revision"] == locked["locked_answer"]["revision"] + 1

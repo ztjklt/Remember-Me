@@ -14,6 +14,10 @@
 
 处理完成后可以问 Twin 并核对原文，点击“先锁定，再校准”后才显示本人答案输入框；提交显示五维差异和新 revision。保留 Calibration ID 可在刷新页面后恢复锁定。理解版本变化后需要重新锁定，不能用旧答案校准新模型。可以读取下次问题，或明确撤回 Cloud Twin 同意。
 
+姓名等同音字无法只靠声音确认，转写是机器识别结果。遇到误识别，在本人答案中明确更正；事实纠错更新当前理解，并保留更正依据。同一个问题优先引用最新有效的本人校准原话，撤回或失效的材料不能使用。历史提取结果保持原样，校准后的 Twin 回答不会拿它覆盖本人的文字更正。
+
+已有错误快照不会因为代码升级自动重写。开发者可使用 `scripts/reapply_agent_calibration.py --calibration-id <已完成的ID> --expected-revision <当前版本>` 预览修正结果；确认后增加 `--apply`。该工具仅使用 configured 演示会话，应用前备份本地数据库，通过既有授权、证据校验和 revision CAS 新增快照，保留原校准记录；有更新校准或 revision 不匹配时拒绝应用。个人报告及备份只保存在忽略的 `build/agent-demo/provider-check/`。
+
 浏览器使用电脑系统的麦克风，因此 Windows Chrome / Edge 可使用 Windows 耳机设备，WSL 服务通过 localhost 提供页面。如果地址无法访问，先检查 demo 启动日志和 WSL localhost 转发。出现麦克风拒绝时，检查浏览器的站点权限和系统麦克风隐私设置，也可以先导入音频定位服务端问题。[浏览器录音需要 localhost 或 HTTPS](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)，此 HTTP 调试地址不直接用于手机局域网录音。
 
 前端静态文件修改后刷新页面；Python 代码或服务端 `.env` 修改后，用 Ctrl-C 停止原 demo 再启动。调试台的固定地址与会话会复用。供应商、原始音频和数据库仍由原有服务管理。

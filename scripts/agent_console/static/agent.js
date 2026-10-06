@@ -10,6 +10,7 @@ function controls() {
   el("question").disabled = el("ask").disabled;
   el("lock-id").disabled = el("recover").disabled;
   el("lock-note").textContent = current && stale ? "理解版本已变化，请重新锁定当前问题再校准。" : "先锁定 Twin 答案，再填写本人答案。";
+  if (locked?.state === "COMPLETED") el("lock-note").textContent = "本轮校准已完成；后续问答使用当前理解，锁定记录保留当时版本。";
 }
 function question() {
   const text = el("question").value.trim();
@@ -35,6 +36,7 @@ el("lock-id").oninput = () => {locked = null; el("human-answer").value = ""; con
 action("ask", async () => {
   const body = question();
   el("answer").textContent = "正在请求 Twin…";
+  status("正在根据当前理解检索证据并回答…");
   try {
     show("answer", await api(agentPath("/twin"), jsonBody(body)));
     status("Twin 回答已返回，请核对 response_type 和原文证据。");
@@ -60,6 +62,8 @@ action("submit", async () => {
   status("正在比较五维差异并更新理解…");
   viewLock(await api(agentPath(`/calibrations/${encodeURIComponent(locked.calibration_id)}/submit`), jsonBody({human_answer: human, expected_revision: locked.locked_answer.revision})));
   await refresh();
+  el("answer").textContent = "校准已保存。点击“问 Twin”检查更新后的回答。";
+  status(`校准已保存，当前理解 revision ${revision}。历史提取结果保留原样，可以再次问 Twin。`);
 });
 action("next", async () => {
   const result = await api(agentPath("/plan"));
