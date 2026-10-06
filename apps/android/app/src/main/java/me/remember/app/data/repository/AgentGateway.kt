@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.remember.app.BuildConfig
 import org.json.JSONObject
+import org.json.JSONArray
 import java.io.IOException
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
@@ -54,7 +55,11 @@ class HttpAgentGateway : AgentGateway {
             } ?: byteArrayOf()
             if (bytes.size > 1_048_576) throw EpisodeGatewayFailure("INVALID_RESPONSE", "Backend 响应过大。", false)
             val text = bytes.toString(Charsets.UTF_8)
-            val json = if (code == 204) JSONObject() else runCatching { JSONObject(text) }.getOrNull()
+            // Normalize the evidence endpoint's root array inside the client adapter.
+            val json = if (code == 204) JSONObject() else runCatching {
+                if (path == "/evidence" && code in 200..299) JSONObject().put("materials", JSONArray(text))
+                else JSONObject(text)
+            }.getOrNull()
             if (code !in 200..299) throw EpisodeGatewayFailure(json?.optString("error_code") ?: "HTTP_$code",
                 json?.optString("error_message") ?: "Backend HTTP $code", code == 408 || code == 429 || code >= 500)
             json ?: throw EpisodeGatewayFailure("INVALID_RESPONSE", "Backend 返回的 JSON 无效。", false)

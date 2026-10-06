@@ -36,36 +36,50 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
             gateway.request(c, "/grant", "POST", JSONObject()
                 .put("recording_consent_id", c.recordingConsentId)
                 .put("cloud_twin_consent", true).put("subject_single_speaker", true))
-            AgentUiState(configured = true, snapshot = snapshot(gateway.request(c, "/model"), c))
+            AgentUiState(configured = true, snapshot = snapshot(gateway.request(c, "/model"), c), materials = materials(c))
         }
     }
 
     suspend fun refresh() = operation { c ->
-        val model = snapshot(gateway.request(c, "/model/refresh", "POST"), c)
-        mutableState.value.copy(snapshot = model, plan = parsePlan(gateway.request(c, "/plan")))
+        val model = snapshot(gateway.request(c, "/model"), c)
+        mutableState.value.copy(snapshot = model, materials = materials(c))
     }
 
     suspend fun ask(question: String) = operation { c ->
-        mutableState.value.copy(answer = answer(gateway.request(c, "/twin", "POST", JSONObject().put("question", question)), c))
+        val text = question.trim()
+        require(text.isNotEmpty()) { "请先填写问题。" }
+        mutableState.value = mutableState.value.copy(answer = null, calibration = null, correction = null)
+        val locked = calibration(gateway.request(c, "/calibrations", "POST", JSONObject().put("question", text)), c)
+        mutableState.value.copy(answer = locked.lockedAnswer, calibration = locked)
     }
 
-    suspend fun lock(question: String) = operation { c ->
-        val calibration = calibration(gateway.request(c, "/calibrations", "POST", JSONObject().put("question", question)), c)
-        mutableState.value.copy(calibration = calibration)
-    }
+    suspend fun lock(question: String) = ask(question)
 
     suspend fun resume(calibrationId: String) = operation { c ->
         require(calibrationId.matches(Regex("[A-Za-z0-9._~-]+")))
-        mutableState.value.copy(calibration = calibration(gateway.request(c, "/calibrations/$calibrationId"), c))
+        val restored = calibration(gateway.request(c, "/calibrations/$calibrationId"), c)
+        mutableState.value.copy(calibration = restored, answer = restored.lockedAnswer, correction = null)
     }
 
-    suspend fun submit(humanAnswer: String) = operation { c ->
-        val current = checkNotNull(mutableState.value.calibration) { "请先锁定 Twin 答案。" }
-        val latest = snapshot(gateway.request(c, "/model"), c)
-        val completed = calibration(gateway.request(c, "/calibrations/${current.id}/submit", "POST", JSONObject()
-            .put("human_answer", humanAnswer).put("expected_revision", latest.revision)), c)
-        mutableState.value.copy(calibration = completed, snapshot = snapshot(gateway.request(c, "/model"), c),
-            plan = parsePlan(gateway.request(c, "/plan")), answer = null)
+    suspend fun submit(humanAnswer: String, question: String? = null) {
+        var completedId: String? = null
+        operation { c ->
+            val current = checkNotNull(mutableState.value.calibration) { "请先提问，再校正这次回答。" }
+            check(current.state == "LOCKED" && (question == null || question.trim() == current.question)) {
+                "问题已改变或校正已完成，请重新提问。"
+            }
+            check(mutableState.value.snapshot?.revision == current.lockedAnswer.revision) {
+                "理解已变化，请重新提问后再校正。"
+            }
+            val text = humanAnswer.trim()
+            require(text.isNotEmpty()) { "请填写本人的校正。" }
+            val completed = calibration(gateway.request(c, "/calibrations/${current.id}/submit", "POST", JSONObject()
+                .put("human_answer", text).put("expected_revision", current.lockedAnswer.revision)), c)
+            completedId = completed.id
+            mutableState.value.copy(calibration = completed, answer = completed.lockedAnswer, correction = text)
+        }
+        // Preserve the saved correction if reading the updated model fails.
+        if (completedId != null && mutableState.value.calibration?.id == completedId) refresh()
     }
 
     suspend fun plan() = operation { c -> mutableState.value.copy(plan = parsePlan(gateway.request(c, "/plan"))) }
@@ -73,8 +87,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
     suspend fun inspect(evidenceId: String) = operation { c ->
         require(evidenceId.matches(Regex("[A-Za-z0-9._~-]+")))
         val e = gateway.request(c, "/evidence/$evidenceId")
-        mutableState.value.copy(inspectedEvidence = AgentEvidence(e.getString("evidence_id"),
-            e.getString("excerpt"), e.getString("source_type"), e.getString("source_ref"), e.nullableString("episode_id")))
+        mutableState.value.copy(inspectedEvidence = evidence(e))
     }
 
     suspend fun revoke() = operation { c ->
@@ -84,8 +97,10 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
 
     suspend fun withdraw(episodeId: String) = operation { c ->
         require(episodeId.matches(Regex("[A-Za-z0-9._~-]+")))
+        mutableState.value = mutableState.value.copy(snapshot = null, materials = emptyList(),
+            answer = null, calibration = null, inspectedEvidence = null, correction = null)
         mutableState.value.copy(snapshot = snapshot(gateway.request(c, "/episodes/$episodeId/use", "DELETE"), c),
-            answer = null, calibration = null, inspectedEvidence = null)
+            materials = materials(c), answer = null, calibration = null, inspectedEvidence = null, correction = null)
     }
 
     private suspend fun operation(block: suspend (BackendConnection) -> AgentUiState) = mutex.withLock {
@@ -151,8 +166,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
         schema(json,c)
         val type = json.getString("response_type")
         check(type in setOf("ORIGINAL","SIMULATION","INSUFFICIENT"))
-        val evidence = json.getJSONArray("evidence").objects().map { e -> AgentEvidence(e.getString("evidence_id"),
-            e.getString("excerpt"),e.getString("source_type"),e.getString("source_ref"),e.nullableString("episode_id")) }
+        val evidence = json.getJSONArray("evidence").objects().map { evidence(it) }
         check(evidence.map { it.id } == json.getJSONArray("evidence_ids").strings())
         if (type == "ORIGINAL") check(evidence.size == 1 && json.getString("answer") == evidence.single().excerpt)
         return AgentAnswer(c.subjectId,json.getInt("revision"),type,json.getString("answer"),evidence,
@@ -167,6 +181,10 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
             if (json.isNull("resulting_revision")) null else json.getInt("resulting_revision"))
     }
     private fun parsePlan(json: JSONObject) = AgentPlan(json.getString("question"),json.getString("reason"))
+    private suspend fun materials(c: BackendConnection) = gateway.request(c, "/evidence")
+        .getJSONArray("materials").objects().map { evidence(it) }
+    private fun evidence(json: JSONObject) = AgentEvidence(json.getString("evidence_id"), json.getString("excerpt"),
+        json.getString("source_type"), json.getString("source_ref"), json.nullableString("episode_id"), json.optString("observed_at"))
 }
 private fun JSONArray.objects(): List<JSONObject> = (0 until length()).map { getJSONObject(it) }
 private fun JSONArray.strings(): List<String> = (0 until length()).map { getString(it) }

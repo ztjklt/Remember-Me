@@ -4,6 +4,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import org.json.JSONArray
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -17,7 +18,7 @@ class AgentRepositoryTest {
     @Test fun switchingSubjectOrCredentialClearsAllVisibleState() = runBlocking {
         val gateway = object : AgentGateway {
             override suspend fun request(connection: BackendConnection,path: String,method: String,body: JSONObject?) =
-                if (path=="/model") model(connection.subjectId) else JSONObject()
+                if (path=="/model") model(connection.subjectId) else JSONObject().put("materials", JSONArray())
         }
         val repo = AgentRepository(gateway)
         repo.enable(connection())
@@ -34,15 +35,17 @@ class AgentRepositoryTest {
     @Test fun oldResponseCannotOverwriteNewSubjectSession() = runBlocking {
         val waiting = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
+        var holdRead = false
         val gateway = object : AgentGateway {
             override suspend fun request(connection: BackendConnection,path: String,method: String,body: JSONObject?): JSONObject {
-                if (path=="/model/refresh") { waiting.complete(Unit);release.await() }
+                if (path=="/model" && holdRead) { waiting.complete(Unit);release.await() }
                 return if (path.startsWith("/model")) model(connection.subjectId)
-                    else if (path=="/plan") JSONObject().put("question","q").put("reason","r") else JSONObject()
+                    else JSONObject().put("materials", JSONArray())
             }
         }
         val repo=AgentRepository(gateway)
         repo.enable(connection())
+        holdRead = true
         val operation=launch { repo.refresh() }
         waiting.await()
         repo.bind(connection("subject-b"))
@@ -50,6 +53,7 @@ class AgentRepositoryTest {
         operation.join()
         assertNull(repo.state.value.snapshot)
         assertNull(repo.state.value.plan)
+        holdRead = false
         repo.enable(connection("subject-b"))
         assertEquals("subject-b",repo.state.value.snapshot?.subjectId)
     }
@@ -57,8 +61,8 @@ class AgentRepositoryTest {
     @Test fun revokedConsentClearsCachedAnswersAndModel() = runBlocking {
         val gateway = object : AgentGateway {
             override suspend fun request(connection: BackendConnection,path: String,method: String,body: JSONObject?): JSONObject {
-                if (path=="/twin") throw EpisodeGatewayFailure("CONSENT_INVALID","revoked",false)
-                return if (path=="/model") model(connection.subjectId) else JSONObject()
+                if (path=="/calibrations") throw EpisodeGatewayFailure("CONSENT_INVALID","revoked",false)
+                return if (path=="/model") model(connection.subjectId) else JSONObject().put("materials", JSONArray())
             }
         }
         val repo=AgentRepository(gateway)
