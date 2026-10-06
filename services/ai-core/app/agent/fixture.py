@@ -76,7 +76,8 @@ def generate(request):
             )
         # Retrieval already sorted the pack. This simulator does not prove answer relevance.
         m = materials[0]
-        if any(w in data["question"] for w in ("为什么", "综合", "原因")):
+        allowed = request.response_schema["properties"]["response_type"]["enum"]
+        if "ORIGINAL" not in allowed or any(w in data["question"] for w in ("为什么", "综合", "原因")):
             return dict(
                 response_type="SIMULATION",
                 answer="根据已有表达，我会考虑：" + m["excerpt"],

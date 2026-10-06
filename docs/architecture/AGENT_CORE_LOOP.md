@@ -30,9 +30,11 @@ flowchart TD
 
 `model_version` 记录推理部署版本，`revision` 记录 Person Model 快照版本。Trait 的 confidence 是内部未校准值，页面不将它显示为忠实度百分比。Planner 为显式领域优先级/矛盾优先的启发式，每次返回一个问题，不宣称测量了信息增益。
 
-转写、历史 Memory 提取结果、当前 Person Model 是不同层。本人明确纠正转写中的事实时，新增 CALIBRATION 证据，由 Persona 修正受影响的旧理解并保留未被更正事实；旧转写和旧快照保留，不把误识别修复描述成本人改变了姓名。`agent-workers-v3` 明确这项规则。
+转写、历史 Memory 提取结果、当前 Person Model 是不同层。本人明确纠正转写中的事实时，新增 CALIBRATION 证据，由 Persona 修正受影响的旧理解并保留未被更正事实；旧转写和旧快照保留，不把误识别修复描述成本人改变了姓名。`agent-workers-v4` 明确这项规则。
 
 Twin 对相同问题（忽略空格、标点与大小写）优先逐字引用最新有效的本人校准，仍标注 ORIGINAL / CALIBRATION；校准没有回答的其他问题继续走检索和模型判断。反证表示“挑战了某个结论”，不等于不可引用；已撤回、未授权、被替代的材料继续排除。无法解决的矛盾返回矛盾原因，不混同于缺少材料。
+
+已由校准替代的旧结论若与其他事实共用完整转写，查询其他事实时使用私有整合 Schema，只允许 SIMULATION / INSUFFICIENT，防止将含旧错误的整段转写标为当前原话。仍可引用这段材料中未更正的事实；历史查询也保守标注整合，不宣称精确事实分段已经完成。对相同校准问题的逐字路由不受影响。
 
 代码升级后若需修复旧派生快照，可使用本机工具 `scripts/reapply_agent_calibration.py`，默认预览，显式 `--apply` 才追加 revision；记录与原始 Episode 不变。它没有新增 API、契约或数据库 schema。详见 [校准修复验证](../verification/CALIBRATION_CORRECTION_2026_10_06.md)。
 

@@ -8,6 +8,7 @@
 - 检索把本人 CALIBRATION 作为旧结论的反证排除，Twin 对旧结论的冲突直接拒答，又把矛盾原因改写为材料不足。
 - 本人明确纠正事实时更新当前理解，保留未更正事实和对应证据；旧结论 SUPERSEDED，原始 Episode、提取结果和校准锁保持历史。
 - 相同问题优先引用最新有效校准，返回 ORIGINAL 与 CALIBRATION 证据；未经授权、失效或被替代的校准不会恢复使用。矛盾拒答保留真实原因。
+- 旧转写混有已更正事实时，私有整合 Worker Schema 只允许 SIMULATION / INSUFFICIENT；学校等未更正事实仍可引用原材料，整段旧错误不再被当作当前原话。提示版本为 `agent-workers-v4`。
 - 页面区分历史提取结果、当前理解与校准证据；提交完成后清除旧 Twin 回答，提示再次提问，不把历史结果当作更新后的理解。
 - 未改变 `packages/contracts`、API 或数据库 schema。维护工具只用于本机 configured 演示数据，默认预览；显式应用会先备份数据库，通过已有授权、证据检查及 revision CAS 追加快照。更晚的校准或版本不匹配会拒绝应用。
 
@@ -15,7 +16,7 @@
 
 | 检查 | 结果 |
 |---|---|
-| AI Core `.venv/bin/python -m pytest tests -q` | 141 passed；相同问题、标点变化、单字问题、最新校准、失效/第三方/撤回材料、情境冲突及事实保留 |
+| AI Core `.venv/bin/python -m pytest tests -q` | 143 passed；相同问题、标点变化、单字问题、最新校准、失效/第三方/撤回材料、情境冲突、事实保留及旧混合原话拒绝 |
 | Backend `.venv/bin/python -m pytest tests -q` | 全量回归通过；最后补充的新版校准保护另由当前 Agent 专项覆盖 |
 | Backend `.venv/bin/python -m pytest tests/test_agent_loop.py -q` | 当前 22 项通过；预览不落库、应用追加版本、校准和 Episode 不变、旧版本/未完成/跨主体/撤回/新校准保护 |
 | `PYTHONPATH=scripts services/backend/.venv/bin/python -m pytest scripts/agent_console/tests/test_server.py -q` | 4 passed |

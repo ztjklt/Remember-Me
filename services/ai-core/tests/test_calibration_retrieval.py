@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from remember_contracts.agent import PersonaInput, Trait, TwinInput
+from app.errors import AIOutputInvalid
 
 from test_agent import NOW, Static, material, orchestrator, snapshot
 
@@ -88,3 +89,27 @@ def test_fact_correction_preserves_history_and_cites_uncorrected_facts():
     assert set(current.evidence_ids) == {source.evidence_id, correction.evidence_id}
     assert not set(current.evidence_ids) & set(current.counter_evidence_ids)
     assert current.status != "CONFLICTED" and source.excerpt.startswith("我叫陈安")
+
+
+@pytest.mark.parametrize("quote_old_excerpt", [False, True])
+def test_corrected_mixed_excerpt_requires_synthesis_for_other_questions(quote_old_excerpt):
+    source, correction, baseline = identity_state()
+    historical = baseline.model_copy(update={"status": "SUPERSEDED", "valid_to": correction.observed_at})
+    current = baseline.model_copy(update={"trait_id": "corrected", "status": "CANDIDATE",
+        "statement": "自称晨安，海城大学研究生", "counter_evidence_ids": [],
+        "evidence_ids": [source.evidence_id, correction.evidence_id]})
+    provider = Static(dict(response_type="ORIGINAL" if quote_old_excerpt else "SIMULATION",
+        answer=source.excerpt if quote_old_excerpt else "我在海城大学读研究生。",
+        evidence_ids=[source.evidence_id] if quote_old_excerpt else [source.evidence_id, correction.evidence_id],
+        limitations=[]))
+    agent = orchestrator(provider)
+    payload = TwinInput(subject_id="subject-a", question="我在哪所大学读研？",
+        snapshot=snapshot([historical, current]), materials=[source, correction])
+    if quote_old_excerpt:
+        with pytest.raises(AIOutputInvalid):
+            agent.twin(payload)
+    else:
+        answer = agent.twin(payload)
+        assert answer.response_type == "SIMULATION" and answer.answer == "我在海城大学读研究生。"
+        assert set(answer.evidence_ids) == {source.evidence_id, correction.evidence_id}
+    assert "ORIGINAL" not in provider.requests[0].response_schema["properties"]["response_type"]["enum"]
