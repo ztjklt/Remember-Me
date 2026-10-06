@@ -41,6 +41,8 @@ class OpenAICompatibleProvider:
         api_key: str,
         timeout_seconds: float = 30.0,
         enable_thinking: bool | None = None,
+        response_format: str = "json_schema",
+        thinking_mode: str | None = None,
         max_response_bytes: int = 1_048_576,
         client: httpx.Client | None = None,
     ) -> None:
@@ -48,6 +50,8 @@ class OpenAICompatibleProvider:
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
         self.enable_thinking = enable_thinking
+        self.response_format = response_format
+        self.thinking_mode = thinking_mode
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
         self._client = client or httpx.Client(
@@ -103,11 +107,16 @@ class OpenAICompatibleProvider:
                 },
             },
         }
+        if self.response_format == "json_object":
+            body["response_format"] = {"type": "json_object"}
+            body["messages"][0]["content"] += "\nReturn only JSON matching this schema: " + json.dumps(schema, ensure_ascii=False)
         if request.task == "twin":
             body["temperature"] = 0
         # Optional compatible-provider extension, sent only when configured.
         if self.enable_thinking is not None:
             body["enable_thinking"] = self.enable_thinking
+        if self.thinking_mode is not None:
+            body["thinking"] = {"type": self.thinking_mode}
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"

@@ -278,3 +278,16 @@ def test_question_answer_sampling_is_fixed_without_changing_memory_requests():
     provider.generate(replace(_request(), task='twin'))
     assert 'temperature' not in bodies[0]
     assert bodies[1]['temperature'] == 0
+
+
+def test_json_mode_supplies_schema_in_prompt_and_explicit_thinking_control():
+    def handler(request):
+        body = json.loads(request.content)
+        assert body['response_format'] == {'type': 'json_object'}
+        assert body['thinking'] == {'type': 'disabled'}
+        assert 'enable_thinking' not in body
+        assert 'JSON' in body['messages'][0]['content']
+        assert 'memory_items' in body['messages'][0]['content']
+        return httpx.Response(200, json={'choices': [{'finish_reason': 'stop',
+            'message': {'content': json.dumps(_provider_response())}}]})
+    assert _http_provider(handler, response_format='json_object', thinking_mode='disabled').generate(_request()) == _provider_response()

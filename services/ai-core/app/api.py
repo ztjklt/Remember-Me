@@ -31,6 +31,8 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
             api_key=settings.api_key.get_secret_value(),
             timeout_seconds=settings.timeout_seconds,
             enable_thinking=settings.enable_thinking,
+            response_format=settings.response_format,
+            thinking_mode=settings.thinking_mode,
             max_response_bytes=settings.max_response_bytes,
         )
 

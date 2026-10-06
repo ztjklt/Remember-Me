@@ -46,6 +46,10 @@ class Settings(BaseSettings):
         validation_alias="AI_TIMEOUT_SECONDS",
     )
     enable_thinking: bool | None = Field(default=None, validation_alias="AI_ENABLE_THINKING")
+    response_format: Literal["json_schema", "json_object"] = Field(
+        default="json_schema", validation_alias="AI_RESPONSE_FORMAT")
+    thinking_mode: Literal["enabled", "disabled"] | None = Field(
+        default=None, validation_alias="AI_THINKING_MODE")
     model_version: str = Field(
         default=FixtureProvider.default_model_version,
         min_length=1,
