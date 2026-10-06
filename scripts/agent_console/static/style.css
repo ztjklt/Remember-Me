@@ -1,10 +1,20 @@
-body { font: 16px/1.6 system-ui, sans-serif; max-width: 960px; margin: 24px auto; padding: 0 20px; color: #20252a; }
-section, details { border: 1px solid #d5dce2; border-radius: 8px; padding: 16px; margin: 16px 0; }
-label { display: block; margin: 10px 0; }
-input:not([type=checkbox]), select, textarea { box-sizing: border-box; padding: 8px; width: min(100%, 660px); }
-button { padding: 8px 14px; margin: 5px 8px 5px 0; cursor: pointer; }
-button:disabled { cursor: default; }
-pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f3f5f7; padding: 12px; }
-#status, #mode { padding: 10px; background: #edf3f9; }
-#status[data-error=true] { color: #a12626; background: #ffeded; }
-[hidden] { display: none !important; }
+:root { color-scheme: light; font: 16px/1.65 system-ui, sans-serif; color: #24352e; background: #f6f7f4; }
+body { max-width: 820px; margin: 36px auto; padding: 0 20px 48px; }
+h1 { font-size: 28px; margin-bottom: 0; } h2 { font-size: 20px; margin: 0 0 18px; }
+header > p, .meta { color: #62716a; font-size: 14px; }
+section { background: white; border: 1px solid #e0e6df; border-radius: 14px; padding: 24px; margin: 18px 0; }
+.step { display: inline-block; color: #376b51; margin-right: 12px; }
+details { border-top: 1px solid #e0e6df; padding: 12px 0; margin-top: 16px; }
+summary { cursor: pointer; color: #376b51; } label { display: block; margin: 12px 0 6px; }
+input:not([type=checkbox]), select, textarea { box-sizing: border-box; padding: 10px; width: 100%; border: 1px solid #bbc9bf; border-radius: 6px; background: white; color: inherit; font: inherit; }
+textarea { resize: vertical; } audio { width: 100%; }
+button { padding: 9px 16px; margin: 8px 8px 8px 0; cursor: pointer; background: #edf3ee; color: #274d38; border: 1px solid #cad8cc; border-radius: 7px; font: inherit; }
+#ask, #submit, #upload { background: #376b51; color: white; border-color: #376b51; }
+button:disabled { cursor: default; opacity: .5; } :focus-visible { outline: 3px solid #86b8d1; outline-offset: 2px; }
+.reading p, blockquote { white-space: pre-wrap; overflow-wrap: anywhere; }
+.reading:empty { display: none; } .trait { border-bottom: 1px solid #edf0eb; padding: 8px 0; } .trait:last-child { border: 0; } .trait p { margin: 4px 0 8px; }
+blockquote { margin: 12px 0; border-left: 3px solid #c3d6c9; padding-left: 14px; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #edf1ed; padding: 12px; font-size: 13px; }
+#status { padding: 12px 16px; background: #e9f0eb; border-radius: 8px; font-size: 14px; }
+#status[data-error=true] { color: #a12626; background: #ffeded; } [hidden] { display: none !important; }
+@media (max-width: 540px) { body { margin-top: 20px; padding: 0 12px 32px; } section { padding: 18px; } }

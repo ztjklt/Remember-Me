@@ -1,3 +1,4 @@
+import {render} from "./render.js";
 export const el = (id) => document.getElementById(id);
 let busy = false, recorder, stream, timer, recording, preview;
 const stages = {uploaded: "已接收", transcribing: "正在转写", extracting: "正在提取记忆", modeling: "正在更新理解", ready: "处理完成"};
@@ -7,7 +8,8 @@ export function status(text, error = false) {
   el("status").dataset.error = error;
 }
 export function show(id, value) {
-  el(id).textContent = JSON.stringify(value, null, 2);
+  if (el(id)) el(id).textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  render(id, value);
 }
 export function agentPath(path) {
   if (!el("subject").value.trim()) throw Error("请先加载会话");
@@ -46,7 +48,7 @@ function clearResults() {
   if (preview) {URL.revokeObjectURL(preview); preview = null;}
   el("preview").removeAttribute("src"); el("preview").load();
   el("episode").value = "";
-  for (const id of ["memories", "model", "evidence"]) el(id).textContent = "会话已变更，请重新读取";
+  for (const id of ["memories", "model", "evidence"]) show(id, "会话已变更，请重新读取");
   window.dispatchEvent(new Event("sessionchange"));
 }
 for (const id of ["token", "subject", "consent"]) el(id).oninput = clearResults;
@@ -109,7 +111,8 @@ export async function refresh() {
   const [model, evidence] = await Promise.all([api(agentPath("/model")), api(agentPath("/evidence"))]);
   show("model", model); show("evidence", evidence);
   window.dispatchEvent(new CustomEvent("modelchange", {detail: model}));
-  status(`理解已读取，revision ${model.revision}。`);
+  status(`已读取第 ${model.revision} 版理解。`);
+  return model;
 }
 async function processEpisode(id) {
   const deadline = Date.now() + 360000;

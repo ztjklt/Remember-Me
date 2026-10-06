@@ -2,55 +2,66 @@
 <html lang="zh-CN">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Remember Me · Agent 调试</title>
+<title>Remember Me · 记忆与理解</title>
 <link rel="stylesheet" href="style.css">
 <body>
-<h1>Remember Me · Agent 调试</h1>
-<p>用电脑或耳机麦克风录音，查看记忆、当前理解和原文。录音先保存在此页面，点击上传后才发送。</p>
-<p id="mode">尚未连接</p>
-<button id="connect">加载本地演示会话</button>
-<details><summary>当前会话</summary><fieldset id="session-fields">
-<label>Actor Token <input id="token" type="password" autocomplete="off"></label>
-<label>Subject ID <input id="subject" autocomplete="off"></label>
-<label>录音 consent ID <input id="consent" autocomplete="off"></label>
-</fieldset></details>
-<p id="status" role="status" aria-live="polite">先加载会话，再录音或选择音频文件。</p>
+<header><h1>记忆与理解</h1><p>听你讲述，形成理解，再由你校正。</p>
+<div class="toolbar"><button id="connect">加载本地会话</button><button id="refresh">刷新已有理解</button><span id="mode" class="meta">尚未连接</span></div></header>
+<p id="status" role="status" aria-live="polite">先加载会话，查看已有记忆或添加录音。</p>
+<main>
 <section>
-<h2>录音与记忆</h2>
+<h2><span class="step">1</span>记忆原文</h2>
+<div id="evidence-view" class="reading"><p>尚未读取录音原文。</p></div>
+<details id="capture-tools"><summary>添加录音</summary>
 <label>麦克风 <select id="microphone"><option value="">系统默认麦克风</option></select></label>
-<button id="devices">允许麦克风并列出设备</button>
+<button id="devices">选择耳机麦克风</button>
 <button id="record">开始录音</button><button id="stop" disabled>停止录音</button>
-<p>每段最长 5 分钟。可先播放检查声音，再上传。</p>
+<p class="meta">每段最长 5 分钟。录音先留在本页，确认上传后才发送。</p>
 <audio id="preview" controls></audio>
 <label>或选择音频文件 <input id="file" type="file" accept="audio/*"></label>
 <label><input id="recording-consent" type="checkbox">我同意上传并处理此录音</label>
 <label><input id="cloud-consent" type="checkbox">我同意 Cloud Twin 处理，并声明这是本人单人录音</label>
 <button id="upload">上传并处理</button>
-<label>Episode ID <input id="episode" autocomplete="off"></label>
-<button id="check">继续查看处理</button><button id="refresh">刷新理解与原文</button>
-<h3>本次录音的历史提取结果</h3>
-<p>这里保留提取时的结果。本人校准会更新下方当前理解和后续问答，原始转写与历史结果保持可追溯。</p>
-<pre id="memories">尚未上传</pre>
-<h3>当前理解</h3><pre id="model">尚未读取</pre>
-<h3>转写与本人校准证据</h3><pre id="evidence">尚未读取</pre>
+</details>
 </section>
 <section>
-<h2>Twin 与校准</h2>
-<label>问题 <textarea id="question" rows="2">我是谁？</textarea></label>
-<button id="ask">问 Twin</button><button id="lock">先锁定，再校准</button>
-<pre id="answer">尚未提问</pre>
-<p id="lock-note">先锁定 Twin 答案，再填写本人答案。</p>
-<label>Calibration ID <input id="lock-id" autocomplete="off"></label>
-<button id="recover">恢复锁定记录</button>
+<h2><span class="step">2</span>当前理解</h2>
+<div id="model-view" class="reading"><p>尚未读取理解。</p></div>
+</section>
+<section>
+<h2><span class="step">3</span>提问与回答</h2>
+<label for="question">你的问题</label><textarea id="question" rows="2">我是谁？</textarea>
+<button id="ask">提问</button>
+<div id="answer-view" class="reading" aria-live="polite"><p>尚未提问。</p></div>
+</section>
+<section>
+<h2><span class="step">4</span>校正与更新</h2>
+<button id="lock">开始校正</button>
+<p id="lock-note" class="meta">先提问，再填写你的校正。</p>
 <div id="human-panel" hidden>
-<label>本人答案 <textarea id="human-answer" rows="3"></textarea></label>
-<p>误识别可以直接更正，例如“我的姓名识别错了，我叫……”。只更正需要修改的事实即可。</p>
-<button id="submit" disabled>比较并更新理解</button>
+<label for="human-answer">你的校正</label><textarea id="human-answer" rows="3" placeholder="例如：我的姓名识别错了，我叫……"></textarea>
+<button id="submit" disabled>保存校正并更新理解</button>
 </div>
-<pre id="calibration">尚未锁定</pre>
+<div id="calibration-view" class="reading"></div>
+<div id="updated-view" class="reading" aria-live="polite"></div>
+</section>
+</main>
+<details id="debug-tools"><summary>调试与会话设置</summary>
+<fieldset id="session-fields">
+<label>Actor Token <input id="token" type="password" autocomplete="off"></label>
+<label>Subject ID <input id="subject" autocomplete="off"></label>
+<label>录音 consent ID <input id="consent" autocomplete="off"></label>
+</fieldset>
+<label>Episode ID <input id="episode" autocomplete="off"></label><button id="check">继续查看处理</button>
+<label>Calibration ID <input id="lock-id" autocomplete="off"></label><button id="recover">恢复校准记录</button>
+<h3>历史提取结果</h3><pre id="memories">尚未上传</pre>
+<h3>理解数据</h3><pre id="model">尚未读取</pre>
+<h3>全部证据</h3><pre id="evidence">尚未读取</pre>
+<h3>回答数据</h3><pre id="answer">尚未提问</pre>
+<h3>校准数据</h3><pre id="calibration">尚未校准</pre>
 <button id="next">下一次可以聊什么</button><pre id="plan">尚未读取</pre>
 <button id="revoke">撤回 Cloud Twin 同意</button>
-</section>
+</details>
 <script type="module" src="capture.js"></script>
 <script type="module" src="agent.js"></script>
 </body>

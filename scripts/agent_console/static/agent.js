@@ -28,19 +28,20 @@ window.addEventListener("modelchange", (event) => {revision = event.detail.revis
 window.addEventListener("sessionchange", () => {
   locked = null; revision = null;
   el("lock-id").value = ""; el("human-answer").value = "";
-  for (const id of ["answer", "calibration", "plan"]) el(id).textContent = "会话已变更，请重新读取";
+  for (const id of ["answer", "calibration", "plan"]) show(id, "会话已变更，请重新读取");
+  show("updated", "");
   controls();
 });
 el("lock-id").oninput = () => {locked = null; el("human-answer").value = ""; controls();};
 
 action("ask", async () => {
   const body = question();
-  el("answer").textContent = "正在请求 Twin…";
+  show("answer", "正在回答…");
   status("正在根据当前理解检索证据并回答…");
   try {
     show("answer", await api(agentPath("/twin"), jsonBody(body)));
     status("Twin 回答已返回，请核对 response_type 和原文证据。");
-  } catch (error) {el("answer").textContent = "未得到有效回答，请查看错误并重试。"; throw error;}
+  } catch (error) {show("answer", "未得到有效回答，请查看错误并重试。"); throw error;}
 });
 action("lock", async () => {
   const body = question();
@@ -61,8 +62,8 @@ action("submit", async () => {
   if (!human) throw Error("请填写本人答案");
   status("正在比较五维差异并更新理解…");
   viewLock(await api(agentPath(`/calibrations/${encodeURIComponent(locked.calibration_id)}/submit`), jsonBody({human_answer: human, expected_revision: locked.locked_answer.revision})));
-  await refresh();
-  el("answer").textContent = "校准已保存。点击“问 Twin”检查更新后的回答。";
+  show("updated", await refresh());
+  show("answer", "校准已保存。再次提问可检查更新后的回答。");
   status(`校准已保存，当前理解 revision ${revision}。历史提取结果保留原样，可以再次问 Twin。`);
 });
 action("next", async () => {
@@ -73,7 +74,7 @@ action("next", async () => {
 action("revoke", async () => {
   await api(agentPath("/grant"), {method: "DELETE"});
   el("cloud-consent").checked = false; el("episode").value = "";
-  for (const id of ["memories", "model", "evidence"]) el(id).textContent = "Cloud Twin 同意已撤回";
+  for (const id of ["memories", "model", "evidence"]) show(id, "Cloud Twin 同意已撤回");
   window.dispatchEvent(new Event("sessionchange"));
   status("Cloud Twin 同意已撤回。继续使用前需要再次明确同意。");
 });

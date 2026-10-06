@@ -35,7 +35,7 @@ def test_foreign_hosts_and_origins_cannot_read_demo_session(console, headers):
 
 def test_static_console_and_missing_credentials_are_explicit(console, tmp_path):
     page = console.get("/debug/agent/")
-    assert page.status_code == 200 and "录音与记忆" in page.text
+    assert page.status_code == 200 and "记忆原文" in page.text
     assert "local-test-token" not in page.text
     with TestClient(attach_console(FastAPI(), tmp_path / "missing.json", "configured"), base_url="http://localhost") as client:
         response = client.get("/debug/agent/session")
