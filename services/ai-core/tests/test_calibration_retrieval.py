@@ -30,7 +30,7 @@ def test_correction_remains_in_full_context_and_exact_quote_is_original(question
     assert answer.answer == correction.excerpt
     assert answer.evidence_ids == [correction.evidence_id]
     assert answer.evidence[0].source_type == "CALIBRATION"
-    assert provider.requests[0].worker_input["materials"][-1]["excerpt"] == correction.excerpt
+    assert provider.requests[0].worker_input["corrections"][0]["excerpt"] == correction.excerpt
 
 
 def test_latest_calibration_wins_without_erasing_previous_evidence():
@@ -93,6 +93,6 @@ def test_correction_does_not_block_other_facts_in_the_same_recording():
         snapshot=snapshot([historical, baseline]), materials=[source, correction]))
     assert answer.response_type == "SIMULATION"
     request = provider.requests[0]
-    assert {m["evidence_id"] for m in request.worker_input["materials"]} == {"e1", "c1"}
-    assert all(t["status"] != "SUPERSEDED" for t in request.worker_input["snapshot"]["traits"])
+    assert {m["evidence_id"] for m in request.worker_input["materials"] + request.worker_input["corrections"]} == {"e1", "c1"}
+    assert all(t["status"] != "SUPERSEDED" for t in request.worker_input["current_understanding"]["traits"])
     assert "response_type" not in request.response_schema["properties"]

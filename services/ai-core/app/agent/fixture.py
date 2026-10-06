@@ -67,7 +67,7 @@ def generate(request):
         return {"changes": changes}
     if request.task == "twin":
         # Offline transport simulator; it cannot establish semantic QA quality.
-        materials = data["materials"]
+        materials = data["materials"] + data["corrections"]
         if not materials or "出生日期" in data["question"]:
             return dict(answerable=False, answer="没有相关材料", evidence_ids=[], limitations=["[fixture]"])
         m = max(materials, key=lambda item: (item["observed_at"], item["evidence_id"]))
