@@ -23,7 +23,7 @@ def identity_state():
 @pytest.mark.parametrize("question", ["我是谁？", " 我是谁? "])
 def test_correction_remains_in_full_context_and_exact_quote_is_original(question):
     source, correction, trait = identity_state()
-    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
+    provider = Static(dict(answerable=True, answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
     answer = orchestrator(provider).twin(TwinInput(subject_id="subject-a", question=question,
         snapshot=snapshot([trait]), materials=[source, correction]))
     assert answer.response_type == "ORIGINAL"
@@ -39,7 +39,7 @@ def test_latest_calibration_wins_without_erasing_previous_evidence():
                                             "observed_at": NOW})
     payload = TwinInput(subject_id="subject-a", question="我是谁？", snapshot=snapshot([trait]),
                         materials=[source, correction, previous])
-    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
+    provider = Static(dict(answerable=True, answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
     answer = orchestrator(provider).twin(payload)
     assert answer.evidence_ids == [correction.evidence_id]
     assert payload.materials[-1].excerpt == previous.excerpt
@@ -48,7 +48,7 @@ def test_latest_calibration_wins_without_erasing_previous_evidence():
 def test_short_calibrated_question_does_not_require_bigram_overlap():
     _, correction, _ = identity_state()
     correction = correction.model_copy(update={"context": "谁？"})
-    answer = orchestrator(Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))).twin(TwinInput(subject_id="subject-a", question="谁？",
+    answer = orchestrator(Static(dict(answerable=True, answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))).twin(TwinInput(subject_id="subject-a", question="谁？",
         snapshot=snapshot(), materials=[correction]))
     assert answer.evidence_ids == [correction.evidence_id]
 
@@ -63,7 +63,7 @@ def test_ineligible_correction_cannot_be_cited(mode):
         materials[1] = correction.model_copy(update={"speaker_authority": "UNVERIFIED"})
     else:
         materials[1] = correction.model_copy(update={"source_type": "THIRD_PARTY"})
-    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
+    provider = Static(dict(answerable=True, answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
     with pytest.raises(EvidenceInvalid):
         orchestrator(provider).twin(TwinInput(subject_id="subject-a", question="我是谁？",
             snapshot=snapshot([trait]), materials=materials))
@@ -88,7 +88,7 @@ def test_fact_correction_preserves_history_and_cites_uncorrected_facts():
 def test_correction_does_not_block_other_facts_in_the_same_recording():
     source, correction, baseline = identity_state()
     historical = baseline.model_copy(update={"status": "SUPERSEDED", "valid_to": correction.observed_at})
-    provider = Static(dict(answer="在海城大学读研。", evidence_ids=[source.evidence_id], limitations=[]))
+    provider = Static(dict(answerable=True, answer="在海城大学读研。", evidence_ids=[source.evidence_id], limitations=[]))
     answer = orchestrator(provider).twin(TwinInput(subject_id="subject-a", question="就读哪里？",
         snapshot=snapshot([historical, baseline]), materials=[source, correction]))
     assert answer.response_type == "SIMULATION"

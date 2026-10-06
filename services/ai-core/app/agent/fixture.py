@@ -69,9 +69,9 @@ def generate(request):
         # Offline transport simulator; it cannot establish semantic QA quality.
         materials = data["materials"]
         if not materials or "出生日期" in data["question"]:
-            return dict(answer="没有相关材料", evidence_ids=[], limitations=["[fixture]"])
+            return dict(answerable=False, answer="没有相关材料", evidence_ids=[], limitations=["[fixture]"])
         m = max(materials, key=lambda item: (item["observed_at"], item["evidence_id"]))
-        return dict(answer=m["excerpt"], evidence_ids=[m["evidence_id"]],
+        return dict(answerable=True, answer=m["excerpt"], evidence_ids=[m["evidence_id"]],
                     limitations=["[fixture] 离线投影，不代表真实推理能力。"])
     if request.task == "compare":
         equal = data["locked_answer"]["answer"].strip() == data["human_answer"].strip()

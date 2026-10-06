@@ -42,12 +42,14 @@ statement 保守概括，context 写适用时间/人物/情境，reason 解释�
 数字问题先分清总人数、包含本人的人数与其他队友数；原文只说团队人数时，
 明确说明这是总人数，不能把它自动当成除本人外的队友数，不编造人员对应关系。
 本人校正由 context 标明当时问题，observed_at 标明时间；最新相关校正纠正旧识别，
-仅覆盖被校正事实，原文中其他事实仍可用。不要复述已明确纠正的旧事实。
+仅覆盖被校正事实，原文中其他事实仍可用。明确纠错后，旧误识别不再是未解决矛盾，
+不要重复旧错误，也不要要求额外身份认证才能接受本人的文字纠错。
 当前理解中的 CONFLICTED 只影响相关事实，不能阻断同一录音中的其他事实。
 证据引用来自 materials 的 evidence_id，不引用 trait_id，不生成新 ID。
-正常回答必须引用支持答案的材料；无法从材料回答则说明具体缺少什么，evidence_ids 为空。
+问题需要的事实在材料中时 answerable=true，并引用支持答案的材料。
+材料没有所问事实时 answerable=false，说明具体缺少什么；其他背景信息不算回答。
 可以引用原文里明确提及的专业、时间等事实，不推断未知经历、意愿或理由。
-输出 answer、evidence_ids、limitations 三个字段。limitations 只放真实不确定性，
+输出 answerable、answer、evidence_ids、limitations 四个字段。limitations 只放真实不确定性，
 不把证据 ID、枚举、内部状态或认证说明混入回答正文。""",
     "compare": COMMON
     + """locked_answer 已在本人回答前保存，禁止改写。比较它与 human_answer，
@@ -60,6 +62,7 @@ statement 保守概括，context 写适用时间/人物/情境，reason 解释�
 class QuestionAnswer(BaseModel):
     """Private worker output; routing and provenance belong to the application."""
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    answerable: bool
     answer: str = Field(min_length=1, max_length=4000)
     evidence_ids: list[str] = Field(default_factory=list, max_length=12)
     limitations: list[str] = Field(default_factory=list, max_length=12)
@@ -235,7 +238,7 @@ class AgentOrchestrator:
         if len({m.evidence_id for m in payload.materials}) != len(payload.materials):
             raise EvidenceInvalid("Duplicate material references")
         if not pack:
-            result = QuestionAnswer(answer="目前没有授权原文可以回答，请先添加录音。")
+            result = QuestionAnswer(answerable=False, answer="目前没有授权原文可以回答，请先添加录音。")
         else:
             current = payload.snapshot.model_copy(update={"traits": [
                 t for t in payload.snapshot.traits if t.status != "SUPERSEDED"
@@ -247,11 +250,16 @@ class AgentOrchestrator:
         refs = result.evidence_ids
         if len(set(refs)) != len(refs) or not set(refs) <= pack.keys():
             raise EvidenceInvalid("Answer cites evidence outside authorized context")
+        if result.answerable and not refs:
+            raise EvidenceInvalid("Answer has no supporting evidence")
+        if not result.answerable:
+            refs = []
         response_type = "INSUFFICIENT"
         if refs:
             response_type = "ORIGINAL" if len(refs) == 1 and result.answer == pack[refs[0]].excerpt else "SIMULATION"
         return TwinAnswer(
-            **result.model_dump(), response_type=response_type,
+            **result.model_dump(exclude={"answerable", "evidence_ids"}),
+            evidence_ids=refs, response_type=response_type,
             subject_id=payload.subject_id, revision=payload.snapshot.revision,
             evidence=[pack[eid] for eid in refs], model_version=self.model_version,
             prompt_version=PROMPT_VERSION,
