@@ -7,6 +7,7 @@ from contextlib import ExitStack
 from io import BytesIO
 import json
 import os
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -51,7 +52,7 @@ def fixture_stt(port):
 
 
 def launch(stack, command, cwd, env, log_path):
-    log = stack.enter_context(log_path.open("w"))
+    log = stack.enter_context(log_path.open("a"))
     process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log, stderr=log)
 
     def stop():
@@ -65,6 +66,26 @@ def launch(stack, command, cwd, env, log_path):
 
     stack.callback(stop)
     return process
+
+
+def check_ports(ports):
+    with ExitStack() as stack:
+        for port in ports:
+            listener = stack.enter_context(socket.socket())
+            try:
+                listener.bind(("127.0.0.1", port))
+            except OSError as error:
+                raise RuntimeError(
+                    f"Port {port} is unavailable. A demo may already be running; "
+                    "open its browser console or stop it with Ctrl-C before restarting."
+                ) from error
+
+
+def check_processes(processes, log_dir):
+    for name, process in processes.items():
+        code = process.poll()
+        if code is not None:
+            raise RuntimeError(f"{name} exited with code {code}; read {log_dir / (name + '.log')}")
 
 
 def wait_health(url, process):
@@ -218,6 +239,13 @@ def main():
         parser.error(
             "configured mode requires --serve; use real Android recording for provider acceptance"
         )
+    ports = [args.backend_port, args.ai_port]
+    if args.mode == "fixture":
+        ports.append(args.stt_port)
+    try:
+        check_ports(ports)
+    except RuntimeError as error:
+        parser.error(str(error))
     state_dir = ROOT / "build/agent-demo" / args.mode
     state_dir.mkdir(parents=True, exist_ok=True)
     with ExitStack() as stack:
@@ -359,19 +387,24 @@ def main():
         )
         wait_health(backend_url, backend)
         if args.serve:
-            launch(
+            worker = launch(
                 stack,
                 [str(BACKEND / ".venv/bin/python"), "-m", "app.worker"],
                 BACKEND,
                 backend_env,
                 state_dir / "worker.log",
             )
+            processes = dict(backend=backend, ai=ai, worker=worker)
+            if args.mode == "fixture":
+                processes["stt"] = stt
+            check_processes(processes, state_dir)
             print(
                 f"Browser console: {backend_url}/debug/agent/\nAndroid Backend: {backend_url}\nLocal session values: {credential_file}\nCtrl-C stops the demo; the database remains for reconnect.",
                 flush=True,
             )
             try:
-                while backend.poll() is None and ai.poll() is None:
+                while True:
+                    check_processes(processes, state_dir)
                     time.sleep(1)
             except KeyboardInterrupt:
                 pass
@@ -380,4 +413,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except RuntimeError as error:
+        print(f"Demo stopped: {error}", file=sys.stderr)
+        sys.exit(1)
