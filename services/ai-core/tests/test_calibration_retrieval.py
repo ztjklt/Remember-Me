@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import pytest
-from remember_contracts.agent import Trait, TwinInput
+from remember_contracts.agent import PersonaInput, Trait, TwinInput
 
 from test_agent import NOW, Static, material, orchestrator, snapshot
 
@@ -72,3 +72,19 @@ def test_ineligible_corrections_cannot_override_conflict(mode):
     assert answer.response_type == "INSUFFICIENT"
     assert "矛盾" in answer.answer and "未解决的矛盾" in answer.limitations
     assert not answer.evidence_ids and not provider.requests
+
+
+def test_fact_correction_preserves_history_and_cites_uncorrected_facts():
+    source, correction, baseline = identity_state()
+    proposal = {"changes": [dict(action="CHANGE", target_trait_id=baseline.trait_id, domain="IDENTITY",
+        statement="自称晨安，海城大学研究生", context=baseline.context,
+        evidence_ids=[source.evidence_id, correction.evidence_id], confidence=0.7, reason="本人纠正姓名误识别") ]}
+    result = orchestrator(Static(proposal)).persona(PersonaInput(subject_id="subject-a",
+        snapshot=snapshot([baseline]), materials=[source, correction], new_evidence_ids=[correction.evidence_id]))
+    historical, current = result.traits
+    assert historical.status == "SUPERSEDED" and historical.statement == baseline.statement
+    assert historical.valid_to == correction.observed_at
+    assert current.statement == "自称晨安，海城大学研究生"
+    assert set(current.evidence_ids) == {source.evidence_id, correction.evidence_id}
+    assert not set(current.evidence_ids) & set(current.counter_evidence_ids)
+    assert current.status != "CONFLICTED" and source.excerpt.startswith("我叫陈安")

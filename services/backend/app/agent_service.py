@@ -402,6 +402,35 @@ class AgentService:
             raise ConsentInvalid("Twin source material was withdrawn during processing")
         return answer
 
+    def reapply_calibration(self, state, calibration_id, expected_revision, *, apply=False):
+        """Preview/reproject an existing completed correction after worker fixes.
+
+        Local maintenance only; the immutable lock and original revision remain
+        history. Normal authorization, provenance and revision CAS still apply.
+        """
+        self.guard(state, expected_revision)
+        record = self.record(state, calibration_id)
+        if record.state != "COMPLETED":
+            raise AgentConflict("Only a completed calibration can be reapplied")
+        materials = self.materials(state)
+        correction = next((m for m in materials if m.source_ref == "calibration:" + calibration_id), None)
+        if correction is None:
+            raise ConsentInvalid("Calibration material is unavailable")
+        if any(m.source_type == "CALIBRATION" and m.context == correction.context
+               and m.observed_at > correction.observed_at for m in materials):
+            raise AgentConflict("A newer calibration exists; reapply the latest correction")
+        snapshot = self.snapshot(state, materials)
+        result = self.client.persona(PersonaInput(subject_id=state.subject_id, snapshot=snapshot,
+            materials=materials, new_evidence_ids=[correction.evidence_id]))
+        self.guard(state, expected_revision)
+        if not {m.evidence_id for m in materials} <= {m.evidence_id for m in self.materials(state)}:
+            raise ConsentInvalid("Source material was withdrawn during reapplication")
+        updated = self.validate_persona(result, state, snapshot, materials)
+        if apply:
+            self.commit_snapshot(state, updated, materials)
+            self.session.commit()
+        return updated
+
     def lock(self, state, question):
         answer = self.twin(state, question)
         locked_at = utcnow()

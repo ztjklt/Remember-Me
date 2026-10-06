@@ -247,6 +247,67 @@ def test_subject_actor_isolation_and_unknown_question(loop):
     assert loop.client.get(loop.prefix + "/model").status_code == 401
 
 
+def test_reapply_completed_calibration_previews_and_appends_revision(loop):
+    from app.agent_service import AgentService
+
+    loop.grant()
+    eid = loop.upload("工作日下班后我喜欢一个人待着。")
+    locked = loop.post("/calibrations", {"question": "下班后喜欢做什么？"}).json()
+    submitted = loop.post(f"/calibrations/{locked['calibration_id']}/submit",
+        {"human_answer": "我喜欢先和家人聊天。", "expected_revision": 1}).json()
+    assert submitted["state"] == "COMPLETED"
+    original_result = loop.client.get(f"/api/v1/episodes/{eid}/result", headers=loop.headers).json()
+    with loop.app.state.database.session() as session:
+        service = AgentService(session, loop.app.state.agent_client)
+        state = service.require(loop.seed.subject_id, loop.seed.actor_id)
+        preview = service.reapply_calibration(state, locked["calibration_id"], 2)
+        assert preview.revision == 3 and state.revision == 2
+        assert loop.get("/model").json()["revision"] == 2
+        applied = service.reapply_calibration(state, locked["calibration_id"], 2, apply=True)
+        assert applied.revision == 3 and state.revision == 3
+    assert loop.get(f"/calibrations/{locked['calibration_id']}").json() == submitted
+    assert loop.client.get(f"/api/v1/episodes/{eid}/result", headers=loop.headers).json() == original_result
+
+
+@pytest.mark.parametrize("mode", ["stale", "incomplete", "foreign", "revoked", "withdrawn", "newer"])
+def test_reapply_requires_current_authorization_and_completed_calibration(loop, mode):
+    from app.agent_service import AgentConflict, AgentNotFound, AgentService
+    from app.errors import ConsentInvalid
+
+    loop.grant()
+    eid = loop.upload("工作日下班后我喜欢一个人待着。")
+    locked = loop.post("/calibrations", {"question": "下班后喜欢做什么？"}).json()
+    if mode != "incomplete":
+        response = loop.post(f"/calibrations/{locked['calibration_id']}/submit",
+            {"human_answer": "我喜欢先和家人聊天。", "expected_revision": 1})
+        assert response.status_code == 200, response.text
+    if mode == "newer":
+        latest = loop.post("/calibrations", {"question": "下班后喜欢做什么？"}).json()
+        response = loop.post(f"/calibrations/{latest['calibration_id']}/submit",
+            {"human_answer": "我喜欢自己待着。", "expected_revision": 2})
+        assert response.status_code == 200, response.text
+    with loop.app.state.database.session() as session:
+        service = AgentService(session, loop.app.state.agent_client)
+        state = service.require(loop.seed.subject_id, loop.seed.actor_id)
+        expected = state.revision
+        calibration_id = locked["calibration_id"]
+        error = AgentConflict
+        if mode == "stale":
+            expected -= 1
+        elif mode == "foreign":
+            calibration_id = "cal_another_subject"
+            error = AgentNotFound
+        elif mode == "revoked":
+            service.revoke(state)
+            error = ConsentInvalid
+        elif mode == "withdrawn":
+            service.withdraw_episode(state, eid)
+            expected = state.revision
+            error = ConsentInvalid
+        with pytest.raises(error):
+            service.reapply_calibration(state, calibration_id, expected, apply=True)
+
+
 def test_no_persona_without_single_speaker_declaration(loop):
     loop.grant()
     loop.upload("我喜欢热闹。", self_speaker=False)
