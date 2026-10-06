@@ -33,6 +33,7 @@ fun RecordingScreen(
     hasMicrophonePermission: (android.content.Context) -> Boolean = { appContext ->
         ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     },
+    onUnderstanding: (() -> Unit)? = null,
     onUpload: (AudioRecording) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -231,6 +232,9 @@ fun RecordingScreen(
         }
 
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (onUnderstanding != null && captureState !in setOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused)) {
+            TextButton(onClick = onUnderstanding, modifier = Modifier.testTag("capture.understanding")) { Text("查看已有录音与理解") }
+        }
         if (captureState == CaptureState.Idle || captureState == CaptureState.Failed) {
             Text("你可以说", style = MaterialTheme.typography.titleLarge)
             listOf("我是谁", "我现在的生活", "对我重要的人", "我最近在想什么").forEach {

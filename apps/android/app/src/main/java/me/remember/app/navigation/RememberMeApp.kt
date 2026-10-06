@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
-        composable(Routes.Recording){RecordingScreen(audioCaptureService) { recording ->
+        composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) }) { recording ->
             recordingForUpload = recording
             nav.navigate(Routes.Connection)
         }}
@@ -50,12 +50,18 @@ import kotlinx.coroutines.launch
             ProcessingScreen(
                 state = state,
                 back = { nav.popBackStack() },
-                retry = { scope.launch { episodeFlow.retry() } },
+                retry = { scope.launch {
+                    episodeFlow.retry()
+                    if (episodeFlow.state.value is EpisodeUiState.Ready && agentRepository.state.value.configured) agentRepository.refresh()
+                } },
                 showUnderstanding = { nav.navigate(Routes.Understanding) },
                 showMemories = { nav.navigate(Routes.Memories) }
             )
         }
-        composable(Routes.Understanding){ AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }) }
+        composable(Routes.Understanding){
+            val episode by episodeFlow.state.collectAsState()
+            AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, (episode as? EpisodeUiState.Ready)?.episodeId)
+        }
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
         composable(Routes.Home){CreatorHomeScreen(memoryRepository,nav::navigate)}

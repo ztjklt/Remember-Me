@@ -1,6 +1,6 @@
 # Remember Me Android Prototype
 
-Remember Me 是一个以声音为入口、可追溯且可纠错的 Digital Twin 与数字托付产品。本仓库是第一阶段 Android 原生交互原型，重点验证 Onboarding、Capture、Twin Birth、Voice Seed、Creator Home 与 Legacy Mode 的产品体验；所有 AI、声音克隆、后端与硬件能力目前均为 Mock 或接口占位。
+Remember Me 是一个以声音为入口、可追溯且可纠错的 Digital Twin 与数字托付产品。本仓库是 Android 原生交互原型：录音、上传、处理、Memory 与实验 Agent 接入 Backend；声音克隆、硬件和 Legacy 体验仍为 Mock 或接口占位。
 
 ## 运行
 
@@ -42,4 +42,11 @@ Phase 1 真实上传、状态查询与 Memory 展示的本地配置和验收步�
 
 ## Agent loop integration
 
-The existing recording shell can opt into the experimental Cloud Twin loop. After upload, the Agent page displays Backend snapshots, quoted evidence, a real query field, server-side answer locks and calibration results. Setup and tested commands: [Agent loop guide](../../docs/architecture/AGENT_CORE_LOOP.md). Provider credentials stay server-side; the session token stays in memory. Fixture STT/AI are wiring checks, not speech/personality acceptance.
+`1.1-agent`（versionCode 2）将网页版已验证的流程接入原生 Compose 页面：
+
+1. 录音页点击“查看已有录音与理解”，连接已有 Backend 会话；也可先录音、上传，处理完成后进入理解页。
+2. 主页面依次显示“记忆原文”“当前理解”“提问与回答”“校正与更新”。上传入口显示本次录音，其他入口显示最近的授权录音。
+3. 点击“提问”一次生成并保存待校正回答。填写本人校正，点击“保存校正并更新理解”，再提问验证。修改问题或理解版本变化时必须重新提问。
+4. 校正后保留旧回答和本人文字，展示更新结果。回答依据、模型版本、五维比较、恢复记录、同意撤回和连接设置位于折叠区。
+
+Provider 密钥只在服务端，Backend 会话 token 只在内存；fixture 页面明确标注固定转写。设备接入见 [Backend 联调说明](docs/BACKEND_INTEGRATION.md)，供应商和既有实验 API 见 [Agent loop guide](../../docs/architecture/AGENT_CORE_LOOP.md)。本次构建与运行结果见 [安卓验证记录](../../docs/verification/ANDROID_AGENT_2026_10_06.md)。
