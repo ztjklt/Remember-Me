@@ -54,17 +54,25 @@ def _tokens(text):
     return set(lower[i : i + 2] for i in range(max(0, len(lower) - 1)))
 
 
+def _question_key(text):
+    return re.sub(r"[\W_]+", "", text.casefold())
+
+
 def retrieve(payload: TwinInput):
     """Bounded transparent retrieval baseline; evaluated embeddings can replace it later."""
     query = _tokens(payload.question)
-    question = re.sub(r"[\W_]+", "", payload.question.casefold())
+    question = _question_key(payload.question)
     identity_query = any(term in question for term in (
         "我是谁", "我叫什么", "我的名字", "我的身份", "我的职业",
         "什么工作", "研究方向", "我的专业", "我的学历", "哪所大学",
         "什么学校", "whoami", "myname", "myoccupation",
     ))
     active = [t for t in payload.snapshot.traits if t.status != "SUPERSEDED"]
-    blocked = {eid for t in active for eid in t.counter_evidence_ids}
+    # Counter-evidence contradicts a trait, not necessarily the subject. An
+    # authorized human correction must remain available to answer its question.
+    corrections = {m.evidence_id for m in payload.materials
+                   if m.source_type == "CALIBRATION" and m.speaker_authority == "SELF_ATTESTED"}
+    blocked = {eid for t in active for eid in t.counter_evidence_ids} - corrections
     blocked |= {
         eid
         for t in payload.snapshot.traits
@@ -93,10 +101,12 @@ def retrieve(payload: TwinInput):
                 # the worker still checks whether they actually answer it.
                 if identity_query and trait.domain == "IDENTITY":
                     score = max(score, 1)
-        if score:
-            ranked.append((score, material.observed_at, material))
-    ranked.sort(key=lambda entry: (entry[0], entry[1]), reverse=True)
-    return [entry[2] for entry in ranked[:12]]
+        same_question = bool(question and material.source_type == "CALIBRATION"
+                             and _question_key(material.context) == question)
+        if score or same_question:
+            ranked.append((same_question, score, material.observed_at, material.evidence_id, material))
+    ranked.sort(key=lambda entry: entry[:4], reverse=True)
+    return [entry[4] for entry in ranked[:12]]
 
 
 class AgentOrchestrator:
@@ -269,7 +279,13 @@ class AgentOrchestrator:
             t.status == "CONFLICTED" and set(t.evidence_ids) & pack.keys()
             for t in payload.snapshot.traits
         )
-        if conflicted:
+        calibrated = [m for m in relevant if m.source_type == "CALIBRATION"
+                      and _question_key(m.context) == _question_key(payload.question)]
+        if calibrated:
+            latest = max(calibrated, key=lambda m: (m.observed_at, m.evidence_id))
+            decision = TwinDecision(response_type="ORIGINAL", answer=latest.excerpt,
+                                    evidence_ids=[latest.evidence_id], limitations=["本人校准原话，未认证说话人。"])
+        elif conflicted:
             decision = TwinDecision(
                 response_type="INSUFFICIENT",
                 answer="相关表达存在尚未确认的矛盾，请先由本人澄清。",
@@ -297,7 +313,6 @@ class AgentOrchestrator:
                 raise EvidenceInvalid(
                     "Insufficient answers must not imply supporting evidence"
                 )
-            decision.answer = "目前没有足够的相关材料回答这个问题。"
         elif not decision.evidence_ids:
             raise EvidenceInvalid("Twin answer has no evidence")
         elif decision.response_type == "ORIGINAL":
