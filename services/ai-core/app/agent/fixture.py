@@ -66,30 +66,13 @@ def generate(request):
             )
         return {"changes": changes}
     if request.task == "twin":
+        # Offline transport simulator; it cannot establish semantic QA quality.
         materials = data["materials"]
-        if not materials:
-            return dict(
-                response_type="INSUFFICIENT",
-                answer="没有材料",
-                evidence_ids=[],
-                limitations=[],
-            )
-        # Retrieval already sorted the pack. This simulator does not prove answer relevance.
-        m = materials[0]
-        allowed = request.response_schema["properties"]["response_type"]["enum"]
-        if "ORIGINAL" not in allowed or any(w in data["question"] for w in ("为什么", "综合", "原因")):
-            return dict(
-                response_type="SIMULATION",
-                answer="根据已有表达，我会考虑：" + m["excerpt"],
-                evidence_ids=[m["evidence_id"]],
-                limitations=["[fixture] 离线投影，不代表真实推理能力。"],
-            )
-        return dict(
-            response_type="ORIGINAL",
-            answer=m["excerpt"],
-            evidence_ids=[m["evidence_id"]],
-            limitations=["本人来源为操作人声明，尚未认证说话人。"],
-        )
+        if not materials or "出生日期" in data["question"]:
+            return dict(answer="没有相关材料", evidence_ids=[], limitations=["[fixture]"])
+        m = max(materials, key=lambda item: (item["observed_at"], item["evidence_id"]))
+        return dict(answer=m["excerpt"], evidence_ids=[m["evidence_id"]],
+                    limitations=["[fixture] 离线投影，不代表真实推理能力。"])
     if request.task == "compare":
         equal = data["locked_answer"]["answer"].strip() == data["human_answer"].strip()
         return {

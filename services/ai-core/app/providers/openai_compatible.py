@@ -103,6 +103,8 @@ class OpenAICompatibleProvider:
                 },
             },
         }
+        if request.task == "twin":
+            body["temperature"] = 0
         # Optional compatible-provider extension, sent only when configured.
         if self.enable_thinking is not None:
             body["enable_thinking"] = self.enable_thinking

@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 from remember_contracts.agent import PersonaInput, Trait, TwinInput
-from app.errors import AIOutputInvalid
+from app.errors import EvidenceInvalid
 
 from test_agent import NOW, Static, material, orchestrator, snapshot
 
@@ -21,16 +21,16 @@ def identity_state():
 
 
 @pytest.mark.parametrize("question", ["我是谁？", " 我是谁? "])
-def test_same_question_returns_exact_human_correction_without_model_call(question):
+def test_correction_remains_in_full_context_and_exact_quote_is_original(question):
     source, correction, trait = identity_state()
-    provider = Static({})
+    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
     answer = orchestrator(provider).twin(TwinInput(subject_id="subject-a", question=question,
         snapshot=snapshot([trait]), materials=[source, correction]))
     assert answer.response_type == "ORIGINAL"
     assert answer.answer == correction.excerpt
     assert answer.evidence_ids == [correction.evidence_id]
     assert answer.evidence[0].source_type == "CALIBRATION"
-    assert not provider.requests
+    assert provider.requests[0].worker_input["materials"][-1]["excerpt"] == correction.excerpt
 
 
 def test_latest_calibration_wins_without_erasing_previous_evidence():
@@ -39,7 +39,8 @@ def test_latest_calibration_wins_without_erasing_previous_evidence():
                                             "observed_at": NOW})
     payload = TwinInput(subject_id="subject-a", question="我是谁？", snapshot=snapshot([trait]),
                         materials=[source, correction, previous])
-    answer = orchestrator(Static({})).twin(payload)
+    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
+    answer = orchestrator(provider).twin(payload)
     assert answer.evidence_ids == [correction.evidence_id]
     assert payload.materials[-1].excerpt == previous.excerpt
 
@@ -47,32 +48,25 @@ def test_latest_calibration_wins_without_erasing_previous_evidence():
 def test_short_calibrated_question_does_not_require_bigram_overlap():
     _, correction, _ = identity_state()
     correction = correction.model_copy(update={"context": "谁？"})
-    answer = orchestrator(Static({})).twin(TwinInput(subject_id="subject-a", question="谁？",
+    answer = orchestrator(Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))).twin(TwinInput(subject_id="subject-a", question="谁？",
         snapshot=snapshot(), materials=[correction]))
     assert answer.evidence_ids == [correction.evidence_id]
 
 
-@pytest.mark.parametrize("mode", ["withdrawn", "unverified", "third-party", "superseded", "unrelated"])
-def test_ineligible_corrections_cannot_override_conflict(mode):
+@pytest.mark.parametrize("mode", ["withdrawn", "unverified", "third-party"])
+def test_ineligible_correction_cannot_be_cited(mode):
     source, correction, trait = identity_state()
-    materials, traits = [source, correction], [trait]
+    materials = [source, correction]
     if mode == "withdrawn":
         materials = [source]
     elif mode == "unverified":
         materials[1] = correction.model_copy(update={"speaker_authority": "UNVERIFIED"})
-    elif mode == "third-party":
-        materials[1] = correction.model_copy(update={"source_type": "THIRD_PARTY"})
-    elif mode == "superseded":
-        traits.append(trait.model_copy(update={"trait_id": "old-correction", "status": "SUPERSEDED",
-                                               "evidence_ids": [correction.evidence_id], "counter_evidence_ids": []}))
     else:
-        materials[1] = correction.model_copy(update={"context": "周末喜欢做什么？"})
-    provider = Static({})
-    answer = orchestrator(provider).twin(TwinInput(subject_id="subject-a", question="我是谁？",
-        snapshot=snapshot(traits), materials=materials))
-    assert answer.response_type == "INSUFFICIENT"
-    assert "矛盾" in answer.answer and "未解决的矛盾" in answer.limitations
-    assert not answer.evidence_ids and not provider.requests
+        materials[1] = correction.model_copy(update={"source_type": "THIRD_PARTY"})
+    provider = Static(dict(answer=correction.excerpt, evidence_ids=[correction.evidence_id], limitations=[]))
+    with pytest.raises(EvidenceInvalid):
+        orchestrator(provider).twin(TwinInput(subject_id="subject-a", question="我是谁？",
+            snapshot=snapshot([trait]), materials=materials))
 
 
 def test_fact_correction_preserves_history_and_cites_uncorrected_facts():
@@ -91,25 +85,14 @@ def test_fact_correction_preserves_history_and_cites_uncorrected_facts():
     assert current.status != "CONFLICTED" and source.excerpt.startswith("我叫陈安")
 
 
-@pytest.mark.parametrize("quote_old_excerpt", [False, True])
-def test_corrected_mixed_excerpt_requires_synthesis_for_other_questions(quote_old_excerpt):
+def test_correction_does_not_block_other_facts_in_the_same_recording():
     source, correction, baseline = identity_state()
     historical = baseline.model_copy(update={"status": "SUPERSEDED", "valid_to": correction.observed_at})
-    current = baseline.model_copy(update={"trait_id": "corrected", "status": "CANDIDATE",
-        "statement": "自称晨安，海城大学研究生", "counter_evidence_ids": [],
-        "evidence_ids": [source.evidence_id, correction.evidence_id]})
-    provider = Static(dict(response_type="ORIGINAL" if quote_old_excerpt else "SIMULATION",
-        answer=source.excerpt if quote_old_excerpt else "我在海城大学读研究生。",
-        evidence_ids=[source.evidence_id] if quote_old_excerpt else [source.evidence_id, correction.evidence_id],
-        limitations=[]))
-    agent = orchestrator(provider)
-    payload = TwinInput(subject_id="subject-a", question="我在哪所大学读研？",
-        snapshot=snapshot([historical, current]), materials=[source, correction])
-    if quote_old_excerpt:
-        with pytest.raises(AIOutputInvalid):
-            agent.twin(payload)
-    else:
-        answer = agent.twin(payload)
-        assert answer.response_type == "SIMULATION" and answer.answer == "我在海城大学读研究生。"
-        assert set(answer.evidence_ids) == {source.evidence_id, correction.evidence_id}
-    assert "ORIGINAL" not in provider.requests[0].response_schema["properties"]["response_type"]["enum"]
+    provider = Static(dict(answer="在海城大学读研。", evidence_ids=[source.evidence_id], limitations=[]))
+    answer = orchestrator(provider).twin(TwinInput(subject_id="subject-a", question="就读哪里？",
+        snapshot=snapshot([historical, baseline]), materials=[source, correction]))
+    assert answer.response_type == "SIMULATION"
+    request = provider.requests[0]
+    assert {m["evidence_id"] for m in request.worker_input["materials"]} == {"e1", "c1"}
+    assert all(t["status"] != "SUPERSEDED" for t in request.worker_input["snapshot"]["traits"])
+    assert "response_type" not in request.response_schema["properties"]

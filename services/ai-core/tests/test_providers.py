@@ -264,3 +264,17 @@ def test_streaming_limit_closes_response_without_consuming_unbounded_data():
         provider.generate(_request())
     assert stream.reads == 2
     assert stream.closed
+
+
+def test_question_answer_sampling_is_fixed_without_changing_memory_requests():
+    from dataclasses import replace
+    bodies = []
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={'choices': [{'finish_reason': 'stop',
+            'message': {'content': json.dumps(_provider_response())}}]})
+    provider = _http_provider(handler)
+    provider.generate(_request())
+    provider.generate(replace(_request(), task='twin'))
+    assert 'temperature' not in bodies[0]
+    assert bodies[1]['temperature'] == 0

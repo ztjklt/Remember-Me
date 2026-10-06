@@ -170,8 +170,8 @@ def test_persona_does_not_accept_unverified_or_third_party_evidence(authority, s
         )
 
 
-def test_unknown_question_returns_insufficient_without_provider_call():
-    provider = Static({})
+def test_unknown_question_is_assessed_by_model_with_original_context():
+    provider = Static(dict(answer="没有出生日期材料", evidence_ids=[], limitations=[]))
     answer = orchestrator(provider).twin(
         TwinInput(
             subject_id="subject-a",
@@ -182,17 +182,17 @@ def test_unknown_question_returns_insufficient_without_provider_call():
     )
     assert answer.response_type == "INSUFFICIENT"
     assert not answer.evidence_ids
-    assert not provider.requests
+    assert provider.requests[0].worker_input["materials"][0]["excerpt"] == material().excerpt
 
 
 @pytest.mark.parametrize("question", ["我是谁？", "我的研究方向是什么？", "我做什么工作？"])
-def test_identity_intent_retrieves_typed_evidence_without_literal_overlap(question):
+def test_paraphrased_questions_receive_original_context_without_keyword_filter(question):
     source = material(text="陈安，研发工程师，专攻智能体的长期记忆。")
     proposal = Static({"changes": [dict(action="ADD", target_trait_id=None, domain="IDENTITY",
         statement="研发工程师", context="", evidence_ids=["e1"], confidence=0.8, reason="本人介绍")]})
     traits = orchestrator(proposal).persona(PersonaInput(subject_id="subject-a", snapshot=snapshot(),
         materials=[source], new_evidence_ids=["e1"])).traits
-    twin = Static(dict(response_type="ORIGINAL", answer=source.excerpt, evidence_ids=["e1"], limitations=[]))
+    twin = Static(dict(answer=source.excerpt, evidence_ids=["e1"], limitations=[]))
     answer = orchestrator(twin).twin(TwinInput(subject_id="subject-a", question=question,
         snapshot=snapshot(traits), materials=[source]))
     assert answer.answer == source.excerpt
@@ -200,34 +200,14 @@ def test_identity_intent_retrieves_typed_evidence_without_literal_overlap(questi
     assert len(twin.requests) == 1
 
 
-def test_original_cannot_be_a_paraphrase_or_foreign_quote():
-    p = Static(
-        dict(
-            response_type="ORIGINAL",
-            answer="我讨厌一个人待着。",
-            evidence_ids=["e1"],
-            limitations=[],
-        )
-    )
-    with pytest.raises(EvidenceInvalid):
-        orchestrator(p).twin(
-            TwinInput(
-                subject_id="subject-a",
-                question="下班后喜欢怎样待着？",
-                snapshot=snapshot(),
-                materials=[material()],
-            )
-        )
+def test_generated_answer_is_not_misclassified_as_original_and_foreign_refs_fail():
+    p = Static(dict(answer="下班后我喜欢独处。", evidence_ids=["e1"], limitations=[]))
+    payload = TwinInput(subject_id="subject-a", question="下班后怎么度过？",
+                        snapshot=snapshot(), materials=[material()])
+    assert orchestrator(p).twin(payload).response_type == "SIMULATION"
     p.output["evidence_ids"] = ["not-in-pack"]
     with pytest.raises(EvidenceInvalid):
-        orchestrator(p).twin(
-            TwinInput(
-                subject_id="subject-a",
-                question="下班后喜欢怎样待着？",
-                snapshot=snapshot(),
-                materials=[material()],
-            )
-        )
+        orchestrator(p).twin(payload)
 
 
 def test_changed_view_preserves_history_and_blocks_old_original():
@@ -311,3 +291,31 @@ def test_persona_worker_prompt_and_input_are_passed_to_real_provider_interface()
     assert request.worker_input["materials"][0]["excerpt"] == material().excerpt
     assert "human_answer" not in request.worker_input
     assert request.response_schema["additionalProperties"] is False
+
+
+def test_full_context_keeps_team_facts_missing_from_understanding():
+    source = material('team', '我们一共六人，三人学物理，两人学设计，一人学计算机。')
+    others = [material(f'noise{i}', f'第{i}次谈到周末散步。') for i in range(15)]
+    provider = Static(dict(answer='团队共六人，专业是物理、设计和计算机。',
+                           evidence_ids=['team'], limitations=[]))
+    answer = orchestrator(provider).twin(TwinInput(subject_id='subject-a',
+        question='同行的人数及学科构成？', snapshot=snapshot(), materials=[source, *others]))
+    assert answer.response_type == 'SIMULATION'
+    assert answer.evidence_ids == ['team']
+    assert len(provider.requests[0].worker_input['materials']) == 16
+    assert len(answer.answer) < len(source.excerpt) + 10
+
+
+@pytest.mark.parametrize('refs', [['e1', 'e1'], ['foreign']])
+def test_bad_answer_references_are_rejected(refs):
+    provider = Static(dict(answer='独处', evidence_ids=refs, limitations=[]))
+    with pytest.raises(EvidenceInvalid):
+        orchestrator(provider).twin(TwinInput(subject_id='subject-a', question='休息方式？',
+            snapshot=snapshot(), materials=[material()]))
+
+
+def test_no_authorized_original_never_calls_provider():
+    provider = Static({})
+    answer = orchestrator(provider).twin(TwinInput(subject_id='subject-a', question='休息方式？',
+        snapshot=snapshot(), materials=[material().model_copy(update={'speaker_authority':'UNVERIFIED'})]))
+    assert answer.response_type == 'INSUFFICIENT' and not provider.requests
