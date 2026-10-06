@@ -202,6 +202,31 @@ class AgentService:
                     speaker_authority="SELF_ATTESTED",
                 )
             )
+        # Original text is a first-class input, independent of which spans the
+        # unchanged Memory extractor selected. Reuse full-span evidence when present.
+        episodes = self.session.scalars(select(Episode).join(Consent).where(
+            Episode.subject_id == state.subject_id, Episode.actor_id == state.actor_id,
+            Consent.status == "granted", Consent.revoked_at.is_(None),
+            (Episode.status == "ready") | (Episode.episode_id == include_episode_id),
+        ).order_by(Episode.recorded_at, Episode.episode_id))
+        for episode in episodes:
+            text = episode.transcript
+            if (not text or episode.episode_id in state.excluded_episode_ids
+                or (episode.capture_metadata or {}).get("agent_subject_single_speaker") is not True):
+                continue
+            source_ref = f"episode:{episode.episode_id}#span:0-{len(text)}"
+            if any(m.source_ref == source_ref for m in material_list):
+                continue
+            if len(text) > 12000:
+                raise RequestInvalid("Original transcript exceeds experimental context budget; no text was truncated")
+            material_list.append(Material(
+                evidence_id="tr_" + sha256((episode.episode_id + "\0" + text).encode()).hexdigest()[:40],
+                episode_id=episode.episode_id, excerpt=text, source_ref=source_ref,
+                source_type="THIRD_PARTY" if re.search(
+                    r"(?:女儿|儿子|朋友|医生|同事|妈妈|爸爸|他|她)(?:说|觉得|认为)[：:，,]?", text
+                ) else "SUBJECT",
+                observed_at=as_utc(episode.recorded_at), speaker_authority="SELF_ATTESTED",
+            ))
         original_ids = {m.evidence_id for m in material_list}
         for item in self.session.scalars(
             select(AgentMaterial)

@@ -597,3 +597,35 @@ def test_evidence_resolver_is_subject_scoped_and_withdrawal_closes_it(loop):
         == 200
     )
     assert loop.get("/evidence/" + source["evidence_id"]).status_code == 404
+
+
+@pytest.mark.parametrize('has_span', [False, True])
+def test_full_original_is_available_without_memory_evidence_coverage(loop, has_span):
+    from sqlalchemy import delete
+    from app.models import Episode, MemoryItem
+    loop.grant()
+    text = '周末我喜欢散步。我们团队有六人，来自物理、设计和计算机专业。'
+    eid = loop.upload(text)
+    with loop.app.state.database.session() as session:
+        evidence = session.scalar(select(Evidence).where(Evidence.episode_id == eid))
+        if has_span:
+            excerpt = '周末我喜欢散步。'
+            evidence.excerpt = excerpt
+            evidence.span_start, evidence.span_end = 0, len(excerpt)
+            evidence.source_ref = f'episode:{eid}#span:0-{len(excerpt)}'
+        else:
+            session.execute(delete(Evidence).where(Evidence.episode_id == eid))
+        before = [(m.memory_item_id, m.content, m.evidence_ids) for m in session.scalars(
+            select(MemoryItem).where(MemoryItem.episode_id == eid))]
+        session.commit()
+    sources = loop.get('/evidence').json()
+    original = next(m for m in sources if m['excerpt'] == text)
+    assert original['source_ref'] == f'episode:{eid}#span:0-{len(text)}'
+    assert original['evidence_id'] in {m['evidence_id'] for m in loop.get('/evidence').json()}
+    assert loop.post('/twin', {'question':'同行的人数和学科构成？'}).status_code == 200
+    with loop.app.state.database.session() as session:
+        assert session.get(Episode, eid).transcript == text
+        assert [(m.memory_item_id, m.content, m.evidence_ids) for m in session.scalars(
+            select(MemoryItem).where(MemoryItem.episode_id == eid))] == before
+    loop.client.delete(loop.prefix + f'/episodes/{eid}/use', headers=loop.headers)
+    assert not loop.get('/evidence').json()
