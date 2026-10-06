@@ -24,6 +24,13 @@ class AgentClient:
             raise AiUnavailable("Agent Worker is unreachable") from exc
         if response.status_code in {408, 504}:
             raise AiTimeout("Agent Worker timed out")
+        if response.status_code == 502:
+            try:
+                code = response.json().get("error_code")
+            except (ValueError, AttributeError):
+                code = None
+            if code in {"AI_SCHEMA_INVALID", "EVIDENCE_INVALID"}:
+                raise AiSchemaInvalid("Agent Worker returned invalid output or evidence")
         if response.status_code == 429 or response.status_code >= 500:
             raise AiUnavailable("Agent Worker is temporarily unavailable")
         if not response.is_success:
