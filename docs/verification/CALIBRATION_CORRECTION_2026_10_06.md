@@ -27,6 +27,10 @@
 
 真实供应商 Persona 预览提出 CHANGE / IDENTITY，保留学校与学历。维护工具再次预览通过后，应用为 revision 5；当前身份使用本人更正，旧结论保留为历史，原校准记录、锁定摘要和原始 Episode 结果不变。浏览器验证相同身份问题正确返回 ORIGINAL，姓名另一种问法返回基于校准的 SIMULATION。
 
+最终浏览器实测：“我是谁？”返回本人校准的 ORIGINAL（1 条证据）；“我叫什么名字？”返回 SIMULATION（1 条校准证据）；“我在哪所大学读研？”返回 SIMULATION（2 条证据），保留学校与学历且不带旧误识别。三问均首次成功，恢复原校准的完整响应与修复前一致，当前快照仍为 revision 5。
+
+补充验证发现学校问题曾返回带旧错误的整段原话，因此收紧私有整合 Schema。收紧后曾出现两次 AI Core 502 / Backend 503；增加本次只允许整合的明确 Worker 指令后，真实供应商和最终浏览器验证通过。未放宽证据校验或回退 fixture；初次失败及最终详情分别保存在忽略目录的 `calibration-narrow-schema-initial-failure.json` 与 `calibration-browser-after.json`。
+
 ## 操作与边界
 
 升级代码不会自动重写历史快照。确需修复已有派生快照时，从根目录运行：
