@@ -38,9 +38,9 @@ retain the Memory implementation, and avoid compression or a new memory framewor
   mixed-excerpt schema with one full authorized-context question-answer worker.
 - Worker input includes original material, current active understanding and all
   authorized corrections. Summaries supplement originals; they do not replace them.
-- LLM returns concise `answer`, cited `evidence_ids` and `limitations`. Code assigns
+- LLM returns `answerable`, concise `answer`, cited `evidence_ids` and `limitations`. Code assigns
   ORIGINAL only to an exact cited excerpt, SIMULATION to an evidenced generated
-  answer and INSUFFICIENT when there is no supporting evidence. No model-owned
+  answer and INSUFFICIENT when the requested fact is absent. Background citations are not presented as supporting an unknown fact. No model-owned
   routing enum can reject an otherwise correctly cited answer.
 - A correction is supplied with its question and time. Latest relevant correction
   supersedes an earlier mistaken fact, without making every old recording unusable.

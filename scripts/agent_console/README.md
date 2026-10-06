@@ -14,7 +14,7 @@
 
 加载会话会自动读取已有原文与理解。提问调用既有校准接口，一次生成并保存待校正的回答，保证页面显示与提交比较的是同一份答案。提交后保留明确标注的校正前回答，展示本人校正及新理解，五维差异收在调试区。保留 Calibration ID 可在刷新页面后恢复锁定。理解版本变化后需要重新锁定，不能用旧答案校准新模型。可以读取下次问题，或明确撤回 Cloud Twin 同意。
 
-姓名等同音字无法只靠声音确认，转写是机器识别结果。遇到误识别，在本人答案中明确更正；事实纠错更新当前理解，并保留更正依据。同一个问题优先引用最新有效的本人校准原话，撤回或失效的材料不能使用。历史提取结果保持原样，校准后的 Twin 回答不会拿它覆盖本人的文字更正。
+姓名等同音字无法只靠声音确认，转写是机器识别结果。遇到误识别，在本人答案中明确更正；事实纠错更新当前理解，并保留更正依据。问答把完整授权原文、当前理解和本人校正一并交给 LLM；相关校正优先于旧识别，撤回或失效的材料不能使用。历史提取结果保持原样，校准后的 Twin 回答不会拿它覆盖本人的文字更正。
 
 已有错误快照不会因为代码升级自动重写。开发者可使用 `scripts/reapply_agent_calibration.py --calibration-id <已完成的ID> --expected-revision <当前版本>` 预览修正结果；确认后增加 `--apply`。该工具仅使用 configured 演示会话，应用前备份本地数据库，通过既有授权、证据校验和 revision CAS 新增快照，保留原校准记录；有更新校准或 revision 不匹配时拒绝应用。个人报告及备份只保存在忽略的 `build/agent-demo/provider-check/`。
 
@@ -40,4 +40,4 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py --serve --mode fixtu
 /tmp/remember-console-venv/bin/python scripts/agent_console/tests/browser_agent.py
 ```
 
-第二个测试依赖第一个创建的 fixture 材料，结束时撤回该测试会话的同意；重新运行时仍按这个顺序。可通过 `REMEMBER_CHROMIUM_PATH` 指定已有 Chromium。这些测试使用模拟麦克风和 fixture 服务，不作为真实语音验收。真实供应商和浏览器音频传输的实测见 [验证记录](../../docs/verification/BROWSER_AGENT_2026_10_05.md)。
+第二个测试依赖第一个创建的 fixture 材料，结束时撤回该测试会话的同意；重新运行时仍按这个顺序。可通过 `REMEMBER_CHROMIUM_PATH` 指定已有 Chromium。这些测试使用模拟麦克风和 fixture 服务，不作为真实语音验收。简化后的真实问答与校正循环见 [QA 验证记录](../../docs/verification/FACTUAL_QA_2026_10_06.md)。真实供应商和浏览器音频传输的实测见 [验证记录](../../docs/verification/BROWSER_AGENT_2026_10_05.md)。

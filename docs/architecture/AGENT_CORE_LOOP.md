@@ -13,7 +13,8 @@ flowchart TD
   C --> D[原文 span 与稳定 Evidence ID]
   D --> E[Persona Schema Worker]
   E --> F[Backend snapshot revision CAS]
-  F --> G[检索已授权原文与当前理解]
+  F --> G[完整授权原文、当前理解与本人校正]
+  B --> G
   G --> H[Twin: Original / Simulation / Insufficient]
   H --> I[Backend 保存答案锁定记录]
   I --> J[本人现在填写答案]
@@ -30,11 +31,20 @@ flowchart TD
 
 `model_version` 记录推理部署版本，`revision` 记录 Person Model 快照版本。Trait 的 confidence 是内部未校准值，页面不将它显示为忠实度百分比。Planner 为显式领域优先级/矛盾优先的启发式，每次返回一个问题，不宣称测量了信息增益。
 
-转写、历史 Memory 提取结果、当前 Person Model 是不同层。本人明确纠正转写中的事实时，新增 CALIBRATION 证据，由 Persona 修正受影响的旧理解并保留未被更正事实；旧转写和旧快照保留，不把误识别修复描述成本人改变了姓名。`agent-workers-v4` 明确这项规则。
+转写、历史 Memory 提取结果、当前 Person Model 是不同层。本人明确纠正转写中的事实时，新增 CALIBRATION 证据，由 Persona 修正受影响的旧理解并保留未被更正事实；旧转写和旧快照保留，不把误识别修复描述成本人改变了姓名。Persona 的已有纠错规则保留。
 
-Twin 对相同问题（忽略空格、标点与大小写）优先逐字引用最新有效的本人校准，仍标注 ORIGINAL / CALIBRATION；校准没有回答的其他问题继续走检索和模型判断。反证表示“挑战了某个结论”，不等于不可引用；已撤回、未授权、被替代的材料继续排除。无法解决的矛盾返回矛盾原因，不混同于缺少材料。
+2026-10-06 按用户要求简化问答核心，审查见 [Agent loop review](AGENT_LOOP_REVIEW_2026_10_06.md)。
+`agent-workers-v5` 不再使用字符匹配、身份问题关键词、全局冲突拦截或第二套整合 Schema。
+问答输入分别包含完整授权原文、当前理解与按时间排序的本人校正；未被摘要覆盖的原文事实仍可回答。
+LLM 一次输出能否回答、简洁正文、证据 ID 和局限。程序校验引用并确定类型：逐字引用为 ORIGINAL，
+有依据的生成回答为 SIMULATION，缺少所问事实为 INSUFFICIENT。缺少事实时引用的背景材料不作为答案依据。
+本人相关校正优先于旧转写，未更正的其他事实继续使用。回答无法确认的事实时说明缺少什么，不编造。
 
-已由校准替代的旧结论若与其他事实共用完整转写，查询其他事实时使用私有整合 Schema，只允许 SIMULATION / INSUFFICIENT，防止将含旧错误的整段转写标为当前原话。仍可引用这段材料中未更正的事实；历史查询也保守标注整合，不宣称精确事实分段已经完成。对相同校准问题的逐字路由不受影响。
+Backend 直接解析符合授权和本人声明的 `Episode.transcript`。已有全文证据 ID 复用；若 Memory 仅选了
+部分 span 或没有证据，则为完整原文生成稳定引用，不改 Memory 数据。仍检查 Actor/Subject、有效同意、
+单人声明和撤回，并保留上下文上限；超限明确失败，不压缩或截断。Memory 提取实现、原文和历史结果不变。
+问答采样温度设为 0，要求重复事实一致，不承诺逐字一致。Schema/证据错误返回 502 AI_SCHEMA_INVALID，
+不再伪装成 503 AI_UNAVAILABLE。真实验证见 [QA 验证记录](../verification/FACTUAL_QA_2026_10_06.md)。
 
 代码升级后若需修复旧派生快照，可使用本机工具 `scripts/reapply_agent_calibration.py`，默认预览，显式 `--apply` 才追加 revision；记录与原始 Episode 不变。它没有新增 API、契约或数据库 schema。详见 [校准修复验证](../verification/CALIBRATION_CORRECTION_2026_10_06.md)。
 
@@ -125,9 +135,9 @@ REMEMBER_AI_TIMEOUT_SECONDS=90
 REMEMBER_AGENT_TIMEOUT_SECONDS=90
 ```
 
-该 ASR 使用 [原生 DashScope 接口](https://help.aliyun.com/zh/model-studio/non-realtime-speech-recognition-user-guide)，地址不包含 `/compatible-mode/v1`。它只负责转写；记忆提取与 Agent 仍需文本模型。同一工作空间的文本模型通过 `AI_BASE_URL=https://<工作空间>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` 调用。本次配置的文本模型是 `qwen3.8-flash`，设置 `AI_ENABLE_THINKING=false`。这个可选参数只在配置时发送，其他兼容供应商可省略。
+该 ASR 使用 [原生 DashScope 接口](https://help.aliyun.com/zh/model-studio/non-realtime-speech-recognition-user-guide)，地址不包含 `/compatible-mode/v1`。它只负责转写；记忆提取与 Agent 仍需文本模型。同一工作空间的文本模型通过 `AI_BASE_URL=https://<工作空间>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` 调用。此前千问联调使用 `qwen3.8-flash`，设置 `AI_ENABLE_THINKING=false`。这个可选参数只在配置时发送，其他兼容供应商可省略；当前 DeepSeek 配置见下文。
 
-Memory 提取使用 `memory-extractor-v3`：程序提供原文全文的准确 span，模型复用该原文证据；原文与位置校验仍执行。身份类提问补充检索当前 IDENTITY Trait 的授权证据，最终回答仍由 Twin 判断相关性并引用原文。中文原文直接传入模型，摘要保持输入语言。
+Memory 提取使用 `memory-extractor-v3`：程序提供原文全文的准确 span，模型复用该原文证据；原文与位置校验仍执行。问答直接使用完整原文、当前理解和本人校正，引用由程序校验。中文原文直接传入模型，摘要保持输入语言。
 若已有 `.env` 显式设置 `AI_PROMPT_VERSION`，同步改为 `memory-extractor-v3`。2026-10-05 的真实录音验证及失败记录见 [千问联调记录](../verification/QWEN_ASR_2026_10_05.md)。
 
 ```bash
@@ -135,6 +145,22 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py --serve --mode confi
 ```
 
 配置模式不启动 fixture STT，AI Core 强制使用非 fixture 环境，缺少真实配置会启动失败。真实验收要用现场新录音和未预置的问题。
+
+当前本地文本 LLM 已按用户请求切换为 DeepSeek；ASR 仍使用 Backend 中的千问配置。
+DeepSeek Chat Completions 使用 [JSON mode](https://api-docs.deepseek.com/guides/json_mode/)，设置：
+
+```dotenv
+AI_PROVIDER=openai_compatible
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-flash
+AI_MODEL_VERSION=deepseek-flash-remember-me-20261006
+AI_API_KEY=<仅本地环境文件>
+AI_RESPONSE_FORMAT=json_object
+AI_THINKING_MODE=disabled
+```
+
+此配置不设置千问的 `AI_ENABLE_THINKING` 扩展。Provider 将 schema 放入 JSON 提示；解析后仍执行
+Pydantic 和来源校验。其他支持 strict json_schema 的供应商保留默认格式。共享契约不变。
 
 ## 实验 API
 
@@ -155,7 +181,7 @@ services/backend/.venv/bin/python scripts/run_agent_demo.py --serve --mode confi
 
 上述撤除是 Agent 材料使用权，尚未实现原始音频物理删除、导出、生产身份关系或 Legacy 授权。材料来源是 SELF_ATTESTED，不是 speaker verification。明显的转述词有保守 gate，不能当作全面说话人/语义认证。
 
-原型预算：160 条授权材料/160 Trait，每次最多 40 条新材料，Twin 最多检索 12 条。超过预算明确失败，不静默截断。语义正确性、Original 的回答相关性、中文召回和候选 trait 质量仍需真实模型标注评测；逐字与引用校验无法证明语义成立。
+原型预算：160 条授权材料/160 Trait，每次最多 40 条新材料，Twin 使用全部授权材料、最多引用 12 条。超过预算明确失败，不静默截断。语义正确性、Original 的回答相关性、中文召回和候选 trait 质量仍需真实模型标注评测；逐字与引用校验无法证明语义成立。
 
 ## 环境与验证
 
