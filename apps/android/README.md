@@ -4,9 +4,12 @@ Remember Me 是一个以声音为入口、可追溯且可纠错的 Digital Twin 
 
 ## 运行
 
-要求：Android Studio Stable、JDK 17、Android SDK 35、Android Emulator。使用 Android Studio 打开仓库根目录，等待 Gradle Sync，选择 `RememberMe_API_35`（或任意 API 35 手机模拟器），运行 `app`。
+要求：Android Studio Stable、JDK 17、Android SDK 35，以及手机或 Android Emulator。使用 Android Studio 打开 `apps/android`，等待 Gradle Sync，选择设备，运行 `app`。
 
-命令行：
+已安装 APK 的使用者不需要运行 Gradle；Gradle 是电脑编译工具，不会启动 Backend。
+`JAVA_HOME` 报错、现有演示会话的 ID 填写和无线连接步骤见 [手机联调快速开始](docs/PHONE_QUICKSTART.md)。
+
+命令行（在 `apps/android` 目录，先配置 JDK/SDK 环境）：
 
 ```bash
 ./gradlew clean test assembleDebug

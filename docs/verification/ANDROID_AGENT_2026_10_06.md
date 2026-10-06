@@ -19,11 +19,19 @@ Backend、AI Core、Memory 提取、数据库和共享契约未修改，无新�
 在 `apps/android` 运行：
 
 ```bash
+export JAVA_HOME=/tmp/remember-android-tools/java/usr/lib/jvm/java-17-openjdk-amd64
+export ANDROID_HOME=/tmp/remember-android-tools/sdk
+export GRADLE_USER_HOME=/home/qingtian/projects/Remember-Me/build/android-gradle
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 ./gradlew --no-daemon test assembleDebug assembleDebugAndroidTest lintDebug
 ```
 
 本机使用 `/tmp/remember-android-tools` 下的 JDK 17、SDK 35，通过 `JAVA_HOME`、`ANDROID_HOME`
 配置；`GRADLE_USER_HOME` 指向忽略的 `build/android-gradle`。工具和 APK 未提交。
+以上路径是本次机器的临时工具目录；新终端需要重新 export，重启清理后应改用持久安装的
+JDK/SDK 路径。[手机联调快速开始](../../apps/android/docs/PHONE_QUICKSTART.md) 区分编译和使用 APK 的步骤。
+同日按补全后的命令复核：`BUILD SUCCESSFUL in 31s`，105 个任务中 3 个执行、102 个 up-to-date。
+没有业务代码变化，单元测试复用此前通过的结果；这次确认的是新终端显式配置环境后的构建入口。
 
 - Debug、Release 各 31 个单元测试通过；包含真实 HTTP adapter 消费 Backend fixture、
   一次锁定、校正保留、版本/问题限制、刷新失败、撤除后读取失败及会话隔离。
