@@ -21,7 +21,10 @@ export async function api(path, options = {}) {
   const response = await fetch(path, {...options, headers, signal: AbortSignal.timeout(130000)});
   if (response.status === 204) return null;
   const body = await response.json();
-  if (!response.ok) throw Error(`HTTP ${response.status} · ${body.error_code || ""} · ${body.error_message || body.detail || "请求失败"}`);
+  if (!response.ok) {
+    const error = Error(`HTTP ${response.status} · ${body.error_code || ""} · ${body.error_message || body.detail || "请求失败"}`);
+    error.status = response.status; throw error;
+  }
   return body;
 }
 export function jsonBody(value) {
@@ -60,7 +63,10 @@ action("connect", async () => {
   el("consent").value = data.recording_consent_id;
   clearResults();
   el("mode").textContent = data.mode === "fixture" ? "离线测试：录音不会被真实转写，返回固定测试材料。" : "真实模式：上传后调用服务端配置的 ASR 与 Agent。";
-  status("会话已加载，可以开始录音。");
+  try { await refresh(); } catch (error) {
+    if (error.status !== 403) throw error;
+    status("会话已加载。请展开添加录音，确认同意后上传。");
+  }
 });
 
 async function devices() {

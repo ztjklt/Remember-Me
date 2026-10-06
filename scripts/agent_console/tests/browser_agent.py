@@ -22,9 +22,13 @@ with sync_playwright() as p:
     assert answer["evidence"]
     assert answer["answer"] in page.locator("#answer-view").inner_text()
     assert not page.locator("#answer").is_visible()
-    page.locator("#lock").click()
     page.locator("#human-panel").wait_for(state="visible")
     locked = json.loads(page.locator("#calibration").text_content())
+    assert locked["locked_answer"] == answer
+    page.locator("#question").fill("一个不同的问题")
+    assert page.locator("#submit").is_disabled()
+    page.locator("#question").fill(locked["question"])
+    assert page.locator("#submit").is_enabled()
     assert locked["state"] == "LOCKED" and locked["comparison"] is None
     assert not page.locator("#human-answer").input_value()
     lock_id = page.locator("#lock-id").input_value()
@@ -41,12 +45,18 @@ with sync_playwright() as p:
     page.locator("#submit").click()
     page.wait_for_function("() => document.querySelector('#calibration').textContent.includes('COMPLETED')")
     completed = json.loads(page.locator("#calibration").text_content())
-    page.wait_for_function("() => document.querySelector('#status').textContent.includes('校准已保存')")
-    assert "校准已保存" in page.locator("#answer").text_content()
+    page.wait_for_function("() => document.querySelector('#status').textContent.includes('校正已保存')")
+    assert "校正前" in page.locator("#answer-context").inner_text()
+    assert answer["answer"] in page.locator("#answer-view").inner_text()
+    assert "先和家人聊聊天" in page.locator("#correction-view").inner_text()
     assert "第" in page.locator("#updated-view").inner_text()
     assert len(completed["comparison"]["dimension_diffs"]) == 5
     assert completed["locked_answer"] == locked["locked_answer"]
     assert completed["resulting_revision"] == locked["locked_answer"]["revision"] + 1
+    page.locator("#ask").click()
+    page.wait_for_function("() => !document.querySelector('#ask').disabled")
+    assert not page.locator("#answer-context").text_content()
+    assert not page.locator("#correction-view").text_content()
     page.locator("#next").click()
     page.wait_for_function("() => document.querySelector('#plan').textContent.includes('target_domain')")
     page.locator("#revoke").click()

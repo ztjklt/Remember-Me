@@ -43,6 +43,6 @@ export function render(id, value) {
     }
   }
   if (id === "calibration") {
-    target.append(node("p", value.state === "COMPLETED" ? `已保存你的校正，理解更新至第 ${value.resulting_revision} 版。` : "回答已保存，可以填写你的校正。"));
+    target.append(node("p", value.state === "COMPLETED" ? `已保存你的校正，理解更新至第 ${value.resulting_revision} 版。` : value.state === "INVALIDATED" ? "这条校准已失效，请重新提问。" : ""));
   }
 }

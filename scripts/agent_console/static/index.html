@@ -32,16 +32,17 @@
 <h2><span class="step">3</span>提问与回答</h2>
 <label for="question">你的问题</label><textarea id="question" rows="2">我是谁？</textarea>
 <button id="ask">提问</button>
+<div id="asked-view" class="reading"></div><p id="answer-context" class="meta"></p>
 <div id="answer-view" class="reading" aria-live="polite"><p>尚未提问。</p></div>
 </section>
 <section>
 <h2><span class="step">4</span>校正与更新</h2>
-<button id="lock">开始校正</button>
 <p id="lock-note" class="meta">先提问，再填写你的校正。</p>
 <div id="human-panel" hidden>
 <label for="human-answer">你的校正</label><textarea id="human-answer" rows="3" placeholder="例如：我的姓名识别错了，我叫……"></textarea>
 <button id="submit" disabled>保存校正并更新理解</button>
 </div>
+<div id="correction-view" class="reading"></div>
 <div id="calibration-view" class="reading"></div>
 <div id="updated-view" class="reading" aria-live="polite"></div>
 </section>
