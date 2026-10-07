@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.res.stringResource
+import me.remember.app.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -30,114 +32,110 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
     } }
 
     RmPage {
-        TextButton(back) { Text("← 返回") }
-        Text("记忆与理解", style = MaterialTheme.typography.headlineLarge)
+        TextButton(back) { Text(stringResource(R.string.back)) }
+        Text(stringResource(R.string.agent_title), style = MaterialTheme.typography.headlineLarge)
         if (localMode) localControls()
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("agent.error")) }
         if (!state.configured) {
-            if (localMode) Text("请先进入模型设置，保存配置并同意处理。") else AgentConnection(repository)
+            if (localMode) Text(stringResource(R.string.agent_configure_first)) else AgentConnection(repository)
         } else {
             if (state.snapshot?.modelVersion?.startsWith("fixture-") == true) {
-                Text("离线测试：录音会转为固定测试句，不代表真实语音识别或理解。")
+                Text(stringResource(R.string.agent_fixture_notice))
             }
-            RmSectionHeader("记忆原文")
+            RmSectionHeader(stringResource(R.string.agent_original))
             val recordings = state.materials.filter { it.sourceType == "SUBJECT" && it.episodeId != null }
             val selected = episodeId ?: recordings.maxByOrNull { it.observedAt }?.episodeId
             val original = recordings.filter { it.episodeId == selected }.maxByOrNull { it.excerpt.length }
-            Text(original?.excerpt ?: "暂无这段录音的原文，请上传录音或刷新已有理解。", modifier = Modifier.testTag("agent.original"))
-            if (original != null) Text("转写可能有同音字错误，可在下方校正。", style = MaterialTheme.typography.bodySmall)
-            TextButton(onClick = { scope.launch { repository.refresh() } }, enabled = !busy) { Text("刷新已有理解") }
+            Text(original?.excerpt ?: stringResource(R.string.agent_original_empty), modifier = Modifier.testTag("agent.original"))
+            if (original != null) Text(stringResource(R.string.agent_transcription_notice), style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { scope.launch { repository.refresh() } }, enabled = !busy) { Text(stringResource(R.string.agent_refresh)) }
 
             RmDivider()
-            RmSectionHeader("当前理解")
+            RmSectionHeader(stringResource(R.string.agent_understanding))
             AgentUnderstanding(state.snapshot, localMode)
             if (!localMode && state.snapshot?.limitations?.any { it.startsWith("最近一次自动更新失败") } == true)
-                TextButton({ scope.launch { repository.retryUnderstanding() } }, enabled = !busy) { Text("重试理解更新") }
+                TextButton({ scope.launch { repository.retryUnderstanding() } }, enabled = !busy) { Text(stringResource(R.string.agent_retry_understanding)) }
 
             RmDivider()
-            RmSectionHeader("提问与回答")
-            AgentDetails("过去的问答（${state.history.size}）") {
-                if (!localMode) Text("显示本次连接中已知的记录；其他记录可用已有 ID 恢复。")
+            RmSectionHeader(stringResource(R.string.agent_questions))
+            AgentDetails(stringResource(R.string.answer_history, state.history.size)) {
+                if (!localMode) Text(stringResource(R.string.remote_history_notice))
                 state.history.asReversed().forEach { entry ->
                     Text(entry.question)
-                    val status = when (entry.state) { "COMPLETED" -> "已校正"; "INVALIDATED" -> "已失效"; else -> "未校正" }
-                    Text("第 ${entry.lockedAnswer.revision} 版 · ${entry.lockedAnswer.type} · $status")
-                    TextButton({ scope.launch { repository.resume(entry.id) } }, enabled = !busy) { Text("查看这次问答") }
+                    val status = when (entry.state) { "COMPLETED" -> stringResource(R.string.calibration_completed); "INVALIDATED" -> stringResource(R.string.calibration_invalidated); else -> stringResource(R.string.calibration_pending) }
+                    Text(stringResource(R.string.history_entry, entry.lockedAnswer.revision, answerType(entry.lockedAnswer.type), status))
+                    TextButton({ scope.launch { repository.resume(entry.id) } }, enabled = !busy) { Text(stringResource(R.string.show_answer)) }
                 }
             }
-            OutlinedTextField(question, { question = it }, label = { Text("你想问什么？") }, enabled = !busy,
+            OutlinedTextField(question, { question = it }, label = { Text(stringResource(R.string.question_label)) }, enabled = !busy,
                 modifier = Modifier.fillMaxWidth().testTag("agent.question"))
             Button(onClick = { scope.launch { repository.ask(question) } }, enabled = question.isNotBlank() && !busy,
-                modifier = Modifier.testTag("agent.ask")) { Text("提问") }
+                modifier = Modifier.testTag("agent.ask")) { Text(stringResource(R.string.ask)) }
             state.answer?.let { answer ->
-                state.calibration?.let { Text("你问：${it.question}") }
-                if (state.calibration?.state == "COMPLETED") Text("以下保留校正前的回答；再次提问会使用更新后的理解。")
-                val label = when (answer.type) {
-                    "ORIGINAL" -> "引用原话"
-                    "SIMULATION" -> "依据记忆生成"
-                    else -> "材料不足"
-                }
-                Text("$label · 第 ${answer.revision} 版理解", style = MaterialTheme.typography.bodySmall)
+                state.calibration?.let { Text(stringResource(R.string.your_question, it.question)) }
+                if (state.calibration?.state == "COMPLETED") Text(stringResource(R.string.locked_answer_notice))
+                val label = answerType(answer.type)
+                Text(stringResource(R.string.answer_revision, label, answer.revision), style = MaterialTheme.typography.bodySmall)
                 Text(answer.answer, modifier = Modifier.testTag("agent.answer"))
-                if (answer.evidence.isNotEmpty()) AgentDetails("查看回答依据") {
-                    answer.evidence.forEach { Text("${if (it.sourceType == "CALIBRATION") "本人校正" else "原始材料"}：${it.excerpt}") }
+                if (answer.evidence.isNotEmpty()) AgentDetails(stringResource(R.string.answer_evidence)) {
+                    answer.evidence.forEach { Text("${if (it.sourceType == "CALIBRATION") stringResource(R.string.evidence_calibration) else stringResource(R.string.evidence_original)}：${it.excerpt}") }
                     answer.limitations.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
 
             RmDivider()
-            RmSectionHeader("校正与更新")
+            RmSectionHeader(stringResource(R.string.agent_correction))
             val calibration = state.calibration
             when (calibration?.state) {
                 "LOCKED" -> {
                     val canCorrect = state.canCorrect(question) && !externalBusy
                     Text(when {
-                        state.snapshot?.revision != calibration.lockedAnswer.revision -> "理解已变化，请重新提问后再校正。"
-                        question.trim() != calibration.question -> "问题已修改，请重新提问后再校正。"
-                        else -> "校正上方这次回答，保存后会更新理解。"
+                        state.snapshot?.revision != calibration.lockedAnswer.revision -> stringResource(R.string.revision_changed)
+                        question.trim() != calibration.question -> stringResource(R.string.question_changed)
+                        else -> stringResource(R.string.correction_hint)
                     })
-                    OutlinedTextField(human, { human = it }, label = { Text("本人的校正") }, enabled = canCorrect,
+                    OutlinedTextField(human, { human = it }, label = { Text(stringResource(R.string.correction_label)) }, enabled = canCorrect,
                         modifier = Modifier.fillMaxWidth().testTag("agent.correctionInput"))
                     Button(onClick = { scope.launch { repository.submit(human, question) } }, enabled = canCorrect && human.isNotBlank(),
-                        modifier = Modifier.testTag("agent.submit")) { Text("保存校正并更新理解") }
+                        modifier = Modifier.testTag("agent.submit")) { Text(stringResource(R.string.submit_correction)) }
                 }
                 "COMPLETED" -> {
-                    state.correction?.let { Text("你的校正：$it", modifier = Modifier.testTag("agent.correction")) }
-                    Text("校正已保存。${if (state.snapshot?.revision == calibration.resultingRevision) "理解已更新，可以再次提问。" else "点击刷新已有理解读取更新结果。"}")
-                    if (state.snapshot?.revision == calibration.resultingRevision) AgentDetails("查看更新后的理解") {
+                    state.correction?.let { Text(stringResource(R.string.your_correction, it), modifier = Modifier.testTag("agent.correction")) }
+                    Text(stringResource(R.string.correction_saved, stringResource(if (state.snapshot?.revision == calibration.resultingRevision) R.string.understanding_updated else R.string.refresh_result)))
+                    if (state.snapshot?.revision == calibration.resultingRevision) AgentDetails(stringResource(R.string.show_updated_understanding)) {
                         AgentUnderstanding(state.snapshot, localMode)
                     }
                 }
-                "INVALIDATED" -> Text("这次校正记录已失效，请重新提问。")
-                else -> Text("先提问，回答出现后即可填写校正。")
+                "INVALIDATED" -> Text(stringResource(R.string.calibration_expired))
+                else -> Text(stringResource(R.string.ask_before_correction))
             }
-            Button(capture, enabled = !busy) { Text("再录一段，继续循环") }
+            Button(capture, enabled = !busy) { Text(stringResource(R.string.capture_again)) }
 
-            AgentDetails("调试与授权") {
+            AgentDetails(stringResource(R.string.agent_details)) {
                 state.snapshot?.let { Text("Subject ${it.subjectId} · ${it.modelVersion}", style = MaterialTheme.typography.bodySmall) }
                 calibration?.let {
                     Text("${it.state} · ${it.id}", style = MaterialTheme.typography.bodySmall)
                     it.diffs.forEach { diff -> Text("${diff.dimension} · ${diff.assessment}\n${diff.reason}") }
                 }
                 if (!localMode) {
-                    OutlinedTextField(resumeId, { resumeId = it }, label = { Text("恢复校准记录 ID") }, enabled = !busy,
+                    OutlinedTextField(resumeId, { resumeId = it }, label = { Text(stringResource(R.string.resume_calibration_label)) }, enabled = !busy,
                         modifier = Modifier.fillMaxWidth())
-                    TextButton(onClick = { scope.launch { repository.resume(resumeId.trim()) } }, enabled = resumeId.isNotBlank() && !busy) { Text("恢复这次回答") }
-                    TextButton(onClick = { scope.launch { repository.plan() } }, enabled = !busy) { Text("下一次可以聊什么") }
+                    TextButton(onClick = { scope.launch { repository.resume(resumeId.trim()) } }, enabled = resumeId.isNotBlank() && !busy) { Text(stringResource(R.string.resume_answer)) }
+                    TextButton(onClick = { scope.launch { repository.plan() } }, enabled = !busy) { Text(stringResource(R.string.plan_next)) }
                     state.plan?.let { Text(it.question) }
                 }
                 original?.let { evidence ->
-                    TextButton(onClick = { scope.launch { repository.inspect(evidence.id) } }, enabled = !busy) { Text("核对录音来源") }
+                    TextButton(onClick = { scope.launch { repository.inspect(evidence.id) } }, enabled = !busy) { Text(stringResource(R.string.inspect_evidence)) }
                 }
                 state.inspectedEvidence?.let { evidence ->
                     Text("${evidence.sourceType} · ${evidence.sourceRef}\n${evidence.excerpt}")
                     evidence.episodeId?.let { id ->
-                        TextButton(onClick = { scope.launch { repository.withdraw(id) } }, enabled = !busy) { Text("从 Agent 撤除此录音材料") }
+                        TextButton(onClick = { scope.launch { repository.withdraw(id) } }, enabled = !busy) { Text(stringResource(R.string.withdraw_episode)) }
                     }
                 }
-                TextButton(onClick = { scope.launch { repository.revoke() } }, enabled = !busy) { Text(if (localMode) "撤回模型处理同意" else "撤回 Cloud Twin 同意") }
-                if (!localMode) AgentDetails("连接设置") { AgentConnection(repository) }
+                TextButton(onClick = { scope.launch { repository.revoke() } }, enabled = !busy) { Text(if (localMode) stringResource(R.string.revoke_local) else stringResource(R.string.revoke_remote)) }
+                if (!localMode) AgentDetails(stringResource(R.string.remote_settings)) { AgentConnection(repository) }
             }
         }
     }
@@ -145,16 +143,16 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
 
 @Composable
 private fun AgentUnderstanding(snapshot: AgentSnapshot?, localMode: Boolean) {
-    snapshot?.let { Text("第 ${it.revision} 版理解", style = MaterialTheme.typography.bodySmall) }
+    snapshot?.let { Text(stringResource(R.string.understanding_revision, it.revision), style = MaterialTheme.typography.bodySmall) }
     snapshot?.limitations?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
     val traits = snapshot?.traits.orEmpty().filter { it.status != "SUPERSEDED" }
-    if (traits.isEmpty()) Text("还没有形成理解，请先上传一段录音。")
+    if (traits.isEmpty()) Text(stringResource(R.string.understanding_empty))
     traits.forEach {
         val domain = when (it.domain) {
-            "IDENTITY" -> "身份"; "EPISODIC_MEMORY" -> "经历"; "RELATIONSHIPS" -> "关系"
-            "PREFERENCES" -> "偏好"; "VALUES" -> "价值与方向"; "DECISION_PATTERNS" -> "决策"; else -> "表达"
+            "IDENTITY" -> stringResource(R.string.domain_identity); "EPISODIC_MEMORY" -> stringResource(R.string.domain_episodes); "RELATIONSHIPS" -> stringResource(R.string.domain_relations)
+            "PREFERENCES" -> stringResource(R.string.domain_preferences); "VALUES" -> stringResource(R.string.domain_values); "DECISION_PATTERNS" -> stringResource(R.string.domain_decisions); else -> stringResource(R.string.domain_expression)
         }
-        val status = when (it.status) { "CONFLICTED" -> "有冲突"; "SUPPORTED" -> "有依据"; else -> "待确认" }
+        val status = when (it.status) { "CONFLICTED" -> stringResource(R.string.trait_conflicted); "SUPPORTED" -> stringResource(R.string.trait_supported); else -> stringResource(R.string.trait_candidate) }
         Text(if (localMode) domain else "$domain · $status", style = MaterialTheme.typography.bodySmall)
         Text(it.statement)
     }
@@ -177,12 +175,18 @@ private fun AgentConnection(repository: AgentRepository) {
     var subject by remember(current) { mutableStateOf(current?.subjectId.orEmpty()) }
     var consent by remember(current) { mutableStateOf(current?.recordingConsentId.orEmpty()) }
     var agreed by remember(current) { mutableStateOf(false) }
-    Text("连接你的 Backend 会话，读取已有录音与理解。")
-    OutlinedTextField(url, { url = it }, label = { Text("Backend 地址") }, modifier = Modifier.fillMaxWidth())
+    Text(stringResource(R.string.remote_connect_notice))
+    OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.backend_url)) }, modifier = Modifier.fillMaxWidth())
     OutlinedTextField(token, { token = it }, label = { Text("Actor Token") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
     OutlinedTextField(subject, { subject = it }, label = { Text("Subject ID") }, modifier = Modifier.fillMaxWidth())
     OutlinedTextField(consent, { consent = it }, label = { Text("RECORDING Consent ID") }, modifier = Modifier.fillMaxWidth())
-    Row { Checkbox(agreed, { agreed = it }); Text("同意 Cloud Twin 处理，并声明为本人单人表达") }
+    Row { Checkbox(agreed, { agreed = it }); Text(stringResource(R.string.remote_consent)) }
     Button(onClick = { scope.launch { repository.enable(BackendConnection(url.trim(), token.trim(), subject.trim(), consent.trim(), true)) } },
-        enabled = agreed && !state.busy && listOf(url, token, subject, consent).all { it.isNotBlank() }) { Text("连接并读取") }
+        enabled = agreed && !state.busy && listOf(url, token, subject, consent).all { it.isNotBlank() }) { Text(stringResource(R.string.remote_connect)) }
 }
+
+@Composable private fun answerType(type: String) = stringResource(when (type) {
+    "ORIGINAL" -> R.string.answer_original
+    "SIMULATION" -> R.string.answer_simulation
+    else -> R.string.answer_insufficient
+})

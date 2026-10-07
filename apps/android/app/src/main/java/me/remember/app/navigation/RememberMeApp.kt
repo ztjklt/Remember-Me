@@ -18,6 +18,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import me.remember.app.ui.components.RmPage
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
+import me.remember.app.BuildConfig
+import me.remember.app.R
 
 @Composable fun RememberMeApp(
     audioCaptureService: AudioCaptureService,
@@ -33,10 +36,10 @@ import androidx.compose.material3.TextButton
     }
     if (localMode && localState?.ready != true) {
         RmPage {
-            Text(localState?.error ?: "正在打开手机资料…")
+            Text(localState?.error ?: stringResource(R.string.local_opening))
             localState?.message?.let { Text(it) }
-            if (localState?.error != null) TextButton({ recoveryExport.launch("remember-me-originals.txt") }, enabled = localState.busy.not()) { Text("导出可读原文") }
-            TextButton({ local?.setLocalMode(false) }) { Text("使用电脑 Backend 模式") }
+            if (localState?.error != null) TextButton({ recoveryExport.launch("remember-me-originals.txt") }, enabled = localState.busy.not()) { Text(stringResource(R.string.export_originals)) }
+            TextButton({ local?.setLocalMode(false) }) { Text(stringResource(R.string.remote_mode)) }
         }
         return
     }
@@ -54,16 +57,17 @@ import androidx.compose.material3.TextButton
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
-        composable("local-recordings") { RecordingLibraryScreen(local!!, audioCaptureService, { nav.popBackStack() }) {
+        composable("local-recordings") { if (localMode) RecordingLibraryScreen(local!!, audioCaptureService, { nav.popBackStack() }) {
             captureFlow.recording = it; nav.navigate(Routes.Connection)
-        } }
-        composable("local-model-settings") { LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() } }
+        } else LocalModeUnavailable { nav.navigate(Routes.Recording) } }
+        composable("local-model-settings") { if (localMode) LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() }
+            else LocalModeUnavailable { nav.navigate(Routes.Recording) } }
         composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) },
             onLibrary = if (localMode) ({ nav.navigate("local-recordings") }) else null,
             onHome = { nav.navigate(Routes.Home) },
             onSettings = if (localMode) ({ nav.navigate("local-model-settings") }) else null,
-            onSwitchMode = local?.let { { it.setLocalMode(!localMode) } },
-            modeLabel = if (localMode) "手机独立模式" else "电脑 Backend 模式") { recording ->
+            onSwitchMode = local?.takeIf { BuildConfig.LOCAL_AGENT_ENABLED }?.let { { it.setLocalMode(!localMode) } },
+            modeLabel = stringResource(if (localMode) R.string.local_mode else R.string.remote_mode)) { recording ->
             captureFlow.recording = recording
             nav.navigate(Routes.Connection)
         }}
@@ -81,8 +85,8 @@ import androidx.compose.material3.TextButton
                 }
             }
             else RmPage {
-                Text("待处理录音未恢复，请返回录音页选择已保存的录音。")
-                TextButton({ nav.navigate(Routes.Recording) }) { Text("返回录音") }
+                Text(stringResource(R.string.missing_recording))
+                TextButton({ nav.navigate(Routes.Recording) }) { Text(stringResource(R.string.return_recording)) }
             }
         }
         composable(Routes.Processing){
@@ -122,4 +126,9 @@ import androidx.compose.material3.TextButton
         composable(Routes.Legacy){ if (me.remember.app.BuildConfig.DEBUG) LegacyHomeScreen{nav.navigate(Routes.Twin)}}
         composable(Routes.Debug){DemoMenuScreen(nav::navigate){nav.popBackStack()}}
     }
+}
+
+@Composable private fun LocalModeUnavailable(back: () -> Unit) = RmPage {
+    Text(stringResource(R.string.local_mode_unavailable))
+    TextButton(back) { Text(stringResource(R.string.back_recording)) }
 }

@@ -11,11 +11,17 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2-local"
+        versionCode = 4
+        versionName = "1.3-local"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    buildTypes {
+        debug { buildConfigField("boolean", "LOCAL_AGENT_ENABLED", "true") }
+        release {
+            isMinifyEnabled = false
+            buildConfigField("boolean", "LOCAL_AGENT_ENABLED", "false")
+        }
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }

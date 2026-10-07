@@ -1,7 +1,24 @@
 # Remember Me 首期页面流
 
-主流程：Splash → Welcome → Product Explanation → Consent → Introduce Yourself → Recording → Processing → Twin Birth → Voice Seed → Creator Home。
+首次主流程：启动 → 欢迎 → 产品说明 → 同意 → 自我介绍 → 录音。已有录音时直接进入录音页。
 
-Creator Home 提供 Home、Memories、Capture、Twin 四个主要入口。Calibration 和 Digital Handover 是次级入口。右上角 Demo Menu 支持重置或跳过 Onboarding、直达关键 WOW 页面、模拟状态以及切换 Legacy Mode。
+真实录音循环：录音并保存 → Connection（确认处理）→ Processing → 原文与理解 → 提问与锁定回答 → 本人校正 → 更新理解 → 再次提问/录音。
+理解页按“记忆原文、当前理解、提问与回答、校正与更新”排列。回答依据、过去的问答及调试授权折叠展示，避免混入主操作。
 
-Legacy Home 首屏顺序为 Her Voice、Her Life、Important People、For You，最后才是 Ask Her，避免把数字托付体验降格为聊天机器人。
+| 入口/页面 | 手机独立模式（实验） | 电脑 Backend 模式 |
+| --- | --- | --- |
+| Connection | 日期/时长、模型设置、转写并更新理解 | Backend 地址、授权 ID、上传 |
+| Processing | 处理中/失败并重试/暂停并继续/成功（实际 revision 增加） | Episode 上传与处理状态 |
+| 模型设置 | 语音/文字配置、协议、处理同意、连接测试 | 使用既有 Backend 连接配置 |
+| 我录过的 | 音频播放、处理、删除、理解版本历史、清除本地数据 | 不开放本地清理入口 |
+| Home / Memories | 真实本地原文投影，排除撤除材料 | 真实 Episode Memory 结果 |
+| 过去的问答 | 本地持久历史，可恢复回答与校正/失效状态 | 本次连接已知历史；其他记录按 ID 恢复 |
+
+录音页提供模式开关、已有理解、Home/归档入口。本地模式不要求用户填写 Actor/Subject/Consent ID。
+Debug 默认开启本地模式，切换选择在本机保留；release 不开放本地模式和模式开关，默认电脑模式。
+无配置时引导进入模型设置；本地数据打不开时展示原因、原文恢复导出和电脑模式入口。
+Connection 在 Activity 重建后仍显示交接录音；进程重启未恢复录音时展示返回提示。
+配置草稿只跨 Activity 重建，不跨进程；处理任务持久化，进程重启后由用户显式继续。
+
+Twin Birth、Voice Seed、Legacy Home 含虚构人物，仅供 Debug 菜单演示且标明 Demo，不在真实录音主路径。
+Digital Handover 等尚未实现能力仍是原型页面，不代表本轮已兑现。页面设计基线见 [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)。

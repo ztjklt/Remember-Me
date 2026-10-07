@@ -1,4 +1,4 @@
-# 手机独立 Agent（1.2-local）
+# 手机独立 Agent（1.3-local）
 
 本模式借鉴 Memex 的本地存储、供应商适配及持久任务执行结构，使用一个文字模型。
 录音 → 转写 → 理解 → 提问 → 保存回答 → 本人校正 → 更新理解，全部由 Android 编排。
@@ -6,7 +6,7 @@
 
 ## 安装与配置
 
-1. 把 `build/releases/remember-me-1.2-local-debug.apk` 传到手机，在文件管理器中安装更新。
+1. 把 `build/releases/remember-me-1.3-local-debug.apk` 传到手机，在文件管理器中安装更新。
    同签名可覆盖安装；无需卸载旧版。不要为安装清除数据。编译命令仅供开发者使用。
 2. 进入录音页，确认显示“手机独立模式”，点“模型设置”。不需要 Actor/Subject/Consent ID。
 3. 分别填写两套配置。当前已验证：
@@ -34,6 +34,15 @@
 电脑资料仍在电脑，当前没有自动导入；录音页可切回电脑模式。卸载/清除应用数据会删除手机资料。
 
 构建及已执行检查见 [验证记录](../../../docs/verification/ANDROID_LOCAL_2026_10_07.md)。
+本轮稳定性修复与验收边界见 [本地 Agent 加固记录](../../../docs/reviews/local-agent-hardening/README.md)。
+
+## 实验开关与评审
+
+本安装包是 Debug，默认手机独立模式，可切换电脑模式；本地主要操作文案使用中文。
+release 构建关闭 `BuildConfig.LOCAL_AGENT_ENABLED`，使用电脑模式，不加载本地日志或密钥。
+已有本地资料不会因此删除；继续使用本地资料请安装同签名的 Debug 更新包。
+Backend 的 `REMEMBER_AGENT_ENABLED` 默认 false，是独立的服务端实验开关。
+BYOK 为用户授权的实验实现，仍待 Product/Integration 追认；合并前须张天霁及相关 owner review。
 
 ## 留存与删除
 

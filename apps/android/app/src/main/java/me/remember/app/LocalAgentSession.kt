@@ -41,8 +41,9 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         private set
 
     init {
-        mutableState.value = mutableState.value.copy(localMode = preferences.getBoolean("local", true))
-        viewModelScope.launch {
+        mutableState.value = mutableState.value.copy(localMode = BuildConfig.LOCAL_AGENT_ENABLED && preferences.getBoolean("local", true))
+        if (!BuildConfig.LOCAL_AGENT_ENABLED) mutableState.value = mutableState.value.copy(ready = true)
+        else viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     database = SqliteLocalState(application)
@@ -61,6 +62,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         }
     }
     fun setLocalMode(value: Boolean) {
+        if (value && !BuildConfig.LOCAL_AGENT_ENABLED) return
         if (state.value.busy || repository?.state?.value?.busy == true) return
         preferences.edit().putBoolean("local", value).apply()
         mutableState.value = mutableState.value.copy(localMode = value)
@@ -134,7 +136,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         mutableState.value = mutableState.value.copy(localMode = false, captureProgress = CaptureProgress.IDLE, message = "本地资料已清除，已退出手机模式。")
     }
     fun exportRecovery(uri: android.net.Uri) {
-        if (state.value.busy) return
+        if (!BuildConfig.LOCAL_AGENT_ENABLED || state.value.busy) return
         viewModelScope.launch {
             mutableState.value = mutableState.value.copy(busy = true)
             try {
@@ -150,7 +152,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     }
     private suspend fun restoreAnswer() { engine!!.latestCalibration()?.let { repository!!.resume(it) } }
     private fun operation(block: suspend () -> Unit) {
-        if (!state.value.ready || state.value.busy || repository?.state?.value?.busy == true) return
+        if (!BuildConfig.LOCAL_AGENT_ENABLED || !state.value.ready || state.value.busy || repository?.state?.value?.busy == true) return
         mutableState.value = mutableState.value.copy(busy = true, error = null, message = null)
         viewModelScope.launch {
             try { block() }

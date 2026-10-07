@@ -2,9 +2,9 @@
 
 Remember Me 是一个以声音为入口、可追溯且可纠错的 Digital Twin 与数字托付产品。本仓库是 Android 原生交互原型：录音、上传、处理、Memory 与实验 Agent 接入 Backend；声音克隆、硬件和 Legacy 体验仍为 Mock 或接口占位。
 
-## 手机独立模式（1.2-local）
+## 手机独立模式（1.3-local）
 
-新版默认在手机保存原文、理解、问答、校正及未完成任务，直接调用用户配置的 ASR/LLM。
+Debug 新版默认在手机保存原文、理解、问答、校正及未完成任务，直接调用用户配置的 ASR/LLM。release 关闭实验本地入口，使用电脑模式。
 不需要电脑服务、ADB 或手填会话 ID；仍需要网络。安装和设置见 [手机独立模式](docs/LOCAL_AGENT.md)。
 电脑模式保留，旧电脑数据不会自动迁入手机。多 Agent、Memory 重构和内容压缩未纳入本轮。
 
@@ -43,7 +43,7 @@ Capture requests `RECORD_AUDIO` at runtime after explaining that microphone audi
 
 Mock/Real 切换的边界由 repository 与 service interfaces 定义。可以用构造注入替换 `MockRememberMeRepository`，无需修改页面的产品语义。
 
-Phase 1 Backend 路径已 COMMITTED，通过 shared contract 接入 Backend：真实录音、上传、Episode 与 processing state、并展示真实 Memory。该路径不持有 provider secret，经 Backend Contract 与 Adapter 调用。2026-10-07 用户授权的实验本地模式例外见根目录 AGENTS.md：用户自行填写 ASR/LLM 配置，Key 由 Android Keystore 加密保存；不扩展至 Voice、Supabase 或 Work 3200 SDK。
+Phase 1 Backend 路径已 COMMITTED，通过 shared contract 接入 Backend：真实录音、上传、Episode 与 processing state、并展示真实 Memory。该路径不持有 provider secret，经 Backend Contract 与 Adapter 调用。2026-10-07 用户授权的实验本地模式仍待 Product/Integration 追认（张天霁确认后才能合并），见根目录 AGENTS.md：用户自行填写 ASR/LLM 配置，Key 由 Android Keystore 加密保存；不扩展至 Voice、Supabase 或 Work 3200 SDK。
 
 更多信息见 [架构](docs/ARCHITECTURE.md)、[开发说明](docs/DEVELOPMENT.md)、[CI](docs/CI.md) 和 [下一阶段](docs/NEXT_PHASE.md)；Phase 规划见 [Task Brief](../../docs/team/01_LIUXIUXIAN_ANDROID_HARDWARE.md) 与 [Roadmap](../../docs/roadmap/ROADMAP.md)。
 
