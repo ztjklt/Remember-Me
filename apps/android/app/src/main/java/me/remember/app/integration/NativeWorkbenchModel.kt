@@ -23,7 +23,7 @@ data class NativeState(
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
-    val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback()
+    val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback(), val dailyReminder: Boolean = false
 ) {
     val owner get() = space?.text("role") == "owner"
     val subject get() = space?.text("subject_id").orEmpty()
@@ -36,6 +36,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private val gate = SessionGate()
     private val playbackGate = SourcePlaybackGate(gate)
     private val client = BackendClient(gate)
+    private val reminders = LocalDailyReminder(context)
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
     val ui = state.asStateFlow()
@@ -48,6 +49,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var ticker: Job? = null
     private var foreground = true
     private var polling: Job? = null
+    init { reminders.disable() }
 
     fun report(message: String) { state.value = state.value.copy(error = message) }
     fun connect(server: String, token: String) {
@@ -71,7 +73,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     fun selectSpace(space: JSONObject) {
         if(state.value.busy || state.value.recording) return
-        stopSource(); audio.stopPlayback(); polling?.cancel()
+        stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable()
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
         refresh()
@@ -84,10 +86,20 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.recording) { finish { clearIdentity() } } else clearIdentity()
     }
     private fun clearIdentity() {
+        reminders.disable()
         gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null
         stopSource(); audio.stopPlayback(); state.value = NativeState()
     }
     private fun root() = "${BackendClient.WORKBENCH}/${segment(state.value.subject)}"
+    fun setDailyReminder(enabled: Boolean) {
+        if(enabled && (!state.value.owner || session == null)) return
+        try {
+            if(enabled) reminders.enable() else reminders.disable()
+            state.value = state.value.copy(dailyReminder = enabled, error = null)
+        } catch(error: Exception) {
+            reminders.disable(); state.value = state.value.copy(dailyReminder = false, error = error.message ?: "本机通知暂不可用。")
+        }
+    }
     private fun subjectRoot() = "/api/v1/subjects/${segment(state.value.subject)}"
     private fun scopeKey(s: BackendSession) = MessageDigest.getInstance("SHA-256")
         .digest("${s.server}|${state.value.actor}|${state.value.subject}".toByteArray()).joinToString("") { "%02x".format(it) }

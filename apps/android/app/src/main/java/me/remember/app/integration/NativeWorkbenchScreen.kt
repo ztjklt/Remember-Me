@@ -1,6 +1,7 @@
 package me.remember.app.integration
 
 import android.Manifest
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -284,6 +285,16 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         } }
     } }
     if(state.owner) {
+        val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if(granted) model.setDailyReminder(true) else model.report("系统通知权限未授予，每日提醒仍保持关闭。可在系统设置中允许后重试。")
+        }
+        Text("本机每日提醒", style = MaterialTheme.typography.titleLarge)
+        Check("每天上午 9 点左右显示通用本机通知，不含故事或个人资料，不访问后端。", state.dailyReminder, { enabled ->
+            if(!enabled) model.setDailyReminder(false)
+            else if(Build.VERSION.SDK_INT >= 33) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            else model.setDailyReminder(true)
+        }, enabled)
+        Text("退出或切换身份／空间会取消提醒。系统电池策略可能延迟通知。", style = MaterialTheme.typography.bodySmall)
         Text("核对修订关系", style = MaterialTheme.typography.titleLarge)
         state.revisions.forEach { revision -> Panel {
             val old = state.stories.flatMap { it.rows("memories") }.firstOrNull { it.text("memory_item_id") == revision.text("target_memory_id") }
@@ -323,7 +334,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
             }
         } }
     }
-    Text("每日提醒：关闭；本版本没有后台云端调用。", style = MaterialTheme.typography.bodySmall)
+    Text("每日提醒：${if(state.dailyReminder) "已主动开启，仅本机通用通知" else "关闭"}；没有后台云端调用。", style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable private fun Panel(content: @Composable ColumnScope.() -> Unit) {
