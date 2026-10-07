@@ -48,16 +48,17 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
     suspend fun ask(question: String) = operation { c ->
         val text = question.trim()
         require(text.isNotEmpty()) { "请先填写问题。" }
-        mutableState.value = mutableState.value.copy(answer = null, calibration = null, correction = null)
         val locked = calibration(gateway.request(c, "/calibrations", "POST", JSONObject().put("question", text)), c)
-        mutableState.value.copy(answer = locked.lockedAnswer, calibration = locked)
+        mutableState.value.copy(answer = locked.lockedAnswer, calibration = locked, correction = null)
     }
 
     suspend fun lock(question: String) = ask(question)
 
     suspend fun resume(calibrationId: String) = operation { c ->
         require(calibrationId.matches(Regex("[A-Za-z0-9._~-]+")))
-        val restored = calibration(gateway.request(c, "/calibrations/$calibrationId"), c)
+        val loaded = calibration(gateway.request(c, "/calibrations/$calibrationId"), c)
+        val restored = if (loaded.state == "INVALIDATED") loaded else loaded.copy(humanAnswer = loaded.humanAnswer
+            ?: mutableState.value.history.firstOrNull { it.id == calibrationId }?.humanAnswer)
         mutableState.value.copy(calibration = restored, answer = restored.lockedAnswer, correction = restored.humanAnswer)
     }
 
@@ -76,7 +77,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
             val completed = calibration(gateway.request(c, "/calibrations/${current.id}/submit", "POST", JSONObject()
                 .put("human_answer", text).put("expected_revision", current.lockedAnswer.revision)), c)
             completedId = completed.id
-            mutableState.value.copy(calibration = completed, answer = completed.lockedAnswer, correction = text)
+            mutableState.value.copy(calibration = completed.copy(humanAnswer = text), answer = completed.lockedAnswer, correction = text)
         }
         // Preserve the saved correction if reading the updated model fails.
         if (completedId != null && mutableState.value.calibration?.id == completedId) refresh()
@@ -109,7 +110,11 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
         mutableState.value = mutableState.value.copy(busy = true, error = null)
         try {
             val next = block(c)
-            if (epoch == capturedEpoch) mutableState.value = next.copy(busy = false, error = null)
+            if (epoch == capturedEpoch) {
+                val records = if (!next.configured) emptyList() else gateway.history(c)?.objects()?.map { calibration(it, c) }
+                    ?: (mutableState.value.history.filterNot { it.id == next.calibration?.id } + listOfNotNull(next.calibration))
+                if (epoch == capturedEpoch) mutableState.value = next.copy(busy = false, error = null, history = records)
+            }
         } catch (error: CancellationException) {
             if (epoch == capturedEpoch) mutableState.value = mutableState.value.copy(busy = false)
             throw error

@@ -12,6 +12,8 @@ import java.net.URI
 import java.net.URL
 
 interface AgentGateway {
+    /** Local journal capability; remote mode lists only records already seen by this client. */
+    suspend fun history(connection: BackendConnection): JSONArray? = null
     suspend fun request(connection: BackendConnection, path: String, method: String = "GET", body: JSONObject? = null): JSONObject
 }
 

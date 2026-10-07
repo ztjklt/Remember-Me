@@ -31,6 +31,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         private set
     var modelDraft by mutableStateOf<LocalModelSettings?>(null)
     private var lastCapture: AudioRecording? = null
+    val memories: me.remember.app.data.repository.MemoryRepository? get() = engine
     var repository: AgentRepository? = null
         private set
 

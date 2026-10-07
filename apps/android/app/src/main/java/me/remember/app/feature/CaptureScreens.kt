@@ -34,6 +34,7 @@ fun RecordingScreen(
         ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     },
     onUnderstanding: (() -> Unit)? = null,
+    onHome: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
     onSwitchMode: (() -> Unit)? = null,
     modeLabel: String? = null,
@@ -236,6 +237,7 @@ fun RecordingScreen(
 
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (captureState !in setOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused)) {
+            onHome?.let { TextButton(it) { Text("首页与归档") } }
             modeLabel?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             onSettings?.let { TextButton(it) { Text("模型设置") } }
             onSwitchMode?.let { TextButton(it) { Text("切换手机 / 电脑模式") } }
@@ -257,5 +259,5 @@ private fun formatDuration(durationMillis: Long): String {
     return "%02d:%02d".format(totalSeconds / 60L, totalSeconds % 60L)
 }
 
-@Composable fun TwinBirthScreen(next:()->Unit)=RmPage{Spacer(Modifier.height(24.dp));Text("我开始认识你了。",style=MaterialTheme.typography.headlineLarge);Text("陈屿",style=MaterialTheme.typography.displayLarge);Text("独立纪录片剪辑师  ·  杭州",color=RememberMeColors.Muted);RmDivider();Text("你很重视",style=MaterialTheme.typography.titleLarge);Text("创造   家人   诚实地生活",style=MaterialTheme.typography.headlineMedium);RmDivider();Text("我目前知道",style=MaterialTheme.typography.titleLarge);Text("3 个重要的人\n4 段经历\n2 个长期兴趣",style=MaterialTheme.typography.bodyLarge);Spacer(Modifier.weight(1f));Text("我才刚刚开始认识你。",color=RememberMeColors.Muted);RmPrimaryButton("继续",next,Modifier.fillMaxWidth())}
-@Composable fun VoiceSeedScreen(next:()->Unit){var playing by remember{mutableStateOf(false)};RmPage{Text("我也开始记住你的声音了。",style=MaterialTheme.typography.headlineLarge);Text("VOICE SEED",color=RememberMeColors.Muted);Text("Ready for preview",style=MaterialTheme.typography.titleLarge);RmVoicePlayer("听听现在的我","声音模拟 · Preview",playing){playing=!playing};if(playing)RmWaveform();Spacer(Modifier.weight(1f));RmSecondaryButton("重新录一点"){};TextButton(onClick={}){Text("这个声音还不像我")};RmPrimaryButton("进入 Remember Me",next,Modifier.fillMaxWidth())}}
+@Composable fun TwinBirthScreen(next:()->Unit)=RmPage{Text("演示页面 · 以下为虚构数据");Spacer(Modifier.height(24.dp));Text("我开始认识你了。",style=MaterialTheme.typography.headlineLarge);Text("陈屿",style=MaterialTheme.typography.displayLarge);Text("独立纪录片剪辑师  ·  杭州",color=RememberMeColors.Muted);RmDivider();Text("你很重视",style=MaterialTheme.typography.titleLarge);Text("创造   家人   诚实地生活",style=MaterialTheme.typography.headlineMedium);RmDivider();Text("我目前知道",style=MaterialTheme.typography.titleLarge);Text("3 个重要的人\n4 段经历\n2 个长期兴趣",style=MaterialTheme.typography.bodyLarge);Spacer(Modifier.weight(1f));Text("我才刚刚开始认识你。",color=RememberMeColors.Muted);RmPrimaryButton("继续",next,Modifier.fillMaxWidth())}
+@Composable fun VoiceSeedScreen(next:()->Unit){var playing by remember{mutableStateOf(false)};RmPage{Text("演示页面 · 声音功能尚未接入");Text("我也开始记住你的声音了。",style=MaterialTheme.typography.headlineLarge);Text("VOICE SEED",color=RememberMeColors.Muted);Text("Ready for preview",style=MaterialTheme.typography.titleLarge);RmVoicePlayer("听听现在的我","声音模拟 · Preview",playing){playing=!playing};if(playing)RmWaveform();Spacer(Modifier.weight(1f));RmSecondaryButton("重新录一点"){};TextButton(onClick={}){Text("这个声音还不像我")};RmPrimaryButton("进入 Remember Me",next,Modifier.fillMaxWidth())}}

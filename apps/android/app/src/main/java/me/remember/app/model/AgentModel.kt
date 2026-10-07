@@ -17,6 +17,7 @@ data class AgentUiState(
     val snapshot: AgentSnapshot? = null, val answer: AgentAnswer? = null,
     val inspectedEvidence: AgentEvidence? = null,
     val calibration: AgentCalibration? = null, val plan: AgentPlan? = null,
+    val history: List<AgentCalibration> = emptyList(),
     val materials: List<AgentEvidence> = emptyList(), val correction: String? = null
 ) {
     fun canCorrect(question: String): Boolean = !busy && calibration?.state == "LOCKED" &&

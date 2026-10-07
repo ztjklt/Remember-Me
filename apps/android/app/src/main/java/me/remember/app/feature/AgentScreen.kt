@@ -24,7 +24,10 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
     var question by rememberSaveable(connection?.subjectId) { mutableStateOf("") }
     var human by rememberSaveable(connection?.subjectId, state.calibration?.id) { mutableStateOf("") }
     var resumeId by rememberSaveable(connection?.subjectId) { mutableStateOf("") }
-    LaunchedEffect(state.calibration?.id) { state.calibration?.let { if (question.isBlank()) question = it.question } }
+    var shownCalibration by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(state.calibration?.id) { state.calibration?.let {
+        if (shownCalibration != it.id) { question = it.question; shownCalibration = it.id }
+    } }
 
     RmPage {
         TextButton(back) { Text("← 返回") }
@@ -52,6 +55,15 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
 
             RmDivider()
             RmSectionHeader("提问与回答")
+            AgentDetails("过去的问答（${state.history.size}）") {
+                if (!localMode) Text("显示本次连接中已知的记录；其他记录可用已有 ID 恢复。")
+                state.history.asReversed().forEach { entry ->
+                    Text(entry.question)
+                    val status = when (entry.state) { "COMPLETED" -> "已校正"; "INVALIDATED" -> "已失效"; else -> "未校正" }
+                    Text("第 ${entry.lockedAnswer.revision} 版 · ${entry.lockedAnswer.type} · $status")
+                    TextButton({ scope.launch { repository.resume(entry.id) } }, enabled = !busy) { Text("查看这次问答") }
+                }
+            }
             OutlinedTextField(question, { question = it }, label = { Text("你想问什么？") }, enabled = !busy,
                 modifier = Modifier.fillMaxWidth().testTag("agent.question"))
             Button(onClick = { scope.launch { repository.ask(question) } }, enabled = question.isNotBlank() && !busy,

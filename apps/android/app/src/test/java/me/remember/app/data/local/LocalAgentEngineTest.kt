@@ -1,6 +1,8 @@
 package me.remember.app.data.local
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import me.remember.app.model.Loadable
 import me.remember.app.data.repository.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -100,4 +102,30 @@ class LocalAgentEngineTest {
         repo.revoke()
         try { engine.capture(recording("未授权材料")); fail("consent bypassed") } catch (_: IllegalStateException) { }
     }
+    @Test fun archiveAndThreeAnswersSurviveRestartAndRespectWithdrawal() = runBlocking {
+        val store = Store(); val model = FakeModel(); val engine = engine(store, model); val repo = grant(engine)
+        engine.capture(recording("第一段原文")); engine.capture(recording("第二段原文")); repo.refresh()
+        val archive = (engine.memories().first() as Loadable.Content).value
+        assertEquals(2, archive.size)
+        assertEquals("2026-01-01T00:00:00Z", archive.first().date)
+        assertEquals("SUBJECT", archive.first().sourceType)
+        repo.ask("问题一"); repo.submit("本人校正")
+        val firstId = repo.state.value.calibration!!.id
+        repo.ask("问题二"); repo.ask("问题三")
+        assertEquals(3, repo.state.value.history.size)
+        val last = repo.state.value.answer
+        model.badCitation = true; repo.ask("失败问题")
+        assertEquals(last, repo.state.value.answer)
+        engine.cancelPending()
+        val restarted = engine(store, model); val next = grant(restarted)
+        assertEquals(3, next.state.value.history.size)
+        next.resume(firstId)
+        assertEquals("本人校正", next.state.value.correction)
+        next.withdraw(archive.first().episodeId!!)
+        assertEquals(1, (restarted.memories().first() as Loadable.Content).value.size)
+        next.resume(firstId)
+        assertEquals("INVALIDATED", next.state.value.calibration!!.state)
+        assertTrue(next.state.value.answer!!.evidence.isEmpty())
+    }
+
 }

@@ -1,6 +1,10 @@
 package me.remember.app.data.local
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import me.remember.app.model.Loadable
+import me.remember.app.model.Memory
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -12,7 +16,8 @@ import java.security.MessageDigest
 
 /** Durable single-Agent journal. One app-owned instance serializes local writes. */
 class LocalAgentEngine(private val store: LocalStateStore, private val client: LocalModelClient,
-    private val settings: () -> LocalModelSettings?) : AgentGateway {
+    private val settings: () -> LocalModelSettings?) : AgentGateway, MemoryRepository {
+    private val changes = MutableStateFlow(0L)
     private val mutex = Mutex()
     private val inference = LocalInference(client)
     @Volatile private var state = store.read() ?: JSONObject().put("version", 1).put("subject_id", newId("local_"))
@@ -25,12 +30,37 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     fun granted() = state.getBoolean("granted")
     fun pending(): JSONObject? = state.optJSONObject("job")?.copyJson()
     fun latestCalibration(): String? = state.getJSONArray("calibrations").objects().lastOrNull { it.getString("state") != "INVALIDATED" }?.getString("calibration_id")
-    private fun persist(next: JSONObject) { store.write(next); state = next.copyJson() }
+    private fun persist(next: JSONObject) { store.write(next); state = next.copyJson(); changes.value++ }
     private fun materials() = JSONArray(state.getJSONArray("materials").objects().filter { it.getString("evidence_id") !in withdrawn() })
     private fun withdrawn() = state.getJSONArray("withdrawn_evidence").strings().toSet()
     private fun model() = JSONObject().put("subject_id", state.getString("subject_id")).put("revision", state.getInt("revision"))
         .put("model_version", state.getString("model_version")).put("schema_version", "agent-loop-v0.2-experimental")
         .put("traits", JSONArray(state.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
+
+    override fun memories() = changes.map {
+        if (!granted()) Loadable.Empty else {
+            val episodes = state.getJSONArray("episodes").objects().associateBy { it.getString("id") }
+            val entries = materials().objects().filter { it.getString("source_type") == "SUBJECT" }.map { m ->
+                val episode = episodes[m.optString("episode_id")]
+                Memory(m.getString("evidence_id"), episode?.optString("recorded_at").orEmpty(), "", m.getString("excerpt"),
+                    emptyList(), listOf("原始转写"), "${(episode?.optLong("duration") ?: 0) / 1000} 秒",
+                    episodeId = m.getString("episode_id"), sourceType = "SUBJECT", evidenceIds = listOf(m.getString("evidence_id")),
+                    hasPlayableAudio = false)
+            }.reversed()
+            if (entries.isEmpty()) Loadable.Empty else Loadable.Content(entries)
+        }
+    }
+    override suspend fun history(connection: BackendConnection) = withContext(Dispatchers.IO) { mutex.withLock {
+        check(granted() && connection.subjectId == state.getString("subject_id"))
+        JSONArray(state.getJSONArray("calibrations").objects().map(::calibrationView))
+    } }
+    private fun calibrationView(record: JSONObject): JSONObject = record.copyJson().apply {
+        if (getString("state") == "INVALIDATED") {
+            remove("human_answer")
+            getJSONObject("locked_answer").put("answer", "原始材料已撤除，此回答不再可用。")
+                .put("evidence", JSONArray()).put("evidence_ids", JSONArray()).put("response_type", "INSUFFICIENT")
+        }
+    }
 
     override suspend fun request(connection: BackendConnection, path: String, method: String, body: JSONObject?): JSONObject = withContext(Dispatchers.IO) {
         mutex.withLock {
@@ -69,7 +99,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                             .put("source_ref", "calibration:$id")))
                     execute()
                 }
-                path.startsWith("/calibrations/") -> calibration(path.substringAfterLast('/'))
+                path.startsWith("/calibrations/") -> calibrationView(calibration(path.substringAfterLast('/')))
                 path.startsWith("/episodes/") && method == "DELETE" -> withdraw(path.split('/')[2])
                 else -> error("此功能尚未在手机本地模式开放。")
             }.copyJson()
@@ -142,7 +172,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         }
     }
     private fun calibration(id: String) = state.getJSONArray("calibrations").objects().first {
-        it.getString("calibration_id") == id && it.getString("state") != "INVALIDATED"
+        it.getString("calibration_id") == id
     }
     private fun withdraw(id: String): JSONObject {
         check(pending() == null) { "请先完成或取消待处理任务。" }

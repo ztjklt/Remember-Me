@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
         }
         return
     }
+    val selectedMemories = if (localMode) local!!.memories!! else memoryRepository
     val selectedAgent = if (localMode) local!!.repository!! else agentRepository
     val nav=rememberNavController()
     val scope=rememberCoroutineScope()
@@ -48,6 +49,7 @@ import androidx.compose.material3.TextButton
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
         composable("local-model-settings") { LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() } }
         composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) },
+            onHome = { nav.navigate(Routes.Home) },
             onSettings = if (localMode) ({ nav.navigate("local-model-settings") }) else null,
             onSwitchMode = local?.let { { it.setLocalMode(!localMode) } },
             modeLabel = if (localMode) "手机独立模式" else "电脑 Backend 模式") { recording ->
@@ -95,10 +97,10 @@ import androidx.compose.material3.TextButton
                 LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
             }
         }
-        composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
-        composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
-        composable(Routes.Home){CreatorHomeScreen(memoryRepository,nav::navigate)}
-        composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
+        composable(Routes.Birth){ if (me.remember.app.BuildConfig.DEBUG) TwinBirthScreen{nav.navigate(Routes.Voice)} }
+        composable(Routes.Voice){ if (me.remember.app.BuildConfig.DEBUG) VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
+        composable(Routes.Home){CreatorHomeScreen(selectedMemories,nav::navigate)}
+        composable(Routes.Memories){MemoriesScreen(selectedMemories){nav.popBackStack()}}
         composable(Routes.Twin){AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, localMode = localMode, externalBusy = localState?.busy == true) {
             LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
         }}
@@ -106,7 +108,7 @@ import androidx.compose.material3.TextButton
             LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
         }}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
-        composable(Routes.Legacy){LegacyHomeScreen{nav.navigate(Routes.Twin)}}
+        composable(Routes.Legacy){ if (me.remember.app.BuildConfig.DEBUG) LegacyHomeScreen{nav.navigate(Routes.Twin)}}
         composable(Routes.Debug){DemoMenuScreen(nav::navigate){nav.popBackStack()}}
     }
 }

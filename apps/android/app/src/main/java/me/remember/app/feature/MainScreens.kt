@@ -51,7 +51,7 @@ import me.remember.app.ui.components.*
 }
 @Composable private fun NavigationRow(go:(String)->Unit){Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.SpaceAround){listOf("我说过的" to Routes.Memories,"AI 的理解" to Routes.Understanding,"Twin" to Routes.Twin).forEach{(label,r)->Text(label,Modifier.clickable{go(r)}.padding(10.dp),style=MaterialTheme.typography.bodyLarge)}}}
 
-@Composable fun MemoriesScreen(memoryRepository:MemoryRepository,back:()->Unit){val state by memoryRepository.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("Memory Archive",style=MaterialTheme.typography.headlineLarge);Text("这里只展示 Backend 返回的提取结果。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有真实记忆");is Loadable.Error->Text(s.message)}}}
+@Composable fun MemoriesScreen(memoryRepository:MemoryRepository,back:()->Unit){val state by memoryRepository.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("记忆归档",style=MaterialTheme.typography.headlineLarge);Text("这里只展示当前模式下的真实材料，撤除的材料不再展示。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有真实记忆");is Loadable.Error->Text(s.message)}}}
 @Composable private fun MemoryItem(m:Memory){Column(Modifier.padding(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
     val location=listOf(m.date,m.place).filter{it.isNotBlank()}.joinToString(" · ")
     if(location.isNotBlank())Text(location,color=RememberMeColors.Muted)
@@ -59,7 +59,7 @@ import me.remember.app.ui.components.*
     val labels=m.people+m.tags
     if(labels.isNotEmpty())Text(labels.joinToString("   "),style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)
     m.episodeId?.let{Text("Episode：$it",style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)}
-    if(m.sourceType!=null)Text("${m.memoryType} · ${m.sourceType} · confidence ${m.confidence}",style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)
+    if(m.sourceType!=null)Text(listOfNotNull(m.memoryType, m.sourceType, m.confidence?.let { "置信度 $it" }).joinToString(" · "),style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)
     if(m.evidenceIds.isNotEmpty())Text("证据：${m.evidenceIds.joinToString()}",style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)
     m.modelVersion?.let{Text("模型：$it",style=MaterialTheme.typography.bodySmall,color=RememberMeColors.Muted)}
     if(m.hasPlayableAudio)RmVoicePlayer(m.duration)
