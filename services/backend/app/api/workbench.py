@@ -13,6 +13,7 @@ from ..errors import RequestInvalid
 from ..models import (Actor, Subject, Episode, MemoryItem, Evidence, StoryGrant,
                       MemoryRevision, QuestionRequest, CaptureQuestion, Consent, ModelRevision, Job, utcnow, as_utc)
 from ..security import current_actor
+from ..chinese_text import simplified_transcript
 from ..retrieval import invalidate_answers
 from ..repositories.person_model import PersonModelRepository
 
@@ -119,7 +120,8 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                     if e is not None and e.episode_id == episode.episode_id]})
         items.append({'episode_id': episode.episode_id, 'status': episode.status,
             'recorded_at': as_utc(episode.recorded_at).isoformat(), 'duration_ms': episode.duration_ms,
-            'transcript': None if unavailable else episode.transcript,
+            'transcript': None if unavailable else (simplified_transcript(episode.transcript)
+                if episode.transcript is not None and episode.transcript_reviewed_at is None else episode.transcript),
             'machine_transcript': episode.stt_transcript if owner else None,
             'reviewed': episode.transcript_reviewed_at is not None,
             'waiting_for_review': bool(job and job.state == 'waiting'),

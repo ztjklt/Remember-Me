@@ -105,6 +105,8 @@ Android运行adb reverse tcp:8877 tcp:8877，输入http://127.0.0.1:8877。
 
 月度素材见evaluations/monthly-integration-v1/README.md。独立六个测试Actor在services/backend/var/monthly-eval/identities.json；三个owner各自管理一个虚构人物空间，三个reader分别授权。不要把身份凭据或云端密钥放进Git。
 
-原音、raw ASR、product ASR分别留存，待核对不是成功提取。微信密钥配置并重启后，先在网页核对三个样本，逐项检查保存和问答，再填写sample-gate.json，放行其余27段。
+原音、raw ASR、product ASR分别留存，待核对不是成功提取。微信密钥现已配置并重启，真实连接探针已通过；先在网页核对三个样本，逐项检查保存和问答，再填写sample-gate.json，放行其余27段。
 
 网页花园采用PR85资产，入口只绑定后端有效故事/记忆ID。最新验证状态以INTEGRATION_ACCEPTANCE.md为准，旧ACCEPTANCE.md保留上一批历史证据。
+
+简体转写：Whisper 指定 zh 并提供简体提示；OpenCC t2s 生成简体核对草稿，原始 ASR 单独保留。已确认文字不自动转换。详见 [本次补验](STT_SIMPLIFIED_2026-10-07.md)。

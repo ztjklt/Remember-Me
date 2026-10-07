@@ -37,6 +37,7 @@ from sqlalchemy.orm import Session
 from ..contracts import EpisodeCreated, EpisodeResult, MemoryItem, ProcessingStatus
 from ..config import Settings
 from ..db import get_session
+from ..chinese_text import simplified_transcript
 from ..errors import (
     AudioInvalid,
     AudioTooLarge,
@@ -430,7 +431,8 @@ def read_transcript_review(
         state = "transcribing"
     return TranscriptReview(
         state=state,
-        transcript=episode.transcript if state == "reviewing" else None,
+        transcript=simplified_transcript(episode.transcript)
+            if state == "reviewing" and episode.transcript is not None else None,
         stt_model_version=episode.stt_model_version,
     )
 

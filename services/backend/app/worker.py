@@ -382,8 +382,11 @@ class ProcessingWorker:
                 f"Transcription of episode {episode.episode_id} produced no text"
             )
 
-        episode.transcript = transcript.text
+        from .chinese_text import simplified_transcript, NORMALIZATION_VERSION
+        episode.transcript = simplified_transcript(transcript.text)
         episode.stt_transcript = transcript.text
+        episode.capture_metadata = {**(episode.capture_metadata or {}),
+                                    'transcript_normalization': NORMALIZATION_VERSION}
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
 
