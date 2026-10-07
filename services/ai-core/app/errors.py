@@ -36,3 +36,6 @@ __all__ = [
     "ProviderUnavailable",
     "ProviderTimeout",
 ]
+
+class ProviderAuthenticationFailed(AICoreError):
+    code = "AI_AUTH_FAILED"

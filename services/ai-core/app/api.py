@@ -13,6 +13,9 @@ from .config import Settings
 from .contracts import AICoreInput, AICoreOutput
 from .errors import AIOutputInvalid, EvidenceInvalid, ProviderTimeout, ProviderUnavailable
 from .extractor import MemoryExtractor
+from .errors import ProviderAuthenticationFailed
+from .profile_proposals import ProfileProposalInput, ProfileProposalOutput, ProfileProposalProvider
+from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, WeixinCalibrationProvider
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
 from .providers.deepseek import DeepSeekProvider
@@ -20,7 +23,6 @@ from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
 from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
-
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
     if settings.provider == "fixture":
@@ -30,6 +32,8 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
     elif settings.provider == "ollama":
         provider = OllamaProvider(base_url=settings.base_url, timeout_seconds=settings.timeout_seconds,
                                   max_response_bytes=settings.max_response_bytes)
+    elif settings.provider == "weixin":
+        provider = WeixinProvider(api_key=settings.weixin_api_key.get_secret_value())
     elif settings.provider == "deepseek":
         provider = DeepSeekProvider(base_url=settings.base_url,
                                     api_key=settings.api_key.get_secret_value(),
@@ -51,13 +55,11 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
         schema_version=settings.schema_version,
     )
 
-
 def _safe_error(code: str, message: str, status_code: int) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={"error_code": code, "error_message": message},
     )
-
 
 def create_app(
     settings: Settings | None = None,
@@ -65,6 +67,7 @@ def create_app(
     extractor: MemoryExtractor | None = None,
     twin_provider: DeepSeekTwinProvider | None = None,
     calibration_provider: DeepSeekCalibrationProvider | None = None,
+    profile_provider: ProfileProposalProvider | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
@@ -76,6 +79,12 @@ def create_app(
         base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
         model=settings.model, timeout_seconds=settings.timeout_seconds,
     ) if settings.provider == "deepseek" else None)
+    active_profile = profile_provider
+    if settings.provider == "weixin":
+        key = settings.weixin_api_key.get_secret_value()
+        active_twin = twin_provider or WeixinTwinProvider(api_key=key)
+        active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
+        active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key))
     slots = BoundedSemaphore(settings.max_concurrent_requests)
 
     @asynccontextmanager
@@ -90,6 +99,8 @@ def create_app(
                     close()
             if twin_provider is None and active_twin is not None:
                 active_twin.close()
+            if profile_provider is None and active_profile is not None:
+                active_profile.close()
             if calibration_provider is None and active_calibration is not None:
                 active_calibration.close()
 
@@ -108,6 +119,10 @@ def create_app(
             "msg": "Invalid request field",
         } for error in exc.errors()]
         return JSONResponse(status_code=422, content={"detail": details})
+
+    @app.exception_handler(ProviderAuthenticationFailed)
+    async def auth_failed_handler(_request, exc):
+        return _safe_error(exc.code, "AI provider authentication failed", 502)
 
     @app.exception_handler(ProviderTimeout)
     async def provider_timeout_handler(_request, exc: ProviderTimeout) -> JSONResponse:
@@ -162,7 +177,17 @@ def create_app(
         finally:
             slots.release()
 
-    return app
+    @app.post("/profile-proposals", response_model=ProfileProposalOutput)
+    def profile_proposals(payload: ProfileProposalInput):
+        if active_profile is None:
+            raise ProviderUnavailable("Profile proposals require a configured provider")
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable("AI Core capacity is busy")
+        try:
+            return active_profile.propose(payload)
+        finally:
+            slots.release()
 
+    return app
 
 __all__ = ["create_app"]

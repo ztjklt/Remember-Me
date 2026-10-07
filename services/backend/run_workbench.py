@@ -26,17 +26,24 @@ def main():
     env.setdefault('REMEMBER_AI_TIMEOUT_SECONDS', '90')
     env.setdefault('NO_PROXY', 'localhost,127.0.0.1,::1')
     ai_env = {**env, **{k: v for k, v in dotenv_values(AI_ROOT / '.env').items() if v is not None}}
-    ai_env.update(AI_PROVIDER='deepseek', AI_BASE_URL='https://api.deepseek.com')
+    ai_env.setdefault('AI_PROVIDER', 'weixin')
+    if ai_env['AI_PROVIDER'] == 'weixin':
+        ai_env.setdefault('AI_BASE_URL', 'https://chatapi.weixin.qq.com/openai/v1')
+        ai_env.setdefault('AI_MODEL', 'Deepseek-v4-flash')
+        ai_env['AI_TIMEOUT_SECONDS'] = '45'
+        ai_env['AI_MAX_CONCURRENT_REQUESTS'] = '1'
     ai_env.setdefault('AI_MODEL', 'deepseek-v4-flash')
     ai_env.setdefault('AI_MODEL_VERSION', ai_env['AI_MODEL'])
     (ROOT / 'var').mkdir(exist_ok=True)
     commands = [('backend', ROOT, env, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8877']),
                 ('stt', ROOT, env, ['-m', 'uvicorn', 'app.local_stt:app', '--host', '127.0.0.1', '--port', '8878']),
-                ('worker', ROOT, env, ['-m', 'app.worker'])]
-    if ai_env.get('AI_API_KEY', '').strip():
+                ('worker', ROOT, env, ['-m', 'app.worker']),
+                ('profile-worker', ROOT, env, ['-m', 'app.profile_worker'])]
+    key_name = 'WEIXIN_CHAT_API_KEY' if ai_env['AI_PROVIDER'] == 'weixin' else 'AI_API_KEY'
+    if ai_env.get(key_name, '').strip():
         commands.append(('ai-core', AI_ROOT, ai_env, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8879']))
     else:
-        print('AI_API_KEY missing: cloud extraction/Twin unavailable; local audio + STT remain usable.', flush=True)
+        print(key_name + ' missing: cloud extraction/Twin/profile proposals unavailable; local audio + STT remain usable.', flush=True)
     processes, logs = [], []
     try:
         for name, cwd, variables, args in commands:
