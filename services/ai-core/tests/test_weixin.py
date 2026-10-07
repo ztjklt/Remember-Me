@@ -197,3 +197,22 @@ def test_unsupported_extraction_quote_is_failure_not_successful_empty_memory():
             MemoryExtractor(provider=provider,model='Deepseek-v4-flash',model_version='requested').process(
                 AICoreInput(episode_id='ep1',subject_id='s1',transcript='我喜欢散步',existing_model_version='v1'))
     finally:provider.close()
+
+
+@pytest.mark.parametrize('source_id,valid',[('s1',True),('unknown',False)])
+def test_extraction_source_selection_uses_actual_text_not_model_retyping(source_id,valid):
+    from app.providers.weixin import WeixinProvider
+    from app.contracts import AICoreInput
+    from app.extractor import MemoryExtractor
+    p=WeixinProvider(api_key='test-only')
+    p.complete=lambda *args:({'memories':[{'source_id':source_id,'statement':'邻居偶尔来串门',
+        'domain':'RELATIONSHIPS','memory_type':'RELATIONSHIP','confidence':.8}]},'actual')
+    try:
+        request=AICoreInput(episode_id='ep1',subject_id='s1',transcript='邻居王老师偶尔来串门。',existing_model_version='v1')
+        if not valid:
+            with pytest.raises(AIOutputInvalid):MemoryExtractor(provider=p,model='model',model_version='model').process(request)
+        else:
+            result=MemoryExtractor(provider=p,model='model',model_version='model').process(request)
+            assert result.evidence[0].excerpt=='邻居王老师偶尔来串门。'
+            assert result.evidence[0].span_start==0
+    finally:p.close()

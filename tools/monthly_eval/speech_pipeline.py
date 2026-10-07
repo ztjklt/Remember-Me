@@ -67,9 +67,20 @@ def synthesize(key,model,text,style,voice=None):
             row.update(elapsed_seconds=round(time.monotonic()-start,3),validation='invalid_audio_response');audit(row)
             raise RuntimeError('TTS returned invalid or truncated audio; no automatic retry') from None
 
+def authorize_remaining(data, people, technical):
+    required={'real_weixin','reviewed_asr','persisted_memory','qa_sources','manual_listening','duration_pass'}
+    passed=all(data.get(person,{}).get(k) is True for person in people for k in required)
+    if not passed and not technical:
+        raise ValueError('Three live sample quality gates are not approved')
+    return {'mode':'quality_gated' if passed else 'technical_only',
+            'manual_listening_passed':passed,
+            'authorization':'Explicit user request 2026-10-08: expand each fictional person to ten recordings; quality defects recorded separately'}
+
 def main():
     ap=argparse.ArgumentParser();group=ap.add_mutually_exclusive_group(required=True)
     group.add_argument('--samples',action='store_true');group.add_argument('--remaining',action='store_true')
+    ap.add_argument('--technical-run',action='store_true',help='Explicit user-authorized technical expansion; never marks listening passed')
+    ap.add_argument('--tts-only',action='store_true',help='Generate audio only; product ingest performs STT once')
     ap.add_argument('--preset',action='store_true',help='Explicitly use preset instead of design/clone; reported as fallback')
     ap.add_argument('--stt-url',default='http://127.0.0.1:8878/transcribe');args=ap.parse_args()
     env={**dotenv_values(REPO/'services/backend/.env.speech-eval'),**os.environ}
@@ -78,10 +89,10 @@ def main():
     manifest=json.loads((CORPUS/'manifest.json').read_text(encoding='utf-8'))
     if args.remaining:
         gate=OUT/'sample-gate.json'
-        required={'real_weixin','reviewed_asr','persisted_memory','qa_sources','manual_listening','duration_pass'}
         data=json.loads(gate.read_text()) if gate.exists() else {}
-        if not all(data.get(p['id'],{}).get(k) is True for p in manifest['people'] for k in required):
-            raise SystemExit('Three live sample gates are not approved; remaining27 synthesis blocked')
+        try: authorization=authorize_remaining(data,[p['id'] for p in manifest['people']],args.technical_run)
+        except ValueError as exc: raise SystemExit(str(exc)) from None
+        save(OUT/'expansion-authorization.json',authorization)
     OUT.mkdir(parents=True,exist_ok=True)
     for person in manifest['people']:
         style=person['voice']+'完整逐字朗读，不省略；每分钟约一百八十至二百个汉字，段落之间自然停顿。'
@@ -103,6 +114,7 @@ def main():
             request_fingerprint=sha((text+style+voice+PROMPT).encode())
             if audio.exists() and record.exists():
                 meta=json.loads(record.read_text(encoding='utf-8'))
+                audio=folder/meta.get('audio_file',audio.name)
                 if meta['request_fingerprint']!=request_fingerprint or meta['audio_sha256']!=sha(audio.read_bytes()):
                     raise RuntimeError('Existing audio identity differs; preserve and regenerate explicitly')
             else:
@@ -111,6 +123,9 @@ def main():
                     simulated_recorded_at=ep['simulated_recorded_at'],synthetic=True,manual_listening='pending',
                     duration_pass=180<=meta['duration_seconds']<=300,preset_fallback=args.preset)
                 save(record,meta)
+            if args.tts_only:
+                print(ep['id'],round(meta['duration_seconds'],1),'seconds; WAV saved; listening and STT pending',flush=True)
+                continue
             asr=folder/(ep['id']+'.asr.json')
             if not asr.exists():
                 start=time.monotonic()

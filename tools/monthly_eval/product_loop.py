@@ -88,6 +88,7 @@ def main():
             folder=OUT/person['id'];wav=folder/(ep['id']+'.wav')
             if not wav.exists():print(ep['id'],'waiting for generated WAV');continue
             meta=json.loads((folder/(ep['id']+'.json')).read_text(encoding='utf-8'))
+            wav=folder/meta.get('audio_file',wav.name)
             if not meta['duration_pass']:print(ep['id'],'blocked: duration outside180–300seconds');continue
             if sha(wav.read_bytes())!=meta['audio_sha256']:raise RuntimeError('Audio hash mismatch')
             owner=auth[person['id']]['owner']

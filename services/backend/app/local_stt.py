@@ -38,7 +38,7 @@ def transcribe_audio(audio: bytes, model_path: Path = MODEL_PATH) -> dict[str, s
             subprocess.run(
                 ["whisper-cli", "-m", str(model_path), "-l", "zh", "-f", str(wav),
                  "--prompt", SIMPLIFIED_PROMPT, "-otxt", "-of", str(output), "-np", "-nt"],
-                check=True, capture_output=True, timeout=240,
+                check=True, capture_output=True, timeout=max(60, min(1800, int(os.environ.get("WHISPER_TIMEOUT_SECONDS", "240")))),
             )
         except (subprocess.SubprocessError, OSError) as exc:
             raise RuntimeError("Audio conversion or Whisper failed") from exc
