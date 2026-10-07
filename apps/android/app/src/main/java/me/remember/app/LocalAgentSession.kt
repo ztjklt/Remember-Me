@@ -57,7 +57,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
                 }
                 mutableState.value = mutableState.value.copy(ready = true)
                 syncPending()
-            } catch (_: Exception) { mutableState.value = mutableState.value.copy(error = "本地数据无法打开，请保留应用数据以便检查。") }
+            } catch (e: Exception) { mutableState.value = mutableState.value.copy(error = if (e is LocalRecoveryRequired) e.message else "本地数据无法打开，请保留应用数据以便检查。") }
         }
     }
     fun setLocalMode(value: Boolean) {
@@ -111,14 +111,14 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
             if ((repository!!.state.value.snapshot?.revision ?: 0) > before) CaptureProgress.COMPLETE else CaptureProgress.IDLE)
     }
     fun retryCapture() { if (state.value.pending) retry() else lastCapture?.let(::capture) }
-    fun cancelPending() = operation { engine!!.cancelPending(); mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.IDLE) }
+    fun cancelPending() = operation { engine!!.cancelPending(); repository!!.refresh(); mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.IDLE) }
     fun loadLibrary() = operation { refreshLibrary() }
     private suspend fun refreshLibrary() {
         recordings = withContext(Dispatchers.IO) { engine!!.recordings(library.list()) }
         versions = engine!!.versions()
     }
     fun deleteRecording(recording: AudioRecording) = operation {
-        try { engine!!.deleteRecording(recording) { library.delete(recording) } }
+        try { engine!!.deleteRecording(recording) { library.delete(recording); database!!.clearRecovery() } }
         finally {
             repository = AgentRepository(engine!!).also { if (engine!!.granted()) it.enable(engine!!.connection()) }
             lastCapture = null
@@ -126,12 +126,27 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         }
     }
     fun clearLocalData() = operation {
-        engine!!.reset { library.clear(); secrets.clear() }
+        engine!!.reset { library.clear(); secrets.clear(); database!!.clearRecovery() }
         settings = null; modelDraft = null; lastCapture = null
         repository = AgentRepository(engine!!)
         recordings = emptyList(); versions = emptyList()
         preferences.edit().putBoolean("local", false).apply()
         mutableState.value = mutableState.value.copy(localMode = false, captureProgress = CaptureProgress.IDLE, message = "本地资料已清除，已退出手机模式。")
+    }
+    fun exportRecovery(uri: android.net.Uri) {
+        if (state.value.busy) return
+        viewModelScope.launch {
+            mutableState.value = mutableState.value.copy(busy = true)
+            try {
+                withContext(Dispatchers.IO) {
+                    val text = database!!.recoveryText()
+                    getApplication<Application>().contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(text) }
+                        ?: error("无法打开导出位置")
+                }
+                mutableState.value = mutableState.value.copy(message = "原文已导出；不包含模型配置。")
+            } catch (_: Exception) { mutableState.value = mutableState.value.copy(message = "暂时无法导出，请保留应用数据并升级。") }
+            finally { mutableState.value = mutableState.value.copy(busy = false) }
+        }
     }
     private suspend fun restoreAnswer() { engine!!.latestCalibration()?.let { repository!!.resume(it) } }
     private fun operation(block: suspend () -> Unit) {

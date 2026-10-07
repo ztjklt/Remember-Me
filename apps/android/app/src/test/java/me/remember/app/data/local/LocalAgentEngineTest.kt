@@ -17,6 +17,8 @@ class LocalAgentEngineTest {
     private val settings = LocalModelSettings(endpoint, endpoint, SpeechProtocol.DASHSCOPE)
     private class Store : LocalStateStore {
         var saved: String? = null
+        var backup: String? = null
+        override fun preserve(state: JSONObject) { backup = state.toString() }
         override fun read() = saved?.let(::JSONObject)
         override fun write(state: JSONObject) { saved = state.toString() }
     }
@@ -24,10 +26,12 @@ class LocalAgentEngineTest {
         var transcriptions = 0
         var failUnderstanding = false
         var badCitation = false
+        var enforceCapacity = false
         override suspend fun transcribe(recording: AudioRecording, settings: LocalModelSettings): String {
             transcriptions++; return java.io.File(recording.audioPath).readText()
         }
         override suspend fun complete(prompt: String, input: JSONObject, endpoint: ModelEndpoint): JSONObject {
+            if (enforceCapacity) requireLocalCapacity(input)
             val material = input.getJSONArray("materials").objects()
             if (input.has("question")) return JSONObject().put("answerable", true)
                 .put("answer", material.last().getString("excerpt"))
@@ -35,7 +39,7 @@ class LocalAgentEngineTest {
                 .put("limitations", JSONArray())
             check(!failUnderstanding) { "Synthetic provider failure" }
             return JSONObject().put("traits", JSONArray(material.map {
-                JSONObject().put("domain", "IDENTITY").put("statement", it.getString("excerpt"))
+                JSONObject().put("domain", "IDENTITY").put("statement", it.getString("excerpt").take(2000))
                     .put("context", "合成测试").put("evidence_ids", JSONArray().put(it.getString("evidence_id")))
             }))
         }
@@ -151,6 +155,42 @@ class LocalAgentEngineTest {
         val recording = AudioRecording(outside.path, 0, "audio/mp4", 0, 44100, 1, "")
         try { RecordingLibrary(root).delete(recording); fail("outside file deleted") } catch (_: IllegalArgumentException) { }
         assertTrue(outside.exists())
+    }
+
+    @Test fun cancellingUnderstandingKeepsPaidTranscriptAndReprocessesWithoutAsr() = runBlocking {
+        val store = Store(); val model = FakeModel().apply { failUnderstanding = true }; val engine = engine(store, model)
+        val repo = grant(engine); val recording = recording("已经转写的原文")
+        try { engine.capture(recording); fail("expected failure") } catch (_: IllegalStateException) { }
+        engine.cancelPending(); repo.refresh()
+        assertEquals("已经转写的原文", repo.state.value.materials.single().excerpt)
+        assertEquals("待理解", engine.recordings(emptyList()).single().status)
+        repo.ask("说过什么？"); assertEquals("已经转写的原文", repo.state.value.answer!!.answer)
+        model.failUnderstanding = false
+        engine.capture(recording)
+        assertEquals(1, model.transcriptions)
+        assertEquals(1, store.read()!!.getJSONArray("materials").length())
+        assertEquals(1, store.read()!!.getJSONArray("episodes").length())
+    }
+    @Test fun capacityFailureResumesAfterDeletingAnOldRecordingWithoutRepeatingAsr() = runBlocking {
+        val store = Store(); val model = FakeModel().apply { enforceCapacity = true }; val engine = engine(store, model)
+        grant(engine)
+        val old = recording("旧".repeat(36000)); val fresh = recording("新".repeat(36000))
+        engine.capture(old)
+        try { engine.capture(fresh); fail("expected capacity refusal") } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("我录过的"))
+        }
+        engine.deleteRecording(old) { java.io.File(old.audioPath).delete() }
+        engine.retry()
+        assertNull(engine.pending()); assertEquals(2, model.transcriptions)
+        assertEquals("新".repeat(36000), store.read()!!.getJSONArray("materials").getJSONObject(1).getString("excerpt"))
+    }
+    @Test fun incompatiblePayloadIsPreservedWithoutReplacingIt() {
+        val store = Store(); engine(store, FakeModel())
+        val unknown = store.read()!!.put("version", 99).toString(); store.saved = unknown
+        try { engine(store, FakeModel()); fail("future payload accepted") } catch (e: LocalRecoveryRequired) {
+            assertTrue(e.message!!.contains("导出"))
+        }
+        assertEquals(unknown, store.saved); assertEquals(unknown, store.backup)
     }
 
 }

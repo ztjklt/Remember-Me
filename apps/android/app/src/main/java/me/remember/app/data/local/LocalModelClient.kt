@@ -47,7 +47,7 @@ class HttpLocalModelClient : LocalModelClient {
     }
 
     override suspend fun complete(prompt: String, input: JSONObject, endpoint: ModelEndpoint): JSONObject {
-        require(input.toString().length <= 60_000) { "授权材料超过当前单次容量；请缩小材料范围。系统没有压缩或截断原文。" }
+        requireLocalCapacity(input)
         val messages = JSONArray().put(JSONObject().put("role", "system").put("content", prompt))
             .put(JSONObject().put("role", "user").put("content", input.toString()))
         val result = post(endpoint, "/chat/completions", JSONObject().put("model", endpoint.model)

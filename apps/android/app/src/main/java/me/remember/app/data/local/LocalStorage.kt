@@ -19,15 +19,50 @@ import javax.crypto.spec.GCMParameterSpec
 interface LocalStateStore {
     fun read(): JSONObject?
     fun write(state: JSONObject)
+    fun preserve(state: JSONObject) {}
 }
 
-class SqliteLocalState(context: Context, name: String = "local-agent.db") : SQLiteOpenHelper(context, name, null, 1), LocalStateStore {
+class LocalRecoveryRequired(message: String) : IllegalStateException(message)
+
+class SqliteLocalState(context: Context, name: String = "local-agent.db", version: Int = 1) : SQLiteOpenHelper(context, name, null, version), LocalStateStore {
+    private val recovery = File(context.noBackupFilesDir, "$name.payload.bak")
+    private fun preserveRaw(payload: String) {
+        val atomic = AtomicFile(recovery)
+        val output = atomic.startWrite()
+        try { output.write(payload.toByteArray(Charsets.UTF_8)); atomic.finishWrite(output) }
+        catch (e: Exception) { atomic.failWrite(output); throw e }
+    }
+    override fun preserve(state: JSONObject) = preserveDatabase(readableDatabase)
+    fun clearRecovery() { AtomicFile(recovery).delete() }
+    fun recoveryText(): String {
+        val raw = AtomicFile(recovery).openRead().bufferedReader().use { it.readText() }
+        return JSONObject(raw).optJSONArray("materials")?.objects().orEmpty().joinToString("\n\n") {
+            "${it.optString("source_ref")}\n${it.optString("excerpt")}"
+        }.ifBlank { "没有可导出的原文。原始日志仍在本机，请使用兼容版本恢复。" }
+    }
+    private fun preserveDatabase(db: SQLiteDatabase) {
+        db.rawQuery("SELECT payload FROM journal WHERE id=1", null).use { if (it.moveToFirst()) preserveRaw(it.getString(0)) }
+    }
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE journal (id INTEGER PRIMARY KEY CHECK(id = 1), payload TEXT NOT NULL)")
     }
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = error("Unsupported local database version")
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        preserveDatabase(db)
+        if (oldVersion != 1 || newVersion != 2) throw LocalRecoveryRequired("数据库版本不兼容，已保存原始日志。请导出原文并升级应用。")
+        // Version 2 retains the journal table; future structural migrations must be explicit.
+    }
+    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        preserveDatabase(db)
+        throw LocalRecoveryRequired("请使用更新版本打开资料。原始日志已保留，可导出原文。")
+    }
     override fun read(): JSONObject? = readableDatabase.rawQuery("SELECT payload FROM journal WHERE id=1", null).use {
-        if (it.moveToFirst()) JSONObject(it.getString(0)) else null
+        if (!it.moveToFirst()) null else {
+            val raw = it.getString(0)
+            try { JSONObject(raw) } catch (_: Exception) {
+                preserveRaw(raw)
+                throw LocalRecoveryRequired("本地日志无法解析，原始内容已保留，请勿清除应用数据。")
+            }
+        }
     }
     override fun write(state: JSONObject) {
         writableDatabase.insertWithOnConflict("journal", null, ContentValues().apply {

@@ -21,4 +21,20 @@ class LocalStorageInstrumentedTest {
             }
         } finally { context.deleteDatabase(name) }
     }
+    @Test fun upgradeKeepsPayloadAndProvidesAContentOnlyRecoveryExport() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val name = "migration-${java.util.UUID.randomUUID()}.db"
+        val payload = org.json.JSONObject().put("version", 1).put("private_config", "synthetic-key-must-not-export")
+            .put("materials", org.json.JSONArray().put(org.json.JSONObject().put("source_ref", "synthetic").put("excerpt", "旧原文")))
+        try {
+            SqliteLocalState(context, name).use { it.write(payload) }
+            SqliteLocalState(context, name, 2).use {
+                assertEquals(payload.toString(), it.read().toString())
+                org.junit.Assert.assertTrue(it.recoveryText().contains("旧原文"))
+                org.junit.Assert.assertFalse(it.recoveryText().contains("synthetic-key"))
+                it.clearRecovery()
+            }
+        } finally { context.deleteDatabase(name) }
+    }
+
 }

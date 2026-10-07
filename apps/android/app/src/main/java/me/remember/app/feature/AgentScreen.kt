@@ -51,7 +51,7 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
 
             RmDivider()
             RmSectionHeader("当前理解")
-            AgentUnderstanding(state.snapshot)
+            AgentUnderstanding(state.snapshot, localMode)
 
             RmDivider()
             RmSectionHeader("提问与回答")
@@ -104,7 +104,7 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
                     state.correction?.let { Text("你的校正：$it", modifier = Modifier.testTag("agent.correction")) }
                     Text("校正已保存。${if (state.snapshot?.revision == calibration.resultingRevision) "理解已更新，可以再次提问。" else "点击刷新已有理解读取更新结果。"}")
                     if (state.snapshot?.revision == calibration.resultingRevision) AgentDetails("查看更新后的理解") {
-                        AgentUnderstanding(state.snapshot)
+                        AgentUnderstanding(state.snapshot, localMode)
                     }
                 }
                 "INVALIDATED" -> Text("这次校正记录已失效，请重新提问。")
@@ -142,7 +142,7 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
 }
 
 @Composable
-private fun AgentUnderstanding(snapshot: AgentSnapshot?) {
+private fun AgentUnderstanding(snapshot: AgentSnapshot?, localMode: Boolean) {
     snapshot?.let { Text("第 ${it.revision} 版理解", style = MaterialTheme.typography.bodySmall) }
     val traits = snapshot?.traits.orEmpty().filter { it.status != "SUPERSEDED" }
     if (traits.isEmpty()) Text("还没有形成理解，请先上传一段录音。")
@@ -152,7 +152,7 @@ private fun AgentUnderstanding(snapshot: AgentSnapshot?) {
             "PREFERENCES" -> "偏好"; "VALUES" -> "价值与方向"; "DECISION_PATTERNS" -> "决策"; else -> "表达"
         }
         val status = when (it.status) { "CONFLICTED" -> "有冲突"; "SUPPORTED" -> "有依据"; else -> "待确认" }
-        Text("$domain · $status", style = MaterialTheme.typography.bodySmall)
+        Text(if (localMode) domain else "$domain · $status", style = MaterialTheme.typography.bodySmall)
         Text(it.statement)
     }
 }

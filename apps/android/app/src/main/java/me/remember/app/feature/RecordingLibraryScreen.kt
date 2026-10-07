@@ -31,7 +31,7 @@ fun RecordingLibraryScreen(session: LocalAgentSession, audio: AudioCaptureServic
                 runCatching { audio.play(item.recording, {}, { playbackError = it }) }.onFailure { playbackError = "播放失败，文件可能已损坏。" }
             }, enabled = !state.busy) { Text("播放录音") }
             TextButton({ audio.stopPlayback() }) { Text("停止播放") }
-            if (item.status == "未处理") TextButton({ process(item.recording) }, enabled = !state.busy) { Text("处理这段录音") }
+            if (item.status in setOf("未处理", "待理解")) TextButton({ process(item.recording) }, enabled = !state.busy) { Text("处理这段录音") }
             if (item.status != "已删除") TextButton({ deleting = item.recording }, enabled = !state.busy) { Text("删除这段录音") }
         }
         TextButton({ showVersions = !showVersions }) { Text("理解版本历史") }

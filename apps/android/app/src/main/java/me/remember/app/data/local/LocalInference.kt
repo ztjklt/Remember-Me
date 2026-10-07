@@ -11,6 +11,15 @@ internal fun newId(prefix: String) = prefix + UUID.randomUUID().toString().repla
 internal fun JSONObject.copyJson() = JSONObject(toString())
 internal fun now() = Instant.now().toString()
 
+internal fun requireLocalCapacity(input: JSONObject) {
+    if (input.toString().length > 60_000) {
+        val longest = input.optJSONArray("materials")?.objects()?.filter { it.optString("source_type") == "SUBJECT" }
+            ?.maxByOrNull { it.optString("excerpt").length }
+        val hint = longest?.optString("excerpt")?.take(24).orEmpty()
+        throw IllegalArgumentException("材料超过 60,000 字符。请到“我录过的”删除较长的旧录音（原文开头：$hint），再继续任务。未压缩或截断原文。")
+    }
+}
+
 /** One model, bounded structured operations, no delegation or tool execution. */
 class LocalInference(private val client: LocalModelClient) {
     suspend fun understand(model: JSONObject, materials: JSONArray, endpoint: ModelEndpoint): JSONArray {

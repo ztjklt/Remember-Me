@@ -1,6 +1,8 @@
 package me.remember.app.navigation
 
 import androidx.compose.runtime.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.compose.*
 import me.remember.app.data.repository.AgentRepository
 import me.remember.app.data.repository.EpisodeUiState
@@ -26,9 +28,14 @@ import androidx.compose.material3.TextButton
 ){
     val localState = local?.state?.collectAsState()?.value
     val localMode = localState?.localMode == true
+    val recoveryExport = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        uri?.let { local?.exportRecovery(it) }
+    }
     if (localMode && localState?.ready != true) {
         RmPage {
             Text(localState?.error ?: "正在打开手机资料…")
+            localState?.message?.let { Text(it) }
+            if (localState?.error != null) TextButton({ recoveryExport.launch("remember-me-originals.txt") }, enabled = localState.busy.not()) { Text("导出可读原文") }
             TextButton({ local?.setLocalMode(false) }) { Text("使用电脑 Backend 模式") }
         }
         return
