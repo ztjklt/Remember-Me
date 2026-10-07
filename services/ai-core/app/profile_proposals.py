@@ -16,11 +16,11 @@ class Material(BaseModel):
 
 class ProfileProposalInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    materials: list[Material] = Field(max_length=128)
+    materials: list[Material] = Field(max_length=24000)
 
     @model_validator(mode='after')
     def bounded_material(self):
-        if sum(len(m.excerpt) for m in self.materials) > 24000:
+        if sum(map(len,{m.excerpt for m in self.materials})) > 24000:
             raise ValueError('Material exceeds 24000 characters')
         if len({m.evidence_id for m in self.materials}) != len(self.materials):
             raise ValueError('Duplicate evidence IDs')

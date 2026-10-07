@@ -53,7 +53,8 @@ def test_story_grant_and_revocation(app, client, session):
     assert client.get(f'/api/v1/subjects/{owner.subject_id}/twin/answers/' + answered.json()['answer_id'], headers=rh).status_code == 404
 
 
-def test_inflight_correction_rejects_answer(app, client, session):
+@pytest.mark.parametrize('round_number',range(3))
+def test_inflight_correction_rejects_answer(app, client, session,round_number):
     owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
     memory = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == ep))
     entered, release = Event(), Event()

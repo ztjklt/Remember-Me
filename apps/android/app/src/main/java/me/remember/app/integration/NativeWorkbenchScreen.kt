@@ -117,7 +117,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                 Text(story.text("recorded_at"), style = MaterialTheme.typography.bodySmall)
                 if(story.optBoolean("unavailable")) Text(story.text("notice")) else {
                     Action("播放完整原音", ready) { detail = null; model.playSource(id) }
-                    Text("核对文字", style = MaterialTheme.typography.titleMedium)
+                    Text(if(story.optBoolean("waiting_for_review")) "机器转写 · 尚未核对" else "核对文字", style = MaterialTheme.typography.titleMedium)
                     Text(story.text("transcript").ifBlank { "转写尚未完成。" })
                     if(state.owner && story.text("machine_transcript").isNotBlank()) {
                         Text("机器原始转写（保留）", style = MaterialTheme.typography.titleMedium); Text(story.text("machine_transcript"))

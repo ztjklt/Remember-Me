@@ -19,7 +19,8 @@ from ..retrieval import EmbeddingUnavailable, retrieve
 from ..security import current_actor
 from ..twin_client import TwinUnavailable
 from ..stt import SttProvider
-from ..access import visible_episodes, is_owner, require_cloud, source_basis, publication_lock
+from ..access import visible_episodes, is_owner, require_cloud, source_basis, publication_lock, altered_story_ids
+from ..materials import effective_materials, ContextTooLarge
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["twin"])
 
@@ -83,6 +84,7 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
         "question": row.question, "answer": row.answer if row.invalidated_at is None else "相关记忆已变化，请重新提问。",
         "response_type": row.response_type, "confidence": row.confidence,
         "model_version": row.model_version, "person_model_version": row.person_model_version,
+        "source_version": row.source_basis,
         "created_at": row.created_at.isoformat(),
         "stale": row.invalidated_at is not None,
         "evidence": [{"evidence_id": source.evidence_id, "excerpt": source.excerpt,
@@ -124,6 +126,17 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
     ids = visible_episodes(session, subject_id, actor_id, cloud=True)
     reader = not is_owner(session, subject_id, actor_id)
+    if reader:
+        ids -= altered_story_ids(session, ids)
+    candidates = effective_materials(session, subject_id, ids)
+    if not reader:
+        from ..profiles import approved_traits
+        for trait in approved_traits(session, subject_id):
+            for candidate in candidates:
+                if set(trait.evidence_ids).intersection(e['evidence_id'] for e in candidate['evidence']):
+                    candidate['traits'].append(f'本人确认的系统归纳：{trait.statement}；情境：{trait.context}')
+    if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
+        raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
     basis = source_basis(session, subject_id)
     revision = session.get(ModelRevision, subject_id)
     basis_version = revision.version if revision else 0
@@ -131,16 +144,10 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     question = payload.question.strip()
     if not question:
         raise TwinNotFound("Question is empty")
-    try:
-        candidates = retrieve(session, subject_id, question, request.app.state.embedding_encoder,
-                              episode_ids=ids, reader=reader)
-    except EmbeddingUnavailable as exc:
-        raise TwinFailed(str(exc)) from exc
     candidate_ids = {row["memory_item_id"] for row in candidates}
     unresolved = set()
-    for trait in ([] if reader else session.scalars(select(PersonTrait).where(
-        PersonTrait.subject_id == subject_id, PersonTrait.status == "unresolved"))):
-        unresolved.update(set(trait.memory_item_ids or []).intersection(candidate_ids))
+    # Explicit temporal revisions travel as context; an unrelated contradiction
+    # must not globally block answering facts from the same recording.
     limited = [{"memory_item_id": row["memory_item_id"], "statement": row["statement"],
                 "domain": row["domain"], "unresolved": row["memory_item_id"] in unresolved,
                 "traits": row["traits"], "graph_facts": row["graph_facts"],
@@ -207,6 +214,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
                      person_model_version=basis_version,
+                     source_basis=basis,
                      created_at=utcnow())
     session.add(row)
     session.commit()
@@ -216,10 +224,15 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 @router.get("/twin/answers/{answer_id}")
 def read_answer(subject_id: str, answer_id: str,
                 actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
-    visible_episodes(session, subject_id, actor.actor_id)
+    actor_id=actor.actor_id
+    publication_lock(session,subject_id)
+    visible_episodes(session, subject_id, actor_id)
     row = session.scalar(select(TwinAnswer).where(
         TwinAnswer.answer_id == answer_id, TwinAnswer.subject_id == subject_id,
         TwinAnswer.actor_id == actor.actor_id))
     if row is None:
         raise TwinNotFound("Answer not found")
+    if row.invalidated_at is None and row.source_basis != source_basis(session,subject_id):
+        row.invalidated_at=utcnow()
+        session.commit()
     return answer_view(session, row)

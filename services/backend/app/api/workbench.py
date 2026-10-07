@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..access import Hidden, is_owner, require_owner, visible_episodes, publication_lock
+from ..access import Hidden, is_owner, require_owner, visible_episodes, publication_lock, altered_story_ids
 from ..db import get_session
 from ..errors import RequestInvalid
 from ..models import (Actor, Subject, Episode, MemoryItem, Evidence, StoryGrant,
@@ -76,8 +76,17 @@ def spaces(actor: Actor = Depends(current_actor), session: Session = Depends(get
 @router.get('/capabilities')
 def capabilities(request: Request, actor: Actor = Depends(current_actor)):
     settings = request.app.state.settings
+    available=False
+    if settings.ai_backend=='http':
+        import httpx
+        try:
+            health=httpx.get(settings.ai_core_url.rstrip('/')+'/health',timeout=1,trust_env=False,follow_redirects=False)
+            available=health.is_success
+        except httpx.HTTPError:
+            pass
     return {'stt': settings.stt_backend, 'ai': settings.ai_backend,
         'live_configured': settings.stt_backend == settings.ai_backend == 'http',
+        'ai_available':available,
         'notice': '配置不等于服务可用；实际结果保留模型版本。',
         'schema_version': '0.5.0', 'audio_alignment': False}
 
@@ -86,6 +95,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
 def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
     ids = visible_episodes(session, subject_id, actor.actor_id)
     owner = is_owner(session, subject_id, actor.actor_id)
+    altered = altered_story_ids(session, ids) if not owner else set()
     items = []
     for episode in session.scalars(select(Episode).where(Episode.episode_id.in_(ids)).order_by(Episode.recorded_at.desc())):
         job = session.scalar(select(Job).where(Job.episode_id == episode.episode_id)) if owner else None
@@ -94,7 +104,7 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
         active = [m for m in memory_rows if m.review_state == 'active']
         # A corrected private replacement must not leak via a formerly shared
         # transcript or original-audio endpoint. The owner retains the history.
-        unavailable = not owner and any(m.review_state != 'active' for m in memory_rows)
+        unavailable = episode.episode_id in altered
         values = []
         for memory in (memory_rows if owner else active):
             if unavailable:
@@ -127,9 +137,7 @@ def audio(subject_id: str, episode_id: str, request: Request,
         raise Hidden('原音不可用。')
     episode = session.get(Episode, episode_id)
     if not is_owner(session, subject_id, actor.actor_id):
-        altered = session.scalar(select(MemoryItem.memory_item_id).where(
-            MemoryItem.episode_id == episode_id, MemoryItem.review_state != 'active'))
-        if altered:
+        if altered_story_ids(session, {episode_id}):
             raise Hidden('相关内容已更新，当前不可用。')
     return Response(request.app.state.object_store.get(episode.audio_object_key),
                     media_type=episode.audio_content_type, headers={'Cache-Control': 'private, no-store'})
@@ -144,8 +152,7 @@ def grant(subject_id: str, body: GrantInput, request: Request,
         raise RequestInvalid('请先核对文字并完成整理。')
     if body.reader_actor_id == actor.actor_id or session.get(Actor, body.reader_actor_id) is None:
         raise RequestInvalid('请提供另一个已创建的读者身份。')
-    if session.scalar(select(MemoryItem.memory_item_id).where(MemoryItem.episode_id == body.episode_id,
-                                                            MemoryItem.review_state != 'active')):
+    if altered_story_ids(session, {body.episode_id}):
         raise RequestInvalid('请先处理这个故事的修订。')
     previous = session.scalar(select(StoryGrant).where(StoryGrant.episode_id == body.episode_id,
         StoryGrant.reader_actor_id == body.reader_actor_id, StoryGrant.revoked_at.is_(None)))
@@ -204,7 +211,7 @@ def propose_revision(subject_id: str, body: RevisionInput, request: Request,
             raise RequestInvalid('这段录音已经关联另一项修订。')
         return view(previous)
     if (episode.transcript_reviewed_at is not None or episode.status not in {'uploaded', 'transcribing'}
-            or episode.source not in {'IMPORT', 'IOS_MIC'}):
+            or episode.source not in {'IMPORT', 'IOS_MIC', 'ANDROID_MIC'}):
         raise RequestInvalid('请在确认转写前关联修订，避免已公开的结果被重新解释。')
     row = MemoryRevision(revision_id='rev_' + uuid4().hex[:16], subject_id=subject_id,
         target_memory_id=body.target_memory_id, episode_id=body.episode_id, kind=body.kind, time_text=body.time_text)
@@ -328,6 +335,9 @@ def portrait(subject_id: str, actor: Actor = Depends(current_actor), session: Se
                 if evidence['source_type'] == 'SUBJECT':
                     groups['说话与表达'].append({**evidence, 'content': evidence['excerpt'], 'label': '核对文字中的原话'})
     version = session.get(ModelRevision, subject_id)
+    import hashlib,json
+    visible_version=hashlib.sha256(json.dumps(groups,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
     return {'subject_id': subject_id, 'version': version.version if version else 0,
+            'source_version':visible_version,
             'scope': 'owner' if data['role'] == 'owner' else 'shared_stories_only', 'views': groups,
             'notice': '按可见证据组织，不代表稳定人格或完整人物画像。'}

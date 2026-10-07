@@ -70,7 +70,9 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
     if episode_ids is not None:
         query = query.where(Episode.episode_id.in_(episode_ids))
     if reader:
-        altered = select(MemoryItem.episode_id).where(MemoryItem.review_state != 'active')
+        from sqlalchemy import or_
+        altered = select(MemoryItem.episode_id).where(or_(MemoryItem.review_state != 'active',
+            MemoryItem.deleted_at.is_not(None), MemoryItem.source_type == 'CALIBRATION'))
         query = query.where(Episode.episode_id.not_in(altered))
     rows = session.execute(query).all()
     # Reader derivation starts from visible memories only. Never reuse an owner

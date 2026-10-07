@@ -19,6 +19,22 @@ def require_owner(session, subject_id, actor_id):
         raise Hidden('人物空间不存在或尚未映射所有者。')
 
 
+def altered_story_ids(session, episode_ids):
+    """Whole audio cannot be safely redacted; readers lose an altered source.
+
+    Owners keep their original history. A fresh private revision does not grant
+    a reader access to its replacement or resurrect the old reviewed wording.
+    """
+    from .models import MemoryItem, MemoryRevision
+    from sqlalchemy import or_
+    altered = set(session.scalars(select(MemoryItem.episode_id).where(
+        MemoryItem.episode_id.in_(episode_ids), or_(MemoryItem.deleted_at.is_not(None),
+            MemoryItem.review_state != 'active', MemoryItem.source_type == 'CALIBRATION'))))
+    altered.update(session.scalars(select(MemoryRevision.episode_id).where(
+        MemoryRevision.episode_id.in_(episode_ids), MemoryRevision.status != 'confirmed')))
+    return altered
+
+
 def visible_episodes(session, subject_id, actor_id, *, cloud=False):
     if is_owner(session, subject_id, actor_id):
         return set(session.scalars(select(Episode.episode_id).where(Episode.subject_id == subject_id)))
@@ -50,14 +66,14 @@ def require_cloud(session, subject_id, actor_id, consent_id):
             raise Hidden('请明确同意使用已获云端处理授权的故事进行问答。')
 
 
-def source_basis(session, subject_id):
+def source_basis(session, subject_id, *, include_profiles=True):
     """Hash ALL potentially used source and authorization state, not only citations.
 
     Caller uses a short snapshot/publication transaction. No provider calls here.
     """
     import hashlib
     import json
-    from .models import MemoryItem, Evidence, PersonTrait, GraphFact, ModelRevision, MemoryRevision
+    from .models import MemoryItem, Evidence, PersonTrait, GraphFact, ModelRevision, MemoryRevision, ProfileCandidate
     parts = []
     queries = [select(Subject).where(Subject.subject_id == subject_id),
         select(Episode).where(Episode.subject_id == subject_id),
@@ -69,6 +85,8 @@ def source_basis(session, subject_id):
         select(Consent).where(Consent.subject_id == subject_id),
         select(StoryGrant).join(Episode).where(Episode.subject_id == subject_id),
         select(MemoryRevision).where(MemoryRevision.subject_id == subject_id)]
+    if include_profiles:
+        queries.append(select(ProfileCandidate).where(ProfileCandidate.subject_id == subject_id))
     for query in queries:
         rows = [{column.name: getattr(row, column.name) for column in row.__table__.columns}
                 for row in session.scalars(query.execution_options(populate_existing=True))]

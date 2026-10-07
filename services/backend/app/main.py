@@ -166,12 +166,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(voice.router)
     app.include_router(calibration.router)
     app.include_router(workbench.router)
+    from .api import profiles
+    from .profiles import ProfileClient
+    app.state.profile_client = ProfileClient(settings.ai_core_url, settings.ai_timeout_seconds)
+    app.include_router(profiles.router)
     if settings.enable_workbench:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles
         from starlette.middleware.trustedhost import TrustedHostMiddleware
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]', 'testserver'])
         app.mount('/workbench', StaticFiles(directory=Path(__file__).parent / 'workbench', html=True), name='workbench')
+        # Design-only assets from reviewed PR85; no prototype fixtures/audio or
+        # repository root is exposed by the live application.
+        brand = Path(__file__).resolve().parents[3] / 'assets' / 'brand' / 'forget-me-not'
+        if brand.is_dir():
+            app.mount('/brand', StaticFiles(directory=brand), name='brand')
     return app
 
 

@@ -16,6 +16,21 @@ PAYLOAD = {"question": "我喜欢什么？", "candidates": [{
 }]}
 
 
+def test_full_effective_material_accepts_more_than_eight_sources():
+    candidates=[{**PAYLOAD['candidates'][0], 'memory_item_id':f'episode:{i}'} for i in range(12)]
+    assert len(TwinInput.model_validate({'question':'经历？','candidates':candidates}).candidates)==12
+
+
+def test_long_reviewed_source_and_aggregate_budget():
+    from pydantic import ValidationError
+    candidate={'memory_item_id':'episode:long','statement':'长'*5000,
+        'evidence':[{'evidence_id':'long','excerpt':'长'*5000,'source_type':'SUBJECT'}]}
+    assert TwinInput.model_validate({'question':'长文','candidates':[candidate]})
+    candidate['evidence'][0]['excerpt']='长'*24001
+    with pytest.raises(ValidationError):
+        TwinInput.model_validate({'question':'太长','candidates':[candidate]})
+
+
 def test_deepseek_twin_uses_only_selected_evidence_and_actual_model_identity():
     observed = {}
 

@@ -288,7 +288,7 @@ def create_episode(
     calibration = None
     calibration_id = (capture_metadata or {}).get("calibration_id")
     if calibration_id is not None:
-        if not isinstance(calibration_id, str) or form.source not in {CaptureSource.IOS_MIC, CaptureSource.IMPORT}:
+        if not isinstance(calibration_id, str) or form.source not in {CaptureSource.IOS_MIC, CaptureSource.IMPORT, CaptureSource.ANDROID_MIC}:
             raise RequestInvalid("calibration_id requires a reviewed recording")
         calibration = session.scalar(select(CalibrationRun).where(
             CalibrationRun.calibration_id == calibration_id,
@@ -418,7 +418,7 @@ def read_transcript_review(
     response.headers["Cache-Control"] = "private, no-store"
     episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
     job = JobRepository(session).for_episode(episode_id)
-    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT)}:
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
         state = "not_required"
     elif job is not None and job.state == str(JobState.WAITING):
         state = "reviewing"
@@ -448,7 +448,7 @@ def confirm_transcript(
     text = payload.transcript.strip()
     if not text:
         raise RequestInvalid("The confirmed transcript cannot be blank")
-    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT)}:
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
         raise RequestInvalid("Transcript review requires iOS or imported capture")
     if episode.transcript_reviewed_at is not None:
         if episode.transcript == text:
