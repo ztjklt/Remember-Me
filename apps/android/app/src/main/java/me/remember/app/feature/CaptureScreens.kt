@@ -34,6 +34,9 @@ fun RecordingScreen(
         ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     },
     onUnderstanding: (() -> Unit)? = null,
+    onSettings: (() -> Unit)? = null,
+    onSwitchMode: (() -> Unit)? = null,
+    modeLabel: String? = null,
     onUpload: (AudioRecording) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -232,6 +235,11 @@ fun RecordingScreen(
         }
 
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (captureState !in setOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused)) {
+            modeLabel?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            onSettings?.let { TextButton(it) { Text("模型设置") } }
+            onSwitchMode?.let { TextButton(it) { Text("切换手机 / 电脑模式") } }
+        }
         if (onUnderstanding != null && captureState !in setOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused)) {
             TextButton(onClick = onUnderstanding, modifier = Modifier.testTag("capture.understanding")) { Text("查看已有录音与理解") }
         }

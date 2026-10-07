@@ -10,7 +10,7 @@ data class AgentSnapshot(val subjectId: String, val revision: Int, val modelVers
 data class AgentEvidence(val id: String, val excerpt: String, val sourceType: String, val sourceRef: String, val episodeId: String?, val observedAt: String = "")
 data class AgentAnswer(val subjectId: String, val revision: Int, val type: String, val answer: String, val evidence: List<AgentEvidence>, val limitations: List<String>, val modelVersion: String)
 data class AgentDiff(val dimension: String, val assessment: String, val reason: String)
-data class AgentCalibration(val id: String, val question: String, val lockedAnswer: AgentAnswer, val lockedAt: String, val digest: String, val state: String, val diffs: List<AgentDiff>, val resultingRevision: Int?)
+data class AgentCalibration(val id: String, val question: String, val lockedAnswer: AgentAnswer, val lockedAt: String, val digest: String, val state: String, val diffs: List<AgentDiff>, val resultingRevision: Int?, val humanAnswer: String? = null)
 data class AgentPlan(val question: String, val reason: String)
 data class AgentUiState(
     val configured: Boolean = false, val busy: Boolean = false, val error: String? = null,

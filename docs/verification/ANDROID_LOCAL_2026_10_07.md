@@ -32,3 +32,24 @@ export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 - 三个新增回归测试覆盖校正后重启、失败后继续和录音去重、虚构引用拒绝、撤除与同意门控。
 
 闭环及页面接入检查命令同上，BUILD SUCCESSFUL（1m29s）；Debug/Release 各 38 个测试通过。
+
+## 配置页面与真实 API 检查
+
+`1.2-local`（versionCode 3）默认手机模式，配置两套模型后无需填写 Backend ID；保留切回电脑模式入口。
+配置加密保存，问答和校正跨重启恢复；处理时禁用冲突操作，失败显示继续/取消入口。
+
+使用合成 WAV 和 AAC/M4A（44.1 kHz 单声道），通过实际 Kotlin `HttpLocalModelClient → LocalAgentEngine → AgentRepository` 调用 ASR `qwen-audio-3.0-asr-flash`、LLM `deepseek-flash`，无 Python Backend 参与。
+本机临时 JUnit 检查位于忽略目录 `build/local-smoke`，凭证从既有 `.env` 仅传入进程环境，未写入测试源码。
+使用 `-I ../../build/local-smoke/live.init.gradle testDebugUnitTest --tests me.remember.app.data.local.LocalProviderSmokeTest` 执行，两种音频各 29s 通过。
+
+- 合成转写：`My name is Morgan. I am a graduate student. I have two teammates. One studies computer science and the other studies design.`
+- 队友回答：`你有两个队友：其中一人学习计算机科学，另一人学习设计。`
+- 校正并重新加载状态后：`你叫 Jordan。之前材料中的 Morgan 是识别错误。`；revision 为 2，原文和旧回答保留。
+
+此检查使用序列化测试存储，不代替 SQLite/Keystore、麦克风或 UI 真机验收；Mate 60 / HarmonyOS 4.2 无无线调试入口，ADB 无设备。
+真机检查待用户安装后按 [本地模式说明](../../apps/android/docs/LOCAL_AGENT.md) 完成；未声称完成硬件验收。
+
+最终完整检查：上述 Gradle 命令 BUILD SUCCESSFUL（58s），Debug/Release 各 38 个测试，零失败/跳过。
+lint 零错误、28 个警告（依赖/Gradle 版本、图标、SDK 条件和版本目录建议）；未扩大范围升级依赖。
+安装包 `build/releases/remember-me-1.2-local-debug.apk`（10,174,285 字节）与 1.1-agent 签名相同，SHA-256：`0bb4088c758b96c07cf0b15d7c60d912483f20b1addc1f085ef19c242287fdc1`。
+已检查改动文件及 APK 内全部条目，不含本机配置的供应商凭证；APK 和临时测试文件未纳入 Git。

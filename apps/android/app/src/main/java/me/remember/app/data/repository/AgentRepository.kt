@@ -58,7 +58,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
     suspend fun resume(calibrationId: String) = operation { c ->
         require(calibrationId.matches(Regex("[A-Za-z0-9._~-]+")))
         val restored = calibration(gateway.request(c, "/calibrations/$calibrationId"), c)
-        mutableState.value.copy(calibration = restored, answer = restored.lockedAnswer, correction = null)
+        mutableState.value.copy(calibration = restored, answer = restored.lockedAnswer, correction = restored.humanAnswer)
     }
 
     suspend fun submit(humanAnswer: String, question: String? = null) {
@@ -178,7 +178,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
         return AgentCalibration(json.getString("calibration_id"),json.getString("question"),answer(json.getJSONObject("locked_answer"),c),
             json.getString("locked_at"),json.getString("lock_digest"),json.getString("state"),
             comparison?.getJSONArray("dimension_diffs")?.objects()?.map { d -> AgentDiff(d.getString("dimension"),d.getString("assessment"),d.getString("reason")) }.orEmpty(),
-            if (json.isNull("resulting_revision")) null else json.getInt("resulting_revision"))
+            if (json.isNull("resulting_revision")) null else json.getInt("resulting_revision"), json.nullableString("human_answer"))
     }
     private fun parsePlan(json: JSONObject) = AgentPlan(json.getString("question"),json.getString("reason"))
     private suspend fun materials(c: BackendConnection) = gateway.request(c, "/evidence")

@@ -10,13 +10,28 @@ import me.remember.app.data.repository.EpisodeFlow
 import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.feature.*
 import kotlinx.coroutines.launch
+import me.remember.app.LocalAgentSession
+import me.remember.app.ui.components.RmPage
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 @Composable fun RememberMeApp(
     audioCaptureService: AudioCaptureService,
     memoryRepository: MemoryRepository,
     episodeFlow: EpisodeFlow,
-    agentRepository: AgentRepository
+    agentRepository: AgentRepository,
+    local: LocalAgentSession? = null
 ){
+    val localState = local?.state?.collectAsState()?.value
+    val localMode = localState?.localMode == true
+    if (localMode && localState?.ready != true) {
+        RmPage {
+            Text(localState?.error ?: "正在打开手机资料…")
+            TextButton({ local?.setLocalMode(false) }) { Text("使用电脑 Backend 模式") }
+        }
+        return
+    }
+    val selectedAgent = if (localMode) local!!.repository!! else agentRepository
     val nav=rememberNavController()
     val scope=rememberCoroutineScope()
     var recordingForUpload by remember { mutableStateOf<AudioRecording?>(null) }
@@ -29,13 +44,19 @@ import kotlinx.coroutines.launch
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
-        composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) }) { recording ->
+        composable("local-model-settings") { LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() } }
+        composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) },
+            onSettings = if (localMode) ({ nav.navigate("local-model-settings") }) else null,
+            onSwitchMode = local?.let { { it.setLocalMode(!localMode) } },
+            modeLabel = if (localMode) "手机独立模式" else "电脑 Backend 模式") { recording ->
             recordingForUpload = recording
             nav.navigate(Routes.Connection)
         }}
         composable(Routes.Connection){
             val recording = recordingForUpload
-            if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }, initialConnection = agentRepository.currentConnection()) { settings ->
+            if (recording != null && localMode) LocalCaptureScreen(local!!, recording, { nav.popBackStack() },
+                { nav.navigate("local-model-settings") }) { local.capture(recording); nav.navigate(Routes.Processing) }
+            else if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }, initialConnection = agentRepository.currentConnection()) { settings ->
                 nav.navigate(Routes.Processing)
                 scope.launch {
                     agentRepository.bind(settings)
@@ -46,6 +67,8 @@ import kotlinx.coroutines.launch
             }
         }
         composable(Routes.Processing){
+            if (localMode) LocalProcessingScreen(local!!, { nav.popBackStack() }, { nav.navigate("local-model-settings") }, { nav.navigate(Routes.Understanding) })
+            else {
             val state by episodeFlow.state.collectAsState()
             ProcessingScreen(
                 state = state,
@@ -57,17 +80,25 @@ import kotlinx.coroutines.launch
                 showUnderstanding = { nav.navigate(Routes.Understanding) },
                 showMemories = { nav.navigate(Routes.Memories) }
             )
+            }
         }
         composable(Routes.Understanding){
             val episode by episodeFlow.state.collectAsState()
-            AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, (episode as? EpisodeUiState.Ready)?.episodeId)
+            AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) },
+                if (localMode) null else (episode as? EpisodeUiState.Ready)?.episodeId, localMode, localState?.busy == true) {
+                LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+            }
         }
         composable(Routes.Birth){TwinBirthScreen{nav.navigate(Routes.Voice)}}
         composable(Routes.Voice){VoiceSeedScreen{nav.navigate(Routes.Home){popUpTo(Routes.Welcome){inclusive=true}}}}
         composable(Routes.Home){CreatorHomeScreen(memoryRepository,nav::navigate)}
         composable(Routes.Memories){MemoriesScreen(memoryRepository){nav.popBackStack()}}
-        composable(Routes.Twin){AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) })}
-        composable(Routes.Calibration){AgentScreen(agentRepository, { nav.popBackStack() }, { nav.navigate(Routes.Recording) })}
+        composable(Routes.Twin){AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, localMode = localMode, externalBusy = localState?.busy == true) {
+            LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+        }}
+        composable(Routes.Calibration){AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, localMode = localMode, externalBusy = localState?.busy == true) {
+            LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+        }}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
         composable(Routes.Legacy){LegacyHomeScreen{nav.navigate(Routes.Twin)}}
         composable(Routes.Debug){DemoMenuScreen(nav::navigate){nav.popBackStack()}}

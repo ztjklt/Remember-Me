@@ -60,6 +60,7 @@ class LocalAgentEngineTest {
         next.resume(restored.latestCalibration()!!)
         assertEquals(locked, next.state.value.answer)
         assertEquals("COMPLETED", next.state.value.calibration!!.state)
+        assertEquals("我是林宸", next.state.value.correction)
         next.ask("我是谁？")
         assertEquals("我是林宸", next.state.value.answer!!.answer)
     }

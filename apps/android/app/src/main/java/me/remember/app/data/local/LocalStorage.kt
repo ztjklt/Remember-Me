@@ -49,7 +49,7 @@ class LocalSettingsStore(context: Context) {
         }
     }
     fun read(): JSONObject? {
-        if (!file.baseFile.exists()) return null
+        if (!file.baseFile.exists() && !File(file.baseFile.path + ".bak").exists()) return null
         val bytes = file.openRead().use { it.readBytes() }
         require(bytes.size > 28) { "模型配置损坏，请重新配置。" }
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")

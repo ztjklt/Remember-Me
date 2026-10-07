@@ -20,9 +20,10 @@ class MainActivity : ComponentActivity() {
         val memoryRepository = EpisodeMemoryRepository()
         val episodeFlow = EpisodeFlow(HttpEpisodeGateway(), memoryRepository)
         val agentRepository = ViewModelProvider(this)[AgentSessionViewModel::class.java].repository
+        val localSession = ViewModelProvider(this)[LocalAgentSession::class.java]
         setContent {
             RememberMeTheme {
-                RememberMeApp(audioCaptureService, memoryRepository, episodeFlow, agentRepository)
+                RememberMeApp(audioCaptureService, memoryRepository, episodeFlow, agentRepository, localSession)
             }
         }
     }

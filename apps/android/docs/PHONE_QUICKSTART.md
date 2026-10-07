@@ -1,4 +1,6 @@
-# 当前 APK 的手机联调
+# 电脑 Backend 模式的手机联调
+
+`1.2-local` 默认使用手机独立模式，见 [新版安装与模型设置](LOCAL_AGENT.md)。以下用于旧版或切回电脑模式。
 
 适用于 `1.1-agent`。这是连接 Backend 的安卓客户端；安装 APK 不会把 Python Backend、
 数据库、任务 worker 和 AI Core 一起装进手机。编译 APK 与运行服务是两件事。
@@ -41,7 +43,7 @@ Android 11 及以上可在同一可互访 Wi-Fi 下，开启“开发者选项 �
 3. 执行 `adb devices` 确认连接。多个设备时，后续命令用 `adb -s 设备序列号 ...`。
 4. 执行 `adb reverse tcp:8000 tcp:8000`，手机浏览器访问 `http://127.0.0.1:8000/health`，成功后填 App。
 
-本机 adb 为 `/tmp/remember-android-tools/sdk/platform-tools/adb`，可直接使用完整路径。
+本机 adb 为 `/home/qingtian/projects/Remember-Me/build/android-tools/sdk/platform-tools/adb`，可直接使用完整路径。
 换网络、重启或重连后检查转发；只安装 APK、只连同一 Wi-Fi 都不会自动建立转发。
 WSL 与手机必须能互访；若配对超时，应检查网络或使用能访问 WSL 服务的 Windows adb 环境。
 不要将带有自动读取会话凭证功能的 `/debug/agent/session` 控制台直接开放到公网。
@@ -55,14 +57,14 @@ WSL 与手机必须能互访；若配对超时，应检查网络或使用能访�
 
 ```bash
 cd /home/qingtian/projects/Remember-Me/apps/android
-export JAVA_HOME=/tmp/remember-android-tools/java/usr/lib/jvm/java-17-openjdk-amd64
-export ANDROID_HOME=/tmp/remember-android-tools/sdk
+export JAVA_HOME=/home/qingtian/projects/Remember-Me/build/android-tools/java/usr/lib/jvm/java-17-openjdk-amd64
+export ANDROID_HOME=/home/qingtian/projects/Remember-Me/build/android-tools/sdk
 export GRADLE_USER_HOME=/home/qingtian/projects/Remember-Me/build/android-gradle
 export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$PATH"
 ./gradlew --no-daemon test assembleDebug assembleDebugAndroidTest lintDebug
 ```
 
-这是本机恢复命令，不是通用安装器；`/tmp` 工具可能被清理。长期开发建议安装 JDK 17 和
+工具现已恢复到本机持久的忽略目录 `build/android-tools`；以上不是通用安装器。其他机器请安装 JDK 17 和
 Android SDK 35 到持久目录，并把对应路径加入自己的 shell 配置。Ubuntu 可通过系统包管理器
 安装 `openjdk-17-jdk`；SDK 可用 Android Studio 的 SDK Manager 安装。设置 `JAVA_HOME`
 为 JDK 根目录、`ANDROID_HOME` 为 SDK 根目录，不要填 `bin/java` 或 `platform-tools`。
