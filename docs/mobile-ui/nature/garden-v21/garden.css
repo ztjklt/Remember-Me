@@ -1,0 +1,45 @@
+/* The phone clips the landscape. There is no smaller picture-frame clipping. */
+.phone:has(.garden-depth[data-view=art]:not([data-level=petal])) #screen{position:relative;overflow:clip;touch-action:none}
+.phone:has(.garden-depth[data-view=art]:not([data-level=petal])) .page{height:100%;min-height:0;max-width:none;padding:0!important}
+.phone:has(.garden-depth[data-view=art]:not([data-level=petal])) #results{position:absolute;inset:0}
+.garden-depth[data-view=art]:not([data-level=petal]){height:100%;min-height:0;overflow:clip;contain:paint}
+.garden-depth[data-view=art] .depth-stage{position:absolute;left:50%;top:calc(50% + 20px);width:min(100%,520px);aspect-ratio:360/420;height:auto;margin:0;translate:-50% -50%;overflow:visible;mask-image:none;border-radius:0;background:none;z-index:1}
+.garden-depth[data-view=art] .depth-hud{position:absolute;inset:0 0 auto;height:160px;padding:8px 18px 0;z-index:3;pointer-events:none;background:linear-gradient(180deg,#eef0dfdd,#edf0e0a6 55%,#eef1e600)}
+.depth-hud button{pointer-events:auto}.garden-depth[data-view=art] .depth-hud .depth-tools{margin:0 -8px}
+.garden-depth[data-view=art] .depth-floor{position:absolute;z-index:3;left:18px;right:18px;bottom:8px;pointer-events:none}
+.depth-floor button,.depth-floor .depth-controls{pointer-events:auto}
+.garden-depth[data-view=art] .depth-caption{display:none}
+.garden-depth[data-view=art] .depth-controls{margin:0;background:rgb(245 248 232 / .86)}
+.garden-scene-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:5px}
+.garden-scene-actions button{font-size:11px;min-height:44px!important;border-radius:22px;background:rgb(245 248 232 / .86);color:var(--depth-ink)!important;padding:7px 13px;margin:0;border:1px solid #fff5}
+.garden-camera{position:absolute;inset:0;will-change:auto}.garden-distance{inset:-32px}
+.phone:has(.is-travelling,.is-manipulating) .garden-camera{will-change:transform}
+.depth-stage .depth-flower-label{scale:1;max-width:145px;font-size:12px}
+.depth-stage .depth-petal-label{scale:1;min-height:30px!important;min-width:0!important;font-size:8px;padding:4px 5px;max-width:75px;border-radius:10px}
+.depth-stage .depth-petal-label small{font-size:7px}.depth-stage .depth-petal-label i{width:4px;height:4px}.depth-stage .depth-petal-label:disabled{font-size:8px}
+.phone:has(.garden-depth[data-view=art]) .archive-search:not(.hidden){position:absolute;z-index:5;top:55px;left:16px;right:16px;margin:0;background:var(--surface)}
+.phone:has(.archive-search:not(.hidden)) .garden-depth[data-view=art] .depth-title{visibility:hidden}
+.garden-depth[data-view=art] .depth-pagination{position:absolute;left:18px;right:18px;bottom:102px;z-index:3;background:var(--depth-pane);border-radius:20px;padding:0 8px}
+.garden-depth[data-view=list] .depth-floor{position:static}.garden-depth[data-view=list] .garden-scene-actions{margin-bottom:12px}
+.garden-depth[data-view=art] .garden-empty{position:absolute;inset:180px 18px 112px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--depth-pane);border-radius:24px}
+.garden-depth:has(.garden-empty) .depth-controls{display:none}
+.depth-stage .depth-sprig[data-focused=true],.depth-sprig{opacity:1}
+.stem-photo{filter:saturate(.8) brightness(.95);pointer-events:none}
+.dark .garden-depth[data-view=art] .depth-hud{background:linear-gradient(180deg,#142b26e8,#173029b8 55%,#17302900)}
+.dark .garden-scene-actions button,.dark .garden-depth[data-view=art] .depth-controls{background:rgb(25 44 34 / .93)}
+.garden-night .garden-depth{--depth-ink:#eef1df;--depth-muted:#d4ddc8;--depth-pane:rgb(26 44 40 / .9)}
+.garden-night .garden-mist,.garden-night:has(.garden-depth[data-level=petal]) .garden-mist{background:linear-gradient(180deg,#101e273d,#101e2715 45%,#1422242b)}
+.garden-night .garden-depth[data-view=art] .depth-hud{background:linear-gradient(180deg,#11252cdf,#152c3296 55%,#14262800)}
+.garden-night .depth-stage .depth-flower-label,.garden-night .depth-stage .depth-petal-label:not(:disabled),.garden-night .depth-controls,.garden-night .garden-scene-actions button{background:rgb(25 44 42 / .94);border-color:#e4eddf3b;color:#eef1df!important;text-shadow:none!important}
+.garden-night .garden-depth[data-view=art] .depth-controls{background:rgb(25 44 42 / .94)}
+.garden-night .garden-eyebrow{color:#d2ddcb}.garden-night:has(.garden-depth) .status{color:#e9efde}
+.garden-night .petal-photo{filter:saturate(.64) brightness(.85)}.garden-night .stem-photo{filter:saturate(.6) brightness(.75)}
+.garden-night .depth-reading-kicker,.garden-night .depth-reading .reverie-lead,.garden-night .depth-art-settings summary{color:#e0e8d6}
+.garden-night .depth-reading .reverie-title{color:#eef1df;text-shadow:0 1px 8px #071915}.garden-night .depth-reading:before{opacity:.12}
+.garden-night .depth-reading-top{background:#203932e8}.garden-night .depth-reading .garden-audio,.garden-night .depth-reading .reverie-reading{background:rgb(244 246 231 / .91);color:#254638}
+.garden-night .garden-audio,.garden-night .reverie-reading{--depth-muted:#496554;--muted:#496554}
+.garden-night .garden-audio .garden-eyebrow{color:#496554}
+.garden-night .depth-reading .memory-art{color:#254638;background:#f2f3e6}.garden-night .depth-paper{opacity:.4}
+.solid-surfaces .garden-scene-actions button,.solid-surfaces .garden-depth[data-view=art] .depth-controls{background:var(--surface)}
+@media(max-height:700px){.garden-depth[data-view=art] .depth-stage{width:min(88%,420px);top:calc(50% + 28px)}.garden-depth[data-view=art] .depth-title h1{font-size:22px!important}.garden-depth[data-view=art] .depth-hud{height:145px}}
+@media(prefers-contrast:more){.garden-depth[data-view=art] .depth-hud,.garden-scene-actions button{background:var(--surface)}.garden-night .garden-depth{--depth-ink:var(--ink);--depth-muted:var(--muted)}}

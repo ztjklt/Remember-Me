@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-02",
+  "scope": "Local browser prototype only; no native app or live image API acceptance",
+  "automated": {
+    "command": "node --test docs/mobile-ui/memory-garden/garden.test.cjs",
+    "passed": 6,
+    "failed": 0,
+    "inline_and_external_script_syntax": "passed",
+    "git_diff_check": "passed; existing line-ending warnings only"
+  },
+  "browser": {
+    "desktop_viewport_css_px": [716, 1016],
+    "phone_content_canvas_css_px": [390, 844],
+    "normal_screen_client_and_scroll_width": [376, 376],
+    "memory_target_css_px_rounded": [48, 48],
+    "narrow_viewport_css_px": [374, 844],
+    "narrow_theme": "dark, 200 percent text, reduced motion",
+    "narrow_screen_client_and_scroll_width": [361, 361],
+    "wide_viewport_css_px": [1910, 1075],
+    "wide_screen_client_and_scroll_width": [988, 988],
+    "wide_layout": "two columns; image and audio in right column",
+    "verified_interactions": [
+      "point opens quote bubble; close and enter scene",
+      "zoom to 125 percent and mouse drag",
+      "return preserves translate(8.81234%, 5.8162%) scale(1.25)",
+      "theme filter, empty search, clear, accessible list",
+      "collapsed search icon; query 妈妈 returns one point and one episode",
+      "real E01 MP3 playback and pause",
+      "seek to end with loop enabled returns to beginning and continues",
+      "leaving scene pauses audio"
+    ],
+    "audio_metadata_seconds": {"E01": 88.32, "E02": 76.48, "E03": 78.72},
+    "console_errors_or_warnings_observed": [],
+    "screenshots": [
+      "../media/memory-garden-v11.jpg",
+      "../media/memory-scene-mobile-v11.jpg",
+      "../media/memory-scene-v11.jpg"
+    ]
+  },
+  "surface_contrast": {
+    "method": "sRGB alpha composition with worst-case black behind light surface and white behind dark surface; WCAG relative luminance",
+    "light_secondary_text_ratio": 4.7571,
+    "dark_secondary_text_ratio": 5.0095,
+    "limitation": "Flat surface calculation, not a full-page accessibility certification"
+  },
+  "not_verified": [
+    "physical multi-touch on Android or iOS",
+    "native implementation of this new feature",
+    "live image generation backend, consent persistence, cache or retries",
+    "real recording to memory to image end-to-end chain",
+    "word-level audio alignment or full listening verification"
+  ]
+}

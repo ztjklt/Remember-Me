@@ -1,0 +1,56 @@
+/* Botanical detail and quiet, practical finishing. Preserve v16 camera geometry. */
+.botanical-v17 .living-petal-surface{stroke:#698aa035;stroke-width:.24}
+.botanical-v17 .petal-fold{fill:#42688b;opacity:.075}
+.botanical-v17 .petal-fibres{fill:none;stroke:#e9f0e8;stroke-width:.24;opacity:.27;stroke-linecap:round}
+.botanical-v17 .petal-satin{fill:none;stroke:#f2f6ef;stroke-width:.42;opacity:.62;stroke-linecap:round}
+.botanical-v17 .petal-dust{fill:#f3f3e0;opacity:.25;stroke:none}
+.botanical-v17 .petal-throat{fill:#f1edd1;opacity:.4}
+.depth-bloom-art .is-empty{opacity:.9}
+.depth-sprig{opacity:.86;transition:opacity 320ms ease-out}
+.depth-stems{stroke:none}
+.depth-stage{mask-image:linear-gradient(#000 0 93%,transparent 100%)}
+.sprig-seam{fill:none;stroke:#dce3bf;stroke-width:.38;opacity:.48}
+.sprig-leaf{opacity:.84}
+.sprig-leaf-fold{fill:none;stroke:#dfe7c7;stroke-width:.48;opacity:.76}
+.sprig-leaf-veins{fill:none;stroke:#d9e4c4;stroke-width:.24;opacity:.42}
+.sprig-calyx{fill:#92a687;opacity:.8}
+.depth-stage[data-level=flower] .depth-stems{opacity:1}
+.depth-stage[data-level=flower] .depth-sprig[data-focused=false]{opacity:0}
+.depth-stage[data-level=flower] .depth-sprig[data-focused=true]{opacity:.67}
+.dark .depth-sprig{opacity:.66}
+.depth-stage .depth-petal-label{font-size:calc(13px * var(--scale));line-height:1.5;min-width:48px;padding:6px 9px;background:rgb(250 251 242 / .83);border-color:#ffffff9c}
+.depth-stage .depth-petal-label:disabled{background:rgb(249 250 239 / .25);border-color:transparent;box-shadow:none;color:var(--depth-muted);font-size:12px}
+.dark .depth-stage .depth-petal-label:not(:disabled){background:rgb(27 48 39 / .92);border-color:#cfe0ce40}
+.depth-petal-label:focus-visible{background:var(--surface)}
+.depth-flower-label{background:rgb(245 248 236 / .78)}
+.depth-flower-label small,.depth-petal-label small{font-size:11px}
+.depth-controls{gap:4px;font-size:12px}
+.depth-controls button{min-width:44px;min-height:48px;border:1px solid transparent}
+.depth-controls output{min-width:40px;font-size:11px}
+.depth-controls button:active{background:var(--depth-pane);border-color:var(--line)}
+.depth-world{will-change:auto}
+.depth-stage.is-travelling .depth-world,.depth-stage.is-manipulating .depth-world{will-change:transform}
+.depth-stage.is-manipulating{cursor:grabbing}
+.depth-search-clear{flex:none;display:grid;place-items:center;width:44px;min-height:44px;padding:0;border-radius:50%;font-size:24px;color:var(--muted);background:transparent}
+.depth-search-clear[hidden]{display:none}
+.depth-search-clear:active{background:var(--soft);transform:none}
+.depth-search-clear:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.phone:has(.garden-depth) .archive-search{gap:6px;padding-block:6px}
+.phone:has(.garden-depth) .archive-search input{min-height:44px}
+.depth-reading .memory-art figcaption{font-size:calc(11px * var(--scale));line-height:1.6}
+.depth-reading-top button{min-height:48px}
+.large .depth-filters{position:relative;top:auto;box-shadow:none}
+.large .depth-hud .depth-tools{flex-wrap:wrap}
+.app-background .cloud-bank{animation-play-state:paused;will-change:auto}
+.phone:not([data-page=home]) .cloud-bank{animation-play-state:paused;will-change:auto}
+.clouds-paused .cloud-bank{will-change:auto}
+@media(hover:hover) and (pointer:fine){
+  .depth-flower-hit:hover .depth-flower-label{background:rgb(250 252 241 / .96);border-color:#ffffffdd}
+  .depth-stage .depth-petal-label:not(:disabled):hover{box-shadow:0 3px 15px #314f4821;border-color:#b1c6b6}
+}
+@media(max-width:380px){.depth-stage .depth-petal-label{font-size:12px;padding-inline:8px;max-width:108px}.depth-controls>span{font-size:11px}.depth-controls{gap:2px}}
+@media(prefers-reduced-motion:reduce){.depth-sprig{transition:none}}
+.solid-surfaces .depth-stage .depth-petal-label:not(:disabled){background:var(--surface)}
+.solid-surfaces .depth-reading .reverie-reading,.solid-surfaces .depth-reading .garden-audio{background:var(--surface)}
+@media(prefers-reduced-transparency:reduce){html:not(.preview-translucency) .depth-stage .depth-petal-label:not(:disabled){background:var(--surface)}}
+@media(prefers-contrast:more){.depth-stage .depth-petal-label:not(:disabled){background:var(--surface);border-color:var(--ink)}}
