@@ -25,7 +25,7 @@ import org.json.JSONObject
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
     val state by model.ui.collectAsStateWithLifecycle()
     val localPlayer by model.audio.playback.collectAsStateWithLifecycle()
-    var server by remember { mutableStateOf("http://10.0.2.2:8000") }
+    var server by remember { mutableStateOf("http://127.0.0.1:8877") }
     var token by remember { mutableStateOf("") }
     var tab by remember(state.actor, state.subject) { mutableIntStateOf(0) }
     var detail by remember(state.actor, state.subject) { mutableStateOf<String?>(null) }
@@ -50,7 +50,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                     OutlinedTextField(token, { token = it }, label = { Text("身份凭据") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                         visualTransformation = PasswordVisualTransformation())
                     Button(onClick = { model.connect(server, token); token = "" }, enabled = !state.busy && token.isNotBlank()) { Text("进入空间") }
-                    Text("模拟器使用 10.0.2.2 连接电脑；USB 手机可通过 adb reverse 使用 127.0.0.1。HTTP 只允许本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
+                    Text("手机和模拟器先运行 adb reverse tcp:8877 tcp:8877，再使用 http://127.0.0.1:8877 连接共享工作台。HTTP 只允许本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
                     Text("每日提醒：关闭。录音、上传和云端文字处理均由你主动发起。", style = MaterialTheme.typography.bodySmall)
                 }
             } else {
@@ -142,7 +142,6 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         }
     }
     state.reviewEpisode?.let { id ->
-        var reviewText by remember(id) { mutableStateOf(state.reviewText) }
         var cloud by remember(id) { mutableStateOf(false) }
         NativeDialog("请听原音并核对文字", model::closeReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
@@ -156,9 +155,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                 }
                 Action("停止核对原音") { model.stopSource() }
             }
-            OutlinedTextField(reviewText, { reviewText = it }, label = { Text("核对后的文字") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
+            OutlinedTextField(state.reviewText, { model.editReview(id, it) }, label = { Text("核对后的文字") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
             Check("我确认文字已核对，并同意将这些文字交由服务器配置的云端模型整理。", cloud, { cloud = it })
-            Action("确认文字并整理", ready && cloud && reviewText.isNotBlank()) { model.confirmReview(reviewText, cloud) }
+            Action("确认文字并整理", ready && cloud && state.reviewText.isNotBlank()) { model.confirmReview(state.reviewText, cloud) }
         }
     }
     confirm?.let { (message, action) -> AlertDialog(onDismissRequest = { confirm = null }, title = { Text("确认操作") }, text = { Text(message) },
@@ -310,7 +309,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
             val evidenceIds = candidate.optJSONArray("evidence_ids")
             if(evidenceIds != null) for(i in 0 until evidenceIds.length()) {
                 val evidenceId = evidenceIds.getString(i)
-                val evidence = state.stories.flatMap { it.rows("memories") }.flatMap { it.rows("evidence") }.firstOrNull { it.text("evidence_id") == evidenceId }
+                val evidence = candidate.rows("evidence").firstOrNull { it.text("evidence_id") == evidenceId }
+                    ?: state.stories.flatMap { it.rows("memories") }.flatMap { it.rows("evidence") }.firstOrNull { it.text("evidence_id") == evidenceId }
                 if(evidence != null) Evidence(evidence, state, model) else Text("依据：$evidenceId（可从故事中核对）", style = MaterialTheme.typography.bodySmall)
             }
             Text("反证：${candidate.optJSONArray("counter_evidence_ids") ?: "[]"}", style = MaterialTheme.typography.bodySmall)

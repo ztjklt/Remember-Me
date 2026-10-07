@@ -21,7 +21,7 @@ Implemented on `codex/agent-integration` under the approved 2026-10-07 integrati
 
 ## Session lifecycle
 
-All network operations use immutable server/token/epoch snapshots. The SessionGate rejects late responses and prevents subsequent old-identity requests. Signing out or switching a space clears stories, answers, search, review text, grants, candidates, capture references and playback. Token input is erased after login submission. Mutation actions invalidate visible answer/search caches before sending the request.
+All network operations use immutable server/token/epoch snapshots. The SessionGate rejects late responses and prevents subsequent old-identity requests. Signing out or switching a space clears stories, answers, search, review text, grants, candidates, capture references and playback. Token input is erased after login submission. Mutation actions invalidate visible answer/search caches before sending the request. A separate playback generation and foreground gate suppress late source downloads after Home/stop; both download publication and native prepared callbacks recheck it before creating cache or playing. Transcript edits live in the retained ViewModel, so configuration recreation keeps the review draft; closing review or changing identity clears it. Consent checkboxes still require fresh confirmation.
 
 Foreground read-only refresh runs every eight seconds while idle. Evidence, grant or candidate changes clear cached answers and stop source playback; failed refresh clears protected remote views and playback. Backgrounded clients do not poll. Remote revocation is observed on the next successful refresh; this is polling, not a push revocation channel. There are no notification jobs, automatic cloud calls or private daily reminders; daily reminder state is off.
 
@@ -29,8 +29,9 @@ Foreground read-only refresh runs every eight seconds while idle. Evidence, gran
 
 Start the shared Backend/AI Core/Whisper stack using `RUNBOOK.md`, apply migrations, and create owner/reader credentials with the backend's local actor tooling. Do not put those tokens or provider keys in Android source.
 
-- Emulator backend address: `http://10.0.2.2:8000`.
-- USB phone: run `adb reverse tcp:8000 tcp:8000`, then enter `http://127.0.0.1:8000`.
+- Shared workbench started by `run_workbench.py` listens on port **8877** and restricts accepted Hosts to loopback.
+- Phone **and emulator**: run `adb reverse tcp:8877 tcp:8877`, then use the default `http://127.0.0.1:8877`.
+- Do not substitute `10.0.2.2` for this workbench: its Host allowlist rejects that direct emulator address. With multiple adb devices, select the target using `adb -s DEVICE_SERIAL reverse tcp:8877 tcp:8877`.
 - HTTPS server roots are supported. The client rejects HTTP public hosts, user-info URLs, query strings and fragments. The local build's Android network policy allows cleartext for local/private-IP integration; this generates one explicit lint warning and is not a production transport certification.
 
 ## Verification, 2026-10-07
@@ -45,16 +46,16 @@ cd D:/codex_work/remember-me-agent-loop/apps/android
 ./gradlew.bat testDebugUnitTest assembleDebug lintDebug --console=plain
 ```
 
-The final run passes 27 unit tests (nine new integration tests and 18 retained baseline tests), APK assembly and lint. Lint reports **0 errors, 8 warnings**: retained prototype/assets warnings, plus the documented local cleartext policy warning. JVM integration tests run real local HTTP sockets for bearer/no-store headers, redirect refusal, ANDROID_MIC multipart provenance, stable retry keys, original-file retention and late-response rejection. Session tests cover identity/space epochs and URL validation. Capture submission tests cover failed revision linkage, durable receipt, retry without duplicate upload, blocked review and mandatory change-time context.
+The final run passes 30 unit tests (12 new integration tests and 18 retained baseline tests), APK assembly and lint. Lint reports **0 errors, 8 warnings**: retained prototype/assets warnings, plus the documented local cleartext policy warning. JVM integration tests run real local HTTP sockets for bearer/no-store headers, redirect refusal, ANDROID_MIC multipart provenance, stable retry keys, original-file retention and late-response rejection. Session tests cover identity/space epochs and URL validation. Capture submission tests cover failed revision linkage, durable receipt, retry without duplicate upload, blocked review and mandatory change-time context. Playback regression tests simulate a delayed audio response crossing a background transition and verify that no cache/player publication occurs; old prepared callbacks and superseded identity/request generations cannot play. Android Activity recreation itself is not exercised without an emulator/device; draft retention is implemented by ViewModel ownership rather than composable local state.
 
 APK: `D:\codex_work\remember-me-agent-loop\apps\android\app\build\outputs\apk\debug\app-debug.apk`. The APK is about 155 MB because the existing bundled Sherpa/ONNX dependency remains preserved.
 
-`adb devices` returned no attached devices. The configured SDK has no emulator executable/system image, and no AVD was found. No emulator was installed. Instrumented/native microphone, native playback/manual listening, real backend-to-Android end-to-end and true cloud-model acceptance therefore remain **unverified**. Successful build/JVM tests do not establish any of those results. Earlier instrumented tests still target the retained local prototype and were not executed in this run.
+The initial `adb devices` probe returned no attached devices; at that time the configured SDK had no emulator/system image and no AVD. The parent integration task subsequently began provisioning an emulator. This Android subtask has not yet executed instrumented/native microphone, native playback/manual listening, real backend-to-Android end-to-end or true cloud-model acceptance: those remain **unverified here**, with any later emulator evidence recorded separately by the parent task. Successful build/JVM tests do not establish those results. Earlier instrumented tests target the retained local prototype and were not executed in this subtask.
 
 ## Remaining practical limits
 
 - No production account management, token persistence/rotation, cloud deployment or release signing is claimed.
 - No Android calibration or synthesized-voice UI is added in this slice; shared backend/web calibration remains available. Playback is original source audio.
-- Counter-evidence IDs are displayed; supporting excerpts resolve through visible story evidence. Unknown evidence IDs are not invented.
+- Counter-evidence IDs are displayed; supporting excerpts and source buttons resolve first through the candidate endpoint's authorized raw evidence, then visible story evidence. Raw references absent from the memory store remain usable. Unknown evidence IDs are not invented.
 - A reader's externally revoked grant is rechecked through foreground polling; content already heard/saved cannot be recovered.
 - Raw originals remain in app storage when a source memory is deleted. The integrated client only uploads recordings it actually captured and journaled; old anonymous prototype recordings are left intact.

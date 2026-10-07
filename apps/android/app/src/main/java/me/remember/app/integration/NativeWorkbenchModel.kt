@@ -34,6 +34,7 @@ data class SourcePlayback(val episode: String = "", val playing: Boolean = false
 /** Tokens stay in memory. Local originals are indexed by authenticated actor and subject. */
 class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureService) : ViewModel() {
     private val gate = SessionGate()
+    private val playbackGate = SourcePlaybackGate(gate)
     private val client = BackendClient(gate)
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
@@ -217,6 +218,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         }
     }
     fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "") }
+    fun editReview(episode: String, text: String) {
+        if(state.value.reviewEpisode == episode) state.value = state.value.copy(reviewText = text)
+    }
     fun confirmReview(text: String, cloudConfirmed: Boolean) {
         val s = session ?: return; val episode = state.value.reviewEpisode ?: return
         if(!cloudConfirmed) { report("请确认将核对后的文字交由服务器整理；其配置的云端模型会收到文字。"); return }
@@ -278,32 +282,43 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val s = session ?: return; val subject = state.value.subject
         operation(s) {
             stopSource(); audio.stopPlayback()
+            val ticket = playbackGate.begin(s)
             val bytes = io { client.audio(s, subject, episode) }
-            gate.requireCurrent(s)
-            val file = File(sources, "source-${s.epoch}.audio"); file.writeBytes(bytes)
-            val next = MediaPlayer(); player = next
-            state.value = state.value.copy(player = SourcePlayback(episode = episode, preparing = true))
-            next.setOnPreparedListener {
-                if(player !== next || !gate.accepts(s)) { next.release(); return@setOnPreparedListener }
-                next.start(); state.value = state.value.copy(player = SourcePlayback(episode, true, duration = next.duration.toLong()))
-                playerJob = viewModelScope.launch { while(isActive && player === next) {
-                    delay(250); runCatching { state.value = state.value.copy(player = state.value.player.copy(position = next.currentPosition.toLong(), playing = next.isPlaying)) }
-                } }
+            // No cache or player may be restored by a download that crossed Home, stop, or identity change.
+            playbackGate.publish(ticket) {
+                val file = File(sources, "source-${s.epoch}-${ticket.generation}.audio"); file.writeBytes(bytes)
+                val next = MediaPlayer(); player = next
+                state.value = state.value.copy(player = SourcePlayback(episode = episode, preparing = true))
+                next.setOnPreparedListener {
+                    if(player !== next || !playbackGate.isCurrent(ticket)) {
+                        if(player === next) stopSource() else runCatching { next.release() }
+                        return@setOnPreparedListener
+                    }
+                    next.start(); state.value = state.value.copy(player = SourcePlayback(episode, true, duration = next.duration.toLong()))
+                    playerJob = viewModelScope.launch { while(isActive && player === next) {
+                        delay(250); runCatching { state.value = state.value.copy(player = state.value.player.copy(position = next.currentPosition.toLong(), playing = next.isPlaying)) }
+                    } }
+                }
+                next.setOnCompletionListener { if(player === next) stopSource() }
+                next.setOnErrorListener { _, _, _ ->
+                    if(player === next) { stopSource(); report("来源原音播放失败，请重新加载。") }; true
+                }
+                try { next.setDataSource(file.absolutePath); next.prepareAsync() }
+                catch(error: Exception) { stopSource(); throw error }
             }
-            next.setOnCompletionListener { stopSource() }
-            next.setOnErrorListener { _, _, _ -> stopSource(); report("来源原音播放失败，请重新加载。"); true }
-            next.setDataSource(file.absolutePath); next.prepareAsync()
         }
     }
     fun pauseSource() { player?.pause(); state.value = state.value.copy(player = state.value.player.copy(playing = false)) }
-    fun resumeSource() { player?.start(); state.value = state.value.copy(player = state.value.player.copy(playing = true)) }
+    fun resumeSource() { if(!foreground) return; player?.start(); state.value = state.value.copy(player = state.value.player.copy(playing = true)) }
     fun seekSource(value: Long) { player?.seekTo(value.toInt()); state.value = state.value.copy(player = state.value.player.copy(position = value)) }
     fun stopSource() {
+        playbackGate.invalidate()
         playerJob?.cancel(); player?.let { runCatching { it.release() } }; player = null
         sources.listFiles()?.forEach { it.delete() }; state.value = state.value.copy(player = SourcePlayback())
     }
     fun onForeground(value: Boolean) {
         foreground = value
+        playbackGate.setForeground(value)
         if(!value) { stopSource(); audio.stopPlayback(); if(state.value.recording) finish() }
         else if(session != null && !state.value.busy && !state.value.recording) refresh()
     }

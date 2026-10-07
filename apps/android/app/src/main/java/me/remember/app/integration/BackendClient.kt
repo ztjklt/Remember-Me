@@ -28,7 +28,7 @@ class SessionGate {
 fun normalizeServer(raw: String): String {
     val uri = URI(raw.trim())
     require(uri.scheme in setOf("http", "https") && uri.host != null && uri.userInfo == null &&
-        uri.query == null && uri.fragment == null && uri.path in listOf("", "/")) { "请输入服务根地址，例如 http://10.0.2.2:8000。" }
+        uri.query == null && uri.fragment == null && uri.path in listOf("", "/")) { "请输入服务根地址，例如 http://127.0.0.1:8877。" }
     val host = uri.host.lowercase()
     val privateHost = host in setOf("localhost", "127.0.0.1", "[::1]", "::1") ||
         host.matches(Regex("10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) ||
