@@ -250,9 +250,10 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             io { client.json(s, path + suffix, method, body) }; refreshNow(s)
         }
     }
-    fun retry(episode: String) {
+    fun retry(episode: String, emptyResult: Boolean = false) {
         val s = session ?: return
-        operation(s) { io { client.json(s, "/api/v1/episodes/${segment(episode)}/retry", "POST") }; refreshNow(s) }
+        val action = if(emptyResult) "reextract-empty" else "retry"
+        operation(s) { io { client.json(s, "/api/v1/episodes/${segment(episode)}/$action", "POST") }; refreshNow(s) }
     }
     private fun cloudConsent(s: BackendSession): String {
         if(state.value.owner) return client.consent(s, state.value.subject, "CLOUD_TWIN")

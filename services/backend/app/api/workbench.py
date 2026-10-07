@@ -125,6 +125,8 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
             'machine_transcript': episode.stt_transcript if owner else None,
             'reviewed': episode.transcript_reviewed_at is not None,
             'waiting_for_review': bool(job and job.state == 'waiting'),
+            'can_reextract_empty': bool(owner and episode.status == 'ready' and episode.transcript_reviewed_at
+                and session.scalar(select(MemoryItem.memory_item_id).where(MemoryItem.episode_id == episode.episode_id).limit(1)) is None),
             'model_version': episode.model_version, 'stt_model_version': episode.stt_model_version,
             'error_code': episode.error_code, 'error_message': episode.error_message,
             'unavailable': unavailable, 'memories': values,

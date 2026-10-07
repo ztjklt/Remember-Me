@@ -25,6 +25,20 @@ def setup_pair(app, client, session):
     return owner, reader, oh, rh, episode, cloud
 
 
+def test_empty_extraction_can_be_explicitly_requeued_but_deleted_memories_cannot(app,client,session):
+    owner,reader,oh,rh,ep,cloud=setup_pair(app,client,session)
+    path=f'/api/v1/episodes/{ep}/reextract-empty'
+    assert client.post(path,headers=rh).status_code==404
+    assert client.post(path,headers=oh).status_code==422
+    memory=session.scalar(select(MemoryItem).where(MemoryItem.episode_id==ep))
+    from app.models import utcnow
+    memory.deleted_at=utcnow();session.commit()
+    assert client.post(path,headers=oh).status_code==422
+    session.execute(delete(MemoryItem).where(MemoryItem.episode_id==ep));session.commit()
+    assert client.post(path,headers=oh).status_code==200
+    assert client.post(path,headers=oh).status_code==422
+
+
 def test_reader_cannot_self_authorize(app, client, session):
     owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
     for scope in ('RECORDING', 'VOICE', 'CLOUD_TWIN'):

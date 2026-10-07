@@ -554,3 +554,27 @@ def retry_processing(episode_id: str, actor: Actor = Depends(current_actor),
     session.commit()
     return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
                             trace_id=episode.trace_id or None)
+
+
+@router.post('/{episode_id}/reextract-empty', response_model=ProcessingStatus, response_model_exclude_none=True)
+def reextract_empty(episode_id: str, request: Request, actor: Actor = Depends(current_actor),
+                    session: Session = Depends(get_session)) -> ProcessingStatus:
+    """Explicit recovery for a valid but empty extraction; never revive deletions."""
+    from ..models import MemoryItem as MemoryRow
+    from ..access import publication_lock
+    from ..retrieval import invalidate_answers
+    publication_lock(session, '')
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    job = JobRepository(session).for_episode(episode_id)
+    any_memory = session.scalar(select(MemoryRow.memory_item_id).where(MemoryRow.episode_id == episode_id).limit(1))
+    if (episode.status != 'ready' or not episode.transcript_reviewed_at or not episode.transcript
+            or job is None or any_memory is not None):
+        raise RequestInvalid('仅可重新整理已核对且从未产生记忆的空结果；已删除内容不会恢复。')
+    job.stage, job.state, job.attempts = str(JobStage.EXTRACT), str(JobState.QUEUED), 0
+    job.available_at = job.updated_at = utcnow()
+    job.lease_owner = job.lease_expires_at = None
+    episode.status = str(EpisodeStatus.EXTRACTING)
+    episode.error_code = episode.error_message = None
+    invalidate_answers(session, request.app.state.object_store, episode.subject_id)
+    session.commit()
+    return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus.EXTRACTING, trace_id=episode.trace_id or None)

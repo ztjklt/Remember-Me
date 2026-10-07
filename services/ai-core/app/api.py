@@ -159,7 +159,9 @@ def create_app(
     def answer_twin(payload: TwinInput) -> TwinOutput:
         if active_twin is None:
             raise ProviderUnavailable("Twin requires the configured DeepSeek adapter")
-        if not slots.acquire(blocking=False):
+        # Interactive requests may wait briefly behind background proposals.
+        # Still one actual provider call, bounded total wait, no hidden retry.
+        if not slots.acquire(timeout=15):
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_twin.answer(payload)
@@ -170,7 +172,7 @@ def create_app(
     def calibrate(payload: CalibrationInput) -> CalibrationOutput:
         if active_calibration is None:
             raise ProviderUnavailable("Calibration requires the configured DeepSeek adapter")
-        if not slots.acquire(blocking=False):
+        if not slots.acquire(timeout=15):
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_calibration.compare(payload)

@@ -60,13 +60,13 @@ def test_malformed_truncated_nonfinite_fail_without_retry(content,finish):
 
 
 def test_profile_schema_rejects_status_confidence_and_unknown_counter_evidence():
-    candidate={'domain':'PREFERENCES','statement':'喜欢散步','context':'日常','evidence_ids':['ev1'],'counter_evidence_ids':[],'kind':'habit'}
+    candidate={'domain':'PREFERENCES','statement':'喜欢散步','context':'日常','evidence_ids':['s1'],'counter_evidence_ids':[],'kind':'habit'}
     class Chat:
         def complete(self,*args):
             return {'candidates':[candidate]}, 'actual'
     provider=ProfileProposalProvider(Chat())
     payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'每天散步'}])
-    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v1'
+    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v2'
     candidate['confidence']=.9
     with pytest.raises(AIOutputInvalid):
         provider.propose(payload)
@@ -85,7 +85,7 @@ def test_proposal_http_worker_has_fixed_versions_and_bounded_input():
     with TestClient(create_app(Settings(_env_file=None), profile_provider=ProfileProposalProvider(Chat()))) as client:
         response=client.post('/profile-proposals',json={'materials':[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'原话'}]})
         assert response.status_code==200
-        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v1'}
+        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v2'}
         assert client.post('/profile-proposals',json={'materials':[],'prompt_version':'invented'}).status_code==422
 
 
@@ -137,3 +137,63 @@ def test_twin_answer_bound_counts_unicode_codepoints(length,valid):
             with pytest.raises(AIOutputInvalid): provider.answer(payload)
     finally:
         provider.close()
+
+
+def test_original_router_copies_selected_source_instead_of_model_paraphrase():
+    from app.providers.weixin import WeixinTwinProvider
+    from app.twin import TwinInput
+    provider = WeixinTwinProvider(api_key='test-only')
+    # Real failure: the model selected the correct evidence but rewrote person
+    # and punctuation while labelling the result ORIGINAL.
+    provider.complete = lambda *args: ({'answer':'他常对女儿说平安回家比多跑一趟重要。',
+        'response_type':'ORIGINAL','evidence_ids':['ev1'],'confidence':.95}, 'actual')
+    quote = '后来我常对女儿说平安回家比多跑一趟重要'
+    payload = TwinInput(question='说过什么？', candidates=[{'memory_item_id':'m1','statement':quote,
+        'evidence':[{'evidence_id':'ev1','excerpt':quote,'source_type':'SUBJECT'}]}])
+    try:
+        output = provider.answer(payload)
+        assert output.answer == quote
+        assert output.response_type == 'ORIGINAL'
+    finally:
+        provider.close()
+
+
+@pytest.mark.parametrize('ids,source,length', [(['bad'],'SUBJECT',20),(['ev1','ev2'],'SUBJECT',20),(['ev1'],'AI_INFERENCE',20),(['ev1'],'SUBJECT',201)])
+def test_original_router_refuses_ambiguous_inferred_or_oversized_source(ids,source,length):
+    from app.providers.weixin import WeixinTwinProvider
+    from app.twin import TwinInput
+    provider = WeixinTwinProvider(api_key='test-only')
+    provider.complete = lambda *args: ({'answer':'','response_type':'ORIGINAL','evidence_ids':ids,'confidence':.9}, 'actual')
+    payload = TwinInput(question='问题', candidates=[{'memory_item_id':'m1','statement':'材料',
+        'evidence':[{'evidence_id':eid,'excerpt':'字'*length,'source_type':source} for eid in ['ev1','ev2']]}])
+    try:
+        with pytest.raises(AIOutputInvalid): provider.answer(payload)
+    finally:
+        provider.close()
+
+
+def test_profile_uses_short_source_handles_and_explicit_schema():
+    from app.profile_proposals import ProfileProposalProvider, ProfileProposalInput
+    class Chat:
+        def complete(self, system, payload):
+            assert 'additionalProperties' in system and 'required' in system
+            assert payload['materials'][0]['evidence_id'] == 's1'
+            return {'candidates':[{'domain':'PREFERENCES','kind':'habit','statement':'喜欢散步',
+                'context':'本人描述日常散步','evidence_ids':['s1'],'counter_evidence_ids':[]}]}, 'actual'
+    result = ProfileProposalProvider(Chat()).propose(ProfileProposalInput(materials=[
+        {'evidence_id':'src_very_long_identifier','episode_id':'ep1','excerpt':'我每天散步'}]))
+    assert result.candidates[0].evidence_ids == ['src_very_long_identifier']
+
+
+def test_unsupported_extraction_quote_is_failure_not_successful_empty_memory():
+    from app.extractor import MemoryExtractor
+    from app.contracts import AICoreInput
+    from app.providers.weixin import WeixinProvider
+    provider=WeixinProvider(api_key='test-only')
+    provider.complete=lambda *args: ({'memories':[{'quote':'我喜欢游泳','statement':'喜欢游泳',
+        'domain':'PREFERENCES','memory_type':'PREFERENCE','confidence':.9}]}, 'actual')
+    try:
+        with pytest.raises(AIOutputInvalid):
+            MemoryExtractor(provider=provider,model='Deepseek-v4-flash',model_version='requested').process(
+                AICoreInput(episode_id='ep1',subject_id='s1',transcript='我喜欢散步',existing_model_version='v1'))
+    finally:provider.close()

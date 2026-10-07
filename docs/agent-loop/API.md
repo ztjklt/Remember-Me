@@ -61,3 +61,9 @@ Subject 的明确所有者过滤。旧数据库先执行所有者映射，不能
 iOS字段未移除，UI资源已引入；本轮Windows无法编译验收iOS。Android接口兼容性以实际构建及设备记录为准。
 
 问答持久记录source_version，读取旧答案也重新核验；无法追溯版本的旧回答显示过期。人物四视图source_version只由实际返回的可见材料计算。
+
+
+## 本次闭环恢复接口（兼容增量）
+
+`POST /api/v1/episodes/{id}/reextract-empty`：Owner明确重试已核对、ready且从未存在MemoryItem行（包括已删除行）的录音；复用原音与确认文字，仅重新排队EXTRACT。非空、删除历史、排队或非Owner均拒绝；不能用它复活旧记忆。workbench故事增加can_reextract_empty布尔字段，网页和Android据此展示按钮，最终权限始终由服务端校验。
+微信ORIGINAL内部改为选取单个有效SUBJECT证据后由程序原样复制；外部回答类型、200码点限制与引用校验不变。问答/校准等待模型槽最多15秒，实际调用超时45秒；后台任务保留显式失败和重试。人物提议提示版本profile-proposals-evidence-v2，短编号只用于模型内部输入，保存和返回仍用真实Evidence ID。

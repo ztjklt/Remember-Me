@@ -100,7 +100,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                                 Text("来自实际录音的故事", style = MaterialTheme.typography.headlineMedium)
                                 if(state.stories.isEmpty()) Text("暂无可见故事。")
                                 state.stories.forEach { story -> StoryCard(story, state.owner, ready,
-                                    { detail = story.text("episode_id") }, { model.review(story.text("episode_id")) }, { model.retry(story.text("episode_id")) }) }
+                                    { detail = story.text("episode_id") }, { model.review(story.text("episode_id")) }, { model.retry(story.text("episode_id"), story.optBoolean("can_reextract_empty")) }) }
                             }
                             2 -> AskTab(state, model)
                             3 -> ManageTab(state, model) { message, action -> confirm = message to action }
@@ -217,6 +217,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         Action("打开故事", enabled, open)
         if(owner && !story.optBoolean("reviewed")) Action("核对转写", enabled, review)
         if(owner && story.text("status") == "failed") Action("重试处理", enabled, retry)
+        if(owner && story.optBoolean("can_reextract_empty")) Action("未提取到记忆，重新整理", enabled, retry)
     }
 }
 
