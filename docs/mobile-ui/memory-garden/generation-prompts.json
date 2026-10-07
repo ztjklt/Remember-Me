@@ -1,0 +1,25 @@
+{
+  "style_version": "remember-me-reverie-v1",
+  "generated_on": "2026-10-02",
+  "method": "Built-in image_gen tool; three separate generations using one shared style block",
+  "intended_dimensions": {
+    "width": 1536,
+    "height": 1024,
+    "aspect_ratio": "3:2"
+  },
+  "common_prompt": "Create ONE standalone landscape illustration, 1536 x 1024, aspect ratio 3:2, full bleed, no border, no letters or text, no UI. Remember Me memory-image style v1: warm, wistful, gently nostalgic hand-painted gouache with translucent watercolor washes, fine warm ivory paper grain, sage and olive green, muted dusty blue, soft butter cream and a restrained honey amber accent. Natural diffuse afternoon or lamplight, quiet everyday Chinese domestic realism, airy deliberate composition, delicate brushwork with believable depth, elegant editorial storybook art, mature not childish, not glossy 3D or anime, no dramatic fantasy, no saturated neon, no photographic faces. Camera at eye or table level. Important subject kept within center 75% so it survives a 3:2 card crop. This image is a poetic illustration of a fictional demo memory, not documentary evidence. ",
+  "scenes": [
+    {
+      "id": "library",
+      "text": "Scene: a small Chinese neighborhood library just after closing on a rainy autumn evening. In the foreground a folded spare umbrella leans against a simple wooden checkout counter; books and a small reading lamp sit near the window. Rain beads on the glass, the quiet street beyond glows softly. The room feels cared for and unhurried. No people, no readable text on books or notes."
+    },
+    {
+      "id": "supper",
+      "text": "Scene: a quiet restaurant table beside a window on a winter evening in a Chinese neighborhood. A single small ceramic bowl of clear soup has gone cold, a spoon beside it, two chairs suggesting someone waited. Soft amber indoor lamplight and muted blue dusk outside. Tender feeling of care and an unspoken apology, intimate eye-level tabletop composition. No people and no visible written menu."
+    },
+    {
+      "id": "kitchen",
+      "text": "Scene: a simple familiar Chinese home kitchen before the Spring Festival, soft late-afternoon light. White radish soup quietly simmers in a modest ceramic pot, thin translucent steam rising; a worn recipe notebook with indistinct unreadable marks lies nearby on a wooden counter. A window is gently fogged. Warm patient everyday atmosphere, no decorations unrelated to the scene, no people, no legible text."
+    }
+  ]
+}

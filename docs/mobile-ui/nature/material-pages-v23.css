@@ -1,0 +1,32 @@
+/* Shared landscape-tinted surfaces for every static UI page. */
+:root .phone[data-page] :is(.player,.notice,.editor,.details,.dock,.reverie-reading,.garden-audio,.feedback-study,.botanical-study){
+  --ink:var(--frost-ink);--muted:var(--frost-muted);--meta:var(--frost-muted);
+  --primary:var(--frost-ink);--line:var(--frost-line);--depth-muted:var(--frost-muted);
+  color:var(--frost-ink)!important;
+  background:var(--frost-wash),var(--frost-card-tint);
+  border:1px solid var(--frost-edge);border-radius:22px;
+  backdrop-filter:var(--frost-card-filter);-webkit-backdrop-filter:var(--frost-card-filter);
+  box-shadow:var(--frost-shadow);text-shadow:0 1px 3px #152b2347;
+}
+:root .phone[data-page] :is(.notice,.details,.feedback-study,.botanical-study){padding:18px}
+:root .phone[data-page] :is(.feature,.player,.reverie-reading) :is(.notice,.details,.quote){
+  background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;
+  color:inherit;border-radius:0;border-width:0;border-top:1px solid var(--frost-line);padding:12px 0;
+}
+:root .phone[data-page] .notice strong,:root .phone[data-page] .notice.error strong{color:inherit}
+:root .phone[data-page] .notice.error{border-left:3px solid #e1b190}
+:root .phone[data-page] .editor{padding:18px;min-height:240px;line-height:1.9;caret-color:#f4f6eb;resize:vertical}
+:root .phone[data-page] .editor::placeholder{color:var(--frost-muted);opacity:.85}
+:root .phone[data-page] .dock{margin:8px 14px 12px;padding:12px;--primary:#365b44;--on:#f5f6ed;flex:none}
+:root .phone[data-page] .dock .text-button{color:var(--frost-ink)}
+:root .phone[data-page] .player .play{background:rgb(24 47 33 / .64);color:#f6f8ee}
+:root .phone[data-page] .garden-audio .garden-play{background:rgb(24 47 33 / .72);color:#f6f8ee}
+:root .phone[data-page] .player input[type=range]{accent-color:#e6eece}
+:root .phone[data-page] .player input[type=range]::-webkit-slider-thumb{background:#e6eece;box-shadow:0 0 0 4px #e6eece18}
+:root .phone[data-page] .details summary{color:inherit}
+:root .phone[data-page] :is(.player,.notice,.details,.dock,.reverie-reading,.garden-audio,.feedback-study,.botanical-study) .secondary{background:rgb(23 53 39 / .3);color:var(--frost-ink);border:1px solid var(--frost-edge)}
+.overlay .dialog{background:rgb(39 64 47 / .55);backdrop-filter:blur(20px) brightness(.55);-webkit-backdrop-filter:blur(20px) brightness(.55);color:#f6f7ed;--ink:#f6f7ed;--muted:#e6ebdf;--surface:#334f3e;--primary:#e7eedb;--on:#243d2e;border-color:#e4edd238}
+.solid-surfaces .overlay .dialog{background:#304b3a;backdrop-filter:none;-webkit-backdrop-filter:none}
+@media(prefers-reduced-transparency:reduce){html:not(.preview-translucency) .overlay .dialog{background:#304b3a;backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media(prefers-contrast:more){.overlay .dialog{background:#243b2d;backdrop-filter:none;-webkit-backdrop-filter:none}}
+@supports not (backdrop-filter:blur(1px)){.overlay .dialog{background:#304b3a}}
