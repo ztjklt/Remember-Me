@@ -48,7 +48,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         val episodes = state.getJSONArray("episodes").objects()
         val known = episodes.map { job -> AudioRecording(job.getString("audio_path"), job.getLong("duration"), job.getString("mime"),
             job.getLong("bytes"), job.getInt("sample_rate"), job.getInt("channels"), job.getString("recorded_at")) }
-        return (saved + known).distinctBy { it.audioPath }.sortedByDescending { it.createdAt }.map { recording ->
+        return (known + saved).distinctBy { it.audioPath }.sortedByDescending { it.createdAt }.map { recording ->
             val episode = episodes.firstOrNull { it.getString("audio_path") == recording.audioPath }
             val status = when { episode?.optBoolean("deleted") == true -> "已删除"; episode?.optBoolean("delete_pending") == true -> "文件清理待重试"
                 episode?.optBoolean("withdrawn") == true -> "已撤除"; episode?.optString("understanding_status") == "PENDING" -> "待理解"; episode != null -> "已处理"; else -> "未处理" }
@@ -62,7 +62,9 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     } } + model()
     suspend fun deleteRecording(recording: AudioRecording, deleteFiles: () -> Unit) = withContext(Dispatchers.IO) { mutex.withLock {
         check(pending() == null || pending()?.optString("kind") == "CAPTURE") { "请先继续或取消待处理问答。" }
-        val id = "ep_" + digest(recording.audioPath + recording.createdAt)
+        val id = state.getJSONArray("episodes").objects().firstOrNull { it.getString("audio_path") == recording.audioPath }?.getString("id")
+            ?: pending()?.takeIf { it.optString("kind") == "CAPTURE" && it.optString("audio_path") == recording.audioPath }?.getString("id")
+            ?: "ep_" + digest(recording.audioPath + recording.createdAt)
         val next = eraseRecording(state, id)
         if (next.optJSONObject("job")?.optString("id") == id) next.remove("job")
         val episode = next.getJSONArray("episodes").objects().firstOrNull { it.getString("id") == id }

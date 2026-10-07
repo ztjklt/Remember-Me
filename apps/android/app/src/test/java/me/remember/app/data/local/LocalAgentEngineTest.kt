@@ -140,7 +140,11 @@ class LocalAgentEngineTest {
         val store = Store(); val engine = engine(store, FakeModel()); val repo = grant(engine)
         engine.capture(recording); repo.refresh(); repo.ask("问题"); repo.submit("敏感校正内容")
         engine.capture(recording("独立材料"))
-        engine.deleteRecording(recording) { library.delete(recording) }
+        sidecar.writeText("corrupted metadata")
+        val recovered = library.list().single()
+        assertNotEquals(recording.createdAt, recovered.createdAt)
+        assertEquals(recording.createdAt, engine.recordings(library.list()).first { it.recording.audioPath == audio.path }.recording.createdAt)
+        engine.deleteRecording(recovered) { library.delete(recovered) }
         assertFalse(audio.exists()); assertFalse(sidecar.exists())
         assertFalse(store.saved!!.contains("唯一敏感原文")); assertFalse(store.saved!!.contains("敏感校正内容"))
         assertEquals("INVALIDATED", store.read()!!.getJSONArray("calibrations").getJSONObject(0).getString("state"))
