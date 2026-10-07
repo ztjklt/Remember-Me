@@ -153,3 +153,10 @@ The official DeepSeek adapter remains available through explicit configuration.
 The JSON-object approach follows the colleague integration at `8627f03`; this
 bounded adapter keeps the canonical schema/provenance validators rather than
 importing the colleague experimental contracts or client-side credentials.
+
+Weixin compact extraction validates every candidate before grounding: unexpected
+fields, incorrect types/domains, blank quote/statement, invalid confidence and
+more than 24 candidates fail with `AI_SCHEMA_INVALID`; they do not become empty
+successes. Grounding still resolves transcript evidence locally. Weixin Twin
+answers have a local 200-Unicode-code-point limit (`len` in Python), counting all
+characters including whitespace, punctuation, emoji and combining marks.

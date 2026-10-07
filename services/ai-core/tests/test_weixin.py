@@ -102,3 +102,38 @@ def test_extraction_keeps_actual_uppercase_model_and_offsets():
     assert output.memory_items[0].model_version=='DeepSeek-Actual'
     assert output.evidence[0].excerpt=='我喜欢散步'
 
+
+@pytest.mark.parametrize('change', ['extra_top','extra_candidate','bad_confidence','bad_domain','nonobject','too_many'])
+def test_extraction_rejects_malformed_compact_candidates(change):
+    from app.extractor import MemoryExtractor
+    from app.contracts import AICoreInput
+    from app.providers.weixin import WeixinProvider
+    candidate={'quote':'source','statement':'statement','domain':'PREFERENCES','memory_type':'PREFERENCE','confidence':.8}
+    raw={'memories':[candidate]}
+    if change=='extra_top': raw['unexpected']=True
+    elif change=='extra_candidate': candidate['status']='approved'
+    elif change=='bad_confidence': candidate['confidence']='0.8'
+    elif change=='bad_domain': candidate['domain']='invented'
+    elif change=='nonobject': raw['memories']=[None]
+    elif change=='too_many': raw['memories']=[candidate]*25
+    def handle(req):
+        return httpx.Response(200,json={'model':'DeepSeek-actual','choices':[{'finish_reason':'stop','message':{'content':json.dumps(raw)}}]})
+    provider=WeixinProvider(api_key='test-only',client=httpx.Client(transport=httpx.MockTransport(handle)))
+    payload=AICoreInput(episode_id='ep1',subject_id='s1',transcript='source',trace_id='t1',existing_model_version='v1')
+    with pytest.raises(AIOutputInvalid):
+        MemoryExtractor(provider=provider,model='Deepseek-v4-flash',model_version='requested').process(payload)
+
+@pytest.mark.parametrize('length,valid', [(200,True),(201,False)])
+def test_twin_answer_bound_counts_unicode_codepoints(length,valid):
+    from app.providers.weixin import WeixinTwinProvider
+    from app.twin import TwinInput
+    provider=WeixinTwinProvider(api_key='test-only')
+    provider.complete=lambda *args: ({'answer':'\u6211'*length,'response_type':'SIMULATION','evidence_ids':['ev1'],'confidence':.5},'actual')
+    payload=TwinInput(question='question',candidates=[{'memory_item_id':'m1','statement':'statement','evidence':[{'evidence_id':'ev1','excerpt':'source','source_type':'SUBJECT'}]}])
+    try:
+        if valid:
+            assert len(provider.answer(payload).answer)==200
+        else:
+            with pytest.raises(AIOutputInvalid): provider.answer(payload)
+    finally:
+        provider.close()

@@ -3,8 +3,10 @@ import json
 import logging
 from time import perf_counter
 import httpx
+from typing import Literal
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable, ProviderAuthenticationFailed
-from .ollama import PROMPT, COMPACT_SCHEMA, grounded_result
+from .ollama import PROMPT, grounded_result
 
 BASE_URL = 'https://chatapi.weixin.qq.com/openai/v1'
 MODEL = 'Deepseek-v4-flash'
@@ -82,10 +84,36 @@ class WeixinChat:
             logger.info(json.dumps(telemetry, ensure_ascii=True))
 
 
+class CompactMemory(BaseModel):
+    """Reject malformed suggestions before provenance grounding can filter them."""
+    model_config = ConfigDict(extra='forbid', strict=True)
+    quote: str = Field(min_length=1)
+    statement: str = Field(min_length=1)
+    domain: Literal['IDENTITY','EPISODIC_MEMORY','RELATIONSHIPS','PREFERENCES','VALUES_BELIEFS','DECISION_PATTERNS','EXPRESSION']
+    memory_type: Literal['EVENT','PERSON','RELATIONSHIP','PREFERENCE','VALUE','EMOTION']
+    confidence: float = Field(ge=0, le=1, allow_inf_nan=False)
+
+    @field_validator('quote', 'statement')
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError('Blank compact field')
+        return value
+
+
+class CompactExtraction(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    memories: list[CompactMemory] = Field(max_length=24)
+
+
 class WeixinProvider(WeixinChat):
     def generate(self, request):
-        raw, version = self.complete(PROMPT + '\n只返回符合以下结构的 JSON：' + json.dumps(COMPACT_SCHEMA, ensure_ascii=False), {'transcript': request.payload.transcript})
-        return grounded_result(raw, request, model_version=version)
+        raw, version = self.complete(PROMPT + '\n只返回符合以下结构的 JSON：' + json.dumps(CompactExtraction.model_json_schema(), ensure_ascii=False), {'transcript': request.payload.transcript})
+        try:
+            validated = CompactExtraction.model_validate(raw)
+        except ValidationError as exc:
+            raise AIOutputInvalid('Weixin extraction compact schema invalid') from exc
+        return grounded_result(validated.model_dump(), request, model_version=version)
 
     @staticmethod
     def response_model_version(output):
@@ -100,6 +128,10 @@ class WeixinTwinProvider(WeixinChat):
         try:
             raw['model_version'] = version
             output = TwinOutput.model_validate(raw)
+            # Python len counts Unicode code points, including punctuation, spaces,
+            # emoji and combining marks. It is deliberately not a Han-only count.
+            if len(output.answer) > 200:
+                raise AIOutputInvalid('Twin answer exceeds 200 Unicode code points')
             evidence = {e.evidence_id:e for c in payload.candidates for e in c.evidence}
             if not set(output.evidence_ids) <= evidence.keys():
                 raise AIOutputInvalid('Twin cites unknown evidence')
