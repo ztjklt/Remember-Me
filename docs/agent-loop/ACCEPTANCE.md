@@ -1,5 +1,7 @@
 # 实施与验证交接 · 2026-10-07
 
+> 历史批次记录：以下为464bdeb阶段结果。融合批次以INTEGRATION_ACCEPTANCE.md为准；当前指定微信密钥为WEIXIN_CHAT_API_KEY。
+
 ## 实施状态
 
 代码已落在独立分支，未完成真实云端闭环验收。当前阻塞是本机没有 DeepSeek

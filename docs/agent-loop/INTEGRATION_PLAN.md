@@ -23,9 +23,9 @@ User approved implementation in this conversation. Work on `codex/agent-integrat
 ## Execution ledger
 
 - Setup: clean existing external worktree reused, independent branch created, exact remotes fetched and verified.
-- Task1 UI import: in progress.
-- Task2 provider: pending.
-- Task3 backend candidate/material and migrations: pending.
-- Task4 real web/Android connection: pending.
-- Task5 synthetic evaluation and true cloud acceptance: pending, Weixin credential prerequisite unresolved.
-- Task6 independent review / full checks / handoff: pending.
+- Task1 UI import: completed locally in d14d1d0; attribution to PR85's three commits retained. No upstream merge.
+- Task2 provider: implemented in 7f2f49e and a22e20d; 158 AI Core tests passed. Actual Weixin calls remain blocked by missing credential.
+- Task3 backend candidate/material and migrations: implemented in 06e174a; 276 backend tests passed. Migrations 0009/0010 checked on database copies before local application; originals backed up. Empty pending-revision sharing and calibration final-publication race fixed during review.
+- Task4 real web/Android connection: implemented. Nature garden binds live IDs; native APK built. Android emulator installed/logged in, read actual waiting stories, played/paused/sought original audio, exercised permission denial/recovery and background save. Physical device and full model loop pending.
+- Task5 synthetic evaluation: three voice-design samples and three duration-qualified first recordings generated via actual Xiaomi calls, locally transcribed and ingested through normal product APIs. All remain waiting for review. Remaining27 synthesis and60 model QAs intentionally gated on actual sample acceptance.
+- Task6 independent review / checks / handoff: review fixes integrated; current evidence and remaining gates in INTEGRATION_ACCEPTANCE.md. No claim of full end-to-end acceptance.
