@@ -216,3 +216,26 @@ def test_extraction_source_selection_uses_actual_text_not_model_retyping(source_
             assert result.evidence[0].excerpt=='邻居王老师偶尔来串门。'
             assert result.evidence[0].span_start==0
     finally:p.close()
+
+
+def test_profile_wire_evidence_alias_is_lossless_and_still_grounded():
+    candidate = {'domain':'PREFERENCES','kind':'trait','statement':'喜欢散步',
+                 'context':'日常','evidence':['s1'],'counter_evidence_ids':[]}
+    class Chat:
+        def complete(self,*args): return {'candidates':[candidate]}, 'actual'
+    payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'我喜欢散步'}])
+    provider=ProfileProposalProvider(Chat())
+    result=provider.propose(payload)
+    assert result.candidates[0].evidence_ids==['ev1']
+    assert 'evidence' not in result.candidates[0].model_dump()
+    # Ambiguous aliases, unknown handles, illegal domains and arbitrary extras
+    # must still be rejected, not dropped or guessed.
+    candidate['evidence_ids']=['s1']
+    with pytest.raises(AIOutputInvalid): provider.propose(payload)
+    candidate.pop('evidence_ids')
+    candidate['evidence']=['unknown']
+    with pytest.raises(AIOutputInvalid): provider.propose(payload)
+    candidate['evidence']=['s1'];candidate['domain']='HABITS'
+    with pytest.raises(AIOutputInvalid): provider.propose(payload)
+    candidate['domain']='PREFERENCES';candidate['approved']=True
+    with pytest.raises(AIOutputInvalid): provider.propose(payload)

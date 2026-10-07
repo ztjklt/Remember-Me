@@ -1,7 +1,7 @@
 """Profile proposals are unconfirmed suggestions grounded in supplied evidence IDs."""
 import json
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, model_validator
 from .errors import AIOutputInvalid
 from .providers.ollama import DOMAINS
 
@@ -45,6 +45,17 @@ class ProfileSelection(BaseModel):
     model_config = ConfigDict(extra='forbid')
     candidates: list[ProfileCandidate] = Field(max_length=8)
 
+class ProfileWireCandidate(ProfileCandidate):
+    # Some json_object providers emit the unambiguous transport synonym
+    # "evidence". Normalize only this known name, then validate the full public
+    # schema and every evidence handle. Supplying both names is extra-forbid.
+    evidence_ids: list[str] = Field(min_length=1, max_length=32,
+        validation_alias=AliasChoices('evidence_ids', 'evidence'))
+
+class ProfileWireSelection(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    candidates: list[ProfileWireCandidate] = Field(max_length=8)
+
 class ProfileProposalProvider:
     def __init__(self, chat):
         self.chat = chat
@@ -72,7 +83,8 @@ class ProfileProposalProvider:
         try:
             if set(raw) != {'candidates'}:
                 raise AIOutputInvalid('Profile output has unexpected fields')
-            output = ProfileProposalOutput(**raw, model_version=version)
+            normalized = ProfileWireSelection.model_validate(raw).model_dump()
+            output = ProfileProposalOutput(**normalized, model_version=version)
             for c in output.candidates:
                 if not set(c.evidence_ids + c.counter_evidence_ids) <= handles.keys():
                     raise AIOutputInvalid('Profile proposal cites unknown evidence')
