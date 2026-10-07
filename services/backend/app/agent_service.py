@@ -2,9 +2,10 @@
 
 from hashlib import sha256
 import json
-import re
 from uuid import uuid4
 from sqlalchemy import exists, select, update
+from sqlalchemy.exc import IntegrityError
+from .agent_materials import resolve_speakers
 from remember_contracts.agent import (
     CalibrationView,
     CompareInput,
@@ -146,13 +147,18 @@ class AgentService:
             .order_by(Episode.recorded_at, Evidence.evidence_id)
         ).all()
         material_list = []
+        transcripts = {episode.episode_id: episode.transcript for _, episode in rows if episode.transcript}
         types = {}
         for item in self.session.scalars(
             select(MemoryItem)
             .join(Episode)
+            .join(Consent, Episode.recording_consent_id == Consent.consent_id)
             .where(
                 Episode.subject_id == state.subject_id,
                 Episode.actor_id == state.actor_id,
+                Consent.status == "granted", Consent.revoked_at.is_(None),
+                Episode.episode_id.not_in(state.excluded_episode_ids),
+                (Episode.status == "ready") | (Episode.episode_id == include_episode_id),
             )
         ):
             for eid in item.evidence_ids:
@@ -190,12 +196,7 @@ class AgentService:
                     evidence_id=evidence.evidence_id,
                     episode_id=episode.episode_id,
                     excerpt=evidence.excerpt,
-                    source_type="THIRD_PARTY"
-                    if re.search(
-                        r"(?:女儿|儿子|朋友|医生|同事|妈妈|爸爸|他|她)(?:说|觉得|认为)[：:，,]?",
-                        evidence.excerpt,
-                    )
-                    else "SUBJECT",
+                    source_type="SUBJECT",
                     source_ref=evidence.source_ref,
                     memory_type=types.get(evidence.evidence_id, "EVENT"),
                     observed_at=as_utc(episode.recorded_at),
@@ -214,6 +215,7 @@ class AgentService:
             if (not text or episode.episode_id in state.excluded_episode_ids
                 or (episode.capture_metadata or {}).get("agent_subject_single_speaker") is not True):
                 continue
+            transcripts[episode.episode_id] = text
             source_ref = f"episode:{episode.episode_id}#span:0-{len(text)}"
             if any(m.source_ref == source_ref for m in material_list):
                 continue
@@ -222,11 +224,10 @@ class AgentService:
             material_list.append(Material(
                 evidence_id="tr_" + sha256((episode.episode_id + "\0" + text).encode()).hexdigest()[:40],
                 episode_id=episode.episode_id, excerpt=text, source_ref=source_ref,
-                source_type="THIRD_PARTY" if re.search(
-                    r"(?:女儿|儿子|朋友|医生|同事|妈妈|爸爸|他|她)(?:说|觉得|认为)[：:，,]?", text
-                ) else "SUBJECT",
+                source_type="SUBJECT",
                 observed_at=as_utc(episode.recorded_at), speaker_authority="SELF_ATTESTED",
             ))
+        material_list = resolve_speakers(material_list, transcripts)
         original_ids = {m.evidence_id for m in material_list}
         for item in self.session.scalars(
             select(AgentMaterial)
@@ -285,7 +286,10 @@ class AgentService:
         for t in snapshot.traits:
             if set(t.evidence_ids + t.counter_evidence_ids) <= allowed:
                 traits.append(t)
-        return snapshot.model_copy(update={"traits": traits})
+        limitations = [text for text in snapshot.limitations if not text.startswith("最近一次自动更新失败")]
+        if state.refresh_error:
+            limitations.append(f"最近一次自动更新失败（{state.refresh_error}），录音与记忆已保存，可手动重试理解更新。")
+        return snapshot.model_copy(update={"traits": traits, "limitations": limitations})
 
     def processed(self, state):
         revision = self.session.get(AgentRevision, f"{state.state_id}:{state.revision}")
@@ -315,7 +319,7 @@ class AgentService:
             model_version=result.model_version,
             prompt_version=result.prompt_version,
             updated_at=utcnow(),
-            limitations=snapshot.limitations,
+            limitations=[text for text in snapshot.limitations if not text.startswith("最近一次自动更新失败")],
         )
 
     def commit_snapshot(self, state, snapshot, materials):
@@ -338,7 +342,7 @@ class AgentService:
                 active_consent,
             )
             .values(
-                revision=snapshot.revision, snapshot=snapshot.model_dump(mode="json")
+                revision=snapshot.revision, snapshot=snapshot.model_dump(mode="json"), refresh_error=None
             )
             .execution_options(synchronize_session=False)
         )
@@ -457,10 +461,19 @@ class AgentService:
         return updated
 
     def lock(self, state, question):
+        question = question.strip()
+        for existing in self.session.scalars(select(CalibrationRecord).where(
+            CalibrationRecord.state_id == state.state_id, CalibrationRecord.question == question,
+            CalibrationRecord.state == "LOCKED", CalibrationRecord.locked_at >= state.granted_at,
+        )):
+            if existing.locked_answer["revision"] == state.revision:
+                self.guard(state, state.revision)
+                return self.view(self.record(state, existing.calibration_id))
         answer = self.twin(state, question)
+        identity = json.dumps([state.state_id, state.generation, answer.revision, question], ensure_ascii=False)
         locked_at = utcnow()
         record = CalibrationRecord(
-            calibration_id="cal_" + uuid4().hex,
+            calibration_id="cal_" + sha256(identity.encode()).hexdigest()[:40],
             state_id=state.state_id,
             question=question,
             locked_answer=answer.model_dump(mode="json"),
@@ -479,7 +492,15 @@ class AgentService:
             state="LOCKED",
         )
         self.session.add(record)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            existing = self.session.get(CalibrationRecord, record.calibration_id)
+            if existing is None:
+                raise
+            self.guard(state, answer.revision)
+            return self.view(self.record(state, existing.calibration_id))
         return self.view(record)
 
     def record(self, state, calibration_id):
@@ -512,7 +533,8 @@ class AgentService:
             if record.human_answer != request.human_answer:
                 raise AgentConflict("A completed calibration is immutable")
             return self.view(record)
-        if state.revision != request.expected_revision:
+        if (record.state != "LOCKED" or state.revision != request.expected_revision
+                or record.locked_answer["revision"] != request.expected_revision):
             raise AgentConflict(
                 "Model changed; refresh and explicitly retry this calibration"
             )

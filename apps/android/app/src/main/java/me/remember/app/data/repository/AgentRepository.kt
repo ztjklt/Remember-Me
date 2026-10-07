@@ -45,6 +45,10 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
         mutableState.value.copy(snapshot = model, materials = materials(c))
     }
 
+    suspend fun retryUnderstanding() = operation { c ->
+        mutableState.value.copy(snapshot = snapshot(gateway.request(c, "/model/refresh", "POST", JSONObject()), c), materials = materials(c))
+    }
+
     suspend fun ask(question: String) = operation { c ->
         val text = question.trim()
         require(text.isNotEmpty()) { "请先填写问题。" }
@@ -164,7 +168,7 @@ class AgentRepository(private val gateway: AgentGateway) : UnderstandingReposito
             AgentTrait(t.getString("trait_id"),t.getString("domain"),t.getString("statement"),t.getString("context"),
                 t.getString("status"),t.getJSONArray("evidence_ids").strings(),t.getJSONArray("counter_evidence_ids").strings(),
                 t.getString("valid_from"),t.nullableString("valid_to"))
-        })
+        }, json.optJSONArray("limitations")?.strings().orEmpty())
     }
 
     private fun answer(json: JSONObject, c: BackendConnection): AgentAnswer {

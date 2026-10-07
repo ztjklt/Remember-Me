@@ -52,6 +52,8 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
             RmDivider()
             RmSectionHeader("当前理解")
             AgentUnderstanding(state.snapshot, localMode)
+            if (!localMode && state.snapshot?.limitations?.any { it.startsWith("最近一次自动更新失败") } == true)
+                TextButton({ scope.launch { repository.retryUnderstanding() } }, enabled = !busy) { Text("重试理解更新") }
 
             RmDivider()
             RmSectionHeader("提问与回答")
@@ -144,6 +146,7 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
 @Composable
 private fun AgentUnderstanding(snapshot: AgentSnapshot?, localMode: Boolean) {
     snapshot?.let { Text("第 ${it.revision} 版理解", style = MaterialTheme.typography.bodySmall) }
+    snapshot?.limitations?.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
     val traits = snapshot?.traits.orEmpty().filter { it.status != "SUPERSEDED" }
     if (traits.isEmpty()) Text("还没有形成理解，请先上传一段录音。")
     traits.forEach {

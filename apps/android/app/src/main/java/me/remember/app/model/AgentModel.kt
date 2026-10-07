@@ -6,7 +6,7 @@ data class AgentTrait(
     val status: String, val evidenceIds: List<String>, val counterEvidenceIds: List<String>,
     val validFrom: String, val validTo: String?
 )
-data class AgentSnapshot(val subjectId: String, val revision: Int, val modelVersion: String, val traits: List<AgentTrait>)
+data class AgentSnapshot(val subjectId: String, val revision: Int, val modelVersion: String, val traits: List<AgentTrait>, val limitations: List<String> = emptyList())
 data class AgentEvidence(val id: String, val excerpt: String, val sourceType: String, val sourceRef: String, val episodeId: String?, val observedAt: String = "")
 data class AgentAnswer(val subjectId: String, val revision: Int, val type: String, val answer: String, val evidence: List<AgentEvidence>, val limitations: List<String>, val modelVersion: String)
 data class AgentDiff(val dimension: String, val assessment: String, val reason: String)

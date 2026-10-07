@@ -432,6 +432,7 @@ class AgentState(Base):
     generation: Mapped[str] = mapped_column(String(32))
     revision: Mapped[int] = mapped_column(Integer, default=0)
     snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    refresh_error: Mapped[str | None] = mapped_column(String(64), nullable=True)
     excluded_episode_ids: Mapped[list] = mapped_column(JSON, default=list)
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

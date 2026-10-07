@@ -29,6 +29,7 @@ import sys
 import threading
 import time
 from uuid import uuid4
+from sqlalchemy import update
 
 from .ai_core import AiCoreClient, build_ai_client
 from .config import Settings, get_settings
@@ -275,12 +276,6 @@ class ProcessingWorker:
                     self._extract(session, episode)
                 else:
                     self._model(episode)
-                    if self.agent is not None:
-                        svc = AgentService(session,self.agent)
-                        state = session.get(AgentState,svc.key(episode.subject_id,episode.actor_id))
-                        if state is not None and state.active:
-                            svc.require(episode.subject_id,episode.actor_id)
-                            svc.refresh(state,include_episode_id=episode.episode_id)
 
                 consent = ConsentRepository(session).require_for(episode.recording_consent_id,actor_id=episode.actor_id)
                 session.refresh(consent)
@@ -298,9 +293,38 @@ class ProcessingWorker:
                     )
                     return episode_id
                 session.commit()
+            if stage is JobStage.MODEL and self.agent is not None:
+                self._refresh_agent(episode_id)
             return episode_id
         finally:
             session.close()
+
+    def _refresh_agent(self, episode_id: str) -> None:
+        context = None
+        try:
+            with self.database.session() as session:
+                episode = session.get(Episode, episode_id)
+                svc = AgentService(session, self.agent)
+                state = session.get(AgentState, svc.key(episode.subject_id, episode.actor_id))
+                if state is None or not state.active:
+                    return
+                context = (state.state_id, state.generation, state.revision)
+                svc.require(episode.subject_id, episode.actor_id)
+                svc.refresh(state)
+                session.commit()
+        except Exception as error:  # experimental failure must never change the committed Episode
+            code = error.code if isinstance(error, AppError) else "INTERNAL"
+            logger.warning("agent.refresh_failed", extra={"extra_fields": {"episode_id": episode_id, "error_code": code}})
+            if context is not None:
+                try:
+                    with self.database.session() as session:
+                        session.execute(update(AgentState).where(
+                            AgentState.state_id == context[0], AgentState.generation == context[1],
+                            AgentState.revision == context[2], AgentState.active.is_(True),
+                        ).values(refresh_error=code))
+                        session.commit()
+                except Exception:
+                    logger.warning("agent.failure_status_unavailable")
 
     def _heartbeat(self, job_id: str) -> LeaseHeartbeat:
         return LeaseHeartbeat(

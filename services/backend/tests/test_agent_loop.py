@@ -629,3 +629,82 @@ def test_full_original_is_available_without_memory_evidence_coverage(loop, has_s
             select(MemoryItem).where(MemoryItem.episode_id == eid))] == before
     loop.client.delete(loop.prefix + f'/episodes/{eid}/use', headers=loop.headers)
     assert not loop.get('/evidence').json()
+
+
+def test_mixed_report_preserves_the_subject_sentence(loop):
+    loop.grant()
+    eid = loop.upload("我最近工作很累。同事说下个月要搬家。")
+    materials = loop.get("/evidence").json()
+    own = [m for m in materials if m["source_type"] == "SUBJECT"]
+    reported = [m for m in materials if m["source_type"] == "THIRD_PARTY"]
+    assert any(m["excerpt"] == "我最近工作很累。" for m in own)
+    assert any("同事说" in m["excerpt"] for m in reported)
+    traits = loop.get("/model").json()["traits"]
+    assert any("工作很累" in t["statement"] for t in traits)
+    assert all("搬家" not in t["statement"] for t in traits)
+    for m in materials:
+        bounds = m["source_ref"].split("#span:")[1].split("-")
+        assert "我最近工作很累。同事说下个月要搬家。"[int(bounds[0]):int(bounds[1])] == m["excerpt"]
+    text = "我最近工作很累。同事说下个月要搬家。"
+    start = text.index("下个月")
+    with loop.app.state.database.session() as session:
+        session.add(Evidence(evidence_id="ev_partial_report", episode_id=eid, source_type="SUBJECT",
+            source_ref=f"episode:{eid}#span:{start}-{len(text)}", excerpt=text[start:], span_start=start, span_end=len(text)))
+        session.commit()
+    partial = next(m for m in loop.get("/evidence").json() if m["evidence_id"] == "ev_partial_report")
+    assert partial["source_type"] == "THIRD_PARTY"
+    assert loop.post("/model/refresh", {}).status_code == 200
+    assert all("搬家" not in t["statement"] for t in loop.get("/model").json()["traits"])
+
+
+def test_experimental_failure_cannot_fail_a_ready_episode(loop):
+    from app.errors import AiSchemaInvalid
+    loop.grant()
+    class BrokenPersona:
+        def persona(self, payload):
+            raise AiSchemaInvalid("synthetic failure")
+    loop.worker.agent = BrokenPersona()
+    eid = loop.upload("我喜欢安静。")
+    result = loop.client.get(f"/api/v1/episodes/{eid}/result", headers=loop.headers)
+    assert result.status_code == 200 and result.json()["status"] == "ready"
+    assert result.json()["memory_items"]
+    assert any("AI_SCHEMA_INVALID" in s for s in loop.get("/model").json()["limitations"])
+    assert loop.post("/model/refresh", {}).status_code == 200
+    assert not any("更新失败" in s for s in loop.get("/model").json()["limitations"])
+
+
+def test_submit_rejects_a_new_revision_for_an_old_locked_answer(loop):
+    loop.grant(); loop.upload("我喜欢安静。")
+    locked = loop.post("/calibrations", {"question": "我喜欢什么？"}).json()
+    loop.upload("周末我喜欢读书。", key="next")
+    revision = loop.get("/model").json()["revision"]
+    assert revision > locked["locked_answer"]["revision"]
+    result = loop.post(f"/calibrations/{locked['calibration_id']}/submit", {
+        "human_answer": "现在喜欢散步", "expected_revision": revision,
+    })
+    assert result.status_code == 409
+
+
+def test_repeated_question_at_same_revision_reuses_lock(loop):
+    loop.grant(); loop.upload("我喜欢安静。")
+    first = loop.post("/calibrations", {"question": "我喜欢什么？"}).json()
+    second = loop.post("/calibrations", {"question": "我喜欢什么？"}).json()
+    assert first == second
+
+
+def test_excluded_memory_cannot_supply_an_authorized_evidence_type(loop):
+    from app.models import MemoryItem
+    loop.grant(); old = loop.upload("我喜欢安静。")
+    current = loop.upload("我是一名学生。", key="current")
+    sources = loop.get("/evidence").json()
+    target = next(m for m in sources if m["episode_id"] == current)
+    loop.client.delete(loop.prefix + f"/episodes/{old}/use", headers=loop.headers)
+    with loop.app.state.database.session() as session:
+        for item in session.scalars(select(MemoryItem).where(MemoryItem.episode_id == current)):
+            item.evidence_ids = []
+        excluded = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == old))
+        excluded.evidence_ids = [target["evidence_id"]]
+        excluded.memory_type = "VALUE"
+        session.commit()
+    material = next(m for m in loop.get("/evidence").json() if m["evidence_id"] == target["evidence_id"])
+    assert material["memory_type"] == "EVENT"
