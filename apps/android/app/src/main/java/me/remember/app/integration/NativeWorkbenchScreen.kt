@@ -315,7 +315,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         state.candidateJobs.forEach { job -> Text("归纳任务：${job.text("status")} ${job.text("error")}", style = MaterialTheme.typography.bodySmall) }
         state.candidates.forEach { candidate -> Panel {
             Text(candidate.text("statement")); Text("${candidate.text("label")} · ${candidate.text("domain")} · ${candidate.text("status")}", style = MaterialTheme.typography.bodySmall)
-            Text("独立录音数：${candidate.optInt("independent_episodes")} · 模型：${candidate.text("model_version")}", style = MaterialTheme.typography.bodySmall)
+            Text("去重材料数：${candidate.optInt("independent_episodes")} · 模型：${candidate.text("model_version")}", style = MaterialTheme.typography.bodySmall)
+            Text("重复说法不代表独立经历。", style = MaterialTheme.typography.bodySmall)
             Text("情境：${candidate.text("context")}")
             val evidenceIds = candidate.optJSONArray("evidence_ids")
             if(evidenceIds != null) for(i in 0 until evidenceIds.length()) {
