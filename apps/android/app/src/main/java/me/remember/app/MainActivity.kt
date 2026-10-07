@@ -28,4 +28,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        ViewModelProvider(this)[LocalAgentSession::class.java].refreshReminder()
+    }
+
 }

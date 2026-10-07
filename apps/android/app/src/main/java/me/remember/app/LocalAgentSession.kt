@@ -26,6 +26,17 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     private val secrets = LocalSettingsStore(application)
     private val client = HttpLocalModelClient()
     private val library = RecordingLibrary(java.io.File(application.filesDir, "recordings"))
+    private val keeper = MemoryKeeper(application)
+    var reminder by mutableStateOf(keeper.settings())
+        private set
+    fun reminderAllowed() = keeper.allowed()
+    fun refreshReminder() { keeper.schedule(); reminder = keeper.settings() }
+    fun saveReminder(value: RecordingReminder) {
+        if (!BuildConfig.LOCAL_AGENT_ENABLED || state.value.busy) return
+        runCatching { keeper.save(value); reminder = keeper.settings() }
+            .onSuccess { mutableState.value = mutableState.value.copy(error = null, message = getApplication<Application>().getString(R.string.reminder_saved)) }
+            .onFailure { mutableState.value = mutableState.value.copy(error = it.message) }
+    }
     var recordings by mutableStateOf<List<LocalRecording>>(emptyList())
         private set
     var versions by mutableStateOf<List<org.json.JSONObject>>(emptyList())
@@ -66,6 +77,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         if (state.value.busy || repository?.state?.value?.busy == true) return
         preferences.edit().putBoolean("local", value).apply()
         mutableState.value = mutableState.value.copy(localMode = value)
+        keeper.schedule()
     }
     fun syncPending() {
         val job = engine?.pending()
@@ -129,6 +141,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     }
     fun clearLocalData() = operation {
         engine!!.reset { library.clear(); secrets.clear(); database!!.clearRecovery() }
+        keeper.clear(); reminder = keeper.settings()
         settings = null; modelDraft = null; lastCapture = null
         repository = AgentRepository(engine!!)
         recordings = emptyList(); versions = emptyList()

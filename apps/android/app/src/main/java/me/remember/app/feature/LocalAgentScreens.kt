@@ -53,6 +53,7 @@ fun LocalSettingsScreen(session: LocalAgentSession, recording: AudioRecording?, 
         state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         state.message?.let { Text(it) }
         Text(stringResource(R.string.local_key_notice), style = MaterialTheme.typography.bodySmall)
+        ReminderSettings(session)
     }
 }
 

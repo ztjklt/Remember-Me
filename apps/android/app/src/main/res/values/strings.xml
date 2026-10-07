@@ -129,4 +129,15 @@
     <string name="export_originals">导出可读原文</string>
     <string name="missing_recording">待处理录音未恢复，请返回录音页选择已保存的录音。</string>
     <string name="return_recording">返回录音</string>
+    <string name="reminder_title">记忆守护 · 录音提醒</string>
+    <string name="reminder_explanation">自愿开启，每天在所选时间附近提醒你留下一段记忆。只发送本机通知，点开后由你决定是否录音；系统省电可能延迟提醒。</string>
+    <string name="reminder_enable">每天提醒我录音</string>
+    <string name="reminder_time">提醒时间（24 小时制 HH:mm）</string>
+    <string name="reminder_invalid_time">请填写有效时间，例如 20:00。</string>
+    <string name="reminder_permission_needed">请在系统设置中允许 Remember Me 的录音提醒通知。</string>
+    <string name="reminder_save">保存录音提醒</string>
+    <string name="reminder_saved">录音提醒设置已保存。</string>
+    <string name="reminder_channel">录音记忆提醒</string>
+    <string name="reminder_notification_title">留下一段今天的记忆</string>
+    <string name="reminder_notification_text">今天有什么值得留下？点这里打开录音页。</string>
 </resources>
