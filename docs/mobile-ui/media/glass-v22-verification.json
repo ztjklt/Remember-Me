@@ -1,0 +1,276 @@
+{
+  "version": 22,
+  "checks": [
+    {
+      "case": "petal-pond",
+      "labels": [
+        {
+          "background": "linear-gradient(145deg, rgba(219, 236, 204, 0.03), rgba(0, 0, 0, 0) 58%, rgba(19, 43, 35, 0.06)) repeat scroll 0% 0% / auto padding-box border-box, rgba(40, 60, 47, 0.42) none repeat scroll 0% 0% / auto padding-box border-box",
+          "filter": "blur(16px) saturate(1.14) brightness(0.57)",
+          "rect": {
+            "bottom": 414.4129676818848,
+            "height": 48.924503326416016,
+            "left": 282.7809143066406,
+            "right": 426.7010345458984,
+            "top": 365.4884643554687,
+            "width": 143.9201202392578,
+            "x": 282.7809143066406,
+            "y": 365.4884643554687
+          },
+          "text": "借伞与回应3"
+        },
+        {
+          "background": "linear-gradient(145deg, rgba(219, 236, 204, 0.03), rgba(0, 0, 0, 0) 58%, rgba(19, 43, 35, 0.06)) repeat scroll 0% 0% / auto padding-box border-box, rgba(40, 60, 47, 0.42) none repeat scroll 0% 0% / auto padding-box border-box",
+          "filter": "blur(16px) saturate(1.14) brightness(0.57)",
+          "rect": {
+            "bottom": 472.753604888916,
+            "height": 48.924503326416016,
+            "left": 376.0535278320313,
+            "right": 504.9385528564453,
+            "top": 423.8291015625,
+            "width": 128.88502502441406,
+            "x": 376.0535278320313,
+            "y": 423.8291015625
+          },
+          "text": "窗边的灯与雨"
+        },
+        {
+          "background": "linear-gradient(145deg, rgba(219, 236, 204, 0.03), rgba(0, 0, 0, 0) 58%, rgba(19, 43, 35, 0.06)) repeat scroll 0% 0% / auto padding-box border-box, rgba(40, 60, 47, 0.42) none repeat scroll 0% 0% / auto padding-box border-box",
+          "filter": "blur(16px) saturate(1.14) brightness(0.57)",
+          "rect": {
+            "bottom": 575.4972114562988,
+            "height": 48.92445755004883,
+            "left": 361.6768798828125,
+            "right": 490.5618591308594,
+            "top": 526.57275390625,
+            "width": 128.88497924804688,
+            "x": 361.6768798828125,
+            "y": 526.57275390625
+          },
+          "text": "有人慢慢读书"
+        },
+        {
+          "background": "linear-gradient(145deg, rgba(219, 236, 204, 0.03), rgba(0, 0, 0, 0) 58%, rgba(19, 43, 35, 0.06)) repeat scroll 0% 0% / auto padding-box border-box, rgba(40, 60, 47, 0.42) none repeat scroll 0% 0% / auto padding-box border-box",
+          "filter": "blur(16px) saturate(1.14) brightness(0.57)",
+          "rect": {
+            "bottom": 612.086368560791,
+            "height": 48.924503326416016,
+            "left": 240.1009521484375,
+            "right": 353.92887115478516,
+            "top": 563.161865234375,
+            "width": 113.82791900634766,
+            "x": 240.1009521484375,
+            "y": 563.161865234375
+          },
+          "text": "留好的饭菜"
+        },
+        {
+          "background": "linear-gradient(145deg, rgba(219, 236, 204, 0.03), rgba(0, 0, 0, 0) 58%, rgba(19, 43, 35, 0.06)) repeat scroll 0% 0% / auto padding-box border-box, rgba(40, 60, 47, 0.42) none repeat scroll 0% 0% / auto padding-box border-box",
+          "filter": "blur(16px) saturate(1.14) brightness(0.57)",
+          "rect": {
+            "bottom": 519.7246284484863,
+            "height": 48.92445755004883,
+            "left": 218.94203186035156,
+            "right": 332.7699508666992,
+            "top": 470.8001708984375,
+            "width": 113.82791900634766,
+            "x": 218.94203186035156,
+            "y": 470.8001708984375
+          },
+          "text": "家人的等待"
+        }
+      ],
+      "screen": [
+        390,
+        390
+      ]
+    },
+    {
+      "case": "profile-action",
+      "background": "rgba(17, 39, 27, 0.22) none repeat scroll 0% 0% / auto padding-box border-box",
+      "color": "rgb(246, 247, 237)"
+    },
+    {
+      "case": "night-reading",
+      "audioBg": "rgba(0, 0, 0, 0) linear-gradient(135deg, rgba(215, 226, 200, 0.69), rgba(203, 219, 191, 0.72)) repeat scroll 0% 0% / auto padding-box border-box",
+      "color": "rgb(35, 63, 49)",
+      "layers": 0,
+      "screen": [
+        375,
+        375
+      ]
+    },
+    {
+      "case": "narrow-petal",
+      "labels": [
+        {
+          "rect": {
+            "bottom": 343.4893226623535,
+            "height": 48.924503326416016,
+            "left": 103.97274780273438,
+            "right": 247.8928680419922,
+            "top": 294.5648193359375,
+            "width": 143.9201202392578,
+            "x": 103.97274780273438,
+            "y": 294.5648193359375
+          },
+          "text": "借伞与回应3"
+        },
+        {
+          "rect": {
+            "bottom": 399.2399711608887,
+            "height": 48.92448043823242,
+            "left": 190.2436065673828,
+            "right": 319.1285858154297,
+            "top": 350.31549072265625,
+            "width": 128.88497924804688,
+            "x": 190.2436065673828,
+            "y": 350.31549072265625
+          },
+          "text": "窗边的灯与雨"
+        },
+        {
+          "rect": {
+            "bottom": 493.5990333557129,
+            "height": 48.924503326416016,
+            "left": 178.58863830566406,
+            "right": 307.47361755371094,
+            "top": 444.6745300292969,
+            "width": 128.88497924804688,
+            "x": 178.58863830566406,
+            "y": 444.6745300292969
+          },
+          "text": "有人慢慢读书"
+        },
+        {
+          "rect": {
+            "bottom": 527.225040435791,
+            "height": 48.924503326416016,
+            "left": 65.52894592285156,
+            "right": 179.35686492919922,
+            "top": 478.300537109375,
+            "width": 113.82791900634766,
+            "x": 65.52894592285156,
+            "y": 478.300537109375
+          },
+          "text": "留好的饭菜"
+        },
+        {
+          "rect": {
+            "bottom": 442.3699378967285,
+            "height": 48.924503326416016,
+            "left": 46.54299545288086,
+            "right": 160.37091445922852,
+            "top": 393.4454345703125,
+            "width": 113.82791900634766,
+            "x": 46.54299545288086,
+            "y": 393.4454345703125
+          },
+          "text": "家人的等待"
+        }
+      ],
+      "screen": [
+        358,
+        358
+      ],
+      "viewport": 358
+    },
+    {
+      "case": "system-material",
+      "labelFilter": "none",
+      "navBg": "none repeat scroll 0% 0% / auto padding-box border-box, rgb(52, 75, 61) none repeat scroll 0% 0% / auto padding-box border-box",
+      "navFilter": "none",
+      "root": ""
+    },
+    {
+      "case": "large-dark-solid",
+      "filter": "none",
+      "fireflies": "none",
+      "navBg": "none repeat scroll 0% 0% / auto padding-box border-box, rgb(52, 75, 61) none repeat scroll 0% 0% / auto padding-box border-box",
+      "screen": [
+        343,
+        343
+      ],
+      "view": "list"
+    },
+    {
+      "case": "narrow-final-labels",
+      "labels": [
+        {
+          "rect": {
+            "bottom": 343.4893226623535,
+            "height": 48.924503326416016,
+            "left": 103.97274780273438,
+            "right": 247.8928680419922,
+            "top": 294.5648193359375,
+            "width": 143.9201202392578,
+            "x": 103.97274780273438,
+            "y": 294.5648193359375
+          },
+          "text": "借伞与回应3"
+        },
+        {
+          "rect": {
+            "bottom": 399.2399711608887,
+            "height": 48.92448043823242,
+            "left": 190.2436065673828,
+            "right": 319.1285858154297,
+            "top": 350.31549072265625,
+            "width": 128.88497924804688,
+            "x": 190.2436065673828,
+            "y": 350.31549072265625
+          },
+          "text": "窗边的灯与雨"
+        },
+        {
+          "rect": {
+            "bottom": 493.5990333557129,
+            "height": 48.924503326416016,
+            "left": 178.58863830566406,
+            "right": 307.47361755371094,
+            "top": 444.6745300292969,
+            "width": 128.88497924804688,
+            "x": 178.58863830566406,
+            "y": 444.6745300292969
+          },
+          "text": "有人慢慢读书"
+        },
+        {
+          "rect": {
+            "bottom": 527.225040435791,
+            "height": 48.924503326416016,
+            "left": 58.00040817260742,
+            "right": 171.82832717895508,
+            "top": 478.300537109375,
+            "width": 113.82791900634766,
+            "x": 58.00040817260742,
+            "y": 478.300537109375
+          },
+          "text": "留好的饭菜"
+        },
+        {
+          "rect": {
+            "bottom": 442.3699378967285,
+            "height": 48.924503326416016,
+            "left": 46.54299545288086,
+            "right": 160.37091445922852,
+            "top": 393.4454345703125,
+            "width": 113.82791900634766,
+            "x": 46.54299545288086,
+            "y": 393.4454345703125
+          },
+          "text": "家人的等待"
+        }
+      ],
+      "screen": [
+        358,
+        358
+      ]
+    },
+    {
+      "case": "narrow-label-intersections",
+      "overlaps": [],
+      "minHeight": 48.92448043823242
+    }
+  ]
+}

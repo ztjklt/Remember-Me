@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-02",
+  "scope": "Local HTML prototype only; v12 incremental acceptance",
+  "tests": {"command": "node --test docs/mobile-ui/memory-garden/garden.test.cjs docs/mobile-ui/memory-garden/imagery.test.cjs", "passed": 12, "failed": 0},
+  "syntax": ["garden.js", "geometry.js", "imagery.js", "imagery-model.js"],
+  "browser": {
+    "demoCanvasCssPx": [390, 844],
+    "demoViewportCssPx": [1910, 1075],
+    "adoptionSurvivesReload": true,
+    "hiddenImageRemainsHiddenAfterPreviewCancel": true,
+    "adoptRestoresHiddenImage": true,
+    "otherMemoryPointChoiceUnchanged": true,
+    "openingImageryPausesAudio": true,
+    "escapeClosesAndRestoresFocus": true,
+    "selectedStory": {"episode": "E03", "points": 4, "edges": 3},
+    "sceneFlightCleaned": true,
+    "darkLargeReducedMotion": {"textPercent": 200, "dialogClientWidth": 368, "dialogScrollWidth": 368, "animationName": "none", "pageHorizontalOverflow": false, "screenHorizontalOverflow": false},
+    "wideViewportCssPx": [1645, 1016],
+    "wideColumnWidthsCssPx": [427.146, 448.519],
+    "wideHorizontalOverflow": false,
+    "consoleErrors": []
+  },
+  "assets": "Reuses the three pre-generated v11 images and synthetic example MP3 files; no new generation request",
+  "notVerified": ["Native Android/iOS v12 screens", "Physical device pinch gestures", "Live image generation", "Real recording through reviewed memory to generated image"],
+  "priorChecks": "See verification.json and MEMORY_GARDEN_V11.md; prior loop, narrow viewport and gesture checks were not all repeated in v12"
+}
