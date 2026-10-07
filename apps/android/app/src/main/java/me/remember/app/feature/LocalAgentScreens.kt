@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import me.remember.app.LocalAgentSession
+import me.remember.app.CaptureProgress
 import me.remember.app.data.local.*
 import me.remember.app.data.repository.AudioRecording
 import me.remember.app.ui.components.RmPage
@@ -13,38 +14,35 @@ import me.remember.app.ui.components.RmPage
 @Composable
 fun LocalSettingsScreen(session: LocalAgentSession, recording: AudioRecording?, back: () -> Unit) {
     val state by session.state.collectAsState()
-    val current = session.settings
-    var speechUrl by remember(current) { mutableStateOf(current?.speech?.baseUrl ?: "https://dashscope.aliyuncs.com") }
-    var speechModel by remember(current) { mutableStateOf(current?.speech?.model ?: "qwen-audio-3.0-asr-flash") }
-    var speechKey by remember(current) { mutableStateOf(current?.speech?.apiKey.orEmpty()) }
-    var languageUrl by remember(current) { mutableStateOf(current?.language?.baseUrl ?: "https://api.deepseek.com") }
-    var languageModel by remember(current) { mutableStateOf(current?.language?.model ?: "deepseek-flash") }
-    var languageKey by remember(current) { mutableStateOf(current?.language?.apiKey.orEmpty()) }
-    var protocol by remember(current) { mutableStateOf(current?.protocol ?: SpeechProtocol.DASHSCOPE) }
+    val draft = session.modelDraft ?: (session.settings ?: LocalModelSettings(
+        ModelEndpoint("https://dashscope.aliyuncs.com", "qwen-audio-3.0-asr-flash", ""),
+        ModelEndpoint("https://api.deepseek.com", "deepseek-flash", ""), SpeechProtocol.DASHSCOPE))
+    fun update(value: LocalModelSettings) { session.modelDraft = value }
+    val protocol = draft.protocol
     var consent by remember { mutableStateOf(false) }
-    fun config() = LocalModelSettings(ModelEndpoint(speechUrl.trim(), speechModel.trim(), speechKey.trim()),
-        ModelEndpoint(languageUrl.trim(), languageModel.trim(), languageKey.trim()), protocol)
+    fun config() = draft.copy(speech = draft.speech.copy(baseUrl = draft.speech.baseUrl.trim(), model = draft.speech.model.trim(), apiKey = draft.speech.apiKey.trim()),
+        language = draft.language.copy(baseUrl = draft.language.baseUrl.trim(), model = draft.language.model.trim(), apiKey = draft.language.apiKey.trim()))
     RmPage {
         TextButton(back, enabled = !state.busy) { Text("← 返回") }
         Text("手机模型设置", style = MaterialTheme.typography.headlineLarge)
         Text("原文、理解和校正存放在手机；录音发给语音服务，文字材料发给文字模型。无需电脑常开。")
         Text("语音模型", style = MaterialTheme.typography.titleLarge)
         Row {
-            RadioButton(protocol == SpeechProtocol.DASHSCOPE, { protocol = SpeechProtocol.DASHSCOPE }, enabled = !state.busy)
+            RadioButton(protocol == SpeechProtocol.DASHSCOPE, { update(draft.copy(protocol = SpeechProtocol.DASHSCOPE)) }, enabled = !state.busy)
             Text("DashScope 原生")
         }
         Row {
-            RadioButton(protocol == SpeechProtocol.CHAT_COMPLETIONS, { protocol = SpeechProtocol.CHAT_COMPLETIONS }, enabled = !state.busy)
+            RadioButton(protocol == SpeechProtocol.CHAT_COMPLETIONS, { update(draft.copy(protocol = SpeechProtocol.CHAT_COMPLETIONS)) }, enabled = !state.busy)
             Text("Chat Completions 音频")
         }
         Text(if (protocol == SpeechProtocol.DASHSCOPE) "原生协议填服务根地址，例如 https://你的服务域名，不带 /compatible-mode/v1。" else "填写兼容接口 Base URL，模型必须支持音频输入。")
-        ModelField("语音 Base URL", speechUrl, { speechUrl = it }, state.busy)
-        ModelField("语音 Model", speechModel, { speechModel = it }, state.busy)
-        ModelField("语音 API Key", speechKey, { speechKey = it }, state.busy, true)
+        ModelField("语音 Base URL", draft.speech.baseUrl, { update(draft.copy(speech = draft.speech.copy(baseUrl = it))) }, state.busy)
+        ModelField("语音 Model", draft.speech.model, { update(draft.copy(speech = draft.speech.copy(model = it))) }, state.busy)
+        ModelField("语音 API Key", draft.speech.apiKey, { update(draft.copy(speech = draft.speech.copy(apiKey = it))) }, state.busy, true)
         Text("文字模型 · OpenAI-compatible", style = MaterialTheme.typography.titleLarge)
-        ModelField("文字 Base URL", languageUrl, { languageUrl = it }, state.busy)
-        ModelField("文字 Model", languageModel, { languageModel = it }, state.busy)
-        ModelField("文字 API Key", languageKey, { languageKey = it }, state.busy, true)
+        ModelField("文字 Base URL", draft.language.baseUrl, { update(draft.copy(language = draft.language.copy(baseUrl = it))) }, state.busy)
+        ModelField("文字 Model", draft.language.model, { update(draft.copy(language = draft.language.copy(model = it))) }, state.busy)
+        ModelField("文字 API Key", draft.language.apiKey, { update(draft.copy(language = draft.language.copy(apiKey = it))) }, state.busy, true)
         Row { Checkbox(consent, { consent = it }, enabled = !state.busy); Text("同意将本人单人录音及相关文字发给以上模型处理，并在手机保存材料和校正。") }
         Button({ session.save(config(), consent, back) }, enabled = consent && state.ready && !state.busy) { Text("保存并启用手机模式") }
         TextButton({ session.test(config()) }, enabled = consent && state.ready && !state.busy) { Text("测试文字模型") }
@@ -90,6 +88,7 @@ fun LocalCaptureScreen(session: LocalAgentSession, recording: AudioRecording, ba
     RmPage {
         TextButton(back) { Text("← 返回录音") }
         Text("处理这段录音", style = MaterialTheme.typography.headlineLarge)
+        Text("${recording.createdAt} · ${recording.durationMillis / 1000} 秒")
         Text("保存原文，调用文字模型更新理解。录音仍保留在手机。")
         LocalAgentStatus(session, settings)
         if (!configured || session.settings == null) Text("请先配置模型并确认处理同意。")
@@ -102,8 +101,15 @@ fun LocalProcessingScreen(session: LocalAgentSession, back: () -> Unit, settings
     val state by session.state.collectAsState()
     RmPage {
         TextButton(back) { Text("← 返回") }
-        Text(if (state.busy) "正在处理录音" else if (state.pending) "处理已暂停" else "处理完成", style = MaterialTheme.typography.headlineLarge)
+        Text(when (state.captureProgress) {
+            CaptureProgress.RUNNING -> "正在处理录音"
+            CaptureProgress.FAILED -> "处理失败"
+            CaptureProgress.PAUSED -> "处理已暂停"
+            CaptureProgress.COMPLETE -> "处理完成"
+            CaptureProgress.IDLE -> "暂无新的处理结果"
+        }, style = MaterialTheme.typography.headlineLarge)
         LocalAgentStatus(session, settings)
+        if (state.captureProgress == CaptureProgress.FAILED && !state.pending) TextButton({ session.retryCapture() }) { Text("重试处理") }
         state.message?.let { Text(it) }
         Text("处理中建议保持应用打开。若进程被系统结束，再次打开后可继续任务。")
         Button(understanding, enabled = !state.busy) { Text("查看原文与理解") }

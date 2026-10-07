@@ -11,6 +11,8 @@ import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.feature.*
 import kotlinx.coroutines.launch
 import me.remember.app.LocalAgentSession
+import me.remember.app.CaptureFlowViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import me.remember.app.ui.components.RmPage
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,7 +36,7 @@ import androidx.compose.material3.TextButton
     val selectedAgent = if (localMode) local!!.repository!! else agentRepository
     val nav=rememberNavController()
     val scope=rememberCoroutineScope()
-    var recordingForUpload by remember { mutableStateOf<AudioRecording?>(null) }
+    val captureFlow: CaptureFlowViewModel = viewModel()
     val startDestination = remember(audioCaptureService) {
         if (audioCaptureService.latestRecording() != null) Routes.Recording else Routes.Splash
     }
@@ -49,11 +51,11 @@ import androidx.compose.material3.TextButton
             onSettings = if (localMode) ({ nav.navigate("local-model-settings") }) else null,
             onSwitchMode = local?.let { { it.setLocalMode(!localMode) } },
             modeLabel = if (localMode) "手机独立模式" else "电脑 Backend 模式") { recording ->
-            recordingForUpload = recording
+            captureFlow.recording = recording
             nav.navigate(Routes.Connection)
         }}
         composable(Routes.Connection){
-            val recording = recordingForUpload
+            val recording = captureFlow.recording
             if (recording != null && localMode) LocalCaptureScreen(local!!, recording, { nav.popBackStack() },
                 { nav.navigate("local-model-settings") }) { local.capture(recording); nav.navigate(Routes.Processing) }
             else if (recording != null) BackendConnectionScreen(recording, back = { nav.popBackStack() }, initialConnection = agentRepository.currentConnection()) { settings ->
@@ -64,6 +66,10 @@ import androidx.compose.material3.TextButton
                     episodeFlow.submit(recording, settings)
                     if (settings.subjectSingleSpeaker && episodeFlow.state.value is EpisodeUiState.Ready) agentRepository.refresh()
                 }
+            }
+            else RmPage {
+                Text("待处理录音未恢复，请返回录音页选择已保存的录音。")
+                TextButton({ nav.navigate(Routes.Recording) }) { Text("返回录音") }
             }
         }
         composable(Routes.Processing){

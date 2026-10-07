@@ -1,6 +1,9 @@
 package me.remember.app
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
@@ -10,8 +13,10 @@ import me.remember.app.data.local.*
 import me.remember.app.data.repository.AgentRepository
 import me.remember.app.data.repository.AudioRecording
 
+enum class CaptureProgress { IDLE, RUNNING, PAUSED, FAILED, COMPLETE }
+
 data class LocalSessionState(val ready: Boolean = false, val busy: Boolean = false, val localMode: Boolean = true,
-    val error: String? = null, val message: String? = null, val pending: Boolean = false, val checkpoint: String? = null)
+    val captureProgress: CaptureProgress = CaptureProgress.IDLE, val error: String? = null, val message: String? = null, val pending: Boolean = false, val checkpoint: String? = null)
 
 /** Activity-independent operations; interrupted jobs remain durable for explicit resume after restart. */
 class LocalAgentSession(application: Application) : AndroidViewModel(application) {
@@ -24,6 +29,8 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     private var database: SqliteLocalState? = null
     @Volatile var settings: LocalModelSettings? = null
         private set
+    var modelDraft by mutableStateOf<LocalModelSettings?>(null)
+    private var lastCapture: AudioRecording? = null
     var repository: AgentRepository? = null
         private set
 
@@ -55,6 +62,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     fun syncPending() {
         val job = engine?.pending()
         mutableState.value = mutableState.value.copy(pending = job != null,
+            captureProgress = if (job?.optString("kind") == "CAPTURE" && state.value.captureProgress == CaptureProgress.IDLE) CaptureProgress.PAUSED else state.value.captureProgress,
             checkpoint = job?.optJSONObject("evidence")?.optString("excerpt"))
     }
     fun save(config: LocalModelSettings, consent: Boolean, completed: () -> Unit) = operation {
@@ -62,6 +70,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         config.validate()
         withContext(Dispatchers.IO) { secrets.write(config.json()) }
         settings = config
+        modelDraft = config
         repository!!.enable(engine!!.connection())
         check(repository!!.state.value.configured) { "本地会话启用失败。" }
         mutableState.value = mutableState.value.copy(message = "模型配置已加密保存。")
@@ -78,12 +87,25 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         mutableState.value = mutableState.value.copy(message = if (speech) "语音模型返回：$result" else result)
     }
     fun capture(recording: AudioRecording) = operation {
+        lastCapture = recording
+        mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.RUNNING)
+        val before = repository!!.state.value.snapshot?.revision ?: 0
         engine!!.capture(recording)
         repository!!.refresh()
-        mutableState.value = mutableState.value.copy(message = "原文和理解已保存在手机。")
+        check(repository!!.state.value.error == null) { "读取处理结果失败，请刷新。" }
+        mutableState.value = mutableState.value.copy(captureProgress = if ((repository!!.state.value.snapshot?.revision ?: 0) > before)
+            CaptureProgress.COMPLETE else CaptureProgress.IDLE, message = "原文和理解已保存在手机。")
     }
-    fun retry() = operation { engine!!.retry(); repository!!.refresh(); restoreAnswer() }
-    fun cancelPending() = operation { engine!!.cancelPending() }
+    fun retry() = operation {
+        val capture = engine!!.pending()?.optString("kind") == "CAPTURE"
+        val before = repository!!.state.value.snapshot?.revision ?: 0
+        if (capture) mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.RUNNING)
+        engine!!.retry(); repository!!.refresh(); restoreAnswer()
+        if (capture) mutableState.value = mutableState.value.copy(captureProgress =
+            if ((repository!!.state.value.snapshot?.revision ?: 0) > before) CaptureProgress.COMPLETE else CaptureProgress.IDLE)
+    }
+    fun retryCapture() { if (state.value.pending) retry() else lastCapture?.let(::capture) }
+    fun cancelPending() = operation { engine!!.cancelPending(); mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.IDLE) }
     private suspend fun restoreAnswer() { engine!!.latestCalibration()?.let { repository!!.resume(it) } }
     private fun operation(block: suspend () -> Unit) {
         if (!state.value.ready || state.value.busy || repository?.state?.value?.busy == true) return
@@ -91,7 +113,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try { block() }
             catch (e: CancellationException) { throw e }
-            catch (e: Exception) { mutableState.value = mutableState.value.copy(error = when (e) {
+            catch (e: Exception) { mutableState.value = mutableState.value.copy(captureProgress = if (state.value.captureProgress == CaptureProgress.RUNNING) CaptureProgress.FAILED else state.value.captureProgress, error = when (e) {
                 is IllegalArgumentException, is IllegalStateException -> e.message ?: "本地操作失败，可重试。"
                 else -> "模型响应或本地存储异常，材料已保留，可重试。"
             }) }

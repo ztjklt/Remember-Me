@@ -3,6 +3,7 @@ package me.remember.app.feature
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -20,10 +21,10 @@ fun AgentScreen(repository: AgentRepository, back: () -> Unit, capture: () -> Un
     val busy = state.busy || externalBusy
     val scope = rememberCoroutineScope()
     val connection = repository.currentConnection()
-    var question by remember(connection) { mutableStateOf("") }
-    var human by remember(connection, state.calibration?.id) { mutableStateOf("") }
-    var resumeId by remember(connection) { mutableStateOf("") }
-    LaunchedEffect(state.calibration?.id) { state.calibration?.let { question = it.question } }
+    var question by rememberSaveable(connection?.subjectId) { mutableStateOf("") }
+    var human by rememberSaveable(connection?.subjectId, state.calibration?.id) { mutableStateOf("") }
+    var resumeId by rememberSaveable(connection?.subjectId) { mutableStateOf("") }
+    LaunchedEffect(state.calibration?.id) { state.calibration?.let { if (question.isBlank()) question = it.question } }
 
     RmPage {
         TextButton(back) { Text("← 返回") }
