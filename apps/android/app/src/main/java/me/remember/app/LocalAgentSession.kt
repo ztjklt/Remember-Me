@@ -25,6 +25,11 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     private val preferences = application.getSharedPreferences("execution-mode", 0)
     private val secrets = LocalSettingsStore(application)
     private val client = HttpLocalModelClient()
+    private val library = RecordingLibrary(java.io.File(application.filesDir, "recordings"))
+    var recordings by mutableStateOf<List<LocalRecording>>(emptyList())
+        private set
+    var versions by mutableStateOf<List<org.json.JSONObject>>(emptyList())
+        private set
     private var engine: LocalAgentEngine? = null
     private var database: SqliteLocalState? = null
     @Volatile var settings: LocalModelSettings? = null
@@ -107,6 +112,27 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
     }
     fun retryCapture() { if (state.value.pending) retry() else lastCapture?.let(::capture) }
     fun cancelPending() = operation { engine!!.cancelPending(); mutableState.value = mutableState.value.copy(captureProgress = CaptureProgress.IDLE) }
+    fun loadLibrary() = operation { refreshLibrary() }
+    private suspend fun refreshLibrary() {
+        recordings = withContext(Dispatchers.IO) { engine!!.recordings(library.list()) }
+        versions = engine!!.versions()
+    }
+    fun deleteRecording(recording: AudioRecording) = operation {
+        try { engine!!.deleteRecording(recording) { library.delete(recording) } }
+        finally {
+            repository = AgentRepository(engine!!).also { if (engine!!.granted()) it.enable(engine!!.connection()) }
+            lastCapture = null
+            refreshLibrary()
+        }
+    }
+    fun clearLocalData() = operation {
+        engine!!.reset { library.clear(); secrets.clear() }
+        settings = null; modelDraft = null; lastCapture = null
+        repository = AgentRepository(engine!!)
+        recordings = emptyList(); versions = emptyList()
+        preferences.edit().putBoolean("local", false).apply()
+        mutableState.value = mutableState.value.copy(localMode = false, captureProgress = CaptureProgress.IDLE, message = "本地资料已清除，已退出手机模式。")
+    }
     private suspend fun restoreAnswer() { engine!!.latestCalibration()?.let { repository!!.resume(it) } }
     private fun operation(block: suspend () -> Unit) {
         if (!state.value.ready || state.value.busy || repository?.state?.value?.busy == true) return

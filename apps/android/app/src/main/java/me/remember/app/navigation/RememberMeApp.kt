@@ -47,8 +47,12 @@ import androidx.compose.material3.TextButton
         composable(Routes.Explain){ExplanationScreen{nav.navigate(Routes.Consent)}}
         composable(Routes.Consent){ConsentScreen{nav.navigate(Routes.Introduce)}}
         composable(Routes.Introduce){IntroduceScreen{nav.navigate(Routes.Recording)}}
+        composable("local-recordings") { RecordingLibraryScreen(local!!, audioCaptureService, { nav.popBackStack() }) {
+            captureFlow.recording = it; nav.navigate(Routes.Connection)
+        } }
         composable("local-model-settings") { LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() } }
         composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) },
+            onLibrary = if (localMode) ({ nav.navigate("local-recordings") }) else null,
             onHome = { nav.navigate(Routes.Home) },
             onSettings = if (localMode) ({ nav.navigate("local-model-settings") }) else null,
             onSwitchMode = local?.let { { it.setLocalMode(!localMode) } },

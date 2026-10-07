@@ -34,6 +34,7 @@ fun RecordingScreen(
         ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     },
     onUnderstanding: (() -> Unit)? = null,
+    onLibrary: (() -> Unit)? = null,
     onHome: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
     onSwitchMode: (() -> Unit)? = null,
@@ -237,6 +238,7 @@ fun RecordingScreen(
 
         errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (captureState !in setOf(CaptureState.Starting, CaptureState.Recording, CaptureState.Paused)) {
+            onLibrary?.let { TextButton(it) { Text("我录过的") } }
             onHome?.let { TextButton(it) { Text("首页与归档") } }
             modeLabel?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             onSettings?.let { TextButton(it) { Text("模型设置") } }

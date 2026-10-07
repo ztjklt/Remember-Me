@@ -20,10 +20,12 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     private val changes = MutableStateFlow(0L)
     private val mutex = Mutex()
     private val inference = LocalInference(client)
-    @Volatile private var state = store.read() ?: JSONObject().put("version", 1).put("subject_id", newId("local_"))
+    private fun emptyJournal() = JSONObject().put("version", 1).put("subject_id", newId("local_"))
         .put("granted", false).put("revision", 0).put("model_version", "local-unconfigured")
         .put("materials", JSONArray()).put("traits", JSONArray()).put("history", JSONArray())
-        .put("calibrations", JSONArray()).put("episodes", JSONArray()).put("withdrawn_evidence", JSONArray()).also(store::write)
+        .put("calibrations", JSONArray()).put("episodes", JSONArray()).put("withdrawn_evidence", JSONArray())
+
+    @Volatile private var state = store.read() ?: emptyJournal().also(store::write)
 
     init { check(state.getInt("version") == 1) { "本地数据版本不兼容。" } }
     fun connection() = BackendConnection("local://device", "local-session", state.getString("subject_id"), "local-recording-consent", true)
@@ -36,6 +38,42 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     private fun model() = JSONObject().put("subject_id", state.getString("subject_id")).put("revision", state.getInt("revision"))
         .put("model_version", state.getString("model_version")).put("schema_version", "agent-loop-v0.2-experimental")
         .put("traits", JSONArray(state.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
+
+    fun recordings(saved: List<AudioRecording>): List<LocalRecording> {
+        val episodes = state.getJSONArray("episodes").objects()
+        val known = episodes.map { job -> AudioRecording(job.getString("audio_path"), job.getLong("duration"), job.getString("mime"),
+            job.getLong("bytes"), job.getInt("sample_rate"), job.getInt("channels"), job.getString("recorded_at")) }
+        return (saved + known).distinctBy { it.audioPath }.sortedByDescending { it.createdAt }.map { recording ->
+            val episode = episodes.firstOrNull { it.getString("audio_path") == recording.audioPath }
+            val status = when { episode?.optBoolean("deleted") == true -> "已删除"; episode?.optBoolean("delete_pending") == true -> "文件清理待重试"
+                episode?.optBoolean("withdrawn") == true -> "已撤除"; episode != null -> "已处理"; else -> "未处理" }
+            val excerpt = if (status in setOf("已删除", "文件清理待重试")) "" else state.getJSONArray("materials").objects()
+                .firstOrNull { it.optString("episode_id") == episode?.getString("id") }?.optString("excerpt").orEmpty()
+            LocalRecording(recording, excerpt, status)
+        }
+    }
+    fun versions() = state.getJSONArray("history").objects().map { old -> old.copyJson().apply {
+        put("traits", JSONArray(old.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
+    } } + model()
+    suspend fun deleteRecording(recording: AudioRecording, deleteFiles: () -> Unit) = withContext(Dispatchers.IO) { mutex.withLock {
+        check(pending() == null) { "请先继续或取消待处理任务。" }
+        val id = "ep_" + digest(recording.audioPath + recording.createdAt)
+        val next = eraseRecording(state, id)
+        val episode = next.getJSONArray("episodes").objects().firstOrNull { it.getString("id") == id }
+            ?: JSONObject().put("id", id).put("audio_path", recording.audioPath).put("duration", recording.durationMillis)
+                .put("mime", recording.mimeType).put("bytes", recording.byteSize).put("sample_rate", recording.sampleRate)
+                .put("channels", recording.channelCount).put("recorded_at", recording.createdAt).also { next.getJSONArray("episodes").put(it) }
+        episode.put("withdrawn", true).put("delete_pending", true)
+        persist(next) // Fail closed before touching files; an interrupted cleanup is visible and retryable.
+        deleteFiles()
+        episode.put("delete_pending", false).put("deleted", true).put("deleted_at", now())
+        persist(next)
+    } }
+    suspend fun reset(cleanup: () -> Unit) = withContext(Dispatchers.IO) { mutex.withLock {
+        persist(state.copyJson().put("granted", false))
+        cleanup()
+        persist(emptyJournal())
+    } }
 
     override fun memories() = changes.map {
         if (!granted()) Loadable.Empty else {

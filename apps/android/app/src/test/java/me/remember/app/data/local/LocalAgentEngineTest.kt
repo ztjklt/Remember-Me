@@ -128,4 +128,29 @@ class LocalAgentEngineTest {
         assertTrue(next.state.value.answer!!.evidence.isEmpty())
     }
 
+    @Test fun deletionErasesFilesAndDependentContentButRetainsTombstones() = runBlocking {
+        val root = files.newFolder("recordings"); val library = RecordingLibrary(root)
+        val audio = java.io.File(root, "one.m4a").apply { writeText("唯一敏感原文") }
+        val sidecar = java.io.File(root, "one.json").apply { writeText("{\"durationMillis\":1000,\"created_at\":\"2026-01-01T00:00:00Z\"}") }
+        val recording = library.list().single()
+        val store = Store(); val engine = engine(store, FakeModel()); val repo = grant(engine)
+        engine.capture(recording); repo.refresh(); repo.ask("问题"); repo.submit("敏感校正内容")
+        engine.capture(recording("独立材料"))
+        engine.deleteRecording(recording) { library.delete(recording) }
+        assertFalse(audio.exists()); assertFalse(sidecar.exists())
+        assertFalse(store.saved!!.contains("唯一敏感原文")); assertFalse(store.saved!!.contains("敏感校正内容"))
+        assertEquals("INVALIDATED", store.read()!!.getJSONArray("calibrations").getJSONObject(0).getString("state"))
+        repo.refresh(); repo.ask("问题")
+        assertEquals("独立材料", repo.state.value.answer!!.answer)
+        assertTrue(engine.recordings(library.list()).any { it.status == "已删除" })
+        engine.reset { library.clear() }
+        assertFalse(engine.granted()); assertEquals(0, store.read()!!.getJSONArray("materials").length())
+    }
+    @Test fun recordingDeletionCannotEscapeItsDirectory() {
+        val root = files.newFolder("library"); val outside = files.newFile("outside.m4a")
+        val recording = AudioRecording(outside.path, 0, "audio/mp4", 0, 44100, 1, "")
+        try { RecordingLibrary(root).delete(recording); fail("outside file deleted") } catch (_: IllegalArgumentException) { }
+        assertTrue(outside.exists())
+    }
+
 }
