@@ -85,6 +85,12 @@ fun LocalAgentStatus(session: LocalAgentSession, settings: () -> Unit) {
 }
 
 @Composable
+fun LocalAgentControls(session: LocalAgentSession, settings: () -> Unit, portrait: () -> Unit) {
+    LocalAgentStatus(session, settings)
+    TextButton(portrait, enabled = !session.state.collectAsState().value.busy) { Text(stringResource(R.string.portrait_open)) }
+}
+
+@Composable
 fun LocalCaptureScreen(session: LocalAgentSession, recording: AudioRecording, back: () -> Unit, settings: () -> Unit, process: () -> Unit) {
     val state by session.state.collectAsState()
     val configured = session.repository?.state?.collectAsState()?.value?.configured == true

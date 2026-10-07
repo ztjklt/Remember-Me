@@ -41,6 +41,9 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         private set
     var versions by mutableStateOf<List<org.json.JSONObject>>(emptyList())
         private set
+    var portrait by mutableStateOf<LocalPortrait?>(null)
+        private set
+    fun loadPortrait() = operation { portrait = engine!!.portrait() }
     private var engine: LocalAgentEngine? = null
     private var database: SqliteLocalState? = null
     @Volatile var settings: LocalModelSettings? = null
@@ -68,6 +71,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
                     restoreAnswer()
                 }
                 mutableState.value = mutableState.value.copy(ready = true)
+                portrait = engine!!.portrait()
                 syncPending()
             } catch (e: Exception) { mutableState.value = mutableState.value.copy(error = if (e is LocalRecoveryRequired) e.message else "本地数据无法打开，请保留应用数据以便检查。") }
         }
@@ -174,7 +178,10 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
                 is IllegalArgumentException, is IllegalStateException -> e.message ?: "本地操作失败，可重试。"
                 else -> "模型响应或本地存储异常，材料已保留，可重试。"
             }) }
-            finally { mutableState.value = mutableState.value.copy(busy = false); syncPending() }
+            finally {
+                try { portrait = engine!!.portrait() }
+                finally { mutableState.value = mutableState.value.copy(busy = false); syncPending() }
+            }
         }
     }
     override fun onCleared() { database?.close(); super.onCleared() }

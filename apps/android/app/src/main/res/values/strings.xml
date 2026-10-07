@@ -140,4 +140,14 @@
     <string name="reminder_channel">录音记忆提醒</string>
     <string name="reminder_notification_title">留下一段今天的记忆</string>
     <string name="reminder_notification_text">今天有什么值得留下？点这里打开录音页。</string>
+    <string name="portrait_open">查看我的画像与记忆关联</string>
+    <string name="portrait_title">我的画像与记忆</string>
+    <string name="portrait_explanation">画像结论通过多证据关联连接本人、原文与校正。每条结论保留情境和依据，可继续核对与校正。</string>
+    <string name="portrait_empty">还没有可展示的画像，请先录音并更新理解。</string>
+    <string name="portrait_revision">第 %1$d 版 · %2$d 条画像结论 · %3$d 条原文或校正</string>
+    <string name="portrait_sources">查看 %1$d 条依据</string>
+    <string name="portrait_counter_source">反例依据</string>
+    <string name="portrait_correct">去提问或校正画像</string>
+    <string name="portrait_graph_limit">图中预览前 6 条结论和最多 12 条证据，下面的领域列表保留全部关联。</string>
+    <string name="portrait_graph_description">S：本人；E：原文或校正；P：画像结论；H：连接本人、结论和多个证据的超边。</string>
 </resources>

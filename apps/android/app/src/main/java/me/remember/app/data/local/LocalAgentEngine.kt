@@ -35,6 +35,9 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     }
     fun connection() = BackendConnection("local://device", "local-session", state.getString("subject_id"), "local-recording-consent", true)
     fun granted() = state.getBoolean("granted")
+    suspend fun portrait(): LocalPortrait? = withContext(Dispatchers.IO) { mutex.withLock {
+        if (granted()) projectPortrait(state) else null
+    } }
     fun pending(): JSONObject? = state.optJSONObject("job")?.copyJson()
     fun latestCalibration(): String? = state.getJSONArray("calibrations").objects().lastOrNull { it.getString("state") != "INVALIDATED" }?.getString("calibration_id")
     private fun persist(next: JSONObject) { store.write(next); state = next.copyJson(); changes.value++ }

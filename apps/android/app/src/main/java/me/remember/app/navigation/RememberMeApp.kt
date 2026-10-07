@@ -62,6 +62,8 @@ import me.remember.app.R
         } else LocalModeUnavailable { nav.navigate(Routes.Recording) } }
         composable("local-model-settings") { if (localMode) LocalSettingsScreen(local!!, audioCaptureService.latestRecording()) { nav.popBackStack() }
             else LocalModeUnavailable { nav.navigate(Routes.Recording) } }
+        composable("local-portrait") { if (localMode) LocalPortraitScreen(local!!, { nav.popBackStack() }, { nav.navigate(Routes.Understanding) })
+            else LocalModeUnavailable { nav.navigate(Routes.Recording) } }
         composable(Routes.Recording){RecordingScreen(audioCaptureService, onUnderstanding = { nav.navigate(Routes.Understanding) },
             onLibrary = if (localMode) ({ nav.navigate("local-recordings") }) else null,
             onHome = { nav.navigate(Routes.Home) },
@@ -109,7 +111,7 @@ import me.remember.app.R
             val episode by episodeFlow.state.collectAsState()
             AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) },
                 if (localMode) null else (episode as? EpisodeUiState.Ready)?.episodeId, localMode, localState?.busy == true) {
-                LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+                LocalAgentControls(local!!, { nav.navigate("local-model-settings") }, { nav.navigate("local-portrait") })
             }
         }
         composable(Routes.Birth){ if (me.remember.app.BuildConfig.DEBUG) TwinBirthScreen{nav.navigate(Routes.Voice)} }
@@ -117,10 +119,10 @@ import me.remember.app.R
         composable(Routes.Home){CreatorHomeScreen(selectedMemories,nav::navigate)}
         composable(Routes.Memories){MemoriesScreen(selectedMemories){nav.popBackStack()}}
         composable(Routes.Twin){AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, localMode = localMode, externalBusy = localState?.busy == true) {
-            LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+            LocalAgentControls(local!!, { nav.navigate("local-model-settings") }, { nav.navigate("local-portrait") })
         }}
         composable(Routes.Calibration){AgentScreen(selectedAgent, { nav.popBackStack() }, { nav.navigate(Routes.Recording) }, localMode = localMode, externalBusy = localState?.busy == true) {
-            LocalAgentStatus(local!!) { nav.navigate("local-model-settings") }
+            LocalAgentControls(local!!, { nav.navigate("local-model-settings") }, { nav.navigate("local-portrait") })
         }}
         composable(Routes.Handover){HandoverScreen{nav.popBackStack()}}
         composable(Routes.Legacy){ if (me.remember.app.BuildConfig.DEBUG) LegacyHomeScreen{nav.navigate(Routes.Twin)}}

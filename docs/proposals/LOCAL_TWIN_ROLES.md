@@ -22,3 +22,12 @@ Android 13+ 在用户开启时请求 POST_NOTIFICATIONS，拒绝后不保存为�
 平台可能受省电/Doze 延迟，不保证华为真机后台送达；实现依据 [官方定时任务文档](https://developer.android.com/develop/background-work/services/alarms) 和 [通知权限文档](https://developer.android.com/develop/ui/compose/notifications/notification-permission)。
 确定性单元测试覆盖当天/翌日边界、夏令时和非法时间；Android 完整检查的结果将在提交前记录。真机通知未执行。
 结果：`test assembleDebug assembleDebugAndroidTest lintDebug` 成功（1m9s），Debug/Release 各 46 项 JVM 测试通过；提醒送达、重启重排与系统权限交互未执行。
+
+## Portrait reader 的关联模型
+
+在既有 traits/materials 上做当前 revision 的投影，不创建另一套 Memory，也不伪造实体关系。
+节点是 Subject、画像结论和原文/校正；每条超边包含一个 Subject、一个情境化结论和多个支持/反例 evidence_id。
+原文撤除、删除或同意撤回后从投影排除。图中有限预览，领域列表保留完整关联及证据展开。
+入口在“记忆与理解 → 查看我的画像与记忆关联”，由原有校正循环更新画像。
+当前七领域保持原定义；不把未定义的四类展示当成正式 Person Model 语义。
+结果：Android 完整检查成功（1m11s），Debug/Release 各 48 项 JVM 测试通过，lint 0 errors。多证据超边和撤除/第三方排除回归通过；图形真机交互未执行。
