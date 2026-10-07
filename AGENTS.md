@@ -23,6 +23,7 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 - Preserve provenance, consent, subject isolation, model version, and failure states.
 - Prefer one main LLM with schema workers for the first AI implementation; do not split services only to claim a multi-agent architecture.
 - Keep providers behind adapters. Android must not depend directly on a specific backend, STT, LLM, or voice provider, and must hold no provider secrets.
+  - User-authorized exception (2026-10-07): the experimental local Android mode may store user-supplied ASR/LLM credentials encrypted with Android Keystore and call providers through adapters. Never bundle keys, export them, log them, or include them in backups. Preserve the remote mode. Implement a single Agent loop; multi-agent delegation and compression are out of scope. See `docs/proposals/ANDROID_LOCAL_AGENT_MEMEX_REVIEW.md`.
 - A feature is not complete until its owner runs it locally and records the verification in the Pull Request.
 
 ## Delivery flow

@@ -2,8 +2,10 @@
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="file" path="recordings/" />
+        <exclude domain="database" path="local-agent.db" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="file" path="recordings/" />
+        <exclude domain="database" path="local-agent.db" />
     </device-transfer>
 </data-extraction-rules>
