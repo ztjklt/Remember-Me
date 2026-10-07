@@ -1,12 +1,19 @@
 package me.remember.app.feature
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.runtime.*
-import kotlinx.coroutines.delay
-import kotlin.random.Random
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -14,7 +21,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import me.remember.app.core.designsystem.NatureScene
+import me.remember.app.core.designsystem.atmosphere
+import me.remember.app.core.designsystem.RememberMeBrand
 import me.remember.app.core.designsystem.RememberMeColors
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import me.remember.app.BuildConfig
 import me.remember.app.R
 import me.remember.app.data.repository.MemoryRepository
@@ -23,122 +36,103 @@ import me.remember.app.navigation.Routes
 import me.remember.app.ui.components.*
 
 @Composable
-fun PortraitScreen(go: (String) -> Unit) {
-    val topics = listOf(
-        "Is this your psychological feeling?" to Routes.Memories,
-        "Things you mentioned these days" to Routes.Memories,
-        "Your physical health, checked by your voice" to Routes.Recording,
-        "Your identity defines who you are" to Routes.Memories,
-        "Maybe you will talk about it in this way" to Routes.Twin,
-        "What has been quietly changing?" to Routes.Memories,
-        "A person who appeared in your thoughts" to Routes.Memories,
-        "A decision worth remembering" to Routes.Memories
-    )
-    var visibleTopics by remember { mutableStateOf(topics.take(5)) }
-    var portraitQuery by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(Random.nextLong(18_000L, 32_000L))
-            visibleTopics = topics.shuffled().take(5)
-        }
-    }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-      Column(
-        Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-      ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton({ go(Routes.Twin) }, Modifier.weight(.8f)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    HugeIcon(R.drawable.hg_chat, "Chat history", Modifier.size(18.dp))
-                    Text("Chat history", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+fun PortraitScreen(go: (String) -> Unit, showBottomTabs: Boolean = true) {
+    Column(Modifier.fillMaxSize().atmosphere(immersive = true).statusBarsPadding()) {
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                RememberMeBrand(size = 40.dp)
+                Spacer(Modifier.width(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("勿忘我", style = MaterialTheme.typography.titleLarge, fontFamily = FontFamily.Serif, color = RememberMeColors.Ink)
+                    Text("REMEMBER ME", style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, letterSpacing = 1.sp), color = RememberMeColors.Muted)
+                }
+                Spacer(Modifier.weight(1f))
+                Text("一段安静时光", style = MaterialTheme.typography.bodySmall,
+                    color = RememberMeColors.Muted)
+            }
+            Column(Modifier.fillMaxWidth().padding(top = 48.dp, bottom = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("留一点时间，给自己", style = MaterialTheme.typography.bodySmall,
+                    color = RememberMeColors.Ink)
+                Text("让此刻，\n慢慢留下来。", style = MaterialTheme.typography.displayLarge,
+                    fontFamily = FontFamily.Serif, fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center, color = RememberMeColors.Ink)
+                Text("不必整理好思绪。\n一件小事，也可以慢慢说。",
+                    textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium,
+                    color = RememberMeColors.Ink)
+            }
+            Button(onClick = { go(Routes.Recording) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
+                shape = RoundedCornerShape(32.dp), contentPadding = PaddingValues(18.dp)) {
+                Icon(Icons.Filled.Mic, null, Modifier.size(22.dp))
+                Spacer(Modifier.width(10.dp))
+                Text("开始录音")
+            }
+            Text("独处的灵感 · 一起的讨论 · 久违的闲聊",
+                Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 40.dp),
+                textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall,
+                color = RememberMeColors.Ink)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = .96f)).padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("那些说过的话，都在这里。", style = MaterialTheme.typography.titleLarge, color = RememberMeColors.Ink)
+                Text("回听一段原音，核对一段文字，\n再让它成为可以重温的记忆。",
+                    style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
+                OutlinedButton(onClick = { go(Routes.Memories) },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    shape = RoundedCornerShape(18.dp)) {
+                    HugeIcon(R.drawable.hg_book, null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text("翻开我的档案")
+                }
+                TextButton(onClick = { go(Routes.Twin) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("与记忆聊一聊")
                 }
             }
-            OutlinedTextField(
-                value = portraitQuery,
-                onValueChange = { portraitQuery = it },
-                modifier = Modifier.weight(1.8f).padding(horizontal = 8.dp),
-                singleLine = true,
-                leadingIcon = { HugeIcon(R.drawable.hg_search, "Search", Modifier.size(18.dp)) },
-                placeholder = { Text("Search portraits", style = MaterialTheme.typography.bodySmall) }
-            )
-            TextButton({}, Modifier.weight(.8f)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    HugeIcon(R.drawable.hg_download, "Export", Modifier.size(18.dp))
-                    Text("Export", style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                }
-            }
         }
-        BrandHeader("A quiet map of you")
-        Text("Portrait", style = MaterialTheme.typography.headlineLarge)
-        Text("画像布局预览。真实记忆请到档案查看；图中的示例内容不代表已分析你的录音。", color = RememberMeColors.Muted)
-        Button(onClick = { go(Routes.Recording) }, modifier = Modifier.fillMaxWidth()) { Text("开始录音") }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PortraitCard("Thing memory", "events and facts", Routes.Memories, go, Modifier.weight(1f))
-            PortraitCard("Mood memory", "feelings over time", Routes.Memories, go, Modifier.weight(1f))
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PortraitCard("Psycho memory", "patterns and values", Routes.Memories, go, Modifier.weight(1f))
-            PortraitCard("Filter memory", "search the archive", Routes.Memories, go, Modifier.weight(1f))
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PortraitCard("Status memory", "health and life", Routes.Recording, go, Modifier.weight(1f))
-            PortraitCard("Environment", "places and context", Routes.Memories, go, Modifier.weight(1f))
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PortraitCard("Identity memory", "who you are", Routes.Memories, go, Modifier.weight(1f))
-            PortraitCard("Expression", "how you speak", Routes.Memories, go, Modifier.weight(1f))
-        }
-        RmDivider()
-        Text("Today", style = MaterialTheme.typography.titleLarge)
-        Text("话题示例", style = MaterialTheme.typography.bodyMedium, color = RememberMeColors.Muted)
-        visibleTopics.filter { portraitQuery.isBlank() || it.first.contains(portraitQuery, ignoreCase = true) }.forEachIndexed { index, (topic, route) ->
-            Row(Modifier.fillMaxWidth().clickable { go(route) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("0${index + 1}", color = RememberMeColors.Clay, modifier = Modifier.width(34.dp))
-                Text(topic, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-                Text(">", color = RememberMeColors.Moss, style = MaterialTheme.typography.titleLarge)
-            }
-            if (index < visibleTopics.lastIndex) RmDivider()
-        }
-        if (portraitQuery.isNotBlank() && visibleTopics.none { it.first.contains(portraitQuery, ignoreCase = true) }) {
-            Text("No portraits found", color = RememberMeColors.Muted)
-        }
-      }
-      BottomTabs(Routes.Portrait, go)
-    }
-}
-
-@Composable
-private fun PortraitCard(title: String, subtitle: String, route: String, go: (String) -> Unit, modifier: Modifier) {
-    Column(modifier.clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surface)
-        .clickable { go(route) }.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RememberMeColors.Muted)
-        Text(">", color = RememberMeColors.Moss, modifier = Modifier.align(Alignment.End))
+        if (showBottomTabs) BottomTabs(Routes.Portrait, go)
     }
 }
 
 @Composable
 fun BottomTabs(selected: String, go: (String) -> Unit) {
-    val tabs = listOf("Portrait" to Routes.Portrait, "Graphs" to Routes.Graph, "Memories" to Routes.Memories, "Agents" to Routes.Agents, "Me" to Routes.Me)
-    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        tabs.forEach { (label, route) ->
-            val icon = when (route) {
-                Routes.Portrait -> R.drawable.hg_home
-                Routes.Graph -> R.drawable.hg_chart
-                Routes.Memories -> R.drawable.hg_book
-                Routes.Agents -> R.drawable.hg_brain
-                else -> R.drawable.hg_user
-            }
-            val tint = if (selected == route) RememberMeColors.Clay else RememberMeColors.Muted
-            TextButton(
-                onClick = { go(route) },
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 1.dp, vertical = 6.dp)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    HugeIcon(icon, label, Modifier.size(16.dp), tint)
-                    Text(label, color = tint, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
+    val tabs = listOf("今天" to Routes.Portrait, "图谱" to Routes.Graph, "档案" to Routes.Memories, "助手" to Routes.Agents, "我的" to Routes.Me)
+    val selectedIndex = tabs.indexOfFirst { it.second == selected }
+    BoxWithConstraints(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
+        .clip(RoundedCornerShape(30.dp)).background(MaterialTheme.colorScheme.surface)
+        .border(1.dp, RememberMeColors.Line, RoundedCornerShape(30.dp)).padding(6.dp)) {
+        val cellWidth = maxWidth / tabs.size
+        val indicatorX by animateDpAsState(cellWidth * selectedIndex.coerceAtLeast(0),
+            tween(320, easing = FastOutSlowInEasing), label = "navigation position")
+        if (selectedIndex >= 0) Box(Modifier.matchParentSize().padding(start = 0.dp)) {
+            Box(Modifier.offset(x = indicatorX).width(cellWidth).fillMaxHeight()
+                .clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.primary))
+        }
+        Row(Modifier.fillMaxWidth()) {
+            tabs.forEach { (label, route) ->
+                val active = selected == route
+                val tint by animateColorAsState(if (active) MaterialTheme.colorScheme.onPrimary else RememberMeColors.Muted,
+                    tween(180), label = "navigation color")
+                val lift by animateDpAsState(if (active) (-2).dp else 0.dp, tween(250), label = "navigation icon")
+                val icon = when (route) {
+                    Routes.Portrait -> R.drawable.hg_home
+                    Routes.Graph -> R.drawable.hg_chart
+                    Routes.Memories -> R.drawable.hg_book
+                    Routes.Agents -> R.drawable.hg_brain
+                    else -> R.drawable.hg_user
+                }
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(24.dp))
+                    .selectable(selected = active, role = Role.Tab, onClick = { go(route) })
+                    .heightIn(min = 60.dp).padding(horizontal = 1.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    HugeIcon(icon, null, Modifier.size(22.dp).offset(y = lift), tint)
+                    Text(label, color = tint, style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium)
                 }
             }
         }
@@ -188,11 +182,11 @@ private fun BrandHeader(slogan: String) {
 }
 
 @Composable
-fun AgentsDashboardScreen(go: (String) -> Unit) {
+fun AgentsDashboardScreen(go: (String) -> Unit, showBottomTabs: Boolean = true) {
     var showDetails by remember { mutableStateOf(false) }
     var controllerMessage by remember { mutableStateOf("") }
     var controllerAsked by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Forest).statusBarsPadding()) {
       Column(
         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -223,7 +217,7 @@ fun AgentsDashboardScreen(go: (String) -> Unit) {
             Text("Evidence stays linked to the original recording. Nothing is added to your portrait without your confirmation.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
         }
       }
-      BottomTabs(Routes.Agents, go)
+      if (showBottomTabs) BottomTabs(Routes.Agents, go)
     }
 }
 
@@ -252,7 +246,7 @@ private fun AgentCard(name: String, description: String, status: String, color: 
 }
 
 @Composable
-fun MeDashboardScreen(go: (String) -> Unit, recordings: List<me.remember.app.data.repository.AudioRecording>) {
+fun MeDashboardScreen(go: (String) -> Unit, recordings: List<me.remember.app.data.repository.AudioRecording>, showBottomTabs: Boolean = true) {
     var localOnly by remember { mutableStateOf(true) }
     var notifications by remember { mutableStateOf(false) }
     var darkMode by remember { mutableStateOf(false) }
@@ -262,7 +256,7 @@ fun MeDashboardScreen(go: (String) -> Unit, recordings: List<me.remember.app.dat
     val todayRecords = recordings.filter { recording ->
         runCatching { java.time.Instant.parse(recording.createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate() == today }.getOrDefault(false)
     }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Coast).statusBarsPadding()) {
       Column(
         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -296,7 +290,7 @@ fun MeDashboardScreen(go: (String) -> Unit, recordings: List<me.remember.app.dat
         }
         RmDivider()
       }
-      BottomTabs(Routes.Me, go)
+      if (showBottomTabs) BottomTabs(Routes.Me, go)
     }
 }
 
@@ -363,8 +357,8 @@ fun SimpleSectionScreen(title: String, subtitle: String, back: () -> Unit) {
 }
 
 @Composable
-fun GraphDashboardScreen(go: (String) -> Unit) {
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+fun GraphDashboardScreen(go: (String) -> Unit, showBottomTabs: Boolean = true) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Lake).statusBarsPadding()) {
       Column(
         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -385,7 +379,7 @@ fun GraphDashboardScreen(go: (String) -> Unit) {
         Text("Events become memories. Memories reveal moods, values and expression patterns. The graph keeps each connection traceable to its evidence.", color = RememberMeColors.Muted, style = MaterialTheme.typography.bodyMedium)
         RelationshipImageGraph()
       }
-      BottomTabs(Routes.Graph, go)
+      if (showBottomTabs) BottomTabs(Routes.Graph, go)
     }
 }
 
@@ -393,7 +387,7 @@ fun GraphDashboardScreen(go: (String) -> Unit) {
 fun MemoryDashboardScreen(memoryRepository: MemoryRepository, go: (String) -> Unit) {
     val state by memoryRepository.memories().collectAsState(initial = Loadable.Loading)
     val memories = (state as? Loadable.Content)?.value.orEmpty()
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Lake).statusBarsPadding()) {
       Column(
         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -568,7 +562,7 @@ private fun TwinLegacyScreen(back: () -> Unit, go: (String) -> Unit) {
     var renameOpen by remember { mutableStateOf(false) }
     var renameIndex by remember { mutableIntStateOf(-1) }
     var renameText by remember { mutableStateOf("") }
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Coast).statusBarsPadding()) {
       Row(Modifier.weight(1f).fillMaxWidth()) {
         Column(Modifier.width(172.dp).fillMaxHeight().padding(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true, leadingIcon = { HugeIcon(R.drawable.hg_search, "Search", Modifier.size(16.dp)) }, placeholder = { Text("Search", style = MaterialTheme.typography.labelSmall) })
