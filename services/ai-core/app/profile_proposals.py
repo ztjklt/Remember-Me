@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from .errors import AIOutputInvalid
 from .providers.ollama import DOMAINS
 
-PROMPT_VERSION = 'profile-proposals-evidence-v2'
+PROMPT_VERSION = 'profile-proposals-evidence-v3'
 Domain = Literal['IDENTITY','EPISODIC_MEMORY','RELATIONSHIPS','PREFERENCES','VALUES_BELIEFS','DECISION_PATTERNS','EXPRESSION']
 
 class Material(BaseModel):
@@ -39,7 +39,7 @@ class ProfileProposalOutput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     candidates: list[ProfileCandidate] = Field(max_length=8)
     model_version: str = Field(min_length=1,max_length=128)
-    prompt_version: Literal['profile-proposals-evidence-v2'] = PROMPT_VERSION
+    prompt_version: Literal['profile-proposals-evidence-v3'] = PROMPT_VERSION
 
 class ProfileSelection(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -57,7 +57,11 @@ class ProfileProposalProvider:
                   '单次事件不代表稳定习惯；重复抄录不算独立观察；矛盾证据用 counter_evidence_ids。候选需要人工确认。'
                   '最多8项，不得生成状态或置信度。只返回 JSON 对象 candidates，数组项使用 domain、statement、context、evidence_ids、counter_evidence_ids、kind。'
                   'domain 只允许 ' + ','.join(DOMAINS) + '；kind 只允许 trait 或 habit。'
-                  '优先最多3项充分有据的候选，不要凑数；没有反例时counter_evidence_ids是空数组。'
+                  '本次只提议最多3项充分有据的候选，不要凑数；没有反例时counter_evidence_ids是空数组。'
+                  'domain是知识领域，kind是特征类型，两者不能混淆。HABITS、HABIT、PERSONALITY都不是合法domain，禁止输出。'
+                  '行为习惯若适用可归DECISION_PATTERNS，口味倾向归PREFERENCES；kind仍单独填habit或trait。'
+                  '每项结论严格限定到证据，不能从愿意回答推断关系亲密，不能从一句安全口号推断稳定习惯。'
+                  '输出前检查每项domain均属于上述七个英文值；无法归类或依据不足的不要提议。'
                   '引用只能逐字使用输入中的短编号，例如s1，不可自造编号。严格按此JSON结构输出：'
                   + json.dumps(ProfileSelection.model_json_schema(), ensure_ascii=False))
         handles = {f's{i}':m.evidence_id for i,m in enumerate(payload.materials,1)}

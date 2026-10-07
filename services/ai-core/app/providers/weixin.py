@@ -180,6 +180,12 @@ class WeixinTwinProvider(WeixinChat):
             '\n原话路由：若一个SUBJECT证据能直接回答，选择ORIGINAL，evidence_ids只能有一个，'
             'answer填空字符串；程序会逐字返回选中的完整excerpt。不得选择超过200字符的原话，'
             '需要概括长片段时选择SIMULATION。不要用改写句冒充原话。'
+            '仅提到问题、有人询问、以后再回答、暂时未说原因的片段，并没有回答问题，不能选为ORIGINAL。'
+            '如果可见材料没有问题所需的原因、时间或事实，必须UNKNOWN，不用相似主题或口号补出因果。'
+            '若证据明确说尚未报名或未确定计划，回答尚未完成或未确定，而不是把这个已知否定当UNKNOWN。'
+            'SIMULATION必须使用讲述者这一第三人称称呼，不能用我、我们冒充本人，也不要猜测性别。'
+            '区分本人亲历与转述：本人说某人告诉自己的事，必须保留据讲述者转述及原消息来源。'
+            '只回答当前问题，避免附带不需要的年份或推断；UNKNOWN仅返回现有记录还不足以确定。'
         )
         raw, version = self.complete(system, payload.model_dump())
         try:

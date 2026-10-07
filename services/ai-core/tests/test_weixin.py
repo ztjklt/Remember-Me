@@ -66,7 +66,7 @@ def test_profile_schema_rejects_status_confidence_and_unknown_counter_evidence()
             return {'candidates':[candidate]}, 'actual'
     provider=ProfileProposalProvider(Chat())
     payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'每天散步'}])
-    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v2'
+    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v3'
     candidate['confidence']=.9
     with pytest.raises(AIOutputInvalid):
         provider.propose(payload)
@@ -85,7 +85,7 @@ def test_proposal_http_worker_has_fixed_versions_and_bounded_input():
     with TestClient(create_app(Settings(_env_file=None), profile_provider=ProfileProposalProvider(Chat()))) as client:
         response=client.post('/profile-proposals',json={'materials':[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'原话'}]})
         assert response.status_code==200
-        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v2'}
+        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v3'}
         assert client.post('/profile-proposals',json={'materials':[],'prompt_version':'invented'}).status_code==422
 
 
