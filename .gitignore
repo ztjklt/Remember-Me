@@ -21,6 +21,10 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+/agent-loop-tests.log
+/services/backend/var/
+/services/ai-core/var/
+/.superpowers/
 
 # Downloaded sherpa-onnx model weights are too large for normal GitHub blobs.
 apps/android/app/src/main/assets/paraformer/model.int8.onnx

@@ -193,12 +193,10 @@ def test_another_actors_grant_is_never_usable(seeded, other_actor, verify, sessi
         verify(theirs.consent_id, scope=ConsentScope.VOICE)
     assert error.value.code == "CONSENT_NOT_FOUND"
 
-    # The actor that granted it can use it, which is what makes the refusal
-    # above about the actor rather than about the record.
-    assert (
-        verify(theirs.consent_id, scope=ConsentScope.VOICE, actor_id=other_actor).consent_id
-        == theirs.consent_id
-    )
+    # A legacy self-granted record no longer creates ownership.
+    from app.access import Hidden
+    with pytest.raises(Hidden):
+        verify(theirs.consent_id, scope=ConsentScope.VOICE, actor_id=other_actor)
 
 
 def test_another_actors_grant_answers_exactly_like_one_that_does_not_exist(

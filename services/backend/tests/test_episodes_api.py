@@ -456,21 +456,10 @@ def test_each_actor_reads_only_the_episodes_it_captured(client, seeded, auth, ot
         "/api/v1/consents",
         headers=other["headers"],
         json={"subject_id": seeded.subject_id, "scope": "RECORDING"},
-    ).json()
-    theirs = capture(
-        client,
-        other["headers"],
-        seeded,
-        recording_consent_id=theirs_consent["consent_id"],
-    ).json()["episode_id"]
-
-    assert mine != theirs
-    for reader, visible, hidden in (
-        (auth, mine, theirs),
-        (other["headers"], theirs, mine),
-    ):
-        assert client.get(f"/api/v1/episodes/{visible}", headers=reader).status_code == 200
-        assert client.get(f"/api/v1/episodes/{hidden}", headers=reader).status_code == 404
+    )
+    assert theirs_consent.status_code == 404
+    assert client.get(f'/api/v1/episodes/{mine}', headers=auth).status_code == 200
+    assert client.get(f'/api/v1/episodes/{mine}', headers=other['headers']).status_code == 404
 
 
 # The audio is written before the Episode is committed, so a request that fails to

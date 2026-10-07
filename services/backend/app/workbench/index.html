@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+<link rel="icon" href="mark.svg"><title>勿忘我 · 真实记忆工作台</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body><header><img src="mark.svg" alt="勿忘我" width="44" height="44"><div><strong>勿忘我</strong><small>让经历留下，也让变化被理解</small></div><button id="logout" hidden>退出身份</button></header>
+<main><section id="login"><p class="eyebrow">本机真实操作台</p><h1>从一段真实的讲述开始。</h1><p>使用本机创建的身份凭据进入。记录者与读者请使用两个独立浏览器会话；身份由服务端验证。</p><label>身份凭据<input id="token" type="password" autocomplete="off" placeholder="粘贴本机身份凭据"></label><button id="enter" class="primary">进入我的空间</button><p class="muted">凭据只保存在当前页面内存，刷新或退出后需重新输入。这里不会填充演示记忆。</p></section>
+<section id="workspace" hidden><div class="topline"><div><p id="identity" class="eyebrow"></p><h1 id="title">我的记忆</h1></div><label>当前空间<select id="space"></select></label></div><p id="capabilities" class="muted"></p>
+<nav aria-label="主导航"><button data-tab="today" aria-current="page">今天</button><button data-tab="archive">故事</button><button data-tab="portrait">人物</button><button data-tab="dialogue">对话</button><button data-tab="sharing">授权与待答</button></nav>
+<section id="today" class="page"><h2>把想说的话，慢慢说出来。</h2><p id="captureContext">可以从一件小事开始。原音先保存在本机，文字经你核对后才交给云端整理。</p>
+<div id="capture" class="surface"><label>本次讲述方式<select id="captureMode"><option value="normal">新故事</option><option value="supplement">补充旧故事</option><option value="correction">纠正说错的内容</option><option value="change">记录后来发生的变化</option></select></label>
+<div id="revisionTarget" hidden><label>关联哪条旧记忆<select id="targetMemory"></select></label><label>变化发生的大致时间<input id="timeText" placeholder="例如：2024 年以后／后来，具体时间不确定"></label></div>
+<p id="recordState" role="status">尚未录音</p><meter id="volume" min="0" max="1" value="0" aria-label="实际麦克风音量"></meter>
+<div class="actions"><button id="record" class="primary">开始录音</button><button id="pause" hidden>暂停</button><button id="finish" hidden>完成并保存</button></div>
+<label class="file">或导入一段本人讲述的音频<input id="audioFile" type="file" accept="audio/*"></label>
+<audio id="capturePreview" controls hidden aria-label="刚录制的原音"></audio>
+<label><input id="ownSpeech" type="checkbox"> 这是我本人的讲述，我同意保存原音并在本机转写</label><button id="upload" disabled>保存并开始本机转写</button><button id="saveLocal" hidden>下载尚未上传的原音</button></div>
+<section id="suggestion"></section><h2>最近的故事</h2><div id="recent"></div></section>
+<section id="archive" class="page" hidden><h2>每段记忆，都有来处。</h2><label>查找故事<input id="search" type="search" placeholder="搜索核对文字与记忆内容"></label><div id="stories"></div><h2>待确认的修订</h2><div id="revisions"></div><h2>校准记录</h2><div id="calibrations"></div></section>
+<section id="portrait" class="page" hidden><h2>从这些故事，慢慢认识一个人。</h2><p>展示范围跟随授权。系统整理不是稳定人格判断，每条内容都能回到故事。</p><div id="portraitViews"></div></section>
+<section id="dialogue" class="page" hidden><h2>有依据地回答，也允许不知道。</h2><label>想了解什么<textarea id="question" rows="3" maxlength="1000" placeholder="例如：那次为什么选择离家近的工作？"></textarea></label><label><input id="cloudAsk" type="checkbox"> 我同意将这个问题和已获授权的相关文字交给云端模型</label><div class="actions"><button id="ask" class="primary">依据记录回答</button><button id="requestQuestion">请本人补充这个问题</button></div><div id="answer" aria-live="polite"></div></section>
+<section id="sharing" class="page" hidden><h2>谁能看见，由你决定。</h2><p>每次分享包含选定故事的整段原音、完整核对文字及其记忆。新故事不会自动分享。</p><div id="grantForm" class="surface"><label>故事<select id="grantEpisode"></select></label><label>读者身份 ID<input id="readerId" autocomplete="off"></label><label><input id="shareAudio" type="checkbox"> 我确认分享这段故事的完整原音和文字</label><label><input id="shareCloud" type="checkbox"> 同意读者将这段文字用于云端问答</label><button id="grant" class="primary">授权这个故事</button></div><div id="grants"></div><h2>待答问题</h2><div id="requests"></div></section>
+</section></main><aside id="notice" role="status" aria-live="polite" hidden></aside>
+<dialog id="reviewDialog"><form method="dialog"><button class="close" aria-label="关闭">关闭</button></form><h2>核对后，再整理</h2><p>原音和机器转写会保留。只有按下确认，下面的文字才会发送到云端模型。</p><label>确认文字<textarea id="reviewText" rows="10"></textarea></label><button id="confirmReview" class="primary">确认文字并授权云端整理</button></dialog>
+<dialog id="detailDialog"><form method="dialog"><button class="close">关闭</button></form><div id="detail"></div></dialog>
+</body></html>

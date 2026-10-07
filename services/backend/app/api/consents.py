@@ -21,11 +21,9 @@ A grant is attributed as well as scoped: the granting Actor comes from the
 credential, and every later read, use, and revocation of that grant is scoped
 back to the same Actor. A consent belonging to another Actor is answered exactly
 as one that does not exist, so no response confirms that another Actor's grant
-exists. Granting is deliberately *not* restricted to a subset of Actors — in
-Phase 1 a grant is the only way authority over a subject's record is acquired,
-and the subject-to-actor relationship is not modeled yet, so narrowing who may
-grant would leave no way to obtain the authority the rest of this file enforces
-(ADR-0001 D7).
+exists. Granting now requires the Subject's explicitly mapped owner. A legacy
+consent alone cannot create ownership. Reader story grants are separate resources
+and never confer capture or voice-cloning permission.
 """
 
 from datetime import datetime
@@ -116,6 +114,8 @@ def grant_consent(
     so a grant always names who made it.
     """
     SubjectRepository(session).require(payload.subject_id)
+    from ..access import require_owner
+    require_owner(session, payload.subject_id, actor.actor_id)
     consent = ConsentRepository(session).grant(
         subject_id=payload.subject_id,
         granted_by_actor_id=actor.actor_id,

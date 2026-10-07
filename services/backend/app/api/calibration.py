@@ -53,7 +53,7 @@ def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[
     snapshot = []
     for identifier in sorted(set(memory_ids)):
         item = session.get(MemoryItem, identifier)
-        if item is None or item.deleted_at is not None:
+        if item is None or item.deleted_at is not None or item.review_state != 'active':
             return None
         episode = session.get(Episode, item.episode_id)
         if episode is None or episode.subject_id != subject_id:

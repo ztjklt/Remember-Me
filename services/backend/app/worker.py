@@ -428,6 +428,7 @@ class ProcessingWorker:
         metadata = episode.capture_metadata or {}
         PersonModelRepository(session).rebuild(
             episode.subject_id,
+            include_episode_id=episode.episode_id,
             answered_question_id=metadata.get("question_id"),
         )
         invalidate_answers(session, self.object_store, episode.subject_id)

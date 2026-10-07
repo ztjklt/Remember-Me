@@ -19,6 +19,7 @@ from ..retrieval import EmbeddingUnavailable, retrieve
 from ..security import current_actor
 from ..twin_client import TwinUnavailable
 from ..stt import SttProvider
+from ..access import visible_episodes, is_owner, require_cloud, source_basis, publication_lock
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["twin"])
 
@@ -31,6 +32,11 @@ class TwinNotFound(AppError):
 class TwinFailed(AppError):
     code = "TWIN_UNAVAILABLE"
     http_status = 503
+
+
+class SourceChanged(AppError):
+    code = 'SOURCE_CHANGED'
+    http_status = 409
 
 
 class TwinQuestion(BaseModel):
@@ -59,6 +65,8 @@ async def transcribe_query(subject_id: str, request: Request,
 
 
 def require_subject(session: Session, subject_id: str, actor: Actor) -> None:
+    from ..access import require_owner
+    require_owner(session, subject_id, actor.actor_id)
     grant = session.scalar(select(Consent).where(
         Consent.subject_id == subject_id, Consent.granted_by_actor_id == actor.actor_id,
         Consent.scope == str(ConsentScope.RECORDING), Consent.status == "granted",
@@ -86,34 +94,52 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
 @router.get("/memory-search")
 def search_memories(subject_id: str, q: str, request: Request,
                     actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
-    require_subject(session, subject_id, actor)
+    actor_id = actor.actor_id
+    publication_lock(session, subject_id)
+    ids = visible_episodes(session, subject_id, actor.actor_id)
+    basis = source_basis(session, subject_id)
+    reader = not is_owner(session, subject_id, actor_id)
+    session.commit()
     if not q.strip() or len(q) > 1000:
         return {"items": []}
     try:
-        items = retrieve(session, subject_id, q.strip(), request.app.state.embedding_encoder)
+        items = retrieve(session, subject_id, q.strip(), request.app.state.embedding_encoder,
+                         episode_ids=ids, reader=reader)
         session.commit()
     except EmbeddingUnavailable as exc:
         raise TwinFailed(str(exc)) from exc
+    publication_lock(session, subject_id)
+    if basis != source_basis(session, subject_id):
+        raise SourceChanged('资料或授权已变化，请重新搜索。')
+    visible_episodes(session, subject_id, actor_id)
+    session.commit()
     return {"items": items}
 
 
 @router.post("/twin/answers")
 def ask(subject_id: str, payload: TwinQuestion, request: Request,
         actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
-    require_subject(session, subject_id, actor)
-    ConsentRepository(session).require_active(payload.cloud_consent_id, subject_id=subject_id,
-                                               scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
+    actor_id = actor.actor_id
+    publication_lock(session, subject_id)
+    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    ids = visible_episodes(session, subject_id, actor_id, cloud=True)
+    reader = not is_owner(session, subject_id, actor_id)
+    basis = source_basis(session, subject_id)
+    revision = session.get(ModelRevision, subject_id)
+    basis_version = revision.version if revision else 0
+    session.commit()
     question = payload.question.strip()
     if not question:
         raise TwinNotFound("Question is empty")
     try:
-        candidates = retrieve(session, subject_id, question, request.app.state.embedding_encoder)
+        candidates = retrieve(session, subject_id, question, request.app.state.embedding_encoder,
+                              episode_ids=ids, reader=reader)
     except EmbeddingUnavailable as exc:
         raise TwinFailed(str(exc)) from exc
     candidate_ids = {row["memory_item_id"] for row in candidates}
     unresolved = set()
-    for trait in session.scalars(select(PersonTrait).where(
-        PersonTrait.subject_id == subject_id, PersonTrait.status == "unresolved")):
+    for trait in ([] if reader else session.scalars(select(PersonTrait).where(
+        PersonTrait.subject_id == subject_id, PersonTrait.status == "unresolved"))):
         unresolved.update(set(trait.memory_item_ids or []).intersection(candidate_ids))
     limited = [{"memory_item_id": row["memory_item_id"], "statement": row["statement"],
                 "domain": row["domain"], "unresolved": row["memory_item_id"] in unresolved,
@@ -125,6 +151,10 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     # Retrieval may update cached vectors. Release its transaction before the
     # network call so revocation can proceed while DeepSeek is working.
     session.commit()
+    publication_lock(session, subject_id)
+    if basis != source_basis(session, subject_id):
+        raise SourceChanged('资料或授权已变化，请重新提问。')
+    session.commit()
     if not limited:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
@@ -135,6 +165,10 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
             raise TwinFailed(str(exc)) from exc
+    publication_lock(session, subject_id)
+    if basis != source_basis(session, subject_id):
+        raise SourceChanged('资料或授权已变化，请重新提问。')
+    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
     valid = {source["evidence_id"]: (source, row) for row in candidates for source in row["evidence"]}
     kind = result.get("response_type")
     cited = result.get("evidence_ids")
@@ -167,17 +201,12 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("模型给出的原话无法在录音转写中定位。")
     if kind == "SIMULATION" and any(valid[identifier][1]["memory_item_id"] in unresolved for identifier in cited):
         kind, content, cited, confidence = "UNKNOWN", "现有记录有不同说法，还不能确定。", [], 0
-    session.commit()
-    session.expire_all()
-    ConsentRepository(session).require_active(payload.cloud_consent_id, subject_id=subject_id,
-                                               scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
-    revision = session.get(ModelRevision, subject_id)
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
-                     person_model_version=revision.version if revision else 0,
+                     person_model_version=basis_version,
                      created_at=utcnow())
     session.add(row)
     session.commit()
@@ -187,7 +216,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 @router.get("/twin/answers/{answer_id}")
 def read_answer(subject_id: str, answer_id: str,
                 actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
-    require_subject(session, subject_id, actor)
+    visible_episodes(session, subject_id, actor.actor_id)
     row = session.scalar(select(TwinAnswer).where(
         TwinAnswer.answer_id == answer_id, TwinAnswer.subject_id == subject_id,
         TwinAnswer.actor_id == actor.actor_id))

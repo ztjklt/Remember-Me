@@ -9,7 +9,7 @@ from functools import lru_cache
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Episode, Evidence, GraphFact, MemoryEmbedding, MemoryItem, PersonTrait, TwinAnswer, VoiceAsset, utcnow
+from .models import Episode, Evidence, GraphFact, MemoryEmbedding, MemoryItem, PersonTrait, TwinAnswer, VoiceAsset, MemoryRevision, utcnow
 
 
 class EmbeddingUnavailable(RuntimeError):
@@ -61,15 +61,24 @@ def _lexical(question: str, content: str) -> float:
 
 
 def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEncoder,
-             limit: int = 8) -> list[dict]:
+             limit: int = 8, *, episode_ids: set[str] | None = None,
+             reader: bool = False) -> list[dict]:
     """Refresh stale vectors, then return only evidence from active memories."""
-    rows = session.execute(select(MemoryItem, Episode).join(Episode).where(
+    query = select(MemoryItem, Episode).join(Episode).where(
         Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None),
-    )).all()
-    traits = list(session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id)))
-    facts = list(session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id)))
+        Episode.status == 'ready', MemoryItem.review_state == 'active')
+    if episode_ids is not None:
+        query = query.where(Episode.episode_id.in_(episode_ids))
+    if reader:
+        altered = select(MemoryItem.episode_id).where(MemoryItem.review_state != 'active')
+        query = query.where(Episode.episode_id.not_in(altered))
+    rows = session.execute(query).all()
+    # Reader derivation starts from visible memories only. Never reuse an owner
+    # aggregate: even a trait attached to one public memory may encode a secret.
+    traits = [] if reader else list(session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id)))
+    facts = [] if reader else list(session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id)))
     live = {item.memory_item_id for item, _ in rows}
-    for stale in session.scalars(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id)):
+    for stale in ([] if reader else session.scalars(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id))):
         if stale.memory_item_id not in live:
             session.delete(stale)
     pending = []
@@ -113,10 +122,18 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
     # A top-k alone leaks unrelated memories on a sparse Subject. Keep only
     # candidates reasonably close to the question and to the best match.
     floor = max(0.35, ranked[0][0] - 0.12)
+    changes = {r.target_memory_id for r in session.scalars(select(MemoryRevision).where(
+        MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed', MemoryRevision.kind == 'change'))}
+    def statement(item):
+        metadata = item.item_metadata or {}
+        suffix = '（历史记载，后来已有变化，不代表当前状态）' if item.memory_item_id in changes else ''
+        if metadata.get('relation_kind') == 'change':
+            suffix += '（变化后的记载；时间：' + str(metadata.get('time_context') or '未确定') + '）'
+        return item.content + suffix
     return [{
         "memory_item_id": item.memory_item_id,
         "episode_id": episode.episode_id,
-        "statement": item.content,
+        "statement": statement(item),
         "domain": (item.item_metadata or {}).get("domain"),
         "source_type": item.source_type,
         "traits": [f"{trait.statement}（{trait.status}）" for trait in traits

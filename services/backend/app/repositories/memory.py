@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..contracts import AICoreOutput
-from ..models import Episode, Evidence, MemoryItem
+from ..models import Episode, Evidence, MemoryItem, MemoryRevision
 
 
 class MemoryRepository:
@@ -21,6 +21,7 @@ class MemoryRepository:
 
     def store_result(self, episode: Episode, output: AICoreOutput) -> None:
         self.clear_result(episode.episode_id)
+        revision = self.session.scalar(select(MemoryRevision).where(MemoryRevision.episode_id == episode.episode_id))
 
         for source in output.evidence:
             self.session.add(
@@ -42,6 +43,7 @@ class MemoryRepository:
                     memory_item_id=f"mi_{uuid4().hex[:16]}",
                     episode_id=episode.episode_id,
                     ordinal=ordinal,
+                    review_state='pending' if revision and revision.status == 'pending' else 'active',
                     memory_type=str(item.memory_type),
                     content=item.content,
                     source_type=str(item.source_type),

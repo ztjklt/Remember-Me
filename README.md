@@ -1,5 +1,7 @@
 # Remember Me
 
+> **本地 Agent 工作台分支，2026-10-07：** 本分支实现了所有者/读者身份、故事授权、核对后整理与跨录音修订。查看[启动说明](docs/agent-loop/RUNBOOK.md)和[验证记录](docs/agent-loop/ACCEPTANCE.md)。真实云端模型验收仍待密钥配置；本分支不代表手机或生产发布验收。
+
 > **2026-09-27 双端集成：** Android 的 #78／#79 和随后提交的 #81 界面与 iOS 的 #76／#77／#80 已接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。
 
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.

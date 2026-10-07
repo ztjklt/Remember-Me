@@ -11,7 +11,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from . import __version__
 from .ai_core import build_ai_client
-from .api import consents, episodes, health, session, person_model, pairing, twin, voice, calibration
+from .api import consents, episodes, health, session, person_model, pairing, twin, voice, calibration, workbench
 from .config import Settings, get_settings
 from .db import Database
 from .errors import REQUEST_INVALID, AppError
@@ -165,6 +165,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(twin.router)
     app.include_router(voice.router)
     app.include_router(calibration.router)
+    app.include_router(workbench.router)
+    if settings.enable_workbench:
+        from pathlib import Path
+        from fastapi.staticfiles import StaticFiles
+        from starlette.middleware.trustedhost import TrustedHostMiddleware
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]', 'testserver'])
+        app.mount('/workbench', StaticFiles(directory=Path(__file__).parent / 'workbench', html=True), name='workbench')
     return app
 
 

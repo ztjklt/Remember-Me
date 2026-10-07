@@ -169,6 +169,7 @@ class Subject(Base):
 
     subject_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    owner_actor_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
@@ -429,6 +430,41 @@ class MemoryItem(Base):
         DateTime(timezone=True), nullable=False, default=utcnow
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    review_state: Mapped[str] = mapped_column(String(16), nullable=False, default="active", server_default="active")
+
+
+class StoryGrant(Base):
+    __tablename__ = "story_grants"
+    grant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.episode_id"), nullable=False, index=True)
+    reader_actor_id: Mapped[str] = mapped_column(ForeignKey("actors.actor_id"), nullable=False, index=True)
+    cloud_processing_allowed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MemoryRevision(Base):
+    __tablename__ = "memory_revisions"
+    revision_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.subject_id"), nullable=False)
+    target_memory_id: Mapped[str] = mapped_column(ForeignKey("memory_items.memory_item_id"), nullable=False)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.episode_id"), nullable=False, unique=True)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    time_text: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class QuestionRequest(Base):
+    __tablename__ = "question_requests"
+    request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.subject_id"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("actors.actor_id"), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    answer_episode_id: Mapped[str | None] = mapped_column(ForeignKey("episodes.episode_id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 PERSON_DOMAINS = (

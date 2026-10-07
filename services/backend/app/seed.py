@@ -41,6 +41,7 @@ def seed_development_data(
     )
     session.add_all([subject, actor])
     session.flush()
+    subject.owner_actor_id = actor.actor_id
 
     consent = Consent(
         consent_id=f"consent_{uuid4().hex[:16]}",
