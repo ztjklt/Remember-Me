@@ -31,6 +31,10 @@ internal fun eraseRecording(state: JSONObject, episodeId: String): JSONObject = 
         }))
     }
     cleanTraits(this)
+    optJSONObject("job")?.apply { remove("traits"); remove("habits") }
+    put("habits", JSONArray(optJSONArray("habits")?.objects().orEmpty().filter {
+        it.getJSONArray("evidence_ids").strings().none(removed::contains)
+    }))
     getJSONArray("history").objects().forEach(::cleanTraits)
     val affectedJobs = affected.map { it.getString("calibration_id") }.toSet() + episodeId
     put("cancelled_jobs", JSONArray(optJSONArray("cancelled_jobs")?.objects().orEmpty().map {

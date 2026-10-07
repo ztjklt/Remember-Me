@@ -20,6 +20,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     private val changes = MutableStateFlow(0L)
     private val mutex = Mutex()
     private val inference = LocalInference(client)
+    private val psychology = PsychologicalLearner(client)
     private fun emptyJournal() = JSONObject().put("version", 1).put("subject_id", newId("local_"))
         .put("granted", false).put("revision", 0).put("model_version", "local-unconfigured")
         .put("materials", JSONArray()).put("traits", JSONArray()).put("history", JSONArray())
@@ -43,6 +44,10 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     private fun persist(next: JSONObject) { store.write(next); state = next.copyJson(); changes.value++ }
     private fun materials() = JSONArray(state.getJSONArray("materials").objects().filter { it.getString("evidence_id") !in withdrawn() })
     private fun withdrawn() = state.getJSONArray("withdrawn_evidence").strings().toSet()
+    private fun activeHabits() = JSONArray(state.optJSONArray("habits")?.objects().orEmpty().filter { h ->
+        val allowed = materials().objects().map { it.getString("evidence_id") }.toSet()
+        h.getJSONArray("evidence_ids").strings().all(allowed::contains)
+    })
     private fun model() = JSONObject().put("subject_id", state.getString("subject_id")).put("revision", state.getInt("revision"))
         .put("model_version", state.getString("model_version")).put("schema_version", "agent-loop-v0.2-experimental")
         .put("traits", JSONArray(state.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
@@ -182,7 +187,10 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 next.getJSONArray("history").put(model())
                 next.put("revision", next.getInt("revision") + 1)
                 publishEpisode(next, job, "PENDING")
-            } else next.optJSONArray("cancelled_jobs")?.put(job) ?: next.put("cancelled_jobs", JSONArray().put(job))
+            } else {
+                job.remove("traits"); job.remove("habits")
+                next.optJSONArray("cancelled_jobs")?.put(job) ?: next.put("cancelled_jobs", JSONArray().put(job))
+            }
         }
         next.remove("job")
         persist(next)
@@ -198,7 +206,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         persist(state.copyJson().put("job", job))
         try {
             if (job.getString("kind") == "ASK") {
-                val answer = inference.answer(job.getString("question"), model(), materials(), config.language)
+                val answer = inference.answer(job.getString("question"), model(), materials(), config.language, activeHabits())
                 val cal = JSONObject().put("calibration_id", job.getString("id")).put("question", job.getString("question"))
                     .put("locked_answer", answer).put("locked_at", now()).put("lock_digest", digest(answer.toString()))
                     .put("state", "LOCKED").put("resulting_revision", JSONObject.NULL)
@@ -214,11 +222,19 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 persist(state.copyJson().put("job", job)) // Checkpoint ASR before the language request.
             }
             val input = JSONArray(materials().objects().filter { it.getString("evidence_id") != job.getJSONObject("evidence").getString("evidence_id") }).put(job.getJSONObject("evidence"))
-            val traits = inference.understand(model(), input, config.language)
+            if (!job.has("traits")) {
+                job.put("traits", inference.understand(model(), input, config.language))
+                persist(state.copyJson().put("job", job))
+            }
+            if (!job.has("habits")) {
+                job.put("habits", psychology.learn(job.getJSONArray("traits"), input, activeHabits(), config.language))
+                persist(state.copyJson().put("job", job))
+            }
             val next = state.copyJson()
             next.getJSONArray("history").put(model())
             publishMaterial(next, job)
-            next.put("traits", traits).put("revision", state.getInt("revision") + 1).put("model_version", config.language.model).remove("job")
+            next.put("traits", job.getJSONArray("traits")).put("habits", job.getJSONArray("habits"))
+                .put("revision", state.getInt("revision") + 1).put("model_version", config.language.model).remove("job")
             var result = JSONObject()
             if (job.getString("kind") == "CORRECT") {
                 result = next.getJSONArray("calibrations").objects().first { it.getString("calibration_id") == job.getString("id") }
@@ -238,7 +254,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     }
     private fun publishEpisode(next: JSONObject, job: JSONObject, status: String) {
         next.put("episodes", JSONArray(next.getJSONArray("episodes").objects().filter { it.getString("id") != job.getString("id") })
-            .put(job.copyJson().apply { remove("evidence"); put("understanding_status", status) }))
+            .put(job.copyJson().apply { remove("evidence"); remove("traits"); remove("habits"); put("understanding_status", status) }))
     }
     private fun calibration(id: String) = state.getJSONArray("calibrations").objects().first {
         it.getString("calibration_id") == id

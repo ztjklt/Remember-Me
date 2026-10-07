@@ -16,7 +16,7 @@
     <string name="language_url">文字接口地址</string>
     <string name="language_model_name">文字模型名称</string>
     <string name="language_key">文字访问密钥</string>
-    <string name="local_consent">同意将本人单人录音及相关文字发给以上模型处理，并在手机保存材料和校正。</string>
+    <string name="local_consent">同意将本人单人录音及相关文字发给以上模型，提取画像和情境化心理习惯候选，并在手机保存材料和校正。</string>
     <string name="local_save">保存并启用手机模式</string>
     <string name="language_test">测试文字模型</string>
     <string name="speech_test">用最新录音测试语音模型</string>
@@ -27,7 +27,7 @@
     <string name="cancel_task">取消任务</string>
     <string name="back_recording">← 返回录音</string>
     <string name="process_recording">处理这段录音</string>
-    <string name="local_capture_notice">保存原文，调用文字模型更新理解。录音仍保留在手机。</string>
+    <string name="local_capture_notice">保存原文，依次更新画像和心理习惯候选。录音仍保留在手机，可查看依据并校正。</string>
     <string name="local_configure_first">请先配置模型并确认处理同意。</string>
     <string name="local_capture_start">开始转写并更新理解</string>
     <string name="capture_running">正在处理录音</string>
@@ -150,4 +150,9 @@
     <string name="portrait_correct">去提问或校正画像</string>
     <string name="portrait_graph_limit">图中预览前 6 条结论和最多 12 条证据，下面的领域列表保留全部关联。</string>
     <string name="portrait_graph_description">S：本人；E：原文或校正；P：画像结论；H：连接本人、结论和多个证据的超边。</string>
+    <string name="psychology_title">心理习惯候选</string>
+    <string name="psychology_notice">这些是有原文依据的情境化候选，尚未验证，不是心理诊断或固定人格。可通过提问和本人校正更新。</string>
+    <string name="psychology_empty">目前没有足够的心理或行为材料，继续记录具体经历即可。</string>
+    <string name="psychology_repeated">重复情境候选 · %1$d 段不同原文支持</string>
+    <string name="psychology_single">情境化观察 · %1$d 段不同原文支持；一次观察或本人说明不能证明稳定习惯。</string>
 </resources>

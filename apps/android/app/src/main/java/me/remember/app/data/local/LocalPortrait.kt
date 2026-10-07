@@ -5,7 +5,10 @@ import org.json.JSONObject
 data class PortraitSource(val id: String, val excerpt: String, val sourceType: String, val episodeId: String?)
 data class PortraitLink(val id: String, val domain: String, val statement: String, val context: String,
     val evidenceIds: List<String>, val counterEvidenceIds: List<String>)
-data class LocalPortrait(val subjectId: String, val revision: Int, val sources: List<PortraitSource>, val links: List<PortraitLink>)
+data class PsychologyPattern(val id: String, val pattern: String, val context: String, val evidenceIds: List<String>,
+    val independentEpisodes: Int, val confidence: Double, val modelVersion: String)
+data class LocalPortrait(val subjectId: String, val revision: Int, val sources: List<PortraitSource>, val links: List<PortraitLink>,
+    val habits: List<PsychologyPattern> = emptyList())
 
 /** Hyperedge = this subject + one contextual claim + all supporting/counter sources. No inferred graph facts. */
 internal fun projectPortrait(state: JSONObject): LocalPortrait {
@@ -20,5 +23,9 @@ internal fun projectPortrait(state: JSONObject): LocalPortrait {
         support.isNotEmpty() && (support + it.getJSONArray("counter_evidence_ids").strings()).all(allowed::contains) && it.optString("status") != "SUPERSEDED"
     }.map { PortraitLink(it.getString("trait_id"), it.getString("domain"), it.getString("statement"), it.getString("context"),
         it.getJSONArray("evidence_ids").strings(), it.getJSONArray("counter_evidence_ids").strings()) }
-    return LocalPortrait(state.getString("subject_id"), state.getInt("revision"), sources, links)
+    val habits = state.optJSONArray("habits")?.objects().orEmpty().filter {
+        it.getJSONArray("evidence_ids").strings().all(allowed::contains)
+    }.map { PsychologyPattern(it.getString("habit_id"), it.getString("pattern"), it.getString("context"), it.getJSONArray("evidence_ids").strings(),
+        it.getInt("independent_episodes"), it.getDouble("confidence"), it.getString("model_version")) }
+    return LocalPortrait(state.getString("subject_id"), state.getInt("revision"), sources, links, habits)
 }

@@ -52,6 +52,21 @@ fun LocalPortraitScreen(session: LocalAgentSession, back: () -> Unit, understand
                     RmDivider()
                 }
             }
+            RmSectionHeader(stringResource(R.string.psychology_title))
+            Text(stringResource(R.string.psychology_notice))
+            if (graph.habits.isEmpty()) Text(stringResource(R.string.psychology_empty))
+            graph.habits.forEach { habit ->
+                Text(habit.pattern)
+                Text(habit.context, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(if (habit.independentEpisodes >= 2) R.string.psychology_repeated else R.string.psychology_single, habit.independentEpisodes))
+                var expanded by remember(habit.id) { mutableStateOf(false) }
+                TextButton({ expanded = !expanded }) { Text(stringResource(R.string.portrait_sources, habit.evidenceIds.size)) }
+                if (expanded) habit.evidenceIds.forEach { id -> graph.sources.firstOrNull { it.id == id }?.let {
+                    Text(stringResource(if (it.sourceType == "CALIBRATION") R.string.evidence_calibration else R.string.evidence_original))
+                    Text(it.excerpt)
+                } }
+                RmDivider()
+            }
         }
         Button(understanding, enabled = !state.busy && agent?.busy != true) { Text(stringResource(R.string.portrait_correct)) }
     }

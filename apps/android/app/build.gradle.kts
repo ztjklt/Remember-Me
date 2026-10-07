@@ -11,8 +11,8 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3-local"
+        versionCode = 5
+        versionName = "1.4-local"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

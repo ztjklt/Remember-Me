@@ -27,16 +27,34 @@ class LocalAgentEngineTest {
         var failUnderstanding = false
         var badCitation = false
         var enforceCapacity = false
+        var failPsychology = false
+        var learnHabits = false
+        var understandingCalls = 0
+        var psychologyCalls = 0
+        var lastHypotheses = JSONArray()
         override suspend fun transcribe(recording: AudioRecording, settings: LocalModelSettings): String {
             transcriptions++; return java.io.File(recording.audioPath).readText()
         }
         override suspend fun complete(prompt: String, input: JSONObject, endpoint: ModelEndpoint): JSONObject {
             if (enforceCapacity) requireLocalCapacity(input)
             val material = input.getJSONArray("materials").objects()
-            if (input.has("question")) return JSONObject().put("answerable", true)
+            if (input.optString("role") == "psychological_learner") {
+                psychologyCalls++
+                check(!failPsychology) { "Synthetic psychology failure" }
+                val last = material.lastOrNull()
+                return JSONObject().put("habits", if (!learnHabits || last == null) JSONArray() else JSONArray().put(JSONObject()
+                    .put("pattern", if (last.getString("source_type") == "CALIBRATION") last.getString("excerpt") else "在压力下散步整理想法")
+                    .put("context", "压力情境，仅为候选").put("confidence", .9)
+                    .put("evidence_ids", JSONArray(material.takeLast(2).map { it.getString("evidence_id") }))))
+            }
+            if (input.has("question")) {
+                lastHypotheses = input.getJSONArray("psychological_hypotheses")
+                return JSONObject().put("answerable", true)
                 .put("answer", material.last().getString("excerpt"))
                 .put("evidence_ids", JSONArray().put(if (badCitation) "invented" else material.last().getString("evidence_id")))
                 .put("limitations", JSONArray())
+            }
+            understandingCalls++
             check(!failUnderstanding) { "Synthetic provider failure" }
             return JSONObject().put("traits", JSONArray(material.map {
                 JSONObject().put("domain", "IDENTITY").put("statement", it.getString("excerpt").take(2000))
@@ -90,11 +108,12 @@ class LocalAgentEngineTest {
     }
 
     @Test fun withdrawalInvalidatesOnlyDependentViewsAndRetainsOtherRecordsAndHistory() = runBlocking {
-        val store = Store(); val engine = engine(store, FakeModel()); val repo = grant(engine)
+        val store = Store(); val model = FakeModel().apply { learnHabits = true }; val engine = engine(store, model); val repo = grant(engine)
         engine.capture(recording("材料一")); repo.refresh()
         val first = repo.state.value.materials.single().episodeId!!
         repo.ask("问题一"); repo.submit("第一份材料的校正")
         engine.capture(recording("独立材料二")); repo.refresh()
+        assertEquals(1, engine.portrait()!!.habits.size)
         val history = store.read()!!.getJSONArray("history").length()
         repo.withdraw(first)
         assertNull(repo.state.value.error)
@@ -103,7 +122,10 @@ class LocalAgentEngineTest {
         assertEquals(history, store.read()!!.getJSONArray("history").length())
         assertEquals(3, store.read()!!.getJSONArray("materials").length())
         assertEquals("INVALIDATED", store.read()!!.getJSONArray("calibrations").getJSONObject(0).getString("state"))
+        assertTrue(engine.portrait()!!.habits.isEmpty())
+        repo.ask("撤除后的问题"); assertEquals(0, model.lastHypotheses.length())
         repo.revoke()
+        assertNull(engine.portrait())
         try { engine.capture(recording("未授权材料")); fail("consent bypassed") } catch (_: IllegalStateException) { }
     }
     @Test fun archiveAndThreeAnswersSurviveRestartAndRespectWithdrawal() = runBlocking {
@@ -195,6 +217,49 @@ class LocalAgentEngineTest {
             assertTrue(e.message!!.contains("导出"))
         }
         assertEquals(unknown, store.saved); assertEquals(unknown, store.backup)
+    }
+
+    @Test fun psychologyFailureResumesSavedAsrAndPortraitThenPublishesOneRevision() = runBlocking {
+        val store = Store(); val model = FakeModel().apply { failPsychology = true }; val engine = engine(store, model)
+        val repo = grant(engine)
+        try { engine.capture(recording("压力时我喜欢散步。")); fail("expected psychology failure") } catch (_: IllegalStateException) {}
+        repo.refresh(); assertEquals(0, repo.state.value.snapshot!!.revision)
+        assertTrue(engine.pending()!!.has("traits")); assertTrue(repo.state.value.materials.isEmpty())
+        model.failPsychology = false; engine.retry(); repo.refresh()
+        assertEquals(1, model.transcriptions); assertEquals(1, model.understandingCalls); assertEquals(2, model.psychologyCalls)
+        assertEquals(1, repo.state.value.snapshot!!.revision)
+        assertFalse(store.read()!!.getJSONArray("episodes").getJSONObject(0).has("traits"))
+    }
+    @Test fun repeatedHabitsUseDistinctRecordingsAndCorrectionFeedsAnswersThenDeletionErasesThem() = runBlocking {
+        val store = Store(); val model = FakeModel().apply { learnHabits = true }; val engine = engine(store, model); val repo = grant(engine)
+        val first = recording("昨天压力大，我通过散步整理想法。"); val second = recording("今天考试紧张，散步让我安静下来。")
+        engine.capture(first)
+        assertEquals(1, engine.portrait()!!.habits.single().independentEpisodes)
+        assertEquals(.5, engine.portrait()!!.habits.single().confidence, .001)
+        engine.capture(second); repo.refresh()
+        assertEquals(2, engine.portrait()!!.habits.single().independentEpisodes)
+        repo.ask("压力下我会怎么办？"); assertEquals(1, model.lastHypotheses.length())
+        repo.submit("更准确说，压力时我跑步，而不是散步。", "压力下我会怎么办？")
+        assertTrue(engine.portrait()!!.habits.single().pattern.contains("跑步"))
+        val restored = engine(store, model); assertTrue(restored.portrait()!!.habits.single().pattern.contains("跑步"))
+        restored.deleteRecording(second) { java.io.File(second.audioPath).delete() }
+        assertTrue(restored.portrait()!!.habits.isEmpty()); assertFalse(store.saved!!.contains("更准确说"))
+    }
+    @Test fun duplicateTranscriptsDoNotTurnOneObservationIntoARepeatedHabit() = runBlocking {
+        val store = Store(); val model = FakeModel().apply { learnHabits = true }; val engine = engine(store, model)
+        grant(engine); engine.capture(recording("压力时散步。")); engine.capture(recording("压力时散步。"))
+        assertEquals(1, engine.portrait()!!.habits.single().independentEpisodes)
+        assertEquals(.5, engine.portrait()!!.habits.single().confidence, .001)
+    }
+    @Test fun deletionDuringPsychologyFailureDropsStaleDraftsButKeepsFreshAsr() = runBlocking {
+        val store = Store(); val model = FakeModel(); val engine = engine(store, model); grant(engine)
+        val old = recording("旧的敏感心理原文"); engine.capture(old)
+        model.failPsychology = true
+        try { engine.capture(recording("新的独立原文")); fail("expected failure") } catch (_: IllegalStateException) {}
+        engine.deleteRecording(old) { java.io.File(old.audioPath).delete() }
+        assertFalse(engine.pending()!!.has("traits")); assertFalse(store.saved!!.contains("旧的敏感心理原文"))
+        model.failPsychology = false; engine.retry()
+        assertEquals(2, model.transcriptions); assertEquals(listOf("新的独立原文"), engine.portrait()!!.sources.map { it.excerpt })
     }
 
 }
