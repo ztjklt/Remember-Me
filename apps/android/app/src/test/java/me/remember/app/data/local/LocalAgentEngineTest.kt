@@ -38,6 +38,7 @@ class LocalAgentEngineTest {
         override suspend fun complete(prompt: String, input: JSONObject, endpoint: ModelEndpoint): JSONObject {
             if (enforceCapacity) requireLocalCapacity(input)
             val material = input.getJSONArray("materials").objects()
+            if (input.optString("role") == "memory_observer") return JSONObject().put("observations", JSONArray())
             if (input.optString("role") == "psychological_learner") {
                 psychologyCalls++
                 check(!failPsychology) { "Synthetic psychology failure" }
@@ -224,11 +225,23 @@ class LocalAgentEngineTest {
         val repo = grant(engine)
         try { engine.capture(recording("压力时我喜欢散步。")); fail("expected psychology failure") } catch (_: IllegalStateException) {}
         repo.refresh(); assertEquals(0, repo.state.value.snapshot!!.revision)
-        assertTrue(engine.pending()!!.has("traits")); assertTrue(repo.state.value.materials.isEmpty())
+        assertTrue(engine.pending()!!.has("traits")); assertEquals("压力时我喜欢散步。", repo.state.value.materials.single().excerpt)
+        assertEquals("FAILED", store.read()!!.getString("portrait_status"))
+        repo.ask("说过什么？"); assertEquals("压力时我喜欢散步。", repo.state.value.answer!!.answer)
         model.failPsychology = false; engine.retry(); repo.refresh()
         assertEquals(1, model.transcriptions); assertEquals(1, model.understandingCalls); assertEquals(2, model.psychologyCalls)
         assertEquals(1, repo.state.value.snapshot!!.revision)
         assertFalse(store.read()!!.getJSONArray("episodes").getJSONObject(0).has("traits"))
+    }
+
+    @Test fun failedPortraitCannotAcceptACorrectionAgainstNewerRawMaterials() = runBlocking {
+        val store = Store(); val model = FakeModel(); val engine = engine(store, model); val repo = grant(engine)
+        engine.capture(recording("第一段资料")); repo.refresh(); repo.ask("我说过什么？")
+        model.failUnderstanding = true
+        try { engine.capture(recording("新资料")); fail("expected failure") } catch (_: IllegalStateException) {}
+        repo.submit("旧问题的校正")
+        assertNotNull(repo.state.value.error)
+        assertFalse(store.saved!!.contains("旧问题的校正"))
     }
     @Test fun repeatedHabitsUseDistinctRecordingsAndCorrectionFeedsAnswersThenDeletionErasesThem() = runBlocking {
         val store = Store(); val model = FakeModel().apply { learnHabits = true }; val engine = engine(store, model); val repo = grant(engine)

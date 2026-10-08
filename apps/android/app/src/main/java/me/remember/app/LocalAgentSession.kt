@@ -179,7 +179,10 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
                 else -> "模型响应或本地存储异常，材料已保留，可重试。"
             }) }
             finally {
-                try { portrait = engine!!.portrait() }
+                try {
+                    if (engine!!.granted()) repository!!.refresh()
+                    portrait = engine!!.portrait()
+                }
                 finally { mutableState.value = mutableState.value.copy(busy = false); syncPending() }
             }
         }

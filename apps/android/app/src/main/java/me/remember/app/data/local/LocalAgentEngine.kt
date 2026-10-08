@@ -21,6 +21,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     private val mutex = Mutex()
     private val inference = LocalInference(client)
     private val psychology = PsychologicalLearner(client)
+    private val observer = MemoryObservationExtractor(client)
     private fun emptyJournal() = JSONObject().put("version", 1).put("subject_id", newId("local_"))
         .put("granted", false).put("revision", 0).put("model_version", "local-unconfigured")
         .put("materials", JSONArray()).put("traits", JSONArray()).put("history", JSONArray())
@@ -36,6 +37,13 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
     }
     fun connection() = BackendConnection("local://device", "local-session", state.getString("subject_id"), "local-recording-consent", true)
     fun granted() = state.getBoolean("granted")
+    fun dimensions(): Set<String> = state.optJSONArray("enabled_dimensions")?.strings()?.toSet()
+        ?: MemoryDimensionRegistry.dimensions.map { it.id }.toSet()
+    suspend fun configureDimensions(enabled: Set<String>) = withContext(Dispatchers.IO) { mutex.withLock {
+        require(enabled.all { id -> MemoryDimensionRegistry.dimensions.any { it.id == id } })
+        check(pending() == null) { "请先完成或取消待处理任务。" }
+        persist(state.copyJson().put("enabled_dimensions", JSONArray(enabled)))
+    } }
     suspend fun portrait(): LocalPortrait? = withContext(Dispatchers.IO) { mutex.withLock {
         if (granted()) projectPortrait(state) else null
     } }
@@ -49,6 +57,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         h.getJSONArray("evidence_ids").strings().all(allowed::contains)
     })
     private fun model() = JSONObject().put("subject_id", state.getString("subject_id")).put("revision", state.getInt("revision"))
+        .put("memory_revision", state.optInt("memory_revision"))
         .put("model_version", state.getString("model_version")).put("schema_version", "agent-loop-v0.2-experimental")
         .put("traits", JSONArray(state.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
 
@@ -137,8 +146,14 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 path == "/calibrations" && method == "POST" -> {
                     val question = body!!.getString("question").trim()
                     require(question.length in 1..4000) { "问题为空或过长。" }
-                    begin(JSONObject().put("kind", "ASK").put("question", question).put("id", newId("cal_")))
-                    execute()
+                    val job = pending()
+                    if (job != null && job.optString("kind") == "CAPTURE" && job.has("evidence")) {
+                        // Read-only answering remains available while a derived portrait awaits retry.
+                        lockAnswer(question, newId("cal_"), checkNotNull(settings()).language)
+                    } else {
+                        begin(JSONObject().put("kind", "ASK").put("question", question).put("id", newId("cal_")))
+                        execute()
+                    }
                 }
                 path.endsWith("/submit") -> {
                     val id = path.split('/')[2]
@@ -146,6 +161,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                     if (cal.getString("state") == "COMPLETED") return@withLock cal.copyJson()
                     check(cal.getString("state") == "LOCKED" && body!!.getInt("expected_revision") == state.getInt("revision") &&
                         cal.getJSONObject("locked_answer").getInt("revision") == state.getInt("revision")) { "理解已变化，请重新提问。" }
+                    check(cal.getJSONObject("locked_answer").optInt("memory_revision") == state.optInt("memory_revision")) { "材料已变化，请重新提问。" }
                     val human = body!!.getString("human_answer").trim()
                     require(human.length in 1..8000) { "校正为空或过长。" }
                     begin(JSONObject().put("kind", "CORRECT").put("id", id).put("human_answer", human)
@@ -166,7 +182,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         val existing = state.getJSONArray("episodes").objects().firstOrNull { it.getString("id") == id }
         if (existing != null) {
             check(!existing.optBoolean("withdrawn")) { "这段材料已撤除，请重新录音。" }
-            if (existing.optString("understanding_status") != "PENDING") return@withLock
+            if (existing.optString("understanding_status") != "PENDING" && existing.optString("observation_version") == MemoryDimensionRegistry.version) return@withLock
             val saved = state.getJSONArray("materials").objects().first { it.optString("episode_id") == id }
             begin(existing.copyJson().put("kind", "CAPTURE").put("evidence", saved))
             execute(); return@withLock
@@ -184,11 +200,9 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         next.optJSONObject("job")?.let { job ->
             if (job.optString("kind") == "CAPTURE" && job.has("evidence")) {
                 publishMaterial(next, job)
-                next.getJSONArray("history").put(model())
-                next.put("revision", next.getInt("revision") + 1)
                 publishEpisode(next, job, "PENDING")
             } else {
-                job.remove("traits"); job.remove("habits")
+                job.remove("traits"); job.remove("habits"); job.remove("observations")
                 next.optJSONArray("cancelled_jobs")?.put(job) ?: next.put("cancelled_jobs", JSONArray().put(job))
             }
         }
@@ -206,11 +220,8 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         persist(state.copyJson().put("job", job))
         try {
             if (job.getString("kind") == "ASK") {
-                val answer = inference.answer(job.getString("question"), model(), materials(), config.language, activeHabits())
-                val cal = JSONObject().put("calibration_id", job.getString("id")).put("question", job.getString("question"))
-                    .put("locked_answer", answer).put("locked_at", now()).put("lock_digest", digest(answer.toString()))
-                    .put("state", "LOCKED").put("resulting_revision", JSONObject.NULL)
-                persist(state.copyJson().apply { getJSONArray("calibrations").put(cal); remove("job") })
+                val cal = lockAnswer(job.getString("question"), job.getString("id"), config.language)
+                persist(state.copyJson().apply { remove("job") })
                 return cal
             }
             if (job.getString("kind") == "CAPTURE" && !job.has("evidence")) {
@@ -219,8 +230,29 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 val transcript = client.transcribe(recording, config)
                 job.put("evidence", evidence("ev_" + job.getString("id"), transcript, "SUBJECT", job.getString("id"), ""))
                     .put("asr_model", config.speech.model)
+                job.getJSONObject("evidence").put("observed_at", job.getString("recorded_at"))
                 persist(state.copyJson().put("job", job)) // Checkpoint ASR before the language request.
             }
+            // Raw evidence is committed independently of all derived model stages.
+            persist(state.copyJson().apply {
+                publishMaterial(this, job)
+                if (job.getString("kind") == "CAPTURE") publishEpisode(this, job, "PENDING")
+            })
+            val source = job.getJSONObject("evidence")
+            val full = source.getString("excerpt")
+            val enabled = dimensions()
+            while (job.optInt("observation_offset") < full.length) {
+                val offset = job.optInt("observation_offset")
+                val batch = observer.extract(source, offset, config.language, enabled)
+                val accumulated = job.optJSONArray("observations") ?: JSONArray()
+                batch.objects().forEach(accumulated::put)
+                job.put("observations", accumulated).put("observation_offset", offset + sourceChunk(full, offset).length)
+                persist(state.copyJson().put("job", job))
+            }
+            val observations = job.optJSONArray("observations") ?: JSONArray()
+            persist(state.copyJson().put("observations", JSONArray(state.optJSONArray("observations")?.objects().orEmpty()
+                .filter { it.getString("evidence_id") != source.getString("evidence_id") } + observations.objects()))
+                .put("portrait_status", "BUILDING"))
             val input = JSONArray(materials().objects().filter { it.getString("evidence_id") != job.getJSONObject("evidence").getString("evidence_id") }).put(job.getJSONObject("evidence"))
             if (!job.has("traits")) {
                 job.put("traits", inference.understand(model(), input, config.language))
@@ -234,27 +266,40 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             next.getJSONArray("history").put(model())
             publishMaterial(next, job)
             next.put("traits", job.getJSONArray("traits")).put("habits", job.getJSONArray("habits"))
+                .put("portrait_status", "READY").put("portrait_memory_revision", state.optInt("memory_revision"))
                 .put("revision", state.getInt("revision") + 1).put("model_version", config.language.model).remove("job")
             var result = JSONObject()
             if (job.getString("kind") == "CORRECT") {
                 result = next.getJSONArray("calibrations").objects().first { it.getString("calibration_id") == job.getString("id") }
                 result.put("state", "COMPLETED").put("resulting_revision", next.getInt("revision")).put("human_answer", job.getString("human_answer"))
-            } else publishEpisode(next, job, "READY")
+            } else if (job.getString("kind") == "CAPTURE") publishEpisode(next, job, "READY")
             persist(next)
             return result
         } catch (e: Exception) {
             job = checkNotNull(pending())
-            persist(state.copyJson().put("job", job.put("status", "PAUSED").put("error", "任务未完成，可继续；已保存的材料保留。")))
+            persist(state.copyJson().put("portrait_status", if (job.getString("kind") == "ASK") state.optString("portrait_status", "PENDING") else "FAILED")
+                .put("job", job.put("status", "PAUSED").put("error", "任务未完成，可继续；已保存的材料保留。")))
             throw e
         }
     }
     private fun publishMaterial(next: JSONObject, job: JSONObject) {
         val evidence = job.getJSONObject("evidence")
+        if (next.getJSONArray("materials").objects().none { it.getString("evidence_id") == evidence.getString("evidence_id") }) {
+            next.put("memory_revision", next.optInt("memory_revision") + 1).put("portrait_status", "PENDING")
+        }
         next.put("materials", JSONArray(next.getJSONArray("materials").objects().filter { it.getString("evidence_id") != evidence.getString("evidence_id") }).put(evidence))
     }
     private fun publishEpisode(next: JSONObject, job: JSONObject, status: String) {
         next.put("episodes", JSONArray(next.getJSONArray("episodes").objects().filter { it.getString("id") != job.getString("id") })
-            .put(job.copyJson().apply { remove("evidence"); remove("traits"); remove("habits"); put("understanding_status", status) }))
+            .put(job.copyJson().apply { remove("evidence"); remove("traits"); remove("habits"); remove("observations"); put("understanding_status", status)
+                if (status == "READY") put("observation_version", MemoryDimensionRegistry.version) }))
+    }
+    private suspend fun lockAnswer(question: String, id: String, endpoint: ModelEndpoint): JSONObject {
+        val answer = inference.answer(question, model(), materials(), endpoint, activeHabits())
+        val cal = JSONObject().put("calibration_id", id).put("question", question).put("locked_answer", answer)
+            .put("locked_at", now()).put("lock_digest", digest(answer.toString())).put("state", "LOCKED").put("resulting_revision", JSONObject.NULL)
+        persist(state.copyJson().apply { getJSONArray("calibrations").put(cal) })
+        return cal
     }
     private fun calibration(id: String) = state.getJSONArray("calibrations").objects().first {
         it.getString("calibration_id") == id
@@ -277,6 +322,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             }
         } while (changed)
         next.put("withdrawn_evidence", JSONArray(removed)).put("revision", next.getInt("revision") + 1)
+            .put("memory_revision", next.optInt("memory_revision") + 1).put("portrait_status", "PENDING")
         next.getJSONArray("episodes").objects().firstOrNull { it.getString("id") == id }?.put("withdrawn", true)
         persist(next)
         return model()
