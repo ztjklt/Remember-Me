@@ -6,7 +6,9 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 The committed workstream is **Phase 1 — Golden Path**: `real recording → upload → Episode → STT → Memory extraction → real Memory in Android`. Phases 2–4 are planned and backlogged; reading them is not authorization to start them.
 
-The Android prototype is runnable and tested, but it is a Mock product-flow prototype, not a working product. Real microphone capture, upload, STT, AI extraction, person modeling, Twin, voice cloning, backend persistence, accounts, cloud sync, and Work 3200 integration are **not yet implemented**.
+The current experimental feature branch includes phone recording, the Backend Golden Path, and a user-authorized Android BYOK loop. Local mode adds evidence-backed memory observations, portrait views, questions and corrections; it requires network access to user-configured model services. Hardware integration, voice cloning, accounts and cloud sync remain outside this prototype. Cross-module approval and device verification must precede a stable release.
+
+For the `1.5-local` prototype, see the [phone setup and update steps](apps/android/docs/LOCAL_AGENT.md), [memory/portrait proposal and implementation scope](docs/proposals/MEMORY_PORTRAIT_PLAN_2026_10_08.md), and [verification record](docs/verification/ANDROID_MEMORY_PORTRAIT_2026_10_08.md).
 
 | Phase | Status |
 | --- | --- |

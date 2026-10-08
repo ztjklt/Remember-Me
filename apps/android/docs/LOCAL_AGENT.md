@@ -1,4 +1,4 @@
-# 手机独立 Agent（1.4-local）
+# 手机独立 Agent（1.5-local）
 
 本模式借鉴 Memex 的本地存储、供应商适配及持久任务执行结构，使用一个文字模型。
 录音 → 原文存档 → 八维观察 → 增量理解/心理候选 → 四类画像 → 检索提问 → 保存回答 → 本人校正 → 更新理解，全部由 Android 顺序编排。
@@ -6,7 +6,7 @@
 
 ## 安装与配置
 
-1. 把 `build/releases/remember-me-1.4-local-debug.apk` 传到手机，在文件管理器中安装更新。
+1. 把 `build/releases/remember-me-1.5-local-debug.apk` 传到手机，在文件管理器中安装更新。
    同签名可覆盖安装；无需卸载旧版。不要为安装清除数据。编译命令仅供开发者使用。
 2. 进入录音页，确认显示“手机独立模式”，点“模型设置”。不需要 Actor/Subject/Consent ID。
 3. 分别填写两套配置。当前已验证：
@@ -35,6 +35,7 @@
 
 构建及已执行检查见 [验证记录](../../../docs/verification/ANDROID_LOCAL_2026_10_07.md)。
 本轮稳定性修复与验收边界见 [本地 Agent 加固记录](../../../docs/reviews/local-agent-hardening/README.md)。
+八维记忆与四类画像的最新构建、真实 API 和未执行设备项见 [1.5 验证记录](../../../docs/verification/ANDROID_MEMORY_PORTRAIT_2026_10_08.md)。
 
 ## 八维记忆与四类画像的入口
 
