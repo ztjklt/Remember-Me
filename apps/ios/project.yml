@@ -34,3 +34,23 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: rememberme-pairing
             CFBundleURLSchemes: [rememberme]
+  RememberMeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: RememberMeUITests
+    dependencies:
+      - target: RememberMe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: RememberMe
+schemes:
+  RememberMe:
+    build:
+      targets:
+        RememberMe: all
+    test:
+      targets:
+        - RememberMeUITests

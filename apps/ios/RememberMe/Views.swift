@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 import UIKit
 
-private enum Ink {
+enum Ink {
     static let paper = Color("RmBackground")
     static let cream = Color("RmSurface")
     static let text = Color("RmText")
@@ -152,7 +152,7 @@ struct RememberMeBrand: View {
     }
 }
 
-private struct ActionButton: View {
+struct ActionButton: View {
     let title: String
     let icon: String
     var fill: Color = Ink.coral
@@ -173,10 +173,18 @@ struct RootView: View {
     @EnvironmentObject private var model: AppModel
     var body: some View {
         Group {
-            if model.pairing == nil { PairingView() }
-            else { MainTabs() }
+            AndroidParityTabs()
         }
         .tint(Ink.coral)
+        .sheet(isPresented: $model.showConnection) {
+            NavigationStack {
+                PairingView().toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("关闭") { model.showConnection = false }
+                    }
+                }
+            }
+        }
         .alert("需要留意", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -193,7 +201,7 @@ struct RootView: View {
     }
 }
 
-private struct PairingView: View {
+struct PairingView: View {
     @EnvironmentObject private var model: AppModel
     var body: some View {
         ScrollView {
@@ -254,7 +262,7 @@ private struct MainTabs: View {
     }
 }
 
-private struct ArchiveView: View {
+struct ArchiveView: View {
     @State private var segment = 0
     @State private var query = ""
     var body: some View {
@@ -271,7 +279,7 @@ private struct ArchiveView: View {
     }
 }
 
-private struct ProfileView: View {
+struct ProfileView: View {
     @EnvironmentObject private var model: AppModel
     var body: some View {
         List {
@@ -488,7 +496,7 @@ private struct HomeView: View {
     }
 }
 
-private struct RecorderView: View {
+struct RecorderView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -498,6 +506,7 @@ private struct RecorderView: View {
     @State private var showConsent = false
     @State private var showClose = false
     @State private var showOrganizeConsent = false
+    @State private var showPairing = false
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -562,13 +571,26 @@ private struct RecorderView: View {
                             showOrganizeConsent = true
                         }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     } else if model.draft != nil {
-                        ActionButton(title: model.isBusy ? "正在处理…" : "提交并转成文字", icon: "text.bubble") {
-                            Task { await model.sendRecording() }
+                        ActionButton(title: model.isBusy ? "正在处理…" : model.pairing == nil ? "连接服务后转写" : "提交并转成文字", icon: "text.bubble") {
+                            if model.pairing == nil { showPairing = true }
+                            else { Task { await model.sendRecording() } }
                         }.disabled(model.isBusy)
                     } else {
                         ActionButton(title: "开始录音", icon: "mic.fill") { showConsent = true }
                     }
                 }.padding(16).background(Ink.cream)
+            }
+            .sheet(isPresented: $showPairing) {
+                NavigationStack {
+                    PairingView().toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("关闭") { showPairing = false }
+                        }
+                    }
+                    .onChange(of: model.pairing?.subjectID) { _, id in
+                        if id != nil { showPairing = false }
+                    }
+                }
             }
             .interactiveDismissDisabled(model.isRecording)
             .onChange(of: scenePhase) { _, phase in
@@ -697,7 +719,7 @@ private struct MemoriesView: View {
     }
 }
 
-private struct TwinView: View {
+struct TwinView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showCalibrationRecorder = false
     private let dimensionNames = ["DECISION": "做决定", "REASONING": "考虑理由",
@@ -714,7 +736,8 @@ private struct TwinView: View {
                     .foregroundStyle(Ink.text)
                 Text("RM 会先找你真正说过的话；需要推测时会明确标出来，不知道时会说不知道。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
-                if model.cloudConsentID == nil {
+                if model.pairing == nil { ConnectionNotice() }
+                else if model.cloudConsentID == nil {
                     VStack(alignment: .leading, spacing: 12) {
                         Eyebrow(text: "先决定资料如何使用")
                         Text("提问时，问题和少量相关记忆文字会发送给 DeepSeek；若你使用校准，核对后的本人回答文字和锁定的 Twin 回答也会发送去比较。原始录音和声音样本不会发送。")
@@ -929,7 +952,7 @@ private struct VoiceSetupView: View {
     }
 }
 
-private struct MemoryDetailView: View {
+struct MemoryDetailView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
     let memory: MemoryRecord
@@ -990,7 +1013,7 @@ private struct MemoryDetailView: View {
     }
 }
 
-private struct ModelView: View {
+struct ModelView: View {
     @EnvironmentObject private var model: AppModel
     private let names = [
         "IDENTITY": "我是谁", "EPISODIC_MEMORY": "生命片段",

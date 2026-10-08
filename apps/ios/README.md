@@ -1,3 +1,5 @@
+> **2026-10-08 Android 原型复刻：** 五个入口改为 Portrait / Graphs / Memories / Agents / Me，复用队友 #81 的画像卡片与关系图布局。已有 iOS 录音、证据问答、五维校准和独立声音授权保留；可先保存本地录音，再连接服务。范围与本地验证见 [复刻记录](../../docs/verification/IOS_ANDROID_PARITY_2026_10_08.md)。
+
 # iOS 本机语音 → Person Model
 
 ## Twin 与个人声音
