@@ -9,6 +9,11 @@ import java.time.Instant
 interface ReviewedMemoryProcessor {
     val dataUseDescription: String
     suspend fun organize(confirmedText: String): MemoryExtractionResult
+    /** Existing text-only adapters remain valid; source-aware adapters can preserve recording identity. */
+    suspend fun organize(recording: AudioRecording, consent: Boolean): MemoryExtractionResult {
+        require(consent) { "需要明确同意后才会整理。" }
+        return organize(checkNotNull(recording.reviewedTranscript) { "请先核对文字。" })
+    }
 }
 
 class RecordingWorkflow(
@@ -66,7 +71,7 @@ class RecordingWorkflow(
         try {
             check(processor != null) { dataUseDescription }
             save(original.copy(processingStage = ProcessingStage.Organizing, processingError = null))
-            val result = processor.organize(original.reviewedTranscript!!)
+            val result = processor.organize(original, consent)
             // Reject invented quotations; UI must never dress unsupported evidence as original speech.
             require(result.memories.all { it.evidence.isBlank() || original.reviewedTranscript.contains(it.evidence) }) {
                 "整理结果的来源无法核对，已保留文字，请稍后重试。"
