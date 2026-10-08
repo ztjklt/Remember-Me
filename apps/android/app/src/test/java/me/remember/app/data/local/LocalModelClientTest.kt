@@ -37,4 +37,14 @@ class LocalModelClientTest {
             assertEquals(2, server.requestCount)
         }
     }
+    @Test fun truncatedModelOutputIsActionableAndNeverAcceptedAsMemory() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("""{"choices":[{"finish_reason":"length","message":{"content":""}}]}"""))
+            val config = ModelEndpoint(server.url("/").toString(), "synthetic", "synthetic-key", "none")
+            try { HttpLocalModelClient().complete("JSON test", JSONObject(), config); fail("truncated response accepted") }
+            catch (e: IllegalStateException) { assertTrue(e.message!!.contains("输出超限")); assertFalse(e.message!!.contains(config.apiKey)) }
+            val request = JSONObject(server.takeRequest().body.readUtf8())
+            assertEquals("none", request.getString("reasoning_effort"))
+        }
+    }
 }

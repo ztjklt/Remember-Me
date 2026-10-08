@@ -45,6 +45,13 @@ fun LocalSettingsScreen(session: LocalAgentSession, recording: AudioRecording?, 
         ModelField(stringResource(R.string.language_url), draft.language.baseUrl, { update(draft.copy(language = draft.language.copy(baseUrl = it))) }, state.busy)
         ModelField(stringResource(R.string.language_model_name), draft.language.model, { update(draft.copy(language = draft.language.copy(model = it))) }, state.busy)
         ModelField(stringResource(R.string.language_key), draft.language.apiKey, { update(draft.copy(language = draft.language.copy(apiKey = it))) }, state.busy, true)
+        Row {
+            Checkbox(compatibleReasoningEffort(draft.language) == "none", {
+                update(draft.copy(language = draft.language.copy(reasoningEffort = if (it) "none" else "high")))
+            }, enabled = !state.busy)
+            Text(stringResource(R.string.language_plain_mode))
+        }
+        Text(stringResource(R.string.language_plain_mode_hint), style = MaterialTheme.typography.bodySmall)
         Row { Checkbox(consent, { consent = it }, enabled = !state.busy); Text(stringResource(R.string.local_consent)) }
         Button({ session.save(config(), consent, back) }, enabled = consent && state.ready && !state.busy) { Text(stringResource(R.string.local_save)) }
         TextButton({ session.test(config()) }, enabled = consent && state.ready && !state.busy) { Text(stringResource(R.string.language_test)) }

@@ -198,18 +198,15 @@ class LocalAgentEngineTest {
         assertEquals(1, store.read()!!.getJSONArray("materials").length())
         assertEquals(1, store.read()!!.getJSONArray("episodes").length())
     }
-    @Test fun capacityFailureResumesAfterDeletingAnOldRecordingWithoutRepeatingAsr() = runBlocking {
+    @Test fun longUnrelatedHistoryDoesNotBlockNewRecordingOrRepeatAsr() = runBlocking {
         val store = Store(); val model = FakeModel().apply { enforceCapacity = true }; val engine = engine(store, model)
         grant(engine)
         val old = recording("旧".repeat(36000)); val fresh = recording("新".repeat(36000))
         engine.capture(old)
-        try { engine.capture(fresh); fail("expected capacity refusal") } catch (e: IllegalArgumentException) {
-            assertTrue(e.message!!.contains("我录过的"))
-        }
-        engine.deleteRecording(old) { java.io.File(old.audioPath).delete() }
-        engine.retry()
+        engine.capture(fresh)
         assertNull(engine.pending()); assertEquals(2, model.transcriptions)
         assertEquals("新".repeat(36000), store.read()!!.getJSONArray("materials").getJSONObject(1).getString("excerpt"))
+        assertEquals(2, store.read()!!.getJSONArray("episodes").length())
     }
     @Test fun incompatiblePayloadIsPreservedWithoutReplacingIt() {
         val store = Store(); engine(store, FakeModel())

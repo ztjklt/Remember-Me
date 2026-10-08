@@ -142,7 +142,8 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             when {
                 path == "/model" -> model()
                 path == "/evidence" -> JSONObject().put("materials", materials())
-                path.startsWith("/evidence/") -> materials().objects().first { it.getString("evidence_id") == path.substringAfterLast('/') }
+                path.startsWith("/evidence/") -> materials().objects().flatMap { listOf(it) + evidenceSpans(it) }
+                    .first { it.getString("evidence_id") == path.substringAfterLast('/') }
                 path == "/calibrations" && method == "POST" -> {
                     val question = body!!.getString("question").trim()
                     require(question.length in 1..4000) { "问题为空或过长。" }
@@ -166,7 +167,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                     require(human.length in 1..8000) { "校正为空或过长。" }
                     begin(JSONObject().put("kind", "CORRECT").put("id", id).put("human_answer", human)
                         .put("evidence", evidence(newId("cev_"), human, "CALIBRATION", null, cal.getString("question"))
-                            .put("source_ref", "calibration:$id")))
+                            .put("source_ref", "calibration:$id").put("related_evidence_ids", JSONArray(answerRoots(cal.getJSONObject("locked_answer"))))))
                     execute()
                 }
                 path.startsWith("/calibrations/") -> calibrationView(calibration(path.substringAfterLast('/')))
@@ -253,12 +254,24 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             persist(state.copyJson().put("observations", JSONArray(state.optJSONArray("observations")?.objects().orEmpty()
                 .filter { it.getString("evidence_id") != source.getString("evidence_id") } + observations.objects()))
                 .put("portrait_status", "BUILDING"))
-            val input = JSONArray(materials().objects().filter { it.getString("evidence_id") != job.getJSONObject("evidence").getString("evidence_id") }).put(job.getJSONObject("evidence"))
-            if (!job.has("traits")) {
-                job.put("traits", inference.understand(model(), input, config.language))
+            val chunks = evidenceSpans(source)
+            if (job.has("traits") && !job.has("trait_chunks")) job.put("trait_chunks", chunks.size) // Resume a legacy full-material checkpoint.
+            while (job.optInt("trait_chunks") < chunks.size) {
+                val chunk = chunks[job.optInt("trait_chunks")]
+                val newObservations = JSONArray(observations.objects().filter { !chunk.has("span_start") ||
+                    it.getInt("start") < chunk.getInt("span_end") && it.getInt("end") > chunk.getInt("span_start") })
+                val related = LocalEvidenceIndex(JSONArray(materials().objects().filter { it.getString("evidence_id") != source.getString("evidence_id") }),
+                    state.optJSONArray("observations") ?: JSONArray()).retrieve(newObservations.objects().joinToString(" ") { it.getString("summary") }, fallback = false)
+                val input = JSONArray(related.objects()).put(chunk)
+                val current = model().put("traits", job.optJSONArray("traits") ?: model().getJSONArray("traits"))
+                job.put("traits", inference.understand(current, input, config.language, newObservations)).put("trait_chunks", job.optInt("trait_chunks") + 1)
                 persist(state.copyJson().put("job", job))
             }
             if (!job.has("habits")) {
+                val psychologyIds = state.optJSONArray("observations")?.objects().orEmpty().filter {
+                    it.getString("dimension") in setOf("psychological", "mood") }.map { it.getString("evidence_id") }.toSet() +
+                    activeHabits().objects().flatMap { it.getJSONArray("evidence_ids").strings() } + source.getString("evidence_id")
+                val input = JSONArray(materials().objects().filter { it.getString("evidence_id") in psychologyIds || it.getString("source_type") == "CALIBRATION" })
                 job.put("habits", psychology.learn(job.getJSONArray("traits"), input, activeHabits(), config.language))
                 persist(state.copyJson().put("job", job))
             }
@@ -295,7 +308,8 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 if (status == "READY") put("observation_version", MemoryDimensionRegistry.version) }))
     }
     private suspend fun lockAnswer(question: String, id: String, endpoint: ModelEndpoint): JSONObject {
-        val answer = inference.answer(question, model(), materials(), endpoint, activeHabits())
+        val pack = LocalEvidenceIndex(materials(), state.optJSONArray("observations") ?: JSONArray()).retrieve(question)
+        val answer = inference.answer(question, model(), pack, endpoint, activeHabits())
         val cal = JSONObject().put("calibration_id", id).put("question", question).put("locked_answer", answer)
             .put("locked_at", now()).put("lock_digest", digest(answer.toString())).put("state", "LOCKED").put("resulting_revision", JSONObject.NULL)
         persist(state.copyJson().apply { getJSONArray("calibrations").put(cal) })
@@ -314,7 +328,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         do {
             changed = false
             next.getJSONArray("calibrations").objects().forEach { cal ->
-                if (cal.getJSONObject("locked_answer").getJSONArray("evidence_ids").strings().any { it in removed }) {
+                if (answerRoots(cal.getJSONObject("locked_answer")).any { it in removed }) {
                     cal.put("state", "INVALIDATED")
                     next.getJSONArray("materials").objects().filter { it.getString("source_ref") == "calibration:${cal.getString("calibration_id")}" }
                         .forEach { if (removed.add(it.getString("evidence_id"))) changed = true }

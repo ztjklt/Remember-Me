@@ -50,12 +50,15 @@ class HttpLocalModelClient : LocalModelClient {
         requireLocalCapacity(input)
         val messages = JSONArray().put(JSONObject().put("role", "system").put("content", prompt))
             .put(JSONObject().put("role", "user").put("content", input.toString()))
-        val result = post(endpoint, "/chat/completions", JSONObject().put("model", endpoint.model)
-            .put("messages", messages).put("temperature", 0).put("max_tokens", 4096)
-            .put("response_format", JSONObject().put("type", "json_object")))
+        val body = JSONObject().put("model", endpoint.model).put("messages", messages).put("temperature", 0).put("max_tokens", 8192)
+            .put("response_format", JSONObject().put("type", "json_object"))
+        compatibleReasoningEffort(endpoint)?.let { body.put("reasoning_effort", it) }
+        val result = post(endpoint, "/chat/completions", body)
+        check(result.optJSONArray("choices")?.optJSONObject(0)?.optString("finish_reason") != "length") {
+            "文字模型输出超限，原文已保留。可在模型设置中选普通模式，或减少本次相关材料后重试。"
+        }
         return try {
             val choice = result.getJSONArray("choices").getJSONObject(0)
-            check(choice.optString("finish_reason") != "length")
             JSONObject(choice.getJSONObject("message").getString("content"))
         } catch (_: Exception) { error("文字模型返回了不完整或无效的 JSON，请重试。") }
     }
@@ -99,4 +102,11 @@ class HttpLocalModelClient : LocalModelClient {
         } catch (_: java.io.IOException) { error("模型连接失败或超时，已保存的本地材料不受影响，可重试。") }
         finally { connection.disconnect() }
     }
+}
+
+/** Wire compatibility stays in the HTTP adapter; unknown hosts receive no extra reasoning field. */
+fun compatibleReasoningEffort(endpoint: ModelEndpoint): String? = endpoint.reasoningEffort ?: when (
+    runCatching { java.net.URI(endpoint.baseUrl).host?.lowercase(java.util.Locale.ROOT) }.getOrNull()) {
+    "api.deepseek.com" -> "none"
+    else -> null
 }

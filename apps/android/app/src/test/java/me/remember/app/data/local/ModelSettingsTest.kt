@@ -17,4 +17,10 @@ class ModelSettingsTest {
         assertFalse(endpoint.toString().contains(endpoint.apiKey))
         assertFalse(settings.toString().contains(endpoint.apiKey))
     }
+    @Test fun unknownCompatibleProvidersHaveNoAutomaticReasoningOverride() {
+        assertNull(compatibleReasoningEffort(ModelEndpoint("https://api.example/v1", "synthetic", "synthetic-key")))
+        assertEquals("none", compatibleReasoningEffort(ModelEndpoint("https://api.deepseek.com", "synthetic", "synthetic-key")))
+        val explicit = ModelEndpoint("https://api.example/v1", "synthetic", "synthetic-key", "low")
+        assertEquals("low", compatibleReasoningEffort(ModelEndpoint.from(explicit.json())))
+    }
 }

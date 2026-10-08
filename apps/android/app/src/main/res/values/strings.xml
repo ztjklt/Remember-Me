@@ -155,4 +155,6 @@
     <string name="psychology_empty">目前没有足够的心理或行为材料，继续记录具体经历即可。</string>
     <string name="psychology_repeated">重复情境候选 · %1$d 段不同原文支持</string>
     <string name="psychology_single">情境化观察 · %1$d 段不同原文支持；一次观察或本人说明不能证明稳定习惯。</string>
+    <string name="language_plain_mode">普通文字模式</string>
+    <string name="language_plain_mode_hint">接口支持 reasoning_effort 时使用。结构化记忆建议普通模式；未知接口默认不发送该参数。</string>
 </resources>

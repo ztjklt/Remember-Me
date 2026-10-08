@@ -62,7 +62,7 @@ class MemoryObservationExtractor(private val client: LocalModelClient) {
             情绪只提取本人明确自述，time_scope 为 EVENT 或 TELLING；valence 为 POSITIVE/NEGATIVE/NEUTRAL/MIXED/UNKNOWN。
             event 的 kind 为 HAPPENED/PLANNED/WISH。滤镜只提取本人确认的叙事视角；状态、环境的 channel 必须为 SELF_REPORT。
             expression.example 如有必须原句引用，不能由转写推断声音语速；心理不做诊断或固定人格推断。
-            event_time 为有原文时间依据的 YYYY-MM-DD，无法确定为 null；time_text 是原文时间措辞，不能把录音日期当作事件日期。
+            event_time 为有原文时间依据的 YYYY-MM-DD，无法确定为 null；time_text 是片段中的连续时间措辞，无时间措辞用空字符串，不能把录音日期当作事件日期。
             attributes 只能使用该维度定义的字段，值为字符串；certainty 为 REPORTED 或 INFERRED。quote 必须是片段内连续原文。
             只输出 JSON {"observations":[{"dimension":"identity","summary":"姓名自述","quote":"我是小林","event_time":null,"time_text":"","certainty":"REPORTED","attributes":{"facet":"NAME","entity":"本人","value":"小林"}}]}。
             最多 48 条，summary 最多 500 字，quote 最多 2000 字。无可提取内容返回空数组。""".trimIndent(),
@@ -90,7 +90,7 @@ class MemoryObservationExtractor(private val client: LocalModelClient) {
                 "expression" -> require(!attrs.has("example") || quote.contains(attrs.getString("example")))
             }
             val timeText = item.getString("time_text")
-            require(timeText.length <= 200 && (timeText.isBlank() || quote.contains(timeText))) { "时间措辞缺少原文依据。" }
+            require(timeText.length <= 200 && (timeText.isBlank() || text.contains(timeText))) { "时间措辞缺少原文依据。" }
             if (!item.isNull("event_time")) {
                 require(timeText.isNotBlank() && item.getString("event_time").matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) { "发生时间缺少依据。" }
                 LocalDate.parse(item.getString("event_time"))
@@ -100,6 +100,8 @@ class MemoryObservationExtractor(private val client: LocalModelClient) {
             val canonicalAttrs = attrs.keys().asSequence().sorted().joinToString("|") { "$it=${attrs.getString(it)}" }
             item.copyJson().put("observation_id", "obs_" + stableDigest("${source.getString("evidence_id")}|${definition.id}|$start|$end|$canonicalAttrs"))
                 .put("evidence_id", source.getString("evidence_id")).put("start", start).put("end", end)
+                .put("time_start", if (timeText.isBlank()) JSONObject.NULL else full.codePointCount(0, offset + text.indexOf(timeText)))
+                .put("time_end", if (timeText.isBlank()) JSONObject.NULL else full.codePointCount(0, offset + text.indexOf(timeText) + timeText.length))
                 .put("recorded_at", source.getString("observed_at")).put("source_type", source.getString("source_type"))
                 .put("model_version", endpoint.model).put("prompt_version", "memory-observer-v1").put("taxonomy_version", MemoryDimensionRegistry.version)
         }.distinctBy { it.getString("observation_id") })

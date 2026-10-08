@@ -11,7 +11,7 @@ internal fun eraseRecording(state: JSONObject, episodeId: String): JSONObject = 
     var changed: Boolean
     do {
         changed = false
-        records.filter { it.getJSONObject("locked_answer").getJSONArray("evidence_ids").strings().any(removed::contains) }.forEach { cal ->
+        records.filter { answerRoots(it.getJSONObject("locked_answer")).any(removed::contains) }.forEach { cal ->
             cal.put("state", "INVALIDATED")
             materials.filter { it.getString("source_ref") == "calibration:${cal.getString("calibration_id")}" }.forEach {
                 if (removed.add(it.getString("evidence_id"))) changed = true
@@ -19,7 +19,7 @@ internal fun eraseRecording(state: JSONObject, episodeId: String): JSONObject = 
         }
     } while (changed)
     materials.filter { it.getString("evidence_id") in removed }.forEach { it.put("excerpt", "[已删除]").put("context", "") }
-    val affected = records.filter { it.getJSONObject("locked_answer").getJSONArray("evidence_ids").strings().any(removed::contains) }
+    val affected = records.filter { answerRoots(it.getJSONObject("locked_answer")).any(removed::contains) }
     affected.forEach {
         it.put("question", "对应录音已删除").remove("human_answer")
         it.remove("comparison")
@@ -33,7 +33,7 @@ internal fun eraseRecording(state: JSONObject, episodeId: String): JSONObject = 
     cleanTraits(this)
     put("observations", JSONArray(optJSONArray("observations")?.objects().orEmpty().filter { it.getString("evidence_id") !in removed }))
     put("memory_revision", optInt("memory_revision") + 1).put("portrait_status", "PENDING")
-    optJSONObject("job")?.apply { remove("traits"); remove("habits") }
+    optJSONObject("job")?.apply { remove("traits"); remove("habits"); remove("trait_chunks") }
     put("habits", JSONArray(optJSONArray("habits")?.objects().orEmpty().filter {
         it.getJSONArray("evidence_ids").strings().none(removed::contains)
     }))
