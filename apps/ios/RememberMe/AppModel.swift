@@ -14,6 +14,7 @@ struct RecordingDraft: Codable, Identifiable {
 
 @MainActor
 final class AppModel: ObservableObject {
+    @Published var showConnection = false
     @Published var pairing: Pairing? = PairingStore.load()
     @Published var pairingServer = ""
     @Published var pairingCode = ""
@@ -90,12 +91,17 @@ final class AppModel: ObservableObject {
         guard url.scheme == "rememberme", url.host == "pair",
               let parts = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return }
         func value(_ name: String) -> String { parts.first(where: { $0.name == name })?.value ?? "" }
+        showConnection = true
         pairingServer = value("server")
         pairingCode = value("code")
         pairingFingerprint = value("sha256")
     }
 
     func connect() async {
+        guard pairing == nil || (draft == nil && episodeID == nil && !isRecording) else {
+            errorMessage = "还有待处理的录音，请先在当前服务完成该任务后再更换连接。原音仍在手机里。"
+            return
+        }
         isBusy = true
         errorMessage = nil
         defer { isBusy = false }
@@ -108,7 +114,16 @@ final class AppModel: ObservableObject {
                                     token: reply.actor_token, actorID: reply.actor_id,
                                     subjectID: reply.subject_id, consentID: reply.recording_consent_id)
             try PairingStore.save(connected)
+            if pairing?.baseURL != connected.baseURL || pairing?.fingerprint != connected.fingerprint ||
+                pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
+                memories = []; episodes = []; domains = []; questions = []
+                modelVersion = 0; twinAnswer = nil; calibrationRun = nil
+                cloudConsentID = nil; voiceConsentID = nil; voiceProfileReady = false
+                memorySearchResults = []; memorySearchQuery = ""; queryDraft = ""
+                stopPlayback()
+            }
             pairing = connected
+            showConnection = false
             await refresh()
         } catch { errorMessage = error.localizedDescription }
     }
