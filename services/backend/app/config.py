@@ -42,12 +42,16 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http", "relay"] = "fake"
+    stt_backend: Literal["fake", "http", "relay", "groq"] = "fake"
+    groq_api_key: SecretStr = SecretStr("")
+    groq_asr_model: Literal["whisper-large-v3"] = "whisper-large-v3"
+    groq_asr_state_dir: str = "./var/groq-asr"
     # Complete relay endpoint, never inferred from another provider's URL/key.
     relay_asr_url: str = ""
     relay_asr_api_key: SecretStr = SecretStr("")
     relay_asr_model: Literal["codestral-2508", "mistral-code-fim-latest"] = "codestral-2508"
     relay_asr_format: Literal["audio_url", "input_audio"] = "audio_url"
+    relay_asr_audio_transport: Literal["original", "mp3_48k"] = "original"
     relay_asr_max_tokens: int = Field(default=8192, ge=512, le=16384)
     relay_asr_state_dir: str = "./var/cloud-asr"
     stt_url: str = "http://127.0.0.1:8200"

@@ -21,6 +21,7 @@ from filelock import FileLock, Timeout
 from .config import Settings
 from .errors import SttFailed, SttTimeout, SttUnavailable
 from .stt import Transcript
+from .audio_transport import compact_audio
 
 PROMPT_VERSION = 'relay-verbatim-zh-v1'
 INSTRUCTION = ('只转写音频中的说话内容，使用简体中文，尽量保留原话、重复、否定和不确定表达。'
@@ -45,6 +46,8 @@ def is_refusal(text):
 def cloud_policy(settings: Settings) -> str:
     payload = [settings.relay_asr_url, settings.relay_asr_model,
                settings.relay_asr_format, PROMPT_VERSION]
+    if settings.relay_asr_audio_transport != 'original':
+        payload.append(settings.relay_asr_audio_transport)
     return 'cloud-asr-v1:' + hashlib.sha256(json.dumps(payload).encode()).hexdigest()[:32]
 
 
@@ -122,24 +125,31 @@ class RelaySttProvider:
                    'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/flac': 'flac', 'audio/aac': 'aac'}
         if mime not in formats:
             raise SttFailed('云端转写暂不支持此音频格式，原音仍保留。')
-        encoded = base64.b64encode(audio).decode('ascii')
-        chunk = ({'type': 'audio_url', 'audio_url': {'url': f'data:{mime};base64,{encoded}'}}
-            if self.settings.relay_asr_format == 'audio_url' else
-            {'type': 'input_audio', 'input_audio': {'data': encoded, 'format': formats[mime]}})
-        payload = {'model': self.settings.relay_asr_model, 'stream': False,
-            'max_tokens': self.settings.relay_asr_max_tokens,
-            'messages': [{'role': 'system', 'content': INSTRUCTION}, {'role': 'user',
-                'content': [{'type': 'text', 'text': '请逐字转写这段音频。'}, chunk]}]}
         with self.gate.slot():
             authorize()
-            return self._request(audio, payload)
+            wire_audio = audio
+            if self.settings.relay_asr_audio_transport == 'mp3_48k':
+                wire_audio = compact_audio(audio)
+                mime = 'audio/mpeg'
+            encoded = base64.b64encode(wire_audio).decode('ascii')
+            chunk = ({'type': 'audio_url', 'audio_url': {'url': f'data:{mime};base64,{encoded}'}}
+                if self.settings.relay_asr_format == 'audio_url' else
+                {'type': 'input_audio', 'input_audio': {'data': encoded, 'format': formats[mime]}})
+            payload = {'model': self.settings.relay_asr_model, 'stream': False,
+                'max_tokens': self.settings.relay_asr_max_tokens,
+                'messages': [{'role': 'system', 'content': INSTRUCTION}, {'role': 'user',
+                    'content': [{'type': 'text', 'text': '请逐字转写这段音频。'}, chunk]}]}
+            authorize()
+            return self._request(audio, payload, wire_audio)
 
-    def _request(self, audio, payload):
+    def _request(self, audio, payload, wire_audio):
         started = time.monotonic()
         record = {'at': datetime.now(timezone.utc).isoformat(), 'endpoint': self.settings.relay_asr_url,
             'request_model': self.settings.relay_asr_model, 'response_model': None,
             'prompt_version': PROMPT_VERSION, 'wire_format': self.settings.relay_asr_format,
             'audio_sha256': hashlib.sha256(audio).hexdigest(), 'audio_bytes': len(audio),
+            'wire_audio_sha256': hashlib.sha256(wire_audio).hexdigest(), 'wire_audio_bytes': len(wire_audio),
+            'audio_transport': self.settings.relay_asr_audio_transport,
             'http_status': None, 'finish_reason': None, 'usage': None, 'validation': 'failed'}
         try:
             try:
@@ -151,11 +161,39 @@ class RelaySttProvider:
             except httpx.HTTPError as error:
                 raise SttUnavailable('云端转写连接失败，原音保留。') from error
             record['http_status'] = response.status_code
+            if response.status_code != 200:
+                try:
+                    error = response.json().get('error', {})
+                    if isinstance(error, dict):
+                        for source, target in [('code', 'upstream_error_code'), ('type', 'upstream_error_type')]:
+                            value = str(error.get(source, ''))
+                            if re.fullmatch(r'(?:[0-9]{1,8}|[a-z_]{1,40})', value):
+                                record[target] = value
+                        message = str(error.get('message', '')).lower()
+                        # Categorical hints only: never log arbitrary response bodies.
+                        record['error_hints'] = [name for name, terms in {
+                            'rate_limit': ('rate limit', '限流', '频率', 'too many'),
+                            'quota': ('quota', 'balance', '余额', '额度'),
+                            'size_limit': ('too large', 'size limit', '大小', 'context length'),
+                            'unsupported_audio': ('unsupported audio', '不支持音频'),
+                        }.items() if any(term in message for term in terms)]
+                except (ValueError, AttributeError):
+                    pass
             if response.status_code == 429:
                 self.gate.defer(305)
                 raise SttUnavailable('云端 ASR 限流，已进入冷却期；不会切换模型。')
             if response.status_code in {500, 502, 503, 504}:
                 raise SttUnavailable(f'云端 ASR 暂时不可用（HTTP {response.status_code}）。')
+            # Two actual identical-payload recoveries established that this
+            # relay execution failure can be transient. This is not a blanket
+            # retry for 400s or a claim about the undocumented provider code.
+            # The existing job/gate owns the finite three-attempt budget.
+            if (urlsplit(self.settings.relay_asr_url).hostname == 'x666.me'
+                    and response.status_code == 400
+                    and record.get('upstream_error_code') == '3051'
+                    and record.get('upstream_error_type') == 'upstream_error'
+                    and not record.get('error_hints')):
+                raise SttUnavailable('云端 ASR 上游执行失败（3051），将按剩余任务次数重试；原音保留。')
             if response.status_code != 200:
                 raise SttFailed(f'云端 ASR 请求被拒绝（HTTP {response.status_code}），请检查配置或额度。')
             try:

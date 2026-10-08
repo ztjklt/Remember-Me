@@ -1,35 +1,49 @@
 # 勿忘我 · 本机 Agent 工作台
 
-2026-10-07。实现分支 `codex/agent-integration`，基线 `develop@4dc3d5a`。
+更新于2026-10-08。实现分支 `codex/agent-integration`，基线 `develop@4dc3d5a`。
 当前目录 `D:/codex_work/remember-me-agent-loop`。未推送、未合并、未发布。
 
 ## 能做什么
 
 两个独立身份登录，同一人物空间分 owner / reader。录音或导入实际音频，
-保存原音后由本机 Whisper 转写。本人核对文字后才调用云端 AI Core。
+保存原音后由 Groq 云端 Whisper 转写（不是本地模型）。本人核对文字后才调用微信云端 AI Core。
 支持完整故事授权、撤权、来源问答、人物证据视图、补充/纠正/时间变化、
 读者问题单，以及沿用已有的锁定答案校准。
 
 不要将工作台当成手机验收，也不要将确定性测试里的模型替身当成真实 AI。
-当前真实云端验收被缺少 `WEIXIN_CHAT_API_KEY` 阻塞。未接入服务时会保留录音与文字，
+当前密钥已在被忽略的服务端配置中配置，真实结果见 [10月8日验证](GROQ_LIVE_RESULTS_2026-10-08.md)。未接入服务时会保留录音与文字，
 显示失败并允许重试，绝不会自动切换到 fixture/fake。
 
 ## 这台机器的启动方式
 
 1. 进入 `D:/codex_work/remember-me-agent-loop/services/backend`。
 2. Python 环境：`D:/codex_work/remember-me-review/verification-venv/Scripts/python.exe`。
-3. 数据库已迁移，两个测试身份已经创建，凭据只保存在
-   `services/backend/var/local-identities.json`（Git 忽略）。不要发到群里或提交到 Git。
+3. 数据库已迁移。当前三组月度故事的六个独立身份在
+   `services/backend/var/monthly-eval/cloud-asr-runs/relay-compact/identities.json`（Git 忽略）。
+   其中每组有 owner / reader；`var/local-identities.json` 是早期空白工作台身份，不是这批月度材料。不要将凭据发到群里或提交到 Git。
 4. 运行 `python run_workbench.py`；打开 <http://127.0.0.1:8877/workbench/>。
-   端口：Backend 8877、STT 8878、AI Core 8879；只监听本机。
+   端口：Backend 8877、AI Core 8879；只监听本机。不启动本地 STT 8878。
 5. 两个独立浏览器会话分别用 owner / reader 的 `actor_token` 登录。
    分享时输入 reader 的 `actor_id`，不是他的 token。
 
 启动器日志在 `services/backend/var/`。Ctrl+C 会结束它创建的服务进程。
-没有密钥时 AI Core 不启动，但 Backend、STT、Worker 可以运行。
+没有文本密钥时 AI Core 不启动，但 Backend、Worker 可以运行。Groq 缺密钥则明确失败，不切换服务商。
 启动器不自动执行迁移；迁移前先备份已有数据库和对象存储。
 
 ## 配置真实云端模型
+
+在 `services/backend/.env` 中设置云端 ASR（已有密钥不要重新写入文档）：
+
+```dotenv
+REMEMBER_STT_BACKEND=groq
+REMEMBER_START_LOCAL_STT=false
+REMEMBER_GROQ_API_KEY=
+REMEMBER_GROQ_ASR_MODEL=whisper-large-v3
+```
+
+Groq 走官方 `/openai/v1/audio/transcriptions`；转写只收到音频，不收到创作稿或标准答案。
+当前主机通过已配置的环境代理连接 Groq 成功。压缩传输副本后发送，原 WAV 不变；保存原始 ASR，再生成简体核对草稿。
+切换 ASR 路线必须重新确认云端政策；旧路线排队任务不会自动发往新服务。
 
 在 **`services/ai-core/.env`** 中配置以下字段。密钥只在本机文件中填写，
 不要粘贴进聊天、网页或命令行参数：
@@ -54,12 +68,8 @@ AI_MAX_CONCURRENT_REQUESTS=1
 
 - 安装 Python 3.12+ 和 backend、ai-core 各自 pyproject 中的运行依赖；
   另安装 backend 的 retrieval 依赖。服务都在自己的目录运行，避免两个 `app` 包互相覆盖。
-- 安装 ffmpeg、[官方 whisper.cpp](https://github.com/ggml-org/whisper.cpp/releases/tag/v1.9.2)
-  和[多语言 base 模型](https://huggingface.co/ggerganov/whisper.cpp)。不要使用 `.en` 模型。
-- 这台机器使用 whisper.cpp v1.9.2 Windows x64，下载包 SHA256：
-  `49dcc16de826f20bd53d44f947a1ae49dfa81f86cad67a64d80820cb192d674a`。
-  base 模型 SHA256：`60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe`。
-- Backend `.env` 可参考 `.env.workbench.example`。
+- 安装 ffmpeg 用于音频格式转换；本轮不需要下载 Whisper 程序或本地语音模型。
+- Backend `.env` 参考 `.env.example` 的 Groq 配置。`.env.workbench.example` 保留早期本地 STT 示例，不应用到当前云端验证路线。
 - 在 backend 运行 `python -m alembic upgrade head`，再运行
   `python -m app.workbench_setup --output var/local-identities.json`。
   已存在身份文件时拒绝覆盖；不要反复创建新身份代替登录。

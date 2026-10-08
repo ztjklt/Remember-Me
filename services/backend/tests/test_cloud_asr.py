@@ -156,3 +156,77 @@ def test_story_quoting_unsupported_audio_is_preserved(monkeypatch, tmp_path):
     monkeypatch.setattr(httpx, 'post', lambda *a, **kw: response(text))
     result = RelaySttProvider(configured(tmp_path), gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
     assert result.text == text
+
+
+def test_upstream_error_code_is_recorded_without_echoing_body(monkeypatch, tmp_path):
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: httpx.Response(429, json={
+        'error': {'type': 'upstream_error', 'code': '1300', 'message': 'SECRET AUDIO echo'}}))
+    with pytest.raises(SttUnavailable):
+        RelaySttProvider(configured(tmp_path), gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
+    log = (tmp_path / 'calls.jsonl').read_text()
+    assert json.loads(log)['upstream_error_code'] == '1300'
+    assert 'SECRET' not in log
+
+
+def test_compact_transport_keeps_original_provenance_and_requires_new_policy(monkeypatch, tmp_path):
+    import app.relay_asr as relay
+    calls = []
+    monkeypatch.setattr(relay, 'compact_audio', lambda raw: b'ACTUAL-MP3', raising=False)
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: (calls.append(kw['json']), response())[1])
+    original = configured(tmp_path, relay_asr_format='input_audio')
+    compact = configured(tmp_path, relay_asr_format='input_audio', relay_asr_audio_transport='mp3_48k')
+    assert cloud_policy(original) != cloud_policy(compact)
+    result = RelaySttProvider(compact, gate=ImmediateGate()).transcribe(b'ORIGINAL-WAV', 'audio/wav')
+    chunk = calls[0]['messages'][1]['content'][1]['input_audio']
+    assert chunk['format'] == 'mp3' and base64.b64decode(chunk['data']) == b'ACTUAL-MP3'
+    import hashlib
+    assert result.metadata['audio_sha256'] == hashlib.sha256(b'ORIGINAL-WAV').hexdigest()
+    assert result.metadata['wire_audio_sha256'] == hashlib.sha256(b'ACTUAL-MP3').hexdigest()
+    assert result.metadata['audio_transport'] == 'mp3_48k'
+
+
+def test_failed_transcode_never_sends_audio(monkeypatch, tmp_path):
+    import app.relay_asr as relay
+    def broken(_raw): raise SttFailed('压缩失败')
+    monkeypatch.setattr(relay, 'compact_audio', broken, raising=False)
+    sent = []
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: sent.append(True))
+    with pytest.raises(SttFailed):
+        RelaySttProvider(configured(tmp_path, relay_asr_audio_transport='mp3_48k'),
+                         gate=ImmediateGate()).transcribe(b'ORIGINAL-WAV', 'audio/wav')
+    assert not sent
+
+
+def test_conversion_is_serialized_and_consent_checked_again_before_send(monkeypatch, tmp_path):
+    import app.relay_asr as relay
+    events = []
+    class Gate(ImmediateGate):
+        @contextmanager
+        def slot(self):
+            events.append('lock')
+            yield
+    def authorized(): events.append('consent')
+    def convert(_): events.append('convert'); return b'mp3'
+    monkeypatch.setattr(relay, 'compact_audio', convert)
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: (events.append('send'), response())[1])
+    RelaySttProvider(configured(tmp_path, relay_asr_audio_transport='mp3_48k'), gate=Gate()).transcribe_authorized(
+        b'original', 'audio/wav', authorized)
+    assert events == ['lock', 'consent', 'convert', 'consent', 'send']
+
+
+@pytest.mark.parametrize('status,code,kind,message,retryable', [
+    (400, '3051', 'upstream_error', 'Upstream execution failed', True),
+    (400, '3051', 'upstream_error', 'Insufficient balance', False),
+    (400, '3051', 'invalid_request_error', 'Invalid request', False),
+    (400, '9999', 'upstream_error', 'Other failure', False),
+    (401, '3051', 'upstream_error', 'Unauthorized', False),
+])
+def test_observed_relay_execution_failure_uses_job_budget_not_internal_retry(
+        monkeypatch, tmp_path, status, code, kind, message, retryable):
+    calls = []
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: (calls.append(True), httpx.Response(
+        status, json={'error': {'code': code, 'type': kind, 'message': message}}))[1])
+    settings = configured(tmp_path).model_copy(update={'relay_asr_url': 'https://x666.me/v1/chat/completions'})
+    with pytest.raises(SttUnavailable if retryable else SttFailed):
+        RelaySttProvider(settings, gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
+    assert len(calls) == 1

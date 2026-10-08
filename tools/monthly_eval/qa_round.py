@@ -18,14 +18,23 @@ def pending_attempts(row):
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--round',required=True)
+    parser.add_argument('--recognition-run')
+    parser.add_argument('--cases', help='Explicit comma-separated case IDs for a separately recorded regression')
+    parser.add_argument('--protocol', default='twin-compact-v2')
     args=parser.parse_args()
     if not args.round.replace('-','').isalnum(): raise SystemExit('Invalid round name')
+    if args.recognition_run and not args.recognition_run.replace('-','').isalnum(): raise SystemExit('Invalid recognition run')
+    selected = set(args.cases.split(',')) if args.cases else None
+    recognition = OUT/'cloud-asr-runs'/args.recognition_run if args.recognition_run else None
     target=OUT/('qa-'+args.round+'.json')
     state=json.loads(target.read_text(encoding='utf-8')) if target.exists() else {
         'round':args.round,'started_at':datetime.now(timezone.utc).isoformat(),
-        'prompt_protocol':'twin-compact-v2','new_audio_recognition':False,
+        'prompt_protocol':args.protocol,'new_audio_recognition':False,
+        'recognition_run':args.recognition_run,'selected_cases':sorted(selected) if selected else None,
         'human_listening':False,'qa':{}}
-    auth=json.loads(AUTH.read_text(encoding='utf-8'));mapping=json.loads(MAPPING.read_text(encoding='utf-8'))
+    if state.get('selected_cases') != (sorted(selected) if selected else None): raise SystemExit('Cases differ from saved round')
+    auth=json.loads(((recognition/'identities.json') if recognition else AUTH).read_text(encoding='utf-8'))
+    mapping=json.loads(((recognition/'product-episodes.json') if recognition else MAPPING).read_text(encoding='utf-8'))
     for pid,pair in auth.items():
         gold=json.loads((CORPUS/'gold'/(pid+'.json')).read_text(encoding='utf-8'))
         owner=pair['owner'];subject=owner['subject_id'];root='/api/v1/workbench/subjects/'+subject
@@ -36,6 +45,7 @@ def main():
         check_qa_scope(pid,gold['qa_protocol'],mapping,grants,call('GET',root+'/stories',pair['reader'])['items'],call('GET',root+'/revisions',owner)['items'])
         checks=state['qa'].setdefault(pid,{'checks':[]})['checks']
         for check in gold['qa']:
+            if selected is not None and check['id'] not in selected: continue
             row=next((r for r in checks if r['id']==check['id']),None)
             if row is None:
                 row={'id':check['id'],'role':check['role'],'question':check['question'],'text_review':'pending','attempts':[]}

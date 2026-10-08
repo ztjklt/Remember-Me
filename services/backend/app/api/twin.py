@@ -52,11 +52,11 @@ async def transcribe_query(subject_id: str, request: Request,
                            session: Session = Depends(get_session)) -> dict:
     """Temporary speech-to-text; never create an Episode or Memory."""
     require_subject(session, subject_id, actor)
-    if request.app.state.settings.stt_backend not in {"http", "relay"}:
+    if request.app.state.settings.stt_backend not in {"http", "relay", "groq"}:
         raise TwinFailed("请先连接真实的中文语音识别服务。")
-    cloud = request.app.state.settings.stt_backend == 'relay'
+    cloud = request.app.state.settings.stt_backend in {'relay', 'groq'}
     if cloud:
-        from ..relay_asr import cloud_policy
+        from ..cloud_asr import cloud_policy
         from ..errors import RequestInvalid
         if request.headers.get('X-Cloud-ASR-Policy') != cloud_policy(request.app.state.settings):
             raise RequestInvalid('请明确同意将提问原音发送到当前云端转写服务。')

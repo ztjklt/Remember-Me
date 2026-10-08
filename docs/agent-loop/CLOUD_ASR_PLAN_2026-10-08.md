@@ -46,3 +46,14 @@
 不可用“接口已接入”代替这些验收。音频请求格式参考 Mistral audio_url/input_audio
 协议定义，实际中转格式须通过用户同一端点实测后固定：
 https://mistralai.github.io/mistral-common/code_reference/mistral_common/protocol/instruct/chunk/
+
+## 连接补齐后的传输兼容性补充
+
+10月8日用户补齐 x666 地址及服务端凭据。实际采用完整端点
+`https://x666.me/v1/chat/completions`、`input_audio` 和 `codestral-2508`。
+同一段270.6秒 WAV 三次429，转为48kbps单声道24kHz MP3后实际返回200和转写。
+据此新增显式 `REMEMBER_RELAY_ASR_AUDIO_TRANSPORT=mp3_48k`：仅压缩云端传输副本，
+不修改原音、不运行本地识别。FFmpeg缺失或转换失败时保留原音并明确失败。
+传输选项纳入 cloud policy，变更后旧同意不自动沿用；原请求策略的 policy 保持兼容。
+调用元数据区分原音哈希/大小与传输哈希/大小；产品原音播放仍返回原始上传字节。
+无新数据库迁移，无共享记忆字段放宽。真实识别质量与流程结果另记 RELAY_LIVE 文档。

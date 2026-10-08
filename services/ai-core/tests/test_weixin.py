@@ -7,6 +7,34 @@ from app.providers.weixin import WeixinChat
 from app.profile_proposals import ProfileProposalInput, ProfileProposalProvider
 
 
+def test_extraction_schema_failure_logs_shape_without_private_content(caplog):
+    from types import SimpleNamespace
+    from app.providers.weixin import WeixinProvider
+    provider = WeixinProvider(api_key='test-only')
+    provider.complete = lambda *args: ({'memories': [dict(source_id='s1', statement='PRIVATE_TEXT',
+        domain='IDENTITY', memory_type='PERSON', confidence=.8)] * 25}, 'actual')
+    try:
+        with pytest.raises(AIOutputInvalid):
+            provider.generate(SimpleNamespace(payload=SimpleNamespace(transcript='PRIVATE_TEXT。')))
+    finally: provider.close()
+    assert 'extraction_schema_invalid' in caplog.text and 'too_long' in caplog.text
+    assert 'PRIVATE_TEXT' not in caplog.text
+
+
+def test_twin_failure_diagnostics_do_not_include_source_text(caplog):
+    from app.providers.weixin import WeixinTwinProvider
+    from app.twin import TwinInput
+    provider = WeixinTwinProvider(api_key='test-only')
+    provider.complete = lambda *args: ({'answer':'', 'response_type':'ORIGINAL', 'evidence_ids':['s1'], 'confidence':.9}, 'actual')
+    try:
+        with pytest.raises(AIOutputInvalid):
+            provider.answer(TwinInput(question='什么？', candidates=[{'memory_item_id':'m', 'statement':'摘要',
+                'evidence':[{'evidence_id':'real', 'source_type':'SUBJECT', 'excerpt':'PRIVATE_TEXT'*30}]}]))
+    finally: provider.close()
+    assert 'twin_output_invalid' in caplog.text and '200 Unicode' in caplog.text
+    assert 'PRIVATE_TEXT' not in caplog.text
+
+
 def test_twin_compact_sources_preserve_type_time_and_contradictions():
     from app.providers.weixin import compact_twin_materials
     from app.twin import TwinInput
@@ -104,7 +132,7 @@ def test_profile_schema_rejects_status_confidence_and_unknown_counter_evidence()
             return {'candidates':[candidate]}, 'actual'
     provider=ProfileProposalProvider(Chat())
     payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'每天散步'}])
-    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v3'
+    assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v4'
     candidate['confidence']=.9
     with pytest.raises(AIOutputInvalid):
         provider.propose(payload)
@@ -123,7 +151,7 @@ def test_proposal_http_worker_has_fixed_versions_and_bounded_input():
     with TestClient(create_app(Settings(_env_file=None), profile_provider=ProfileProposalProvider(Chat()))) as client:
         response=client.post('/profile-proposals',json={'materials':[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'原话'}]})
         assert response.status_code==200
-        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v3'}
+        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v4'}
         assert client.post('/profile-proposals',json={'materials':[],'prompt_version':'invented'}).status_code==422
 
 
@@ -138,6 +166,7 @@ def test_extraction_keeps_actual_uppercase_model_and_offsets():
     output=MemoryExtractor(provider=provider,model='Deepseek-v4-flash',model_version='requested').process(AICoreInput(episode_id='ep1',subject_id='s1',transcript='我喜欢散步',trace_id='t1',existing_model_version="v1"))
     assert output.model_version=='DeepSeek-Actual'
     assert output.memory_items[0].model_version=='DeepSeek-Actual'
+    assert output.memory_items[0].prompt_version=='weixin-memory-source-selection-v4'
     assert output.evidence[0].excerpt=='我喜欢散步'
 
 

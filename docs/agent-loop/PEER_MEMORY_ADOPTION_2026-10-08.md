@@ -1,3 +1,4 @@
+> 后续实施更新：本文保留夜间初始采用分析。提交 4b1b4e3 已在统一后端实现 Owner 选择并确认的 ADD/SUPPORT/CONFLICT/CHANGE 更新审核资源，包含新旧版本、冲突暂停、来源复核和答案失效。见 [RELIABILITY_RESULTS_2026-10-08.md](RELIABILITY_RESULTS_2026-10-08.md)。下文“尚需实现”不能作为当前代码状态；完整自动关系识别、语义重复事件识别及自动冲突后续仍未实现，也不能把手动审核版说成同学自动 Trait 系统已原样移植。
 # 同学记忆与人物更新结构：采用边界及补充方案
 
 依据固定提交8627f03的 services/ai-core/app/agent/orchestrator.py、packages/contracts/remember_contracts/agent.py、docs/architecture/AGENT_CORE_LOOP.md，对照本地db6a0ce及10月8日增量。这里的“没移植”不等于“没有价值”。

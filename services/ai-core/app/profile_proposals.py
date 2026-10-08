@@ -5,7 +5,7 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 from .errors import AIOutputInvalid
 from .providers.ollama import DOMAINS
 
-PROMPT_VERSION = 'profile-proposals-evidence-v3'
+PROMPT_VERSION = 'profile-proposals-evidence-v4'
 Domain = Literal['IDENTITY','EPISODIC_MEMORY','RELATIONSHIPS','PREFERENCES','VALUES_BELIEFS','DECISION_PATTERNS','EXPRESSION']
 
 class Material(BaseModel):
@@ -39,7 +39,7 @@ class ProfileProposalOutput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     candidates: list[ProfileCandidate] = Field(max_length=8)
     model_version: str = Field(min_length=1,max_length=128)
-    prompt_version: Literal['profile-proposals-evidence-v3'] = PROMPT_VERSION
+    prompt_version: Literal['profile-proposals-evidence-v4'] = PROMPT_VERSION
 
 class ProfileSelection(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -72,6 +72,8 @@ class ProfileProposalProvider:
                   'domain是知识领域，kind是特征类型，两者不能混淆。HABITS、HABIT、PERSONALITY都不是合法domain，禁止输出。'
                   '行为习惯若适用可归DECISION_PATTERNS，口味倾向归PREFERENCES；kind仍单独填habit或trait。'
                   '每项结论严格限定到证据，不能从愿意回答推断关系亲密，不能从一句安全口号推断稳定习惯。'
+                  'statement和context使用“讲述者”称呼本人，不自行选择他或她。不得从姓名、职业或家属关系推断本人性别。'
+                  '只在引用明确陈述该身份信息时才写入；真实存在的引用不等于支持你追加的每个事实。'
                   '输出前检查每项domain均属于上述七个英文值；无法归类或依据不足的不要提议。'
                   '引用只能逐字使用输入中的短编号，例如s1，不可自造编号。严格按此JSON结构输出：'
                   + json.dumps(ProfileSelection.model_json_schema(), ensure_ascii=False))

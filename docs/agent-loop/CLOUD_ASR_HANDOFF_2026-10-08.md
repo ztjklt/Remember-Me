@@ -1,3 +1,8 @@
+> 当前（2026-10-08）：Groq 已接通，30段云端批次已处理。以 [最新结果](GROQ_LIVE_RESULTS_2026-10-08.md) 和 [启动说明](RUNBOOK.md) 为准；下文的relay配置与缺密钥状态是历史阶段。
+
+> 更新：本文件下方保留的是“尚未收到中转凭据”时的历史交接。用户随后提供 x666 连接；真实连接、三人物全链路和 Android 播放已经验证。最新状态以 [RELAY_LIVE_2026-10-08.md](RELAY_LIVE_2026-10-08.md) 为准，不能继续把旧配置缺失当作当前阻塞。
+>
+> 当前配置：relay、START_LOCAL_STT=false、https://x666.me/v1/chat/completions、codestral-2508、input_audio、mp3_48k。备用指定入口 mistral-code-fim-latest 已完成完整故事音频探针，但不会自动切换。月度云端检查点为 relay-compact，与旧 Whisper 结果隔离。
 # 云端转写接力交付（2026-10-08）
 
 ## 当前结果
@@ -100,3 +105,7 @@ python tools/monthly_eval/cloud_asr_samples.py --run relay-first --execute
 4. Android 新流程的实际录音/播放及真人听读，iOS 编译/设备验证仍单列待测。
 
 没有推送、合并或发布。旧数据、音频、失败历史均保留在原工作区。
+# 当前接力结果
+
+用户随后提供并授权 Groq。当前已完成30段云端批次，来源按24段relay与6段Groq保留。
+以 [Groq实际结果](GROQ_LIVE_RESULTS_2026-10-08.md) 和 [当前启动说明](RUNBOOK.md) 为准；下文是前序阶段记录。

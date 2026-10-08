@@ -290,8 +290,8 @@ def create_episode(
     # capture to the displayed relay policy; never accept a client-made receipt.
     capture_metadata = dict(capture_metadata or {})
     capture_metadata.pop('cloud_asr_receipt', None)
-    if settings.stt_backend == 'relay':
-        from ..relay_asr import cloud_policy, configured
+    if settings.stt_backend in {'relay', 'groq'}:
+        from ..cloud_asr import cloud_policy, configured
         if not configured(settings):
             raise RequestInvalid('云端转写连接配置未完成，请先保留本机原音，配置完成后再上传。')
         policy = cloud_policy(settings)

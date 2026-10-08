@@ -19,7 +19,7 @@ def prepare_runtime(backend_env, ai_overrides):
     env.setdefault('REMEMBER_STT_BACKEND', 'relay')
     env.update(REMEMBER_AI_BACKEND='http', REMEMBER_ENABLE_WORKBENCH='true')
     local = env['REMEMBER_STT_BACKEND'] == 'http' and env.get('REMEMBER_START_LOCAL_STT', '').lower() == 'true'
-    if not local:
+    if not local and env['REMEMBER_STT_BACKEND'] not in {'relay', 'groq'}:
         env['REMEMBER_STT_BACKEND'] = 'relay'
     cli = env.get('WHISPER_CLI') if local else None
     if cli:
@@ -54,6 +54,8 @@ def main():
     ai_overrides = {k: v for k, v in dotenv_values(AI_ROOT / '.env').items() if v is not None}
     env, ai_env, commands = prepare_runtime(backend_env, ai_overrides)
     (ROOT / 'var').mkdir(exist_ok=True)
+    if env['REMEMBER_STT_BACKEND'] == 'groq' and not env.get('REMEMBER_GROQ_API_KEY', '').strip():
+        print('Groq ASR key missing. No other ASR provider will start.', flush=True)
     if env['REMEMBER_STT_BACKEND'] == 'relay' and not (env.get('REMEMBER_RELAY_ASR_URL') and env.get('REMEMBER_RELAY_ASR_API_KEY')):
         print('Cloud ASR configuration missing. Originals remain usable; no Whisper/fake fallback will start.', flush=True)
     if not any(name == 'ai-core' for name, *_ in commands):

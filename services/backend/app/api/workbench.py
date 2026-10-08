@@ -77,9 +77,8 @@ def spaces(actor: Actor = Depends(current_actor), session: Session = Depends(get
 @router.get('/capabilities')
 def capabilities(request: Request, actor: Actor = Depends(current_actor)):
     settings = request.app.state.settings
-    from ..relay_asr import cloud_policy, configured
-    from urllib.parse import urlsplit
-    cloud = settings.stt_backend == 'relay'
+    from ..cloud_asr import cloud_policy, configured, destination, CLOUD_BACKENDS
+    cloud = settings.stt_backend in CLOUD_BACKENDS
     available=False
     if settings.ai_backend=='http':
         import httpx
@@ -89,12 +88,12 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
         except httpx.HTTPError:
             pass
     return {'stt': settings.stt_backend, 'ai': settings.ai_backend,
-        'live_configured': settings.stt_backend in {'http', 'relay'} and settings.ai_backend == 'http',
+        'live_configured': settings.stt_backend in {'http', *CLOUD_BACKENDS} and settings.ai_backend == 'http',
         'stt_processing': 'cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http'),
         'stt_configured': configured(settings) if cloud else settings.stt_backend == 'http',
         'cloud_asr_policy': cloud_policy(settings) if cloud else None,
-        'stt_model': settings.relay_asr_model if cloud else None,
-        'stt_host': urlsplit(settings.relay_asr_url).hostname if cloud else None,
+        'stt_model': destination(settings)['model'] if cloud else None,
+        'stt_host': destination(settings)['host'] if cloud else None,
         'ai_available':available,
         'notice': '配置不等于服务可用；实际结果保留模型版本。',
         'schema_version': '0.5.0', 'audio_alignment': False}

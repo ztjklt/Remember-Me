@@ -5,7 +5,7 @@ vendor: the worker asks for a transcript and gets one, and which service produce
 it is recorded on the Episode as `stt_backend` and `stt_model_version` rather than
 assumed.
 
-Two adapters ship. `http` is the deployment one and speaks a deliberately small
+The legacy `http` adapter speaks a deliberately small
 wire contract of this module's own, so a provider can be attached without any
 other part of the service changing:
 
@@ -14,6 +14,10 @@ other part of the service changing:
     <the raw audio bytes>
     ->
     200 {"text": "...", "model_version": "..."}   # model_version optional
+
+`relay` and `groq` are explicit cloud choices. Both require the current
+destination policy and recheck consent after waiting; neither uses local ASR or
+falls back to another provider. `groq` uses the official multipart speech API.
 
 A non-2xx answer keeps the same meaning it has at the AI Core boundary: 503 and
 504 are the provider's own transient conditions and return to the job's retry
@@ -175,6 +179,9 @@ class HttpSttProvider:
 
 
 def build_stt_provider(settings: Settings) -> SttProvider:
+    if settings.stt_backend == 'groq':
+        from .groq_asr import GroqSttProvider
+        return GroqSttProvider(settings)
     if settings.stt_backend == 'relay':
         from .relay_asr import RelaySttProvider
         return RelaySttProvider(settings)
