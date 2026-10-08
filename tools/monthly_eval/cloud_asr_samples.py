@@ -117,15 +117,8 @@ def main():
         raise SystemExit('Incomplete real cloud-ASR samples; see checkpoint errors. No QA success claimed.')
     product.MAPPING = run / 'product-episodes.json'
     save(product.MAPPING, state['episodes'])
-    import live_samples
-    live_samples.AUTH = product.AUTH
-    live_samples.MAPPING = product.MAPPING
-    live_samples.REPORT = run / 'product-loop.json'
-    live_samples.main()  # Evidence, audio hash, owner/reader QA, revoke, profile.
-    report = json.loads(live_samples.REPORT.read_text(encoding='utf-8'))
-    if any(p.get('profile_status') != 'complete' or not p.get('profile_result', {}).get('items')
-           for p in report['people'].values()):
-        raise SystemExit('Profiles failed, are still pending, or are empty; product loop not accepted.')
+    from cloud_followthrough import followthrough
+    followthrough(run, pairs, state['episodes'])
     state['phase'] = 'complete'; state['quality_review'] = 'pending'; persist()
 
 

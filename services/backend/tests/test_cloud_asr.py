@@ -134,3 +134,25 @@ def test_corrupt_gate_state_fails_closed(tmp_path):
     with pytest.raises(SttFailed, match='检查点'):
         with SerialGate(tmp_path).slot():
             pytest.fail('must not enter outbound request')
+
+
+@pytest.mark.parametrize('text', ['[無法轉寫]', 'Sorry, I do not have the ability to process audio files.',
+    '抱歉，我无法访问音频内容，请提供文字。'])
+def test_common_relay_refusals_fail_even_with_http200(monkeypatch, tmp_path, text):
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: response(text))
+    with pytest.raises(SttFailed):
+        RelaySttProvider(configured(tmp_path), gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
+
+
+def test_structured_refusal_is_not_a_transcript(monkeypatch, tmp_path):
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: httpx.Response(200, json={'choices': [
+        {'finish_reason': 'stop', 'message': {'content': '我喜欢花。', 'refusal': 'audio unsupported'}}]}))
+    with pytest.raises(SttFailed):
+        RelaySttProvider(configured(tmp_path), gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
+
+
+def test_story_quoting_unsupported_audio_is_preserved(monkeypatch, tmp_path):
+    text = '我那天说，这台设备不支持音频，然后我们继续散步了。'
+    monkeypatch.setattr(httpx, 'post', lambda *a, **kw: response(text))
+    result = RelaySttProvider(configured(tmp_path), gate=ImmediateGate()).transcribe(b'audio', 'audio/wav')
+    assert result.text == text

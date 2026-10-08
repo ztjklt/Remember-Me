@@ -28,6 +28,20 @@ INSTRUCTION = ('只转写音频中的说话内容，使用简体中文，尽量�
     '只输出转写正文。若无法读取音频，明确返回[无法转写]，不要猜测。')
 
 
+def is_refusal(text):
+    from .chinese_text import simplified_transcript
+    normalized = simplified_transcript(text).strip().lower()
+    if normalized.startswith('[无法转写]'):
+        return True
+    starts = ('抱歉', '对不起', '很抱歉', '无法', '不支持', '我无法', '我不能', '不能',
+              '作为', '该模型', '本模型', '目前无法', 'as an', 'sorry', 'i cannot',
+              "i can't", 'i do not', "i don't", 'i am unable', 'this model')
+    # Avoid rejecting a genuine story merely because it quotes a device error.
+    # This is a bounded heuristic, not proof of faithful transcription.
+    return normalized.startswith(starts) and bool(re.search(
+        r'\b(audio|transcrib|listen)\w*\b|音频|录音|语音|转写', normalized[:250]))
+
+
 def cloud_policy(settings: Settings) -> str:
     payload = [settings.relay_asr_url, settings.relay_asr_model,
                settings.relay_asr_format, PROMPT_VERSION]
@@ -148,6 +162,7 @@ class RelaySttProvider:
                 body = response.json()
                 choice = body['choices'][0]
                 text = choice['message']['content']
+                refusal = choice['message'].get('refusal')
                 reason = choice.get('finish_reason')
                 model = body.get('model')
             except (ValueError, KeyError, IndexError, TypeError) as error:
@@ -160,11 +175,9 @@ class RelaySttProvider:
             if isinstance(usage, dict):
                 record['usage'] = {k: usage[k] for k in ('prompt_tokens', 'completion_tokens', 'total_tokens')
                                    if type(usage.get(k)) is int and usage[k] >= 0}
-            if reason != 'stop' or not isinstance(text, str) or not text.strip():
+            if refusal or reason != 'stop' or not isinstance(text, str) or not text.strip():
                 raise SttFailed('云端 ASR 输出为空、截断或未正常结束，未保存为成功转写。')
-            if len(text) > 30000 or re.search(
-                r'\[无法转写\]|不支持.{0,12}音频|无法.{0,12}(读取|识别|转写|处理|收听).{0,12}音频|'
-                r'(cannot|can.t|unable to|don.t support).{0,60}(audio|transcrib|listen)', text, re.I):
+            if len(text) > 30000 or is_refusal(text):
                 raise SttFailed('云端接口返回了拒绝或无法识别音频的说明，未作为转写入库。')
             record['validation'] = 'transcript_received_unreviewed'
             version = 'relay/' + self.settings.relay_asr_model

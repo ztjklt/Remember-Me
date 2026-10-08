@@ -15,3 +15,9 @@ def test_local_sidecar_requires_explicit_legacy_opt_in():
         assert not any('app.local_stt:app' in c[-1] for c in commands)
     _, _, commands = prepare_runtime({'REMEMBER_STT_BACKEND': 'http', 'REMEMBER_START_LOCAL_STT': 'true'}, {})
     assert any('app.local_stt:app' in c[-1] for c in commands)
+
+
+def test_old_http_and_fake_values_do_not_override_cloud_task():
+    for legacy in ('http', 'fake'):
+        env, _, _ = prepare_runtime({'REMEMBER_STT_BACKEND': legacy}, {})
+        assert env['REMEMBER_STT_BACKEND'] == 'relay'

@@ -291,7 +291,9 @@ def create_episode(
     capture_metadata = dict(capture_metadata or {})
     capture_metadata.pop('cloud_asr_receipt', None)
     if settings.stt_backend == 'relay':
-        from ..relay_asr import cloud_policy
+        from ..relay_asr import cloud_policy, configured
+        if not configured(settings):
+            raise RequestInvalid('云端转写连接配置未完成，请先保留本机原音，配置完成后再上传。')
         policy = cloud_policy(settings)
         if capture_metadata.get('cloud_asr_policy') != policy:
             raise RequestInvalid('请刷新转写配置，并明确同意把本段原音发送到云端转写；尚未外发音频。')

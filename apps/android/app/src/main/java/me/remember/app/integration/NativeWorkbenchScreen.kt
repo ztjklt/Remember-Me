@@ -204,10 +204,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         Action("播放本机原音", !state.busy && !state.recording) { model.playLocal(capture) }
         if(!capture.linked) {
             val caps = state.asrCapabilities
+            val configured = caps != null && (caps.text("stt_processing") != "cloud" || caps.optBoolean("stt_configured"))
             val destination = if(caps?.text("stt_processing") == "cloud")
                 "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
-            Check("同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, caps != null)
-            Action(if(capture.episode.isBlank()) "上传并等待核对" else "重试上传与关联", !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
+            Check("同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, configured)
+            if(!configured) Text("转写连接配置未完成，原音仍保留本机。")
+            Action(if(capture.episode.isBlank()) "上传并等待核对" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
         }
     } }
 }

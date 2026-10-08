@@ -120,3 +120,11 @@ def test_temporary_query_needs_explicit_cloud_permission(app, client, session, m
     assert result.status_code == 200, result.text
     assert result.json()['text'] == '我没有去过北京。'
     assert len(sent) == 1
+
+
+def test_unconfigured_destination_cannot_obtain_upload_consent(app, client, session, monkeypatch):
+    own, headers, sent = setup_cloud(app, session, monkeypatch)
+    app.state.settings.relay_asr_url = ''
+    result = upload(client, own, headers, {'cloud_asr_policy': cloud_policy(app.state.settings)})
+    assert result.status_code == 422
+    assert not sent

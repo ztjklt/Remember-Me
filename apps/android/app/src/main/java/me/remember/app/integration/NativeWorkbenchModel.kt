@@ -209,6 +209,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val s = session ?: return
         if(!recordingConsent) { report("请先确认本段完整原音的上传与转写方式；原音仍保留本机。"); return }
         val caps = state.value.asrCapabilities ?: run { report("请先刷新转写配置。"); return }
+        if(caps.text("stt_processing") == "cloud" && !caps.optBoolean("stt_configured")) {
+            report("云端转写配置尚未完成，原音保留本机，请配置后再上传。"); return
+        }
         val asrPolicy = if(caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
         if(!state.value.owner) return
         val subject = state.value.subject; val path = root()
