@@ -1,13 +1,11 @@
 """Rebuild derived person model from the subject's active, auditable memories."""
 
-from uuid import uuid4
-
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..models import (
     CaptureQuestion, Episode, Evidence, GraphFact, MemoryItem, ModelRevision,
-    PERSON_DOMAINS, PersonTrait, utcnow,
+    PERSON_DOMAINS, PersonTrait, as_utc,
 )
 
 DOMAIN_FOR_TYPE = {
@@ -16,15 +14,7 @@ DOMAIN_FOR_TYPE = {
     "VALUE": "VALUES_BELIEFS", "EMOTION": "EPISODIC_MEMORY",
 }
 
-QUESTIONS = {
-    "IDENTITY": "你会怎样向一个刚认识的人介绍自己？",
-    "EPISODIC_MEMORY": "有没有一段经历，对现在的你影响特别大？",
-    "RELATIONSHIPS": "你生命中现在最重要的人是谁？你们的关系是什么样的？",
-    "PREFERENCES": "最近有什么东西是你特别喜欢，或者特别不喜欢的？",
-    "VALUES_BELIEFS": "遇到两难选择时，你通常最看重什么？",
-    "DECISION_PATTERNS": "你做一个重要决定时，通常会先做什么？",
-    "EXPRESSION": "你希望别人用什么样的方式跟你交流？",
-}
+from ..capture_planner import QUESTIONS, plan
 
 
 def _contradicts(left: str, right: str) -> bool:
@@ -52,12 +42,12 @@ class PersonModelRepository:
         previous_traits = {
             memory_id: row.trait_id
             for row in session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id))
-            for memory_id in row.memory_item_ids
+            for memory_id in row.memory_item_ids[:1]
         }
         previous_facts = {
             memory_id: row.fact_id
             for row in session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id))
-            for memory_id in row.memory_item_ids
+            for memory_id in row.memory_item_ids[:1]
         }
         if answered_question_id:
             question = session.get(CaptureQuestion, answered_question_id)
@@ -83,25 +73,75 @@ class PersonModelRepository:
             proposal = next((item for item in proposals.get("persona_updates", [])
                              if item.get("statement") == memory.content
                              and set(item.get("evidence_ids", [])) & set(memory.evidence_ids)), None)
-            domain = (proposal or {}).get("domain") or (memory.item_metadata or {}).get("domain") or DOMAIN_FOR_TYPE[memory.memory_type]
+            metadata = memory.item_metadata or {}
+            domain = metadata.get("domain") or (proposal or {}).get("domain") or DOMAIN_FOR_TYPE[memory.memory_type]
             if domain not in PERSON_DOMAINS:
                 domain = DOMAIN_FOR_TYPE[memory.memory_type]
             evidence = session.get(Evidence, memory.evidence_ids[0]) if memory.evidence_ids else None
+            sources = [session.get(Evidence, eid) for eid in memory.evidence_ids]
+            if not sources or any(source is None or source.source_type not in {"SUBJECT", "CALIBRATION"} for source in sources):
+                continue  # Retain third-party memories, never promote them to Subject traits.
+            reflection = (memory.item_metadata or {}).get("reflection", {})
+            if reflection.get("input_statement") != memory.content:
+                reflection = {}
             trait = PersonTrait(
                 trait_id=previous_traits.get(memory.memory_item_id) or "trait_" + memory.memory_item_id,
                 subject_id=subject_id, domain=domain, statement=memory.content,
-                context=(proposal or {}).get("context") or (evidence.excerpt if evidence else None),
+                context=reflection.get("context") if reflection else (proposal or {}).get("context") or (evidence.excerpt if evidence else None),
                 confidence=memory.confidence, source_type=memory.source_type,
                 evidence_ids=list(memory.evidence_ids), counter_evidence_ids=[],
                 memory_item_ids=[memory.memory_item_id], status="active",
                 model_version=memory.model_version, valid_from=memory.effective_at,
             )
-            for old in traits:
-                if old.domain == domain and _contradicts(old.statement, trait.statement):
-                    old.status = trait.status = "unresolved"
-                    old.counter_evidence_ids = sorted(set(old.counter_evidence_ids + trait.evidence_ids))
-                    trait.counter_evidence_ids = sorted(set(trait.counter_evidence_ids + old.evidence_ids))
-            traits.append(trait)
+            snapshot = reflection.get("target") or {}
+            target = next((old for old in traits if old.status != "superseded"
+                           and old.domain == domain and old.statement == snapshot.get("statement")
+                           and old.context == snapshot.get("context")
+                           and snapshot.get("memory_item_ids")
+                           and set(snapshot["memory_item_ids"]) <= set(old.memory_item_ids)
+                           and set(snapshot.get("evidence_ids", [])) <= set(old.evidence_ids)), None)
+            action = reflection.get("action") if target else "ADD"
+            if action == "SUPPORT" and _contradicts(target.statement, trait.statement):
+                action = "CONFLICT"
+            if action == "SUPPORT":
+                previous_episodes = {m.episode_id for m, _ in memories if m.memory_item_id in target.memory_item_ids}
+                target.evidence_ids = sorted(set(target.evidence_ids + trait.evidence_ids))
+                target.memory_item_ids = list(dict.fromkeys(target.memory_item_ids + trait.memory_item_ids))
+                # Repeat snippets from one episode do not establish a stable pattern.
+                independent = {m.episode_id for m, _ in memories if m.memory_item_id in target.memory_item_ids}
+                if len(independent) >= 2 and episode.episode_id not in previous_episodes:
+                    target.confidence = min(.85, 1 - (1 - target.confidence) * (1 - trait.confidence))
+                elif len(independent) < 2:
+                    target.confidence = min(.65, target.confidence)
+                target.model_version = trait.model_version
+            else:
+                if action in {"CONFLICT", "CHANGE"}:
+                    previous_counter = list(target.counter_evidence_ids)
+                    target.counter_evidence_ids = sorted(set(target.counter_evidence_ids + trait.evidence_ids))
+                    trait.counter_evidence_ids = list(target.evidence_ids)
+                    if action == "CHANGE":
+                        target.status = "superseded"
+                        target.valid_to = memory.effective_at or episode.recorded_at
+                        # A clarification of a conflicted target also retires
+                        # its directly linked alternatives in the same context.
+                        for peer in traits:
+                            if (peer is not target and peer.status == "unresolved" and peer.domain == target.domain
+                                    and peer.context == target.context and set(peer.evidence_ids) & set(previous_counter)):
+                                peer.status = "superseded"
+                                peer.valid_to = memory.effective_at or episode.recorded_at
+                                peer.counter_evidence_ids = sorted(set(peer.counter_evidence_ids + trait.evidence_ids))
+                                trait.counter_evidence_ids = sorted(set(trait.counter_evidence_ids + peer.evidence_ids))
+                    else:
+                        target.status = trait.status = "unresolved"
+                        target.confidence = min(target.confidence, .5)
+                        trait.confidence = min(trait.confidence, .5)
+                elif not reflection or (target is None and reflection.get("action") != "ADD"):
+                    for old in traits:
+                        if old.status != "superseded" and old.domain == domain and _contradicts(old.statement, trait.statement):
+                            old.status = trait.status = "unresolved"
+                            old.counter_evidence_ids = sorted(set(old.counter_evidence_ids + trait.evidence_ids))
+                            trait.counter_evidence_ids = sorted(set(trait.counter_evidence_ids + old.evidence_ids))
+                traits.append(trait)
             if memory.memory_type in {"EVENT", "PERSON", "RELATIONSHIP"}:
                 fact_proposal = next((item for item in proposals.get("graph_updates", [])
                                       if item.get("content") == memory.content
@@ -121,38 +161,5 @@ class PersonModelRepository:
             session.add(version)
         version.version += 1
 
-        pending = list(session.scalars(select(CaptureQuestion).where(
-            CaptureQuestion.subject_id == subject_id, CaptureQuestion.status == "pending"
-        )))
-        unresolved = next((trait for trait in traits if trait.status == "unresolved"), None)
-        if unresolved:
-            domain = unresolved.domain
-            text = f"前面你对「{unresolved.statement}」有过不同说法。现在你会怎么描述它？"
-            reason = "contradiction"
-            evidence_ids = unresolved.evidence_ids + unresolved.counter_evidence_ids
-        else:
-            covered = {trait.domain for trait in traits}
-            answered = set(session.scalars(select(CaptureQuestion.target_domain).where(
-                CaptureQuestion.subject_id == subject_id,
-                CaptureQuestion.status == "answered",
-                CaptureQuestion.reason == "missing_domain",
-            )))
-            domain = next((name for name in PERSON_DOMAINS if name not in covered and name not in answered), None)
-            text = QUESTIONS[domain] if domain else None
-            reason = "missing_domain"
-            evidence_ids = []
-        evidence_ids = sorted(set(evidence_ids))
-        retained = None
-        for question in pending:
-            if (retained is None and text and question.text == text and question.target_domain == domain
-                    and question.reason == reason and sorted(set(question.evidence_ids)) == evidence_ids):
-                retained = question
-            else:
-                question.status = "skipped"
-        if text and domain and retained is None:
-            session.add(CaptureQuestion(
-                question_id="question_" + uuid4().hex[:16], subject_id=subject_id,
-                text=text, target_domain=domain, reason=reason,
-                evidence_ids=evidence_ids, status="pending", created_at=utcnow(),
-            ))
+        plan(session, subject_id)
         return version.version

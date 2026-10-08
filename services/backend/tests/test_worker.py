@@ -160,6 +160,7 @@ def test_processing_runs_to_a_readable_result(client, worker, session, uploaded,
         "model_version",
         "prompt_version",
         "schema_version",
+        "metadata",
     }
     assert item["memory_type"] == "EVENT"
     # Nothing was actually heard, so the item is labelled as an inference rather

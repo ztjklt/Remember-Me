@@ -35,21 +35,29 @@ class DeepSeekProvider:
         return version
 
     def generate(self, request: ModelRequest) -> dict:
+        return self._generate(request, structured=False)
+
+    def generate_structured(self, request: ModelRequest) -> dict:
+        return self._generate(request, structured=True)
+
+    def _generate(self, request: ModelRequest, *, structured: bool) -> dict:
         example = {"memories": [{"quote": "我喜欢散步", "statement": "喜欢散步",
                                  "domain": "PREFERENCES", "memory_type": "PREFERENCE",
-                                 "confidence": 0.8}]}
+                                 "confidence": 0.8, "source_type": "SUBJECT"}]}
         system = (PROMPT + " 只返回 JSON 对象，结构如 "
                   + json.dumps(example, ensure_ascii=False)
                   + "。允许的 domain: " + ", ".join(DOMAINS)
                   + "；允许的 memory_type: " + ", ".join(TYPES)
                   + "。只有输入里确实包含 quote 才能输出该项。")
+        if structured:
+            system = request.system_prompt + "\nJSON schema: " + json.dumps(request.response_schema, ensure_ascii=False)
         body = {
             "model": request.model,
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": request.payload.transcript}],
             "response_format": {"type": "json_object"},
-            "max_tokens": 2048,
+            "max_tokens": 4096 if structured else 2048,
             "temperature": 0,
         }
         try:
@@ -87,7 +95,7 @@ class DeepSeekProvider:
             raw = json.loads(message["content"])
         except (ValueError, KeyError, IndexError, TypeError, AttributeError) as exc:
             raise AIOutputInvalid("DeepSeek returned invalid JSON") from exc
-        return grounded_result(raw, request, model_version=version)
+        return raw if structured else grounded_result(raw, request, model_version=version)
 
 
 __all__ = ["DeepSeekProvider"]

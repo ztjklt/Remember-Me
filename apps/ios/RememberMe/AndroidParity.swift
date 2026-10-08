@@ -34,9 +34,9 @@ private enum PortraitCategory: String, CaseIterable, Identifiable {
         case .thing: "事件与人生片段"
         case .mood: "叙述中的情绪"
         case .psychology: "决策与珍视的事"
-        case .filter: "回看记忆与来源"
-        case .status: "声音中的状态 · 待接入"
-        case .environment: "环境与地点 · 待接入"
+        case .filter: "回忆的视角与情感色彩"
+        case .status: "本人状态与原音观测"
+        case .environment: "原文明示的环境与声音"
         case .identity: "身份与重要关系"
         case .expression: "表达方式与习惯"
         }
@@ -118,7 +118,7 @@ private struct PortraitDashboard: View {
                 Text("Portrait").font(.title.weight(.medium))
                 Text(model.domains.contains(where: { !$0.traits.isEmpty }) ? "从你留下的原话，慢慢了解你。每项理解都可以查看依据和纠正。" : "从一段真实录音开始。这里会呈现你的记忆与理解，不用示例替代你。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
-                ActionButton(title: model.draft == nil ? "开始录音" : "继续查看已保存的录音", icon: "mic") {
+                ActionButton(title: model.draft == nil && model.episodeID == nil ? "开始录音" : "继续查看已保存的录音", icon: "mic") {
                     selectedQuestion = nil; showRecorder = true
                 }.accessibilityIdentifier("portrait.record")
                 if model.pairing == nil { ConnectionNotice() }
@@ -130,8 +130,8 @@ private struct PortraitDashboard: View {
                                 Text(category.title).font(.body.weight(.medium)).foregroundStyle(Ink.text)
                                 Text(category.subtitle).font(.subheadline).foregroundStyle(Ink.muted)
                                 HStack {
-                                    let count = model.domains.filter { category.domains.contains($0.domain) }.reduce(0) { $0 + $1.traits.count }
-                                    if !category.domains.isEmpty { Text("\(count) 项理解").font(.caption).foregroundStyle(Ink.muted) }
+                                    let count = model.domains.filter { category.domains.contains($0.domain) }.reduce(0) { $0 + $1.traits.count } + model.facets(category.rawValue).count
+                                    if count > 0 { Text("\(count) 项理解").font(.caption).foregroundStyle(Ink.muted) }
                                     Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(Ink.coral)
                                 }
                             }.frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
@@ -153,7 +153,7 @@ private struct PortraitDashboard: View {
                             Image(systemName: "sparkle").foregroundStyle(Ink.coral)
                             VStack(alignment: .leading, spacing: 5) {
                                 Text(question.text).foregroundStyle(Ink.text)
-                                Text(question.reason == "contradiction" ? "有不同说法，等你澄清" : "再多了解你一点")
+                                Text(captureReasonLabel(question.reason))
                                     .font(.subheadline).foregroundStyle(Ink.muted)
                             }
                             Spacer(); Image(systemName: "mic").foregroundStyle(Ink.coral)
@@ -190,16 +190,20 @@ private struct PortraitCategoryView: View {
     @EnvironmentObject private var model: AppModel
     let category: PortraitCategory
     private var memories: [MemoryRecord] {
-        model.memories.filter { category == .mood ? $0.memory_type == "EMOTION" : category == .filter || category.domains.contains($0.domain ?? "") || (category == .thing && $0.memory_type == "EVENT") }
+        model.memories.filter { category == .mood ? $0.memory_type == "EMOTION" : category.domains.contains($0.domain ?? "") || (category == .thing && $0.memory_type == "EVENT") }
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 DashboardHeader(slogan: category.subtitle)
-                if category == .status || category == .environment {
-                    Text("这项分析还没有接入。声音状态与环境识别需要可验证的音频能力，当前不会根据转写文字猜测。")
-                        .foregroundStyle(Ink.muted)
-                } else {
+                if let error = model.portraitRefreshError { Text(error).foregroundStyle(Ink.muted) }
+                ForEach(model.facets(category.rawValue)) { item in FacetEvidenceRow(item: item) }
+                if category == .status { AudioObservationRows() }
+                if [.mood, .psychology, .filter, .status, .environment, .expression].contains(category) && model.facets(category.rawValue).isEmpty {
+                    Text("原文中还没有可核对的这类描述。新增记录后会更新；声音观测只报告实际信号。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                }
+                Group {
                     ForEach(model.domains.filter { category.domains.contains($0.domain) }) { domain in
                         ForEach(domain.traits) { trait in
                             NavigationLink { TraitEvidenceView(trait: trait) } label: {
@@ -276,10 +280,10 @@ struct TraitEvidenceView: View {
 private struct GraphDashboard: View {
     @EnvironmentObject private var model: AppModel
     @State private var search = ""
-    private let metrics = [("Event flow", "人生片段与时间", "EPISODIC_MEMORY", "calendar"),
-                           ("Mood trends", "情绪记录 · 趋势待接入", "", "cloud.sun"),
-                           ("Decision + values", "决策与价值取向", "DECISION_PATTERNS", "arrow.triangle.branch"),
-                           ("Expression style", "表达方式与习惯", "EXPRESSION", "quote.bubble")]
+    private let metrics = [("Event flow", "人生片段与时间", "event", "calendar"),
+                           ("Mood trends", "情绪与叙述视角的变化", "mood", "cloud.sun"),
+                           ("Decision + values", "决策与价值取向", "decision", "arrow.triangle.branch"),
+                           ("Expression style", "表达方式与习惯", "expression", "quote.bubble")]
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -287,7 +291,7 @@ private struct GraphDashboard: View {
                 DashboardHeader(slogan: "Memory relationships")
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     ForEach(metrics.filter { search.isEmpty || ($0.0 + $0.1).localizedCaseInsensitiveContains(search) }, id: \.0) { metric in
-                        NavigationLink { ModelView() } label: {
+                        NavigationLink { PortraitFlowView(kind: metric.2) } label: {
                             VStack(alignment: .leading, spacing: 10) {
                                 Image(systemName: metric.3).foregroundStyle(Ink.coral)
                                 Text(metric.0).font(.body.weight(.medium)).foregroundStyle(Ink.text)
@@ -300,10 +304,7 @@ private struct GraphDashboard: View {
                 Text("How do these combine?").font(.title3.weight(.medium))
                 Text("记忆连接经历、价值与表达。每一项理解都应当能回到原文，等待你确认或纠正。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
-                Label("设计示意 · 不是你的真实关系数据", systemImage: "info.circle")
-                    .font(.caption).foregroundStyle(Ink.muted)
-                Image("AndroidRelationshipGraph").resizable().scaledToFit().clipShape(RoundedRectangle(cornerRadius: 14))
-                    .accessibilityLabel("Android 原型关系图设计示意")
+                EvidenceConnectionGraph()
                 NavigationLink { ModelView() } label: {
                     Label("查看真实的七领域理解与证据", systemImage: "point.3.connected.trianglepath.dotted")
                 }.buttonStyle(.bordered)
@@ -376,7 +377,7 @@ private struct MemoriesDashboard: View {
                     }
                     Divider()
                     Button { showRecorder = true } label: {
-                        Label(model.draft == nil ? "Add memory · 录下一段经历" : "继续已保存的录音", systemImage: "mic").frame(minHeight: 44)
+                        Label(model.draft == nil && model.episodeID == nil ? "Add memory · 录下一段经历" : "继续已保存的录音", systemImage: "mic").frame(minHeight: 44)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
                     .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
@@ -408,7 +409,28 @@ private struct AgentsDashboard: View {
                     agent("Twin guide", symbol: "bubble.left.and.bubble.right", detail: "有证据的回答，先锁定，再听你的真实答案。", status: model.cloudConsentID == nil ? "等待授权" : "已授权")
                 }
                 Divider()
+                Text("下一轮采集").font(.title3.weight(.medium))
+                if let error = model.questionRefreshError { Text(error).foregroundStyle(Ink.muted) }
+                ForEach(model.questions) { question in
+                    NavigationLink { GuidedQuestionView(question: question) } label: {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(question.text).foregroundStyle(Ink.text)
+                            Text(captureReasonLabel(question.reason)).font(.caption).foregroundStyle(Ink.coral)
+                        }.padding(.vertical, 8)
+                    }
+                }
                 Text("Recent work").font(.title3.weight(.medium))
+                ForEach(model.episodes.prefix(5)) { episode in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(String(episode.recorded_at.prefix(10)))
+                            Text(episode.status == "ready" ? "提取、画像与采集规划已提交" : episode.status == "failed" ? "处理失败 · \(episode.error_code ?? "可重试")" : "正在处理 · \(episode.status)")
+                                .font(.caption).foregroundStyle(Ink.muted)
+                        }
+                        Spacer()
+                        if episode.status == "failed" { Button("重试") { Task { await model.retryEpisode(episode.id) } }.disabled(model.isBusy) }
+                    }
+                }
                 if let calibration = model.calibrationRun {
                     Text(calibration.summary ?? "\(calibration.question) · \(calibrationStatusLabel(calibration.status))").foregroundStyle(Ink.muted)
                 } else if let episode = model.episodes.first {
@@ -492,5 +514,31 @@ extension AppModel {
         "Remember Me · Person Model v\(modelVersion)\n\n" + domains.map { domain in
             domain.domain + "\n" + domain.traits.map { "• \($0.statement)\n  \($0.context ?? "")\n  \($0.evidence_ids.count) 条依据" }.joined(separator: "\n")
         }.joined(separator: "\n\n")
+    }
+}
+
+func captureReasonLabel(_ reason: String) -> String {
+    switch reason {
+    case "contradiction": "不同说法，优先澄清"
+    case "calibration_gap": "来自刚完成的五维校准"
+    case "missing_domain": "补充尚未了解的领域"
+    case "weak_evidence": "补充具体经历和例外"
+    case "deepen_pattern": "核对已积累的模式"
+    default: "继续了解你"
+    }
+}
+
+private struct GuidedQuestionView: View {
+    @EnvironmentObject private var model: AppModel
+    let question: QuestionRecord
+    @State private var recording = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text(question.text).font(.title2)
+            Text(captureReasonLabel(question.reason)).foregroundStyle(Ink.muted)
+            ActionButton(title: model.draft == nil && model.episodeID == nil ? "回答这个问题" : "继续已保存的回答", icon: "mic") { recording = true }
+            Spacer()
+        }.padding(20).background(Ink.paper.ignoresSafeArea()).navigationTitle("引导采集")
+            .fullScreenCover(isPresented: $recording) { RecorderView(question: question, calibration: nil) }
     }
 }

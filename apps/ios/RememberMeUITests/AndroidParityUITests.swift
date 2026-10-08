@@ -59,4 +59,16 @@ final class AndroidParityUITests: XCTestCase {
         XCTAssertTrue(app.secureTextFields["一次性配对码"].waitForExistence(timeout: 5))
         capture(app, "Connection")
     }
+
+    func testAllFourGraphsNavigateToTheirLiveDataViews() {
+        let app = launch()
+        app.tabBars.buttons["Graphs"].tap()
+        for (label, title) in [("Event flow", "事件时间线"), ("Mood trends", "情绪与回忆视角"),
+                               ("Decision + values", "决策与价值"), ("Expression style", "表达记录")] {
+            app.buttons.containing(.staticText, identifier: label).firstMatch.tap()
+            XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 5))
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+        XCTAssertFalse(app.staticTexts["设计示意 · 不是你的真实关系数据"].exists)
+    }
 }

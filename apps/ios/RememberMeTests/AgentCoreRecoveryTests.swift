@@ -134,11 +134,13 @@ final class AgentCoreRecoveryTests: XCTestCase {
         XCTAssertEqual(model.calibrationRun?.human_episode_id, "human-one")
         XCTAssertNotNil(model.errorMessage)
         responses.set(path, json: calibration(status: "complete"))
+        responses.set("GET \(base)/questions", json: #"{"items":[{"question_id":"next","text":"现在最看重什么？","target_domain":"VALUES_BELIEFS","reason":"calibration_gap"}]}"#)
         await model.completeCalibration("cal-one")
         XCTAssertEqual(model.calibrationRun?.status, "complete")
         XCTAssertEqual(model.calibrationRun?.locked_answer, "我喜欢散步")
         XCTAssertNil(model.errorMessage)
-        XCTAssertEqual(responses.requests, [path, path])
+        XCTAssertEqual(responses.requests.filter { $0.hasPrefix("POST") }, [path, path])
+        XCTAssertEqual(model.questions.first?.id, "next")
     }
     func testRefreshKeepsSelectedCalibrationAndHidesUnavailableHistory() async throws {
         let responses = Responses(); coreResponses(responses)
@@ -166,6 +168,36 @@ final class AgentCoreRecoveryTests: XCTestCase {
         XCTAssertFalse(model.isRecording)
         XCTAssertNotNil(model.errorMessage)
     }
+
+    func testPortraitFacetsJoinOnlyMatchingLiveEvidenceAndClearOnOutage() async {
+        let responses = Responses(); coreResponses(responses)
+        let memory = memoryJSON.replacingOccurrences(of: #""evidence":[]"#, with:
+            #""evidence":[{"evidence_id":"ev-one","excerpt":"我喜欢散步","source_type":"SUBJECT","source_ref":"episode:episode-one#span:0-5"}]"#)
+        responses.set("GET \(base)/memories", json: #"{"items":[\#(memory)]}"#)
+        responses.set("GET /api/v1/episodes/episode-one/result", json:
+            #"{"memory_items":[{"content":"我喜欢散步","evidence_ids":["ev-one"],"metadata":{"facets":[{"category":"mood","label":"散步时安心","quote":"我喜欢散步","evidence_ids":["ev-one"]},{"category":"mood","label":"虚构","quote":"从未说过","evidence_ids":["ev-one"]}]}}]}"#)
+        let model = makeModel(responses)
+        await model.refresh()
+        XCTAssertEqual(model.facets("mood").map(\.label), ["散步时安心"])
+        responses.set("GET /api/v1/episodes/episode-one/result", status: 503, json: #"{"message":"outage"}"#)
+        await model.refresh()
+        XCTAssertTrue(model.portraitFacets.isEmpty)
+        XCTAssertNotNil(model.portraitRefreshError)
+        XCTAssertEqual(model.modelVersion, 3)
+        XCTAssertNil(model.errorMessage)
+    }
+
+    func testCompletedComparisonSurvivesNextPlanOutage() async throws {
+        let responses = Responses()
+        responses.set("POST \(base)/calibrations/cal-one/complete", json: calibration(status: "complete"))
+        responses.set("GET \(base)/questions", status: 503, json: #"{"message":"outage"}"#)
+        let model = makeModel(responses); model.cloudConsentID = "cloud-grant"
+        await model.completeCalibration("cal-one")
+        XCTAssertEqual(model.calibrationRun?.status, "complete")
+        XCTAssertNil(model.errorMessage)
+        XCTAssertNotNil(model.questionRefreshError)
+        XCTAssertTrue(model.questions.isEmpty)
+    }
     func testCloudRevocationRemovesLocalAnswerAndCalibrationSnapshots() async throws {
         let responses = Responses(); coreResponses(responses)
         responses.set("POST /api/v1/consents/cloud-grant/revoke", json: #"{"status":"revoked"}"#)
@@ -177,5 +209,32 @@ final class AgentCoreRecoveryTests: XCTestCase {
         XCTAssertNil(model.calibrationRun)
         XCTAssertTrue(model.calibrationRuns.isEmpty)
         XCTAssertNil(model.twinAnswer)
+    }
+
+    func testRetryStopsAtTranscriptReviewAndResumesWithoutLocalDraft() async {
+        let responses = Responses(); coreResponses(responses)
+        responses.set("POST /api/v1/episodes/remote-one/retry", json: #"{"status":"extracting"}"#)
+        responses.set("GET /api/v1/episodes/remote-one", json: #"{"status":"extracting"}"#)
+        responses.set("GET /api/v1/episodes/remote-one/transcript-review", json:
+            #"{"state":"reviewing","transcript":"我喜欢散步","stt_model_version":"test-stt"}"#)
+        let model = makeModel(responses)
+        await model.retryEpisode("remote-one")
+        XCTAssertFalse(model.isBusy)
+        XCTAssertNil(model.draft)
+        XCTAssertEqual(model.episodeID, "remote-one")
+        XCTAssertTrue(model.isTranscriptReviewReady)
+        XCTAssertEqual(model.transcriptDraft, "我喜欢散步")
+        await model.sendRecording()
+        XCTAssertEqual(responses.requests.filter { $0 == "POST /api/v1/episodes/remote-one/retry" }.count, 1)
+        XCTAssertFalse(responses.requests.contains("POST /api/v1/episodes"))
+    }
+
+    func testResumeCannotReplaceAnotherPendingRecording() async {
+        let responses = Responses(); let model = makeModel(responses)
+        model.episodeID = "current-one"
+        await model.resumeEpisode("different-one")
+        XCTAssertEqual(model.episodeID, "current-one")
+        XCTAssertNotNil(model.errorMessage)
+        XCTAssertTrue(responses.requests.isEmpty)
     }
 }

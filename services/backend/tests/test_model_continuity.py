@@ -72,7 +72,7 @@ def test_pending_question_is_reused_until_answered(app, client, session):
     capture(client, app, own, headers, 'second', '今天我去了图书馆。')
     current = client.get(path, headers=headers).json()['items'][0]
     assert current['question_id'] == original['question_id']
-    assert session.query(CaptureQuestion).filter_by(subject_id=own.subject_id).count() == 1
+    assert session.query(CaptureQuestion).filter_by(subject_id=own.subject_id).count() == 3
     PersonModelRepository(session).rebuild(own.subject_id, answered_question_id=current['question_id'])
     session.commit()
     next_question = client.get(path, headers=headers).json()['items'][0]

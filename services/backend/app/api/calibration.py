@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, update
+from ..capture_planner import plan
 from sqlalchemy.orm import Session
 
 from ..calibration_client import CalibrationUnavailable
@@ -185,6 +186,8 @@ def complete(subject_id: str, calibration_id: str, body: CompleteCalibration, re
             or not episode.transcript):
         raise CalibrationNotReady("请先录下本人回答，核对文字并等待记忆处理完成。")
     question, locked_answer, human_answer = row.question, row.locked_answer, episode.transcript
+    expected_human_snapshot = _snapshot(session, subject_id, list(session.scalars(select(MemoryItem.memory_item_id).where(
+        MemoryItem.episode_id == episode.episode_id, MemoryItem.deleted_at.is_(None))))) or []
     if request.app.state.settings.ai_backend != "http":
         raise CalibrationFailed("请先连接真实的 AI Core 服务。")
     session.commit()
@@ -230,12 +233,24 @@ def complete(subject_id: str, calibration_id: str, body: CompleteCalibration, re
         return _view(row)
     if row.status != "awaiting_human":
         raise CalibrationNotReady("校准所依据的内容已变化。")
+    human_memories = list(session.scalars(select(MemoryItem).where(
+        MemoryItem.episode_id == current_episode.episode_id, MemoryItem.deleted_at.is_(None))))
+    human_snapshot = _snapshot(session, subject_id, [m.memory_item_id for m in human_memories]) or []
+    if human_snapshot != expected_human_snapshot:
+        raise CalibrationNotReady("本人回答的记忆在比较期间已变化，请重新校准。")
+    snapshot_ids = {item["memory_item_id"] for item in row.source_snapshot}
+    completed_snapshot = row.source_snapshot + [item for item in human_snapshot if item["memory_item_id"] not in snapshot_ids]
+    completed_snapshot.sort(key=lambda item: item["memory_item_id"])
     completed = session.execute(update(CalibrationRun).where(
         CalibrationRun.calibration_id == row.calibration_id,
         CalibrationRun.status == "awaiting_human",
     ).values(status="complete", summary=summary, dimension_diffs=dimensions,
+             source_snapshot=completed_snapshot,
              suggested_question=suggested, comparison_model_version=version,
              completed_at=utcnow()), execution_options={"synchronize_session": False})
+    if completed.rowcount == 1:
+        session.expire(row)
+        plan(session, subject_id)
     session.commit()
     session.expire_all()
     row = _run(session, subject_id, actor, calibration_id)

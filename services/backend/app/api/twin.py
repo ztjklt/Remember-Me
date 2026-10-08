@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..db import get_session
@@ -122,6 +122,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                               "source_type": source["source_type"]}
                              for source in row["evidence"] if source["excerpt"]]}
                for row in candidates]
+    baseline = session.get(ModelRevision, subject_id)
+    baseline_version = baseline.version if baseline else 0
     # Retrieval may update cached vectors. Release its transaction before the
     # network call so revocation can proceed while DeepSeek is working.
     session.commit()
@@ -172,12 +174,21 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     ConsentRepository(session).require_active(payload.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
     revision = session.get(ModelRevision, subject_id)
+    if revision is not None:
+        held = session.execute(update(ModelRevision).where(
+            ModelRevision.subject_id == subject_id, ModelRevision.version == baseline_version
+        ).values(version=ModelRevision.version), execution_options={"synchronize_session": False})
+        if held.rowcount != 1:
+            session.rollback()
+            raise TwinFailed("记忆与画像在回答期间已更新，请重新提问。")
+    elif baseline_version:
+        raise TwinFailed("画像已更新，请重新提问。")
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
-                     person_model_version=revision.version if revision else 0,
+                     person_model_version=baseline_version,
                      created_at=utcnow())
     session.add(row)
     session.commit()

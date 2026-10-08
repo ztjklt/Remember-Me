@@ -80,6 +80,7 @@ struct TraitRecord: Decodable, Identifiable {
     let source_type: String?
     let valid_from: String?
     let valid_to: String?
+    let memory_item_ids: [String]?
     var id: String { trait_id }
 }
 struct DomainRecord: Decodable, Identifiable {
@@ -90,7 +91,40 @@ struct DomainRecord: Decodable, Identifiable {
 struct PersonModelReply: Decodable {
     let version: Int
     let domains: [DomainRecord]
+    let graph_facts: [GraphFactRecord]?
 }
+struct GraphFactRecord: Decodable, Identifiable {
+    let fact_id: String
+    let kind: String
+    let content: String
+    let evidence_ids: [String]
+    let valid_from: String?
+    var id: String { fact_id }
+}
+struct FacetRecord: Decodable {
+    let category: String
+    let label: String
+    let quote: String
+    let evidence_ids: [String]
+}
+struct AudioObservation: Decodable {
+    let status: String
+    let rms_dbfs: Double?
+    let silence_fraction: Double?
+    let clipped_fraction: Double?
+    let analyzed_seconds: Double?
+    let reason: String?
+}
+struct MemoryMetadata: Decodable {
+    let facets: [FacetRecord]?
+    let audio_observation: AudioObservation?
+}
+struct ProcessedMemory: Decodable {
+    let content: String
+    let evidence_ids: [String]
+    let metadata: MemoryMetadata?
+}
+struct EpisodeResultReply: Decodable { let memory_items: [ProcessedMemory] }
 struct QuestionRecord: Decodable, Identifiable {
     let question_id: String
     let text: String
@@ -247,6 +281,9 @@ final class APIClient: @unchecked Sendable {
     }
     func status(_ episodeID: String) async throws -> Processing {
         try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)"))
+    }
+    func result(_ episodeID: String) async throws -> [ProcessedMemory] {
+        try JSONDecoder().decode(EpisodeResultReply.self, from: await request("/api/v1/episodes/\(episodeID)/result")).memory_items
     }
     func transcriptReview(_ episodeID: String) async throws -> TranscriptReview {
         try JSONDecoder().decode(TranscriptReview.self, from: await request(

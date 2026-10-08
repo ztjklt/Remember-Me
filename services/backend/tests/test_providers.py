@@ -104,7 +104,8 @@ def http_post(monkeypatch):
         sent: list[httpx.Request] = []
 
         def post(url: str, **kwargs):  # noqa: ANN003, ANN202 - mirrors httpx.post
-            with httpx.Client(transport=transport) as client:
+            assert kwargs.pop("trust_env") is False
+            with httpx.Client(transport=transport, trust_env=False) as client:
                 request = client.build_request("POST", url, **kwargs)
                 sent.append(request)
                 return client.send(request)

@@ -120,6 +120,7 @@ class HttpAiCoreClient:
                 # Contract v0.1 permits these fields to be absent, not null.
                 json=payload.model_dump(mode="json", exclude_none=True),
                 timeout=httpx.Timeout(self.timeout_seconds),
+                trust_env=False,
             )
         except httpx.TimeoutException as error:
             raise AiTimeout(f"AI Core did not answer within {self.timeout_seconds}s") from error

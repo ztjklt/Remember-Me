@@ -51,3 +51,14 @@ def test_model_digest_is_read_from_ollama_at_extraction_time():
         AICoreInput(episode_id="ep_1", subject_id="sub_1", transcript="你好", existing_model_version="v0")
     )
     assert output.model_version == "qwen3.5:latest-abcdef123456"
+
+
+def test_explicit_reported_speech_cannot_be_promoted_to_subject_evidence():
+    from app.providers.base import ModelRequest
+    from app.providers.ollama import grounded_result
+    payload = AICoreInput(episode_id="reported", subject_id="own", transcript="他说自己喜欢喝咖啡。", existing_model_version="v0")
+    request = ModelRequest(payload=payload, system_prompt="", response_schema={}, model="test", model_version="test-v1",
+                           prompt_version="test", schema_version="integration-contract-v0.2")
+    output = grounded_result({"memories": [{"quote": "喜欢喝咖啡", "statement": "喜欢咖啡", "domain": "PREFERENCES",
+                                           "memory_type": "PREFERENCE", "confidence": .8, "source_type": "SUBJECT"}]}, request)
+    assert output["evidence"][0]["source_type"] == "THIRD_PARTY"

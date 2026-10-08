@@ -13,6 +13,7 @@ from .errors import AICoreError, AIOutputInvalid
 from .prompts import PROMPT_VERSION, SCHEMA_VERSION, build_system_prompt
 from .providers.base import ModelRequest, StructuredModelProvider
 from .validation import validate_output
+from .reflection import reflect
 
 logger = logging.getLogger("remember_me.ai_core")
 
@@ -86,7 +87,8 @@ class MemoryExtractor:
             trait.model_version = model_version
         for fact in output.graph_updates:
             fact.model_version = model_version
-        return validate_output(payload, output)
+        output = validate_output(payload, output)
+        return validate_output(payload, reflect(self.provider, request, output))
 
 
 __all__ = ["MemoryExtractor"]

@@ -68,6 +68,22 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
     )).all()
     traits = list(session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id)))
     facts = list(session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id)))
+    historical = any(word in question for word in ("过去", "以前", "当时", "历史", "曾经", "变化", "什么时候"))
+    if not historical:
+        superseded = {mid for trait in traits if trait.status == "superseded" for mid in trait.memory_item_ids}
+        current = {mid for trait in traits if trait.status != "superseded" for mid in trait.memory_item_ids}
+        past_only = {mid for trait in traits
+                     if trait.domain != "EPISODIC_MEMORY"
+                     and any(word in ((trait.context or "") + trait.statement) for word in ("过去", "以前", "曾经"))
+                     and not any(word in trait.statement for word in ("现在", "如今", "目前", "后来"))
+                     for mid in trait.memory_item_ids}
+        rows = [(item, ep) for item, ep in rows if item.memory_item_id not in (superseded - current) | past_only]
+        traits = [trait for trait in traits if trait.status != "superseded" and not set(trait.memory_item_ids) <= past_only]
+    # Search and Twin consume the same authorized Subject evidence. An AI
+    # paraphrase of a third-party statement is still third-party material.
+    rows = [(item, ep) for item, ep in rows if item.source_type != "THIRD_PARTY"
+            and all((source := session.get(Evidence, eid)) is not None and source.source_type != "THIRD_PARTY"
+                    for eid in item.evidence_ids)]
     live = {item.memory_item_id for item, _ in rows}
     for stale in session.scalars(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id)):
         if stale.memory_item_id not in live:

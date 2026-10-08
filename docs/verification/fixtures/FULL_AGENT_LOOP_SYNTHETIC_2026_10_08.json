@@ -1,0 +1,1616 @@
+{
+  "synthetic_source_audio": true,
+  "physical_device": false,
+  "checks": [
+    {
+      "name": "initial: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "initial: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_609be34d5bba4eb7",
+        "status": "ready",
+        "trace_id": "d22f169a95bf4c1592a7ceb03ac578ed"
+      }
+    },
+    {
+      "name": "all seven domains receive grounded understanding",
+      "passed": true,
+      "detail": [
+        "IDENTITY",
+        "EPISODIC_MEMORY",
+        "RELATIONSHIPS",
+        "PREFERENCES",
+        "VALUES_BELIEFS",
+        "DECISION_PATTERNS",
+        "EXPRESSION"
+      ]
+    },
+    {
+      "name": "support: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "support: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_42489aa198234af3",
+        "status": "ready",
+        "trace_id": "984d0e245c0241d2840f7d0338fbb58f"
+      }
+    },
+    {
+      "name": "independent episode supports a durable trait",
+      "passed": true,
+      "detail": [
+        {
+          "trait_id": "trait_mi_ad0239cc49054a62",
+          "domain": "PREFERENCES",
+          "statement": "平时喜欢喝咖啡",
+          "confidence": 0.85,
+          "source_type": "AI_INFERENCE",
+          "evidence_ids": [
+            "ev_410dd7debf1c4da1",
+            "ev_f87458fb8aeb4e2a"
+          ],
+          "counter_evidence_ids": [],
+          "memory_item_ids": [
+            "mi_ad0239cc49054a62",
+            "mi_12515912e29d4754"
+          ],
+          "status": "active",
+          "model_version": "deepseek-flash"
+        }
+      ]
+    },
+    {
+      "name": "Twin answers an unseen question from evidence",
+      "passed": true,
+      "detail": {
+        "answer_id": "ta_cd32453f8b4841ff",
+        "subject_id": "subj_04242bb64b734695",
+        "question": "我平时喜欢喝哪种饮品？",
+        "answer": "我平时喜欢喝咖啡。",
+        "response_type": "ORIGINAL",
+        "confidence": 0.95,
+        "model_version": "deepseek-flash",
+        "person_model_version": 2,
+        "created_at": "2026-10-08T10:00:19.950896+00:00",
+        "stale": false,
+        "evidence": [
+          {
+            "evidence_id": "ev_f87458fb8aeb4e2a",
+            "excerpt": "我平时喜欢喝咖啡。",
+            "episode_id": "ep_609be34d5bba4eb7",
+            "source_type": "SUBJECT"
+          }
+        ]
+      }
+    },
+    {
+      "name": "human: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "human: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_133913b009fa4c85",
+        "status": "ready",
+        "trace_id": "89bf66c8bc5f4bcc80fbf2e5cec4131d"
+      }
+    },
+    {
+      "name": "five-dimension compare preserves original locked answer",
+      "passed": true,
+      "detail": {
+        "calibration_id": "cal_7851266f124340e1",
+        "subject_id": "subj_04242bb64b734695",
+        "twin_answer_id": "ta_cd32453f8b4841ff",
+        "question": "我平时喜欢喝哪种饮品？",
+        "locked_answer": "我平时喜欢喝咖啡。",
+        "locked_response_type": "ORIGINAL",
+        "locked_model_version": "deepseek-flash",
+        "locked_person_model_version": 2,
+        "locked_evidence_ids": [
+          "ev_f87458fb8aeb4e2a"
+        ],
+        "status": "complete",
+        "human_episode_id": "ep_133913b009fa4c85",
+        "summary": "真人回答明确表示饮品偏好从咖啡变为茶，与锁定答案在价值优先级和情绪反应上存在差异，但决策、理由和表达方式有部分一致。",
+        "dimensions": [
+          {
+            "dimension": "DECISION",
+            "alignment": "PARTIAL",
+            "note": "锁定答案称喜欢咖啡，真人回答明确表示现在只喜欢喝茶，决策结果不同；但真人回答未提及具体决策过程，仅陈述偏好变化。",
+            "human_excerpt": "以前我喜欢咖啡，但现在我只喜欢喝茶。"
+          },
+          {
+            "dimension": "REASONING",
+            "alignment": "PARTIAL",
+            "note": "真人回答给出了选茶的理由（更温和、先考虑舒不舒服再考虑价格），锁定答案未提供理由，因此无法比较理由是否一致。",
+            "human_excerpt": "我选茶是因为它更温和。我会先考虑舒不舒服，再考虑价格。"
+          },
+          {
+            "dimension": "VALUE_PRIORITY",
+            "alignment": "DIFFERENT",
+            "note": "锁定答案未体现价值优先级，真人回答明确优先考虑舒适度而非价格，并更珍惜平静状态，与锁定答案的隐含偏好不同。",
+            "human_excerpt": "我会先考虑舒不舒服，再考虑价格。现在我更珍惜平静的状态"
+          },
+          {
+            "dimension": "EMOTIONAL_REACTION",
+            "alignment": "DIFFERENT",
+            "note": "锁定答案未提及情绪，真人回答表达了喝茶时放松的情绪反应，与锁定答案的简单陈述不同。",
+            "human_excerpt": "喝茶时觉得放松。"
+          },
+          {
+            "dimension": "EXPRESSION",
+            "alignment": "PARTIAL",
+            "note": "真人回答表达方式简单直接，与锁定答案的简洁风格有相似之处，但真人回答更详细地解释了偏好变化。",
+            "human_excerpt": "我会简单地说，茶更适合现在的我。"
+          }
+        ],
+        "suggested_question": "是什么原因让你从喜欢咖啡转变为只喜欢喝茶？",
+        "comparison_model_version": "deepseek-flash",
+        "created_at": "2026-10-08T10:00:19.968557",
+        "completed_at": "2026-10-08T10:00:27.472262"
+      }
+    },
+    {
+      "name": "explicit change retires the old preference",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "comparison drives next guided capture",
+      "passed": true,
+      "detail": [
+        {
+          "question_id": "question_e26e26cb23eb49c5",
+          "subject_id": "subj_04242bb64b734695",
+          "text": "是什么原因让你从喜欢咖啡转变为只喜欢喝茶？",
+          "target_domain": "DECISION_PATTERNS",
+          "reason": "calibration_gap",
+          "evidence_ids": [
+            "ev_044c4fd9033a4164",
+            "ev_53389e42482e42a5",
+            "ev_a23414ca884c4f02",
+            "ev_be062f554f754e75",
+            "ev_dcbfece68a724a30",
+            "ev_ee9e43bad9584e2c"
+          ],
+          "status": "pending"
+        },
+        {
+          "question_id": "question_53002d6448f34843",
+          "subject_id": "subj_04242bb64b734695",
+          "text": "关于「认为茶更适合现在的自己」，能说一次具体经历，以及什么时候会例外吗？",
+          "target_domain": "IDENTITY",
+          "reason": "weak_evidence",
+          "evidence_ids": [
+            "ev_044c4fd9033a4164"
+          ],
+          "status": "pending"
+        },
+        {
+          "question_id": "question_a82793a1a77e465e",
+          "subject_id": "subj_04242bb64b734695",
+          "text": "关于「姐姐林月是最信任的人」，能说一次具体经历，以及什么时候会例外吗？",
+          "target_domain": "RELATIONSHIPS",
+          "reason": "weak_evidence",
+          "evidence_ids": [
+            "ev_b466cf872c004670"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "name": "follow-up: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "follow-up: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_a438c7af4b7745af",
+        "status": "ready",
+        "trace_id": "20fd279391ed4b24ad7b13a1c886940b"
+      }
+    },
+    {
+      "name": "next capture updates understanding and advances plan",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "new Twin answer uses corrected current preference",
+      "passed": true,
+      "detail": {
+        "answer_id": "ta_e36431e6ba154694",
+        "subject_id": "subj_04242bb64b734695",
+        "question": "我现在最喜欢喝哪种饮品？",
+        "answer": "以前我喜欢咖啡，但现在我只喜欢喝茶",
+        "response_type": "ORIGINAL",
+        "confidence": 0.95,
+        "model_version": "deepseek-flash",
+        "person_model_version": 4,
+        "created_at": "2026-10-08T10:00:33.046766+00:00",
+        "stale": false,
+        "evidence": [
+          {
+            "evidence_id": "ev_a23414ca884c4f02",
+            "excerpt": "以前我喜欢咖啡，但现在我只喜欢喝茶",
+            "episode_id": "ep_133913b009fa4c85",
+            "source_type": "SUBJECT"
+          }
+        ]
+      }
+    },
+    {
+      "name": "eight portrait views have evidence or signal observations",
+      "passed": true,
+      "detail": {
+        "thing": true,
+        "mood": true,
+        "psychology": true,
+        "filter": true,
+        "environment": true,
+        "identity": true,
+        "expression": true,
+        "status": true
+      }
+    },
+    {
+      "name": "real audio signal observation available",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "episodes": [
+    {
+      "key": "initial",
+      "episode_id": "ep_609be34d5bba4eb7",
+      "confirmed_transcript": "我叫林青，在杭州做软件工程师。姐姐林月是我最信任的人。去年我和姐姐在公园散步，听见树叶沙沙响，那天我有些疲倦，但是很安心。我平时喜欢喝咖啡。做重大决定时，我先查预算，再和家人商量。家庭陪伴对我比赚更多钱重要。我习惯说短句，喜欢直接说结论。现在回想那次散步，记忆里是一种温暖柔和的色彩。",
+      "raw_asr": "我叫林青,在杭州做软件工程师,接接林月是我最信任的人,去年我和姐姐在公元散步,听见数叶沙沙响,那天我有些疲倦,但是很安心,我平时喜欢喝咖啡,做重大决定时,我先查预算,在何家人商量,家庭陪伴对我比赚更多钱重要,我习惯说短句,喜欢直接说结论,现在回响那次\n記憶力是一種溫暖柔和的色彩。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_609be34d5bba4eb7",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "PERSON",
+            "content": "名字是林青，在杭州做软件工程师",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_cfb08597e0ed4df8"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "IDENTITY",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "名字是林青，在杭州做软件工程师",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "名字与职业身份",
+                  "quote": "我叫林青，在杭州做软件工程师。",
+                  "evidence_ids": [
+                    "ev_cfb08597e0ed4df8"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "姐姐林月是最信任的人",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b466cf872c004670"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "姐姐林月是最信任的人",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "最信任姐姐林月",
+                  "quote": "姐姐林月是我最信任的人。",
+                  "evidence_ids": [
+                    "ev_b466cf872c004670"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "去年和姐姐在公园散步，听见树叶沙沙响，那天有些疲倦但很安心",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3df4defeeb2943cd"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "去年和姐姐在公园散步，听见树叶沙沙响，那天有些疲倦但很安心",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "environment",
+                  "label": "公园散步听见树叶沙沙响",
+                  "quote": "去年我和姐姐在公园散步，听见树叶沙沙响",
+                  "evidence_ids": [
+                    "ev_3df4defeeb2943cd"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                },
+                {
+                  "category": "mood",
+                  "label": "有些疲倦但很安心",
+                  "quote": "那天我有些疲倦，但是很安心。",
+                  "evidence_ids": [
+                    "ev_3df4defeeb2943cd"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "平时喜欢喝咖啡",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f87458fb8aeb4e2a"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "PREFERENCES",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "平时喜欢喝咖啡",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "平时喜欢喝咖啡",
+                  "quote": "我平时喜欢喝咖啡。",
+                  "evidence_ids": [
+                    "ev_f87458fb8aeb4e2a"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "做重大决定时先查预算，再和家人商量",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_bf8cdd1796724f9d"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "做重大决定时先查预算，再和家人商量",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "psychology",
+                  "label": "重大决定先查预算再和家人商量",
+                  "quote": "做重大决定时，我先查预算，再和家人商量。",
+                  "evidence_ids": [
+                    "ev_bf8cdd1796724f9d"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "家庭陪伴比赚更多钱重要",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8f32d5484d824e37"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "家庭陪伴比赚更多钱重要",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "家庭陪伴比赚更多钱重要",
+                  "quote": "家庭陪伴对我比赚更多钱重要。",
+                  "evidence_ids": [
+                    "ev_8f32d5484d824e37"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "习惯说短句，喜欢直接说结论",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_da534fc723ab4fd8"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EXPRESSION",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "习惯说短句，喜欢直接说结论",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "expression",
+                  "label": "习惯说短句、直接说结论",
+                  "quote": "我习惯说短句，喜欢直接说结论。",
+                  "evidence_ids": [
+                    "ev_da534fc723ab4fd8"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "回想那次散步，记忆里是温暖柔和的色彩",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ae40d0b169854974"
+            ],
+            "confidence": 0.85,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "回想那次散步，记忆里是温暖柔和的色彩",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "filter",
+                  "label": "回忆那次散步是温暖柔和的色彩",
+                  "quote": "现在回想那次散步，记忆里是一种温暖柔和的色彩。",
+                  "evidence_ids": [
+                    "ev_ae40d0b169854974"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 30.0,
+                "rms_dbfs": -18.28,
+                "silence_fraction": 0.152,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "d22f169a95bf4c1592a7ceb03ac578ed"
+      }
+    },
+    {
+      "key": "support",
+      "episode_id": "ep_42489aa198234af3",
+      "confirmed_transcript": "我平时还是喜欢喝咖啡，这个喜好和以前一样。",
+      "raw_asr": "我平時還是喜歡喝咖啡,這個喜好喝以前一樣。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_42489aa198234af3",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "PREFERENCE",
+            "content": "平时喜欢喝咖啡，这个喜好和以前一样",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_410dd7debf1c4da1"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "PREFERENCES",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "平时喜欢喝咖啡，这个喜好和以前一样",
+                "action": "SUPPORT",
+                "context": null,
+                "target": {
+                  "trait_id": "trait_mi_ad0239cc49054a62",
+                  "domain": "PREFERENCES",
+                  "statement": "平时喜欢喝咖啡",
+                  "context": null,
+                  "status": "active",
+                  "memory_item_ids": [
+                    "mi_ad0239cc49054a62"
+                  ],
+                  "evidence_ids": [
+                    "ev_f87458fb8aeb4e2a"
+                  ]
+                }
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "喜欢喝咖啡且与以前一致",
+                  "quote": "我平时还是喜欢喝咖啡，这个喜好和以前一样。",
+                  "evidence_ids": [
+                    "ev_410dd7debf1c4da1"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 4.555,
+                "rms_dbfs": -18.81,
+                "silence_fraction": 0.136,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "984d0e245c0241d2840f7d0338fbb58f"
+      }
+    },
+    {
+      "key": "human",
+      "episode_id": "ep_133913b009fa4c85",
+      "confirmed_transcript": "以前我喜欢咖啡，但现在我只喜欢喝茶。我选茶是因为它更温和。我会先考虑舒不舒服，再考虑价格。现在我更珍惜平静的状态，喝茶时觉得放松。我会简单地说，茶更适合现在的我。",
+      "raw_asr": "以前我喜欢咖啡,但现在我只喜欢喝茶,我选茶是因为它更温和,我会先考虑书不舒服,再考虑价格,现在我更珍惜平静的状态,喝茶时觉得放松,我会简单地说,茶更适合现在的我。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_133913b009fa4c85",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "PREFERENCE",
+            "content": "以前喜欢咖啡，现在只喜欢喝茶",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a23414ca884c4f02"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "PREFERENCES",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "以前喜欢咖啡，现在只喜欢喝茶",
+                "action": "CHANGE",
+                "context": null,
+                "target": {
+                  "trait_id": "trait_mi_ad0239cc49054a62",
+                  "domain": "PREFERENCES",
+                  "statement": "平时喜欢喝咖啡",
+                  "context": null,
+                  "status": "active",
+                  "memory_item_ids": [
+                    "mi_ad0239cc49054a62",
+                    "mi_12515912e29d4754"
+                  ],
+                  "evidence_ids": [
+                    "ev_410dd7debf1c4da1",
+                    "ev_f87458fb8aeb4e2a"
+                  ]
+                }
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "饮品偏好从咖啡变为茶",
+                  "quote": "以前我喜欢咖啡，但现在我只喜欢喝茶",
+                  "evidence_ids": [
+                    "ev_a23414ca884c4f02"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "选茶是因为它更温和",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_be062f554f754e75"
+            ],
+            "confidence": 0.8,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "选茶是因为它更温和",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "psychology",
+                  "label": "选择茶的理由是更温和",
+                  "quote": "我选茶是因为它更温和",
+                  "evidence_ids": [
+                    "ev_be062f554f754e75"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "做选择时先考虑舒不舒服，再考虑价格",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_dcbfece68a724a30"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "做选择时先考虑舒不舒服，再考虑价格",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "psychology",
+                  "label": "做选择时先考虑舒不舒服，再考虑价格",
+                  "quote": "我会先考虑舒不舒服，再考虑价格",
+                  "evidence_ids": [
+                    "ev_dcbfece68a724a30"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "现在更珍惜平静的状态",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ee9e43bad9584e2c"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "现在更珍惜平静的状态",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "psychology",
+                  "label": "现在更珍惜平静的状态",
+                  "quote": "现在我更珍惜平静的状态",
+                  "evidence_ids": [
+                    "ev_ee9e43bad9584e2c"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "喝茶时觉得放松",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_53389e42482e42a5"
+            ],
+            "confidence": 0.8,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "PREFERENCES",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "喝茶时觉得放松",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "mood",
+                  "label": "喝茶时觉得放松",
+                  "quote": "喝茶时觉得放松",
+                  "evidence_ids": [
+                    "ev_53389e42482e42a5"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "认为茶更适合现在的自己",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_044c4fd9033a4164"
+            ],
+            "confidence": 0.7,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "IDENTITY",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "认为茶更适合现在的自己",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "认为茶更适合现在的自己",
+                  "quote": "茶更适合现在的我",
+                  "evidence_ids": [
+                    "ev_044c4fd9033a4164"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 18.603,
+                "rms_dbfs": -18.47,
+                "silence_fraction": 0.1536,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "89bf66c8bc5f4bcc80fbf2e5cec4131d"
+      }
+    },
+    {
+      "key": "follow-up",
+      "episode_id": "ep_a438c7af4b7745af",
+      "confirmed_transcript": "在选择饮品时，我最在意喝完是否舒服。温和对我比便宜更重要，我也会先比较价格，然后再决定。",
+      "raw_asr": "再選擇飲品時,我最在意喝完是否舒服,溫和對我比便宜更重要,我也會先比較價格,然後再決定。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_a438c7af4b7745af",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "PREFERENCE",
+            "content": "选择饮品时最在意喝完是否舒服",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7892c2acfc424b51"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "PREFERENCES",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "选择饮品时最在意喝完是否舒服",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "选择饮品时最在意喝完是否舒服",
+                  "quote": "在选择饮品时，我最在意喝完是否舒服。",
+                  "evidence_ids": [
+                    "ev_7892c2acfc424b51"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 10.145,
+                "rms_dbfs": -18.31,
+                "silence_fraction": 0.1654,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "认为温和比便宜更重要",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_fb8a366f9f664ec4"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "认为温和比便宜更重要",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "facets": [
+                {
+                  "category": "identity",
+                  "label": "认为温和比便宜更重要",
+                  "quote": "温和对我比便宜更重要",
+                  "evidence_ids": [
+                    "ev_fb8a366f9f664ec4"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 10.145,
+                "rms_dbfs": -18.31,
+                "silence_fraction": 0.1654,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "会先比较价格再决定",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a65f39eaea7d48d7"
+            ],
+            "confidence": 0.8,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "reflection": {
+                "version": "portrait-reflection-v1",
+                "input_statement": "会先比较价格再决定",
+                "action": "SUPPORT",
+                "context": null,
+                "target": {
+                  "trait_id": "trait_mi_ea22761bf5624530",
+                  "domain": "DECISION_PATTERNS",
+                  "statement": "做重大决定时先查预算，再和家人商量",
+                  "context": null,
+                  "status": "active",
+                  "memory_item_ids": [
+                    "mi_ea22761bf5624530"
+                  ],
+                  "evidence_ids": [
+                    "ev_bf8cdd1796724f9d"
+                  ]
+                }
+              },
+              "facets": [
+                {
+                  "category": "psychology",
+                  "label": "会先比较价格再决定",
+                  "quote": "我也会先比较价格，然后再决定。",
+                  "evidence_ids": [
+                    "ev_a65f39eaea7d48d7"
+                  ],
+                  "source_type": "AI_INFERENCE",
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 10.145,
+                "rms_dbfs": -18.31,
+                "silence_fraction": 0.1654,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              }
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "20fd279391ed4b24ad7b13a1c886940b"
+      }
+    }
+  ],
+  "locked_twin": {
+    "answer_id": "ta_cd32453f8b4841ff",
+    "subject_id": "subj_04242bb64b734695",
+    "question": "我平时喜欢喝哪种饮品？",
+    "answer": "我平时喜欢喝咖啡。",
+    "response_type": "ORIGINAL",
+    "confidence": 0.95,
+    "model_version": "deepseek-flash",
+    "person_model_version": 2,
+    "created_at": "2026-10-08T10:00:19.950896+00:00",
+    "stale": false,
+    "evidence": [
+      {
+        "evidence_id": "ev_f87458fb8aeb4e2a",
+        "excerpt": "我平时喜欢喝咖啡。",
+        "episode_id": "ep_609be34d5bba4eb7",
+        "source_type": "SUBJECT"
+      }
+    ]
+  },
+  "calibration": {
+    "calibration_id": "cal_7851266f124340e1",
+    "subject_id": "subj_04242bb64b734695",
+    "twin_answer_id": "ta_cd32453f8b4841ff",
+    "question": "我平时喜欢喝哪种饮品？",
+    "locked_answer": "我平时喜欢喝咖啡。",
+    "locked_response_type": "ORIGINAL",
+    "locked_model_version": "deepseek-flash",
+    "locked_person_model_version": 2,
+    "locked_evidence_ids": [
+      "ev_f87458fb8aeb4e2a"
+    ],
+    "status": "complete",
+    "human_episode_id": "ep_133913b009fa4c85",
+    "summary": "真人回答明确表示饮品偏好从咖啡变为茶，与锁定答案在价值优先级和情绪反应上存在差异，但决策、理由和表达方式有部分一致。",
+    "dimensions": [
+      {
+        "dimension": "DECISION",
+        "alignment": "PARTIAL",
+        "note": "锁定答案称喜欢咖啡，真人回答明确表示现在只喜欢喝茶，决策结果不同；但真人回答未提及具体决策过程，仅陈述偏好变化。",
+        "human_excerpt": "以前我喜欢咖啡，但现在我只喜欢喝茶。"
+      },
+      {
+        "dimension": "REASONING",
+        "alignment": "PARTIAL",
+        "note": "真人回答给出了选茶的理由（更温和、先考虑舒不舒服再考虑价格），锁定答案未提供理由，因此无法比较理由是否一致。",
+        "human_excerpt": "我选茶是因为它更温和。我会先考虑舒不舒服，再考虑价格。"
+      },
+      {
+        "dimension": "VALUE_PRIORITY",
+        "alignment": "DIFFERENT",
+        "note": "锁定答案未体现价值优先级，真人回答明确优先考虑舒适度而非价格，并更珍惜平静状态，与锁定答案的隐含偏好不同。",
+        "human_excerpt": "我会先考虑舒不舒服，再考虑价格。现在我更珍惜平静的状态"
+      },
+      {
+        "dimension": "EMOTIONAL_REACTION",
+        "alignment": "DIFFERENT",
+        "note": "锁定答案未提及情绪，真人回答表达了喝茶时放松的情绪反应，与锁定答案的简单陈述不同。",
+        "human_excerpt": "喝茶时觉得放松。"
+      },
+      {
+        "dimension": "EXPRESSION",
+        "alignment": "PARTIAL",
+        "note": "真人回答表达方式简单直接，与锁定答案的简洁风格有相似之处，但真人回答更详细地解释了偏好变化。",
+        "human_excerpt": "我会简单地说，茶更适合现在的我。"
+      }
+    ],
+    "suggested_question": "是什么原因让你从喜欢咖啡转变为只喜欢喝茶？",
+    "comparison_model_version": "deepseek-flash",
+    "created_at": "2026-10-08T10:00:19.968557",
+    "completed_at": "2026-10-08T10:00:27.472262"
+  },
+  "person_model": {
+    "subject_id": "subj_04242bb64b734695",
+    "version": 3,
+    "domains": [
+      {
+        "domain": "IDENTITY",
+        "traits": [
+          {
+            "trait_id": "trait_mi_24a4fadcfc524a5d",
+            "domain": "IDENTITY",
+            "statement": "名字是林青，在杭州做软件工程师",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_cfb08597e0ed4df8"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_24a4fadcfc524a5d"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_80982552f184427a",
+            "domain": "IDENTITY",
+            "statement": "认为茶更适合现在的自己",
+            "confidence": 0.7,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_044c4fd9033a4164"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_80982552f184427a"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "EPISODIC_MEMORY",
+        "traits": [
+          {
+            "trait_id": "trait_mi_1c3f22b9bdd04934",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "去年和姐姐在公园散步，听见树叶沙沙响，那天有些疲倦但很安心",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3df4defeeb2943cd"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_1c3f22b9bdd04934"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_6e31c4279c094b38",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "回想那次散步，记忆里是温暖柔和的色彩",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ae40d0b169854974"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_6e31c4279c094b38"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "RELATIONSHIPS",
+        "traits": [
+          {
+            "trait_id": "trait_mi_ba261797d90b4857",
+            "domain": "RELATIONSHIPS",
+            "statement": "姐姐林月是最信任的人",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b466cf872c004670"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_ba261797d90b4857"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "PREFERENCES",
+        "traits": [
+          {
+            "trait_id": "trait_mi_ad0239cc49054a62",
+            "domain": "PREFERENCES",
+            "statement": "平时喜欢喝咖啡",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_410dd7debf1c4da1",
+              "ev_f87458fb8aeb4e2a"
+            ],
+            "counter_evidence_ids": [
+              "ev_a23414ca884c4f02"
+            ],
+            "memory_item_ids": [
+              "mi_ad0239cc49054a62",
+              "mi_12515912e29d4754"
+            ],
+            "status": "superseded",
+            "model_version": "deepseek-flash",
+            "valid_to": "2026-10-08T09:00:00+00:00"
+          },
+          {
+            "trait_id": "trait_mi_0a0522125c7b450b",
+            "domain": "PREFERENCES",
+            "statement": "以前喜欢咖啡，现在只喜欢喝茶",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a23414ca884c4f02"
+            ],
+            "counter_evidence_ids": [
+              "ev_410dd7debf1c4da1",
+              "ev_f87458fb8aeb4e2a"
+            ],
+            "memory_item_ids": [
+              "mi_0a0522125c7b450b"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_ca5dcfd5b50b4e8f",
+            "domain": "PREFERENCES",
+            "statement": "喝茶时觉得放松",
+            "confidence": 0.8,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_53389e42482e42a5"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_ca5dcfd5b50b4e8f"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "VALUES_BELIEFS",
+        "traits": [
+          {
+            "trait_id": "trait_mi_daefe1f8f66e4df7",
+            "domain": "VALUES_BELIEFS",
+            "statement": "家庭陪伴比赚更多钱重要",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8f32d5484d824e37"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_daefe1f8f66e4df7"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_6032296b96dc441c",
+            "domain": "VALUES_BELIEFS",
+            "statement": "现在更珍惜平静的状态",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ee9e43bad9584e2c"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_6032296b96dc441c"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "DECISION_PATTERNS",
+        "traits": [
+          {
+            "trait_id": "trait_mi_ea22761bf5624530",
+            "domain": "DECISION_PATTERNS",
+            "statement": "做重大决定时先查预算，再和家人商量",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_bf8cdd1796724f9d"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_ea22761bf5624530"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_7ef81de68ee74831",
+            "domain": "DECISION_PATTERNS",
+            "statement": "选茶是因为它更温和",
+            "confidence": 0.8,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_be062f554f754e75"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_7ef81de68ee74831"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          },
+          {
+            "trait_id": "trait_mi_7a028c91cbde41c6",
+            "domain": "DECISION_PATTERNS",
+            "statement": "做选择时先考虑舒不舒服，再考虑价格",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_dcbfece68a724a30"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_7a028c91cbde41c6"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      },
+      {
+        "domain": "EXPRESSION",
+        "traits": [
+          {
+            "trait_id": "trait_mi_e198ef874c134842",
+            "domain": "EXPRESSION",
+            "statement": "习惯说短句，喜欢直接说结论",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_da534fc723ab4fd8"
+            ],
+            "counter_evidence_ids": [],
+            "memory_item_ids": [
+              "mi_e198ef874c134842"
+            ],
+            "status": "active",
+            "model_version": "deepseek-flash"
+          }
+        ]
+      }
+    ],
+    "graph_facts": [
+      {
+        "fact_id": "fact_mi_24a4fadcfc524a5d",
+        "subject_id": "subj_04242bb64b734695",
+        "kind": "PERSON",
+        "content": "名字是林青，在杭州做软件工程师",
+        "evidence_ids": [
+          "ev_cfb08597e0ed4df8"
+        ],
+        "model_version": "deepseek-flash"
+      },
+      {
+        "fact_id": "fact_mi_ba261797d90b4857",
+        "subject_id": "subj_04242bb64b734695",
+        "kind": "RELATIONSHIP",
+        "content": "姐姐林月是最信任的人",
+        "evidence_ids": [
+          "ev_b466cf872c004670"
+        ],
+        "model_version": "deepseek-flash"
+      },
+      {
+        "fact_id": "fact_mi_1c3f22b9bdd04934",
+        "subject_id": "subj_04242bb64b734695",
+        "kind": "EVENT",
+        "content": "去年和姐姐在公园散步，听见树叶沙沙响，那天有些疲倦但很安心",
+        "evidence_ids": [
+          "ev_3df4defeeb2943cd"
+        ],
+        "model_version": "deepseek-flash"
+      }
+    ]
+  },
+  "next_questions": [
+    {
+      "question_id": "question_e26e26cb23eb49c5",
+      "subject_id": "subj_04242bb64b734695",
+      "text": "是什么原因让你从喜欢咖啡转变为只喜欢喝茶？",
+      "target_domain": "DECISION_PATTERNS",
+      "reason": "calibration_gap",
+      "evidence_ids": [
+        "ev_044c4fd9033a4164",
+        "ev_53389e42482e42a5",
+        "ev_a23414ca884c4f02",
+        "ev_be062f554f754e75",
+        "ev_dcbfece68a724a30",
+        "ev_ee9e43bad9584e2c"
+      ],
+      "status": "pending"
+    },
+    {
+      "question_id": "question_53002d6448f34843",
+      "subject_id": "subj_04242bb64b734695",
+      "text": "关于「认为茶更适合现在的自己」，能说一次具体经历，以及什么时候会例外吗？",
+      "target_domain": "IDENTITY",
+      "reason": "weak_evidence",
+      "evidence_ids": [
+        "ev_044c4fd9033a4164"
+      ],
+      "status": "pending"
+    },
+    {
+      "question_id": "question_a82793a1a77e465e",
+      "subject_id": "subj_04242bb64b734695",
+      "text": "关于「姐姐林月是最信任的人」，能说一次具体经历，以及什么时候会例外吗？",
+      "target_domain": "RELATIONSHIPS",
+      "reason": "weak_evidence",
+      "evidence_ids": [
+        "ev_b466cf872c004670"
+      ],
+      "status": "pending"
+    }
+  ],
+  "current_twin": {
+    "answer_id": "ta_e36431e6ba154694",
+    "subject_id": "subj_04242bb64b734695",
+    "question": "我现在最喜欢喝哪种饮品？",
+    "answer": "以前我喜欢咖啡，但现在我只喜欢喝茶",
+    "response_type": "ORIGINAL",
+    "confidence": 0.95,
+    "model_version": "deepseek-flash",
+    "person_model_version": 4,
+    "created_at": "2026-10-08T10:00:33.046766+00:00",
+    "stale": false,
+    "evidence": [
+      {
+        "evidence_id": "ev_a23414ca884c4f02",
+        "excerpt": "以前我喜欢咖啡，但现在我只喜欢喝茶",
+        "episode_id": "ep_133913b009fa4c85",
+        "source_type": "SUBJECT"
+      }
+    ]
+  },
+  "facet_categories": [
+    "environment",
+    "expression",
+    "filter",
+    "identity",
+    "mood",
+    "psychology"
+  ],
+  "portrait_views": {
+    "thing": true,
+    "mood": true,
+    "psychology": true,
+    "filter": true,
+    "environment": true,
+    "identity": true,
+    "expression": true,
+    "status": true
+  },
+  "passed": true
+}

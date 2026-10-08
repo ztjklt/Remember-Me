@@ -372,6 +372,7 @@ private struct EpisodesView: View {
 private struct EpisodeDetailView: View {
     @EnvironmentObject private var model: AppModel
     let initial: EpisodeRecord
+    @State private var showReview = false
     private var episode: EpisodeRecord { model.episodes.first(where: { $0.id == initial.id }) ?? initial }
     var body: some View {
         ScrollView {
@@ -403,11 +404,23 @@ private struct EpisodeDetailView: View {
                         Task { await model.retryEpisode(episode.id) }
                     }
                 }
+                if ["transcribing", "extracting", "modeling"].contains(episode.status) {
+                    ActionButton(title: "继续核对或整理这段录音", icon: "text.bubble") {
+                        Task {
+                            await model.resumeEpisode(episode.id)
+                            showReview = model.episodeID == episode.id && model.isTranscriptReviewReady
+                        }
+                    }.disabled(model.isBusy)
+                }
+                if model.episodeID == episode.id && model.isTranscriptReviewReady {
+                    Button("打开待核对文字") { showReview = true }.buttonStyle(.bordered)
+                }
             }
             .padding(20)
         }
         .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("录音详情")
+        .fullScreenCover(isPresented: $showReview) { RecorderView(question: nil, calibration: nil) }
         .refreshable { await model.refresh() }
     }
 }
@@ -525,7 +538,7 @@ struct RecorderView: View {
                     Eyebrow(text: calibration != nil ? "本人校准回答" : question == nil ? "自由录音" : "回答这个问题")
                     Text(calibration?.question ?? question?.text ?? "把此刻，留在这里。")
                         .font(.title2.weight(.medium)).foregroundStyle(Ink.text)
-                    Text(model.isRecording ? (model.isPaused ? "已暂停" : "正在录音") : model.draft != nil ? "录音已保存在手机" : "由你决定什么时候开始")
+                    Text(model.isRecording ? (model.isPaused ? "已暂停" : "正在录音") : model.draft != nil ? "录音已保存在手机" : model.episodeID != nil ? "原音已保存在记忆服务" : "由你决定什么时候开始")
                         .foregroundStyle(Ink.muted).accessibilityAddTraits(.updatesFrequently)
                     Text(String(format: "%02d:%02d", model.recordedSeconds / 60, model.recordedSeconds % 60))
                         .font(.system(.largeTitle, design: .monospaced)).monospacedDigit()
@@ -581,7 +594,7 @@ struct RecorderView: View {
                         ActionButton(title: model.isBusy ? "正在提交…" : "确认文字并整理记忆", icon: "checkmark.circle") {
                             showOrganizeConsent = true
                         }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    } else if model.draft != nil {
+                    } else if model.draft != nil || model.episodeID != nil {
                         ActionButton(title: model.isBusy ? "正在处理…" : model.pairing == nil ? "连接服务后转写" : "提交并转成文字", icon: "text.bubble") {
                             if model.pairing == nil { showPairing = true }
                             else { Task { await model.sendRecording() } }

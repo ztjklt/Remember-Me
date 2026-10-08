@@ -31,6 +31,7 @@ import time
 from uuid import uuid4
 
 from .ai_core import AiCoreClient, build_ai_client
+from .audio_observation import PCMObserver
 from .config import Settings, get_settings
 from .contracts import AICoreInput
 from .db import Database
@@ -41,7 +42,8 @@ from .errors import (
     SttUnavailable,
 )
 from .logging_config import trace_id_var
-from .models import Episode, JobStage, JobState
+from .models import CalibrationRun, Episode, JobStage, JobState, PersonTrait
+from sqlalchemy import select
 from .repositories.episodes import EpisodeRepository
 from .repositories.jobs import STAGE_STATUS, JobRepository
 from .repositories.memory import MemoryRepository
@@ -178,11 +180,13 @@ class ProcessingWorker:
         lease_seconds: int = 60,
         owner: str | None = None,
         heartbeat_interval_seconds: float | None = None,
+        audio_observer=None,
     ) -> None:
         self.database = database
         self.object_store = object_store
         self.stt = stt
         self.ai = ai
+        self.audio_observer = audio_observer or PCMObserver()
         self.max_attempts = max_attempts
         self.backoff_seconds = backoff_seconds
         self.lease_seconds = lease_seconds
@@ -386,6 +390,8 @@ class ProcessingWorker:
         episode.stt_transcript = transcript.text
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
+        episode.capture_metadata = {**(episode.capture_metadata or {}),
+                                    "audio_observation": self.audio_observer.observe(audio)}
 
     def _extract(self, session, episode: Episode) -> None:  # type: ignore[no-untyped-def]
         """Ask AI Core to turn the transcript into memories, and store the result.
@@ -410,9 +416,33 @@ class ProcessingWorker:
                 episode.subject_id
             ),
             trace_id=episode.trace_id,
+            subject_context={
+                "subject_id": episode.subject_id,
+                "current_traits": [{"trait_id": t.trait_id, "domain": t.domain,
+                                    "statement": t.statement, "context": t.context,
+                                    "status": t.status, "memory_item_ids": t.memory_item_ids,
+                                    "evidence_ids": t.evidence_ids}
+                                   for t in session.scalars(select(PersonTrait).where(
+                                       PersonTrait.subject_id == episode.subject_id,
+                                       PersonTrait.status != "superseded"))
+                                   if t.source_type != "THIRD_PARTY"],
+                "calibration_question": self._calibration_question(session, episode),
+            },
         )
         output = self.ai.process(payload)
+        observation = (episode.capture_metadata or {}).get("audio_observation")
+        for memory in output.memory_items:
+            if observation:
+                memory.metadata = {**(memory.metadata or {}), "audio_observation": observation}
         MemoryRepository(session).store_result(episode, output)
+
+    @staticmethod
+    def _calibration_question(session, episode: Episode) -> str | None:
+        identifier = (episode.capture_metadata or {}).get("calibration_id")
+        row = session.get(CalibrationRun, identifier) if identifier else None
+        if row and row.subject_id == episode.subject_id and row.actor_id == episode.actor_id:
+            return row.question
+        return None
 
     def _model(self, session, episode: Episode) -> None:
         """Apply verified Memory and AI proposals to the seven-domain model.
@@ -426,9 +456,18 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
         metadata = episode.capture_metadata or {}
+        question_id = metadata.get("question_id")
+        if question_id:
+            from .models import CaptureQuestion, MemoryItem
+            question = session.get(CaptureQuestion, question_id)
+            answered = any((m.item_metadata or {}).get("domain") == question.target_domain
+                           or (not (m.item_metadata or {}).get("domain") and m.content.strip())
+                           for m in MemoryRepository(session).items_for(episode.episode_id)) if question and question.subject_id == episode.subject_id else False
+            if not answered:
+                question_id = None
         PersonModelRepository(session).rebuild(
             episode.subject_id,
-            answered_question_id=metadata.get("question_id"),
+            answered_question_id=question_id,
         )
         invalidate_answers(session, self.object_store, episode.subject_id)
 

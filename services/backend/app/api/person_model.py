@@ -16,6 +16,7 @@ from ..models import (
 from ..repositories.person_model import PersonModelRepository
 from ..retrieval import invalidate_answers
 from ..security import current_actor
+from ..capture_planner import PRIORITY
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["person-model"])
 
@@ -125,6 +126,7 @@ def questions(subject_id: str, actor: Actor = Depends(current_actor), session: S
     rows = list(session.scalars(select(CaptureQuestion).where(
         CaptureQuestion.subject_id == subject_id, CaptureQuestion.status == "pending"
     ).order_by(CaptureQuestion.created_at.desc())))
+    rows.sort(key=lambda q: (-PRIORITY.get(q.reason, 0), PERSON_DOMAINS.index(q.target_domain), q.text))
     return {"subject_id": subject_id, "items": [{
         "question_id": item.question_id, "subject_id": item.subject_id,
         "text": item.text,
@@ -154,6 +156,9 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
     memory.source_type = "CALIBRATION"
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
+    # Auxiliary interpretations refer to the old statement. A human correction
+    # cannot inherit its mood, environment, or previous merge instruction.
+    memory.item_metadata = {"domain": (memory.item_metadata or {}).get("domain")}
     embedding = session.get(MemoryEmbedding, memory_id)
     if embedding is not None:
         session.delete(embedding)

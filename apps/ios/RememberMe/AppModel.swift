@@ -24,6 +24,10 @@ final class AppModel: ObservableObject {
     @Published var domains: [DomainRecord] = []
     @Published var questions: [QuestionRecord] = []
     @Published var modelVersion = 0
+    @Published var graphFacts: [GraphFactRecord] = []
+    @Published var memoryMetadata: [String: MemoryMetadata] = [:]
+    @Published var portraitRefreshError: String?
+    @Published var questionRefreshError: String?
     @Published var draft: RecordingDraft?
     @Published var episodeID: String?
     @Published var processingStatus = ""
@@ -127,6 +131,7 @@ final class AppModel: ObservableObject {
             if pairing?.baseURL != connected.baseURL || pairing?.fingerprint != connected.fingerprint ||
                 pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
                 memories = []; episodes = []; domains = []; questions = []
+                graphFacts = []; memoryMetadata = [:]; portraitRefreshError = nil; questionRefreshError = nil
                 modelVersion = 0; twinAnswer = nil; calibrationRun = nil
                 calibrationRuns = []; calibrationRefreshError = nil; voiceRefreshError = nil
                 cloudConsentID = nil; voiceConsentID = nil; voiceProfileReady = false
@@ -155,8 +160,11 @@ final class AppModel: ObservableObject {
             memories = updatedMemories
             episodes = updatedEpisodes
             domains = snapshot.domains
+            graphFacts = snapshot.graph_facts ?? []
+            memoryMetadata = [:]
             modelVersion = snapshot.version
             questions = updatedQuestions
+            questionRefreshError = nil
             cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
             voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
             do {
@@ -190,9 +198,41 @@ final class AppModel: ObservableObject {
                 twinAnswer = nil
             }
             errorMessage = nil
+            await refreshPortraitMetadata(pairing: pairing, client: client, snapshot: updatedMemories, version: snapshot.version)
         } catch {
             if self.pairing == pairing { errorMessage = error.localizedDescription }
         }
+    }
+
+    private func refreshPortraitMetadata(pairing: Pairing, client: APIClient,
+                                         snapshot: [MemoryRecord], version: Int) async {
+        var collected: [String: MemoryMetadata] = [:]
+        var unavailable = false
+        // Use the frozen Episode result, which already exposes Memory metadata.
+        // Limit simultaneous requests to four, and join only matching live evidence.
+        let ids = Array(Set(snapshot.map(\.episode_id))).sorted()
+        for offset in stride(from: 0, to: ids.count, by: 4) {
+            let batch = Array(ids[offset..<min(offset + 4, ids.count)])
+            let results = await withTaskGroup(of: [ProcessedMemory]?.self, returning: [[ProcessedMemory]?].self) { group in
+                for id in batch { group.addTask { try? await client.result(id) } }
+                var values: [[ProcessedMemory]?] = []
+                for await value in group { values.append(value) }
+                return values
+            }
+            for result in results {
+                guard let result else { unavailable = true; continue }
+                for item in result {
+                    if let memory = snapshot.first(where: { $0.content == item.content && Set($0.evidence.map(\.id)) == Set(item.evidence_ids) }),
+                       let metadata = item.metadata {
+                        collected[memory.id] = metadata
+                    }
+                }
+            }
+        }
+        guard self.pairing == pairing, modelVersion == version,
+              memories.map(\.id) == snapshot.map(\.id) else { return }
+        memoryMetadata = collected
+        portraitRefreshError = unavailable ? "部分记忆侧面暂时无法读取，请下拉刷新。" : nil
     }
 
     func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
@@ -360,7 +400,7 @@ final class AppModel: ObservableObject {
     }
 
     func sendRecording() async {
-        guard let draft, let pairing, let client else { return }
+        guard let pairing, let client, draft != nil || episodeID != nil else { return }
         isBusy = true
         errorMessage = nil
         defer { isBusy = false }
@@ -373,6 +413,7 @@ final class AppModel: ObservableObject {
                 await pollEpisode()
                 return
             }
+            guard let draft else { return }
             let id = try await client.upload(draft, pairing: pairing)
             episodeID = id
             defaults.set(id, forKey: "pending-episode")
@@ -387,7 +428,9 @@ final class AppModel: ObservableObject {
                 let status = try await client.status(episodeID)
                 processingStatus = status.status
                 if status.status == "ready" {
-                    let calibrationID = draft?.calibrationID
+                    let calibrationID = draft?.calibrationID ?? calibrationRuns.first {
+                        $0.human_episode_id == episodeID && $0.status == "awaiting_human"
+                    }?.id
                     defaults.removeObject(forKey: "transcript-edit-\(episodeID)")
                     defaults.removeObject(forKey: "pending-recording")
                     defaults.removeObject(forKey: "pending-episode")
@@ -486,19 +529,40 @@ final class AppModel: ObservableObject {
     }
 
     func retryEpisode(_ episodeID: String) async {
-        guard let client else { return }
+        guard let pairing, let client, canResumeEpisode(episodeID) else { return }
         isBusy = true
         defer { isBusy = false }
         do {
             try await client.retry(episodeID)
-            await refresh()
-            for _ in 0..<180 {
-                let status = try await client.status(episodeID)
-                if status.status == "ready" || status.status == "failed" { break }
-                try? await Task.sleep(for: .seconds(2))
-            }
-            await refresh()
+            guard self.pairing == pairing else { return }
+            adoptPendingEpisode(episodeID)
+            await pollEpisode()
+            if self.episodeID != nil { await refresh() }
         } catch { errorMessage = error.localizedDescription }
+    }
+
+    func resumeEpisode(_ episodeID: String) async {
+        guard pairing != nil, canResumeEpisode(episodeID) else { return }
+        isBusy = true
+        defer { isBusy = false }
+        adoptPendingEpisode(episodeID)
+        await pollEpisode()
+    }
+
+    private func canResumeEpisode(_ id: String) -> Bool {
+        guard !isBusy, !isRecording, !isQueryRecording, !isVoiceRecording,
+              (episodeID == nil || episodeID == id), (draft == nil || episodeID == id) else {
+            errorMessage = "请先完成当前操作或待处理录音，再继续另一段。已有原音会保留。"
+            return false
+        }
+        return true
+    }
+
+    private func adoptPendingEpisode(_ id: String) {
+        if episodeID != id { isTranscriptReviewReady = false; transcriptDraft = "" }
+        episodeID = id
+        defaults.set(id, forKey: "pending-episode")
+        errorMessage = nil
     }
 
     func enableCloudTwin() async {
@@ -698,6 +762,16 @@ final class AppModel: ObservableObject {
             guard self.pairing == pairing, self.cloudConsentID == cloudConsentID else { return }
             updateCalibration(run)
             errorMessage = nil
+            do {
+                let next = try await client.questions(pairing.subjectID)
+                guard self.pairing == pairing else { return }
+                questions = next
+                questionRefreshError = nil
+            } catch {
+                guard self.pairing == pairing else { return }
+                questions = []
+                questionRefreshError = "校准已完成，下一轮采集问题暂时无法读取，请刷新。"
+            }
         } catch { errorMessage = "录音已保存，校准比较可稍后重试：\(error.localizedDescription)" }
     }
 
@@ -713,6 +787,7 @@ final class AppModel: ObservableObject {
 
     private func invalidateUnderstanding() {
         memories = []; domains = []; questions = []
+        graphFacts = []; memoryMetadata = [:]; portraitRefreshError = nil; questionRefreshError = nil
         twinAnswer = nil; calibrationRun = nil; calibrationRuns = []
         memorySearchResults = []
         stopPlayback()

@@ -1,3 +1,5 @@
+> 本文记录当天较早的一批连续性修复。用户随后明确要求完整循环并排除真机；当前交付与验证以 [完整软件闭环记录](IOS_FULL_AGENT_LOOP_2026_10_08.md) 为准，下面的剩余项不再代表当前状态。
+
 # iOS Agent Core：画像连续性与校准恢复
 
 2026-10-08。继续在 `feature/ios-android-parity` 的 iOS 原型上完善现有闭环。基线为 develop `4dc3d5a`，界面复刻为 `e3186a7`。未整体合并已经分叉的 `feature/ai-agent-core`，也未引入另一套手机直连供应商的引擎。

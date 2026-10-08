@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA939DD4DAD788A194194175 /* AppModel.swift */; };
 		2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */; };
+		734B8B3097EB3E632B1A3156 /* PortraitGraphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */; };
 		963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */; };
 		B0466C9C2E4FF25292D0B360 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F6922872B50B2440845465FA /* Assets.xcassets */; };
 		BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */; };
@@ -35,6 +36,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortraitGraphs.swift; sourceTree = "<group>"; };
 		0DD6ABD0F11397F657B95172 /* RememberMe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RememberMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		15E87C6A763B9D344F407898 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		259FDA4B8ABFE6D29BE9B01E /* AgentCoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentCoreRecoveryTests.swift; sourceTree = "<group>"; };
@@ -86,6 +88,7 @@
 				F6922872B50B2440845465FA /* Assets.xcassets */,
 				15E87C6A763B9D344F407898 /* Info.plist */,
 				D44F936F9AAC5B970D20CEF2 /* Network.swift */,
+				03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */,
 				B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */,
 				5BC9EAE511EDB13B710E96D0 /* Views.swift */,
 			);
@@ -229,6 +232,7 @@
 				BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */,
 				25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */,
 				ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */,
+				734B8B3097EB3E632B1A3156 /* PortraitGraphs.swift in Sources */,
 				2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */,
 				DE409B589F1CA246B89C7726 /* Views.swift in Sources */,
 			);

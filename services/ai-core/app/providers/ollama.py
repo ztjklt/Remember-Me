@@ -25,6 +25,7 @@ COMPACT_SCHEMA = {
             "domain": {"type": "string", "enum": DOMAINS},
             "memory_type": {"type": "string", "enum": TYPES},
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "source_type": {"type": "string", "enum": ["SUBJECT", "THIRD_PARTY"]},
         },
     }}},
 }
@@ -35,6 +36,7 @@ PROMPT = (
     "quote 可以是短片段，不必复制整句。"
     "statement 简短陈述其含义，不要猜测日期、身份或因果。否定和不确定语气必须保留。"
     "不确定或没有可靠原话时返回空 memories。不要输出解释。"
+    "source_type 标明原话属于 SUBJECT 本人还是 THIRD_PARTY 转述他人的说法；他人的第一人称不能成为本人的偏好。"
 )
 
 _simplify = OpenCC("t2s")
@@ -99,9 +101,18 @@ def grounded_result(raw: object, request: ModelRequest, *, model_version: str | 
         seen.add((quote, statement))
         start, end = span
         excerpt = transcript[start:end]
+        source_type = candidate.get("source_type", "SUBJECT")
+        if source_type not in {"SUBJECT", "THIRD_PARTY"}:
+            continue
+        # Conservative attribution guard for explicit reported speech. The
+        # classifier may retain it as THIRD_PARTY but cannot promote it to self.
+        boundary = max(transcript.rfind(mark, 0, start) for mark in ("。", "！", "？", "\n")) + 1
+        frame = transcript[boundary:end]
+        if any(marker in frame for marker in ("他说", "她说", "他们说", "她们说", "说自己", "告诉我说")):
+            source_type = "THIRD_PARTY"
         evidence_id = "ev_" + uuid4().hex[:16]
         result["evidence"].append({
-            "evidence_id": evidence_id, "source_type": "SUBJECT",
+            "evidence_id": evidence_id, "source_type": source_type,
             "source_ref": f"episode:{request.payload.episode_id}#span:{start}-{end}",
             "excerpt": excerpt, "span_start": start, "span_end": end,
             "confidence": float(confidence),
@@ -160,12 +171,18 @@ class OllamaProvider:
             raise ProviderUnavailable("Configured local model is not installed") from exc
 
     def generate(self, request: ModelRequest) -> dict:
+        return self._generate(request, structured=False)
+
+    def generate_structured(self, request: ModelRequest) -> dict:
+        return self._generate(request, structured=True)
+
+    def _generate(self, request: ModelRequest, *, structured: bool) -> dict:
         try:
             response = self._client.post(
                 self.base_url + "/api/chat",
                 json={"model": request.model, "stream": False, "think": False,
-                      "format": COMPACT_SCHEMA, "options": {"temperature": 0},
-                      "messages": [{"role": "system", "content": PROMPT},
+                      "format": request.response_schema if structured else COMPACT_SCHEMA, "options": {"temperature": 0},
+                      "messages": [{"role": "system", "content": request.system_prompt if structured else PROMPT},
                                    {"role": "user", "content": request.payload.transcript}]},
                 timeout=self.timeout_seconds,
             )
@@ -184,4 +201,4 @@ class OllamaProvider:
         except (httpx.HTTPStatusError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise AIOutputInvalid("Local model returned invalid output") from exc
 
-        return grounded_result(raw, request)
+        return raw if structured else grounded_result(raw, request)
