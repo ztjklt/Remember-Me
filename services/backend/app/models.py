@@ -28,7 +28,7 @@ def as_utc(value: datetime) -> datetime:
     stored rather than guessing; without it the same field would serialize with
     an offset from one backend and without one from the other (ADR-0001 D3).
     """
-    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
 class Base(DeclarativeBase):

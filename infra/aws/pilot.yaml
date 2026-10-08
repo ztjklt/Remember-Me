@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Remember Me controlled pilot; no keys, no database or SSH ingress.
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  ImageId:
+    Type: AWS::EC2::Image::Id
+    Description: Verified Canonical Ubuntu 24.04 amd64 in the selected region
+  PublicWeb:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Enable only after the HTTPS entry is ready and approved
+Conditions:
+  WebEnabled: !Equals [!Ref PublicWeb, 'true']
+Resources:
+  Data:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules: [{ObjectOwnership: BucketOwnerEnforced}]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      Tags: [{Key: Project, Value: RememberMe}]
+  DataTLS:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Data
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource: [!GetAtt Data.Arn, !Sub '${Data.Arn}/*']
+            Condition: {Bool: {'aws:SecureTransport': 'false'}}
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: ec2.amazonaws.com}
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore'
+      Policies:
+        - PolicyName: ProjectObjectsOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:ListBucket, s3:GetBucketLocation]
+                Resource: !GetAtt Data.Arn
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource: !Sub '${Data.Arn}/audio/*'
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject, s3:DeleteObject]
+                Resource: !Sub '${Data.Arn}/healthcheck/probe'
+              - Effect: Allow
+                Action: [s3:GetObject]
+                Resource: !Sub '${Data.Arn}/releases/*'
+              - Effect: Allow
+                Action: [s3:PutObject]
+                Resource: !Sub '${Data.Arn}/backups/*'
+  RuntimeProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref RuntimeRole]
+  WebFirewall:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Remember Me HTTPS only; administration via SSM
+      VpcId: !Ref VpcId
+      SecurityGroupIngress: []
+      SecurityGroupEgress:
+        - {IpProtocol: '-1', CidrIp: 0.0.0.0/0}
+      Tags: [{Key: Project, Value: RememberMe}]
+  HTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: WebEnabled
+    Properties:
+      GroupId: !GetAtt WebFirewall.GroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: ACME and HTTPS redirect only
+  HTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: WebEnabled
+    Properties:
+      GroupId: !GetAtt WebFirewall.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+      Description: Authenticated web and mobile API
+  Server:
+    Type: AWS::EC2::Instance
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: t3.medium
+      CreditSpecification: {CPUCredits: standard}
+      IamInstanceProfile: !Ref RuntimeProfile
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 1
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs: {VolumeType: gp3, VolumeSize: 40, Encrypted: true, DeleteOnTermination: false}
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          AssociatePublicIpAddress: true
+          SubnetId: !Ref SubnetId
+          GroupSet: [!GetAtt WebFirewall.GroupId]
+      Tags:
+        - {Key: Name, Value: remember-me-pilot}
+        - {Key: Project, Value: RememberMe}
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -eu
+          # No application keys or user content in EC2 UserData.
+          snap list amazon-ssm-agent >/dev/null 2>&1 || snap install amazon-ssm-agent --classic
+          snap start amazon-ssm-agent
+  Address:
+    Type: AWS::EC2::EIP
+    Properties: {Domain: vpc}
+  AddressAttachment:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref Server
+      AllocationId: !GetAtt Address.AllocationId
+Outputs:
+  InstanceId: {Value: !Ref Server}
+  PublicIP: {Value: !Ref Address}
+  PrivateBucket: {Value: !Ref Data}
+  Firewall: {Value: !GetAtt WebFirewall.GroupId}

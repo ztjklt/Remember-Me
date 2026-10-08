@@ -23,7 +23,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-retrieval = ["sentence-transformers>=3.0,<6"]
+deployment = ["psycopg[binary]>=3.2,<4"]
+retrieval = ["sentence-transformers>=3.0,<6", "torch>=2.0,<3"]
 
 [dependency-groups]
 dev = [
@@ -37,6 +38,14 @@ dev = [
 [tool.uv]
 # The service is deployed as an application, not installed as a library.
 package = false
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -99,14 +99,24 @@ def source_basis(session, subject_id, *, include_profiles=True):
 def publication_lock(session, subject_id):
     """Start fresh; serialize the short final compare+publish with source writes.
 
-    SQLite's writer lock covers all mutators, including workers. On PostgreSQL
-    use SERIALIZABLE and let conflicts abort, rather than claim a row lock stops
-    arbitrary inserts. PostgreSQL acceptance is tracked separately.
+    SQLite's writer lock covers all mutators, including workers. PostgreSQL
+    uses the same conservative single-writer boundary for this small pilot:
+    table locks cover ordinary DML, including writers that do not call here.
+    SERIALIZABLE alone permits a concurrent writer to serialize after an old
+    snapshot; it does not provide the compare/publish critical section.
+    Never hold this transaction across model calls.
     """
     from sqlalchemy import text
     session.rollback()
     session.expire_all()
     if session.bind.dialect.name == 'sqlite':
         session.execute(text('BEGIN IMMEDIATE'))
+    elif session.bind.dialect.name == 'postgresql':
+        from .models import Base
+        session.connection(execution_options={'isolation_level': 'READ COMMITTED'})
+        session.execute(text("SET LOCAL lock_timeout = '5s'"))
+        quote = session.bind.dialect.identifier_preparer.quote
+        tables = ', '.join(quote(name) for name in sorted(Base.metadata.tables))
+        session.execute(text(f'LOCK TABLE {tables} IN SHARE ROW EXCLUSIVE MODE'))
     else:
-        session.connection(execution_options={'isolation_level': 'SERIALIZABLE'})
+        raise RuntimeError('Publication locking supports SQLite and PostgreSQL only')

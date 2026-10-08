@@ -1,0 +1,21 @@
+{$REMEMBER_DOMAIN} {
+    encode gzip
+    request_body {
+        # Covers backend's 25 MiB audio plus multipart framing.
+        max_size 28MB
+    }
+    @root path /
+    redir @root /workbench/ 302
+    @internal path /docs /docs/* /redoc /openapi.json
+    respond @internal 404
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy same-origin
+        X-Frame-Options DENY
+    }
+    reverse_proxy {$REMEMBER_UPSTREAM:127.0.0.1:8877} {
+        transport http {
+            response_header_timeout 300s
+        }
+    }
+}

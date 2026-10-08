@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+from sqlalchemy.exc import OperationalError
 
 from . import __version__
 from .ai_core import build_ai_client
@@ -88,6 +89,18 @@ async def _app_error_handler(_request: Request, exc: AppError) -> JSONResponse:
     )
 
 
+async def _database_conflict_handler(_request: Request, exc: OperationalError) -> JSONResponse:
+    # Do not log SQL parameters, DSNs, names or credentials from DB exceptions.
+    state = getattr(exc.orig, 'sqlstate', None)
+    conflict = state in {'40001', '40P01', '55P03'}
+    return JSONResponse(status_code=409 if conflict else 503, content={
+        'error_code': 'STATE_CONFLICT' if conflict else 'DATABASE_UNAVAILABLE',
+        'error_message': ('资料正被其他操作更新，请检查最新状态后重试；没有自动重放模型调用。'
+                          if conflict else '数据库暂不可用，请稍后重试。'),
+        'request_id': trace_id_var.get(),
+    })
+
+
 def _validation_message(exc: RequestValidationError) -> str:
     """One readable line naming the offending fields.
 
@@ -155,6 +168,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(RequestContextMiddleware)
     app.add_exception_handler(AppError, _app_error_handler)
+    app.add_exception_handler(OperationalError, _database_conflict_handler)
     app.add_exception_handler(RequestValidationError, _request_error_handler)
     app.include_router(health.router)
     app.include_router(session.router)
