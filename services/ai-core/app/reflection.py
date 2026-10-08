@@ -12,8 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .contracts import AICoreOutput
 from .errors import AIOutputInvalid, EvidenceInvalid
+from .causal import CausalLink, attach
 
-VERSION = "portrait-reflection-v1"
+VERSION = "portrait-reflection-v2"
 
 
 class Update(BaseModel):
@@ -37,6 +38,7 @@ class Reflection(BaseModel):
     model_config = ConfigDict(extra="forbid")
     updates: list[Update] = Field(max_length=24)
     facets: list[Facet] = Field(max_length=48)
+    causal_links: list[CausalLink] = Field(default_factory=list, max_length=24)
 
 
 SYSTEM = (
@@ -54,6 +56,16 @@ SYSTEM = (
     "不能从文字推测音色、周围声源、疾病、人格诊断或未表达的情绪；缺失时不生成。"
     "THIRD_PARTY 记忆只保留为别人的说法，不能为它生成画像 updates 或 facets。"
     "只返回符合 schema 的 JSON，updates 与 facets 都可以为空。"
+    "可选 causal_links 用于事件时序和原因分析。cause/effect 必须分别用 memory_index 引用新记忆，"
+    "或用 memory_item_id 引用 current_memories；quote 必须是该记忆的精确证据片段。"
+    "同一事件已经存在时优先复用 current_memories 的事件引用，避免把新句子中再次提及"
+    "的旧事件创建为另一个节点；事件 quote 使用最短且明确的事件原话，保留主语和否定。"
+    "assertion_memory_index 必须是新记忆，quote 是它的明确关系原话。"
+    "REPORTED_CAUSE 只表示本人明确归因，不代表客观因果已证实；DENIES_CAUSE 是本人明确否认。"
+    "仅时间先后用 BEFORE，仅伴随用 ASSOCIATED_WITH；猜测、可能、替代解释用 HYPOTHESIS。"
+    "不能从先后或相关性推断因果，不生成未被提及的事件、混杂因素或反事实。"
+    "time_text 仅逐字复制原文明示的日期；没有日期填 null，录音时间不是事件发生时间。"
+    "context 仅逐字摘自关系原话，缺失填 null。事件片段和因果句可能属于同一 memory。"
 )
 
 
@@ -73,7 +85,8 @@ def reflect(provider, request, output: AICoreOutput) -> AICoreOutput:
         memory.metadata = {"domain": defaults[memory.memory_type], **(memory.metadata or {})}
     current = context.get("current_traits", [])
     targets = {t["trait_id"]: t for t in current if isinstance(t, dict) and "trait_id" in t}
-    data = {"current_traits": current, "calibration_question": context.get("calibration_question"),
+    data = {"current_traits": current, "current_memories": context.get("current_memories", []),
+            "calibration_question": context.get("calibration_question"),
             "memories": [{"memory_index": i, "statement": m.content,
                           "domain": (m.metadata or {}).get("domain"),
                           "evidence": [evidence[e].model_dump(exclude_none=True) for e in m.evidence_ids]}
@@ -125,4 +138,5 @@ def reflect(provider, request, output: AICoreOutput) -> AICoreOutput:
         if entry not in facets:
             facets.append(entry)
         memory.metadata = metadata
+    attach(result.causal_links, output, context.get("current_memories", []))
     return output

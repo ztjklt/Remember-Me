@@ -1,5 +1,72 @@
 import SwiftUI
 
+struct GuidancePacingControls: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        if model.pairing != nil {
+            HStack {
+                if model.guidancePaused {
+                    Text("建议问题已休息，随时可以自由录音。").font(.caption).foregroundStyle(Ink.muted)
+                    Button("恢复建议") { model.resumeGuidance() }
+                } else {
+                    Button("休息 30 分钟") { model.restFromGuidance() }
+                        .accessibilityIdentifier("guidance.rest")
+                }
+            }.font(.subheadline)
+        }
+    }
+}
+
+struct CausalEvidenceRows: View {
+    @EnvironmentObject private var model: AppModel
+    private func valid(_ node: CausalNodeRecord) -> Bool {
+        guard let memory = model.memories.first(where: { $0.id == node.memory_item_id }) else { return false }
+        let sources = memory.evidence.filter { node.evidence_ids.contains($0.id) }
+        return !sources.isEmpty && Set(node.evidence_ids).isSubset(of: Set(sources.map(\.id))) &&
+            sources.allSatisfy { ["SUBJECT", "CALIBRATION"].contains($0.source_type) } &&
+            sources.contains { ($0.excerpt ?? "").contains(node.quote) }
+    }
+    private func label(_ edge: CausalViewRecord) -> String {
+        if edge.status == "contested" { return "有不同说法或时间冲突 · 等待澄清" }
+        switch edge.relation {
+        case "REPORTED_CAUSE": return "本人描述的原因关系"
+        case "DENIES_CAUSE": return "本人否认原因关系"
+        case "BEFORE": return "事件先后 · 不代表因果"
+        case "ASSOCIATED_WITH": return "同时或相关 · 不代表因果"
+        default: return "待核对的可能解释"
+        }
+    }
+    var body: some View {
+        ForEach(model.memories) { memory in
+            ForEach(Array((model.memoryMetadata[memory.id]?.temporal_causal_view ?? []).enumerated()), id: \.offset) { _, edge in
+                if valid(edge.cause), valid(edge.effect),
+                   Set(edge.evidence_ids).isSubset(of: Set(model.memories.flatMap(\.evidence).map(\.id))) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(label(edge)).font(.headline)
+                        if let context = edge.context { Text(context).font(.caption).foregroundStyle(Ink.muted) }
+                        ForEach([edge.cause, edge.effect].indices, id: \.self) { index in
+                            let node = [edge.cause, edge.effect][index]
+                            if let original = model.memories.first(where: { $0.id == node.memory_item_id }) {
+                                NavigationLink { MemoryDetailView(memory: original) } label: {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text((index == 0 ? "起点：" : "结果：") + node.quote)
+                                        Text(node.time_text.map { "原文事件时间：" + $0 } ?? "事件时间未明确")
+                                            .font(.caption).foregroundStyle(Ink.muted)
+                                    }
+                                }.foregroundStyle(Ink.text)
+                            }
+                        }
+                        ForEach(edge.quotes, id: \.self) { Text("“\($0)”").font(.subheadline) }
+                        Text("\(edge.independent_episodes) 段独立录音依据。本人归因不等于客观因果证明。")
+                            .font(.caption).foregroundStyle(Ink.muted)
+                    }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
+                        .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
+        }
+    }
+}
+
 struct PortraitFacetItem: Identifiable {
     let memory: MemoryRecord
     let category: String
@@ -98,6 +165,7 @@ struct PortraitFlowView: View {
                     .font(.subheadline).foregroundStyle(Ink.muted)
                 if let error = model.portraitRefreshError { Text(error).foregroundStyle(Ink.muted) }
                 if kind == "event" {
+                    CausalEvidenceRows()
                     ForEach(model.memories.filter { $0.memory_type == "EVENT" }.sorted { $0.recorded_at < $1.recorded_at }) { memory in
                         NavigationLink { MemoryDetailView(memory: memory) } label: {
                             HStack(alignment: .top, spacing: 12) {
@@ -118,6 +186,7 @@ struct PortraitFlowView: View {
                         NavigationLink(memory.content) { MemoryDetailView(memory: memory) }
                     }
                 } else {
+                    if kind == "decision" { CausalEvidenceRows() }
                     if kind == "expression", !model.expressionEvidence.isEmpty {
                         let corpus = model.expressionEvidence.joined(separator: "。")
                         let sentences = corpus.split(whereSeparator: { "。！？!?\n".contains($0) })

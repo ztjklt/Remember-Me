@@ -84,6 +84,34 @@ final class AgentCoreRecoveryTests: XCTestCase {
         responses.set("GET \(base)/calibrations", json: #"{"items":[\#(calibration())]}"#)
         responses.set("GET \(base)/voice/profile", json: #"{"ready":false}"#)
     }
+    func testGuidanceRestSurvivesRestartAndStaysWithinSubject() throws {
+        let suite = "CaptureRestTests-" + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let own = Pairing(baseURL: "https://test.invalid", fingerprint: String(repeating: "a", count: 64),
+                          token: "synthetic", actorID: "actor", subjectID: "own", consentID: "grant")
+        let model = AppModel(pairing: own, defaults: defaults)
+        model.questions = [try decode(#"{"question_id":"q","text":"你的经历？","target_domain":"IDENTITY","reason":"missing_domain","evidence_ids":[]}"#, as: QuestionRecord.self)]
+        model.restFromGuidance()
+        XCTAssertTrue(model.guidancePaused)
+        XCTAssertTrue(model.suggestedQuestions.isEmpty)
+        XCTAssertEqual(model.questions.count, 1)
+        let reopened = AppModel(pairing: own, defaults: defaults)
+        XCTAssertTrue(reopened.guidancePaused)
+        let other = Pairing(baseURL: own.baseURL, fingerprint: own.fingerprint, token: "synthetic-other",
+                            actorID: "other", subjectID: "other", consentID: "other-grant")
+        XCTAssertFalse(AppModel(pairing: other, defaults: defaults).guidancePaused)
+        model.resumeGuidance()
+        XCTAssertEqual(model.suggestedQuestions.count, 1)
+        XCTAssertFalse(AppModel(pairing: own, defaults: defaults).guidancePaused)
+    }
+
+    func testExpiredRestReopensSuggestions() throws {
+        let model = makeModel(Responses())
+        model.captureRestUntil = Date().addingTimeInterval(-1)
+        XCTAssertFalse(model.guidancePaused)
+    }
+
     func testVoiceOutageDoesNotBlockPersonModelOrCalibrationRefresh() async {
         let responses = Responses(); coreResponses(responses)
         responses.set("GET \(base)/voice/profile", status: 503, json: #"{"message":"synthetic outage"}"#)

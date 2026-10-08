@@ -110,3 +110,8 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 当前五入口已经接入有证据的八类侧面、四个实际数据图谱、支持/冲突/变化的持续画像，以及五维校准后自动更新的采集问题。环境侧面仅来自原文明示场景/声音；原音状态观测报告响度等信号，不推断心理健康。查看 [2026-10-08 完整验证](../../docs/verification/IOS_FULL_AGENT_LOOP_2026_10_08.md)。
 
 暂不做真机时，在仓库根目录运行 `scripts/verify_full_agent_loop.py verify --env-file /absolute/path/to/private-ai.env`。它使用合成中文录音、本机 Whisper 与 BGE、真实 DeepSeek 和临时数据库，保留逐项报告；需要 backend 的 retrieval extra。iOS 用模拟器运行 RememberMeTests 与 RememberMeUITests。该测试不替代未来的真实用户质量评测，也不会把测试资料写入你的日常数据库。
+
+引导采集现在支持按人物保存的本机“休息 30 分钟”偏好，不阻止自由录音。
+事件/决策图展示重新验证的事件时间与本人归因、反证和待核对解释，可回到原文。
+Backend 用信息增益、历史效果与交互预算调整下一轮问题。验收与边界见
+`docs/verification/ADAPTIVE_CAPTURE_TEMPORAL_REASONING_2026_10_08.md`。

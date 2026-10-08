@@ -16,7 +16,7 @@ from ..models import (
 from ..repositories.person_model import PersonModelRepository
 from ..retrieval import invalidate_answers
 from ..security import current_actor
-from ..capture_planner import PRIORITY
+from ..capture_planner import plan
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["person-model"])
 
@@ -123,10 +123,8 @@ def person_model(subject_id: str, actor: Actor = Depends(current_actor), session
 @router.get("/questions")
 def questions(subject_id: str, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     _authorized(session, subject_id, actor)
-    rows = list(session.scalars(select(CaptureQuestion).where(
-        CaptureQuestion.subject_id == subject_id, CaptureQuestion.status == "pending"
-    ).order_by(CaptureQuestion.created_at.desc())))
-    rows.sort(key=lambda q: (-PRIORITY.get(q.reason, 0), PERSON_DOMAINS.index(q.target_domain), q.text))
+    rows = plan(session, subject_id)
+    session.commit()
     return {"subject_id": subject_id, "items": [{
         "question_id": item.question_id, "subject_id": item.subject_id,
         "text": item.text,

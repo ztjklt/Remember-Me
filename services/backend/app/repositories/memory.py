@@ -7,6 +7,7 @@ key or leave two versions of the same result behind.
 """
 
 from uuid import uuid4
+from copy import deepcopy
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
@@ -36,10 +37,20 @@ class MemoryRepository:
                 )
             )
 
+        identifiers = [f"mi_{uuid4().hex[:16]}" for _ in output.memory_items]
         for ordinal, item in enumerate(output.memory_items):
+            metadata = deepcopy(item.metadata)
+            for link in (metadata or {}).get("temporal_causal", []):
+                for endpoint in (link.get("cause", {}), link.get("effect", {})):
+                    if "memory_index" in endpoint:
+                        index = endpoint.pop("memory_index")
+                        if not isinstance(index, int) or not 0 <= index < len(identifiers):
+                            from ..errors import AiSchemaInvalid
+                            raise AiSchemaInvalid("Causal anchor index is invalid")
+                        endpoint["memory_item_id"] = identifiers[index]
             self.session.add(
                 MemoryItem(
-                    memory_item_id=f"mi_{uuid4().hex[:16]}",
+                    memory_item_id=identifiers[ordinal],
                     episode_id=episode.episode_id,
                     ordinal=ordinal,
                     memory_type=str(item.memory_type),
@@ -54,7 +65,7 @@ class MemoryRepository:
                     prompt_version=item.prompt_version,
                     schema_version=item.schema_version,
                     effective_at=item.effective_at,
-                    item_metadata=item.metadata,
+                    item_metadata=metadata,
                 )
             )
 

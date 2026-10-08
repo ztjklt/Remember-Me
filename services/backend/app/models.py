@@ -481,6 +481,8 @@ class CaptureQuestion(Base):
     evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    # Private, replayable policy decision; never a client-supplied priority.
+    policy_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class ModelRevision(Base):

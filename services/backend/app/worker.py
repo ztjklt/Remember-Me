@@ -405,6 +405,7 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the extract stage with no transcript"
             )
 
+        from .temporal_reasoning import snapshot
         payload = AICoreInput(
             episode_id=episode.episode_id,
             subject_id=episode.subject_id,
@@ -418,6 +419,7 @@ class ProcessingWorker:
             trace_id=episode.trace_id,
             subject_context={
                 "subject_id": episode.subject_id,
+                "current_memories": snapshot(session, episode.subject_id, query=episode.transcript),
                 "current_traits": [{"trait_id": t.trait_id, "domain": t.domain,
                                     "statement": t.statement, "context": t.context,
                                     "status": t.status, "memory_item_ids": t.memory_item_ids,

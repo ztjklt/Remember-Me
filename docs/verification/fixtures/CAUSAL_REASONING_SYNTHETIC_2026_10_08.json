@@ -1,0 +1,810 @@
+{
+  "synthetic_source_audio": true,
+  "physical_device": false,
+  "checks": [
+    {
+      "name": "causal-a: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "causal-a: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_f0ebc406351844ac",
+        "status": "ready",
+        "trace_id": "37749e15685640168cc118b25f66c12f"
+      }
+    },
+    {
+      "name": "causal-b: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "causal-b: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_f4930a6dba284bed",
+        "status": "ready",
+        "trace_id": "401cc499f49c45ddbcc927cd270b28a0"
+      }
+    },
+    {
+      "name": "causal-c: real STT reached human review",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "causal-c: extraction and model committed",
+      "passed": true,
+      "detail": {
+        "episode_id": "ep_55604febe0c14005",
+        "status": "ready",
+        "trace_id": "1295187ef1134cd09162394942a4c172"
+      }
+    },
+    {
+      "name": "real model creates quoted causal assertions",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "real model joins event references into multi-hop chain",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "policy persists information gain and interaction cost",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "real Twin gives evidence backed subjective attribution",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "counterfactual remains unknown without intervention evidence",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "episodes": [
+    {
+      "key": "causal-a",
+      "episode_id": "ep_f0ebc406351844ac",
+      "confirmed_transcript": "2020年1月1日我搬去了苏州。",
+      "raw_asr": "2020年1月1日我搬去了蘇州",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_f0ebc406351844ac",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "2020年1月1日搬去了苏州",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d4a2146a0e024bbb"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v2",
+                "input_statement": "2020年1月1日搬去了苏州",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 3.152,
+                "rms_dbfs": -16.59,
+                "silence_fraction": 0.019,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              },
+              "temporal_causal_view": []
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "37749e15685640168cc118b25f66c12f"
+      }
+    },
+    {
+      "key": "causal-b",
+      "episode_id": "ep_f4930a6dba284bed",
+      "confirmed_transcript": "2021年1月1日我换了工作。因为搬去了苏州，所以我换了工作。",
+      "raw_asr": "2021年1月1日我換了工作,因為搬去了蘇州,所以我換了工作。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_f4930a6dba284bed",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "2021年1月1日换了工作",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9de87b9a93a340f2"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v2",
+                "input_statement": "2021年1月1日换了工作",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 6.356,
+                "rms_dbfs": -17.16,
+                "silence_fraction": 0.1101,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              },
+              "temporal_causal_view": []
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "因为搬去了苏州，所以换了工作",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_e3295dfb1e6b4294"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v2",
+                "input_statement": "因为搬去了苏州，所以换了工作",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "temporal_causal": [
+                {
+                  "version": "temporal-causal-v1",
+                  "input_statement": "因为搬去了苏州，所以换了工作",
+                  "relation": "REPORTED_CAUSE",
+                  "cause": {
+                    "memory_item_id": "mi_c026432d9ab646a9",
+                    "content": "2020年1月1日搬去了苏州",
+                    "evidence_ids": [
+                      "ev_d4a2146a0e024bbb"
+                    ],
+                    "quote": "搬去了苏州",
+                    "time_text": null
+                  },
+                  "effect": {
+                    "content": "2021年1月1日换了工作",
+                    "evidence_ids": [
+                      "ev_9de87b9a93a340f2"
+                    ],
+                    "quote": "换了工作",
+                    "time_text": "2021年1月1日",
+                    "memory_item_id": "mi_a46b08320e224d9d"
+                  },
+                  "quote": "因为搬去了苏州，所以我换了工作。",
+                  "context": null,
+                  "evidence_ids": [
+                    "ev_e3295dfb1e6b4294"
+                  ],
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 6.356,
+                "rms_dbfs": -17.16,
+                "silence_fraction": 0.1101,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              },
+              "temporal_causal_view": [
+                {
+                  "relation": "REPORTED_CAUSE",
+                  "status": "supported",
+                  "issues": [],
+                  "cause": {
+                    "id": "node_f74876df35684f7980f5",
+                    "memory_item_id": "mi_c026432d9ab646a9",
+                    "quote": "搬去了苏州",
+                    "evidence_ids": [
+                      "ev_d4a2146a0e024bbb"
+                    ],
+                    "event_time": null,
+                    "time_text": null,
+                    "recorded_at": "2026-10-08T09:00:00+00:00"
+                  },
+                  "effect": {
+                    "id": "node_09ec2bffde1b533dd33a",
+                    "memory_item_id": "mi_a46b08320e224d9d",
+                    "quote": "换了工作",
+                    "evidence_ids": [
+                      "ev_9de87b9a93a340f2"
+                    ],
+                    "event_time": {
+                      "start": "2021-01-01T00:00:00+00:00",
+                      "end": "2021-01-02T00:00:00+00:00",
+                      "precision": "day"
+                    },
+                    "time_text": "2021年1月1日",
+                    "recorded_at": "2026-10-08T09:00:00+00:00"
+                  },
+                  "evidence_ids": [
+                    "ev_9de87b9a93a340f2",
+                    "ev_d4a2146a0e024bbb",
+                    "ev_e3295dfb1e6b4294"
+                  ],
+                  "context": null,
+                  "temporal_relation": "UNKNOWN",
+                  "independent_episodes": 1,
+                  "quotes": [
+                    "因为搬去了苏州，所以我换了工作。"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "401cc499f49c45ddbcc927cd270b28a0"
+      }
+    },
+    {
+      "key": "causal-c",
+      "episode_id": "ep_55604febe0c14005",
+      "confirmed_transcript": "2022年1月1日我开始每天步行上班。因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+      "raw_asr": "2022年1月1日我開始每天步行上班,因為換了工作,新辦公室離家很近,所以我開始每天步行上班。",
+      "stt_model_version": "whisper-ggml-base-60ed5bc3dd14",
+      "result": {
+        "episode_id": "ep_55604febe0c14005",
+        "status": "ready",
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "2022年1月1日开始每天步行上班",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8f88b38533f74820"
+            ],
+            "confidence": 0.95,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "reflection": {
+                "version": "portrait-reflection-v2",
+                "input_statement": "2022年1月1日开始每天步行上班",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 10.663,
+                "rms_dbfs": -17.64,
+                "silence_fraction": 0.1049,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              },
+              "temporal_causal_view": []
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "因为换了工作且新办公室离家很近，所以开始每天步行上班",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7bf781653a264c40"
+            ],
+            "confidence": 0.9,
+            "model_version": "deepseek-flash",
+            "prompt_version": "memory-extractor-v3",
+            "schema_version": "integration-contract-v0.2",
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "reflection": {
+                "version": "portrait-reflection-v2",
+                "input_statement": "因为换了工作且新办公室离家很近，所以开始每天步行上班",
+                "action": "ADD",
+                "context": null,
+                "target": null
+              },
+              "temporal_causal": [
+                {
+                  "version": "temporal-causal-v1",
+                  "input_statement": "因为换了工作且新办公室离家很近，所以开始每天步行上班",
+                  "relation": "REPORTED_CAUSE",
+                  "cause": {
+                    "memory_item_id": "mi_a46b08320e224d9d",
+                    "content": "2021年1月1日换了工作",
+                    "evidence_ids": [
+                      "ev_9de87b9a93a340f2"
+                    ],
+                    "quote": "换了工作",
+                    "time_text": null
+                  },
+                  "effect": {
+                    "content": "2022年1月1日开始每天步行上班",
+                    "evidence_ids": [
+                      "ev_8f88b38533f74820"
+                    ],
+                    "quote": "我开始每天步行上班",
+                    "time_text": "2022年1月1日",
+                    "memory_item_id": "mi_8d96207eda8d48a1"
+                  },
+                  "quote": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+                  "context": null,
+                  "evidence_ids": [
+                    "ev_7bf781653a264c40"
+                  ],
+                  "model_version": "deepseek-flash"
+                }
+              ],
+              "audio_observation": {
+                "status": "available",
+                "model_version": "pcm-observation-v1",
+                "analyzed_seconds": 10.663,
+                "rms_dbfs": -17.64,
+                "silence_fraction": 0.1049,
+                "clipped_fraction": 0.0,
+                "interpretation": "signal_only"
+              },
+              "temporal_causal_view": [
+                {
+                  "relation": "REPORTED_CAUSE",
+                  "status": "supported",
+                  "issues": [],
+                  "cause": {
+                    "id": "node_09ec2bffde1b533dd33a",
+                    "memory_item_id": "mi_a46b08320e224d9d",
+                    "quote": "换了工作",
+                    "evidence_ids": [
+                      "ev_9de87b9a93a340f2"
+                    ],
+                    "event_time": {
+                      "start": "2021-01-01T00:00:00+00:00",
+                      "end": "2021-01-02T00:00:00+00:00",
+                      "precision": "day"
+                    },
+                    "time_text": "2021年1月1日",
+                    "recorded_at": "2026-10-08T09:00:00+00:00"
+                  },
+                  "effect": {
+                    "id": "node_d0ef143554f336b63317",
+                    "memory_item_id": "mi_8d96207eda8d48a1",
+                    "quote": "我开始每天步行上班",
+                    "evidence_ids": [
+                      "ev_8f88b38533f74820"
+                    ],
+                    "event_time": {
+                      "start": "2022-01-01T00:00:00+00:00",
+                      "end": "2022-01-02T00:00:00+00:00",
+                      "precision": "day"
+                    },
+                    "time_text": "2022年1月1日",
+                    "recorded_at": "2026-10-08T09:00:00+00:00"
+                  },
+                  "evidence_ids": [
+                    "ev_7bf781653a264c40",
+                    "ev_8f88b38533f74820",
+                    "ev_9de87b9a93a340f2"
+                  ],
+                  "context": null,
+                  "temporal_relation": "BEFORE",
+                  "independent_episodes": 1,
+                  "quotes": [
+                    "因为换了工作，新办公室离家很近，所以我开始每天步行上班。"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "model_version": "deepseek-flash",
+        "trace_id": "1295187ef1134cd09162394942a4c172"
+      }
+    }
+  ],
+  "temporal_causal_graph": {
+    "version": "temporal-causal-v1",
+    "subject_id": "subj_6c7c817649a344c6",
+    "nodes": {
+      "node_f74876df35684f7980f5": {
+        "id": "node_f74876df35684f7980f5",
+        "memory_item_id": "mi_c026432d9ab646a9",
+        "quote": "搬去了苏州",
+        "evidence_ids": [
+          "ev_d4a2146a0e024bbb"
+        ],
+        "event_time": null,
+        "time_text": null,
+        "recorded_at": "2026-10-08T09:00:00+00:00"
+      },
+      "node_09ec2bffde1b533dd33a": {
+        "id": "node_09ec2bffde1b533dd33a",
+        "memory_item_id": "mi_a46b08320e224d9d",
+        "quote": "换了工作",
+        "evidence_ids": [
+          "ev_9de87b9a93a340f2"
+        ],
+        "event_time": {
+          "start": "2021-01-01T00:00:00+00:00",
+          "end": "2021-01-02T00:00:00+00:00",
+          "precision": "day"
+        },
+        "time_text": "2021年1月1日",
+        "recorded_at": "2026-10-08T09:00:00+00:00"
+      },
+      "node_d0ef143554f336b63317": {
+        "id": "node_d0ef143554f336b63317",
+        "memory_item_id": "mi_8d96207eda8d48a1",
+        "quote": "我开始每天步行上班",
+        "evidence_ids": [
+          "ev_8f88b38533f74820"
+        ],
+        "event_time": {
+          "start": "2022-01-01T00:00:00+00:00",
+          "end": "2022-01-02T00:00:00+00:00",
+          "precision": "day"
+        },
+        "time_text": "2022年1月1日",
+        "recorded_at": "2026-10-08T09:00:00+00:00"
+      }
+    },
+    "edges": [
+      {
+        "cause": "node_f74876df35684f7980f5",
+        "effect": "node_09ec2bffde1b533dd33a",
+        "relation": "REPORTED_CAUSE",
+        "context": null,
+        "assertions": [
+          {
+            "memory_item_id": "mi_f83508e3c07d4d1a",
+            "quote": "因为搬去了苏州，所以我换了工作。",
+            "evidence_ids": [
+              "ev_e3295dfb1e6b4294"
+            ],
+            "episode_id": "ep_f4930a6dba284bed",
+            "model_version": "deepseek-flash"
+          }
+        ],
+        "status": "supported",
+        "issues": [],
+        "independent_episodes": 1,
+        "evidence_ids": [
+          "ev_9de87b9a93a340f2",
+          "ev_d4a2146a0e024bbb",
+          "ev_e3295dfb1e6b4294"
+        ],
+        "support_weight": 0.45,
+        "temporal_relation": "UNKNOWN"
+      },
+      {
+        "cause": "node_09ec2bffde1b533dd33a",
+        "effect": "node_d0ef143554f336b63317",
+        "relation": "REPORTED_CAUSE",
+        "context": null,
+        "assertions": [
+          {
+            "memory_item_id": "mi_67ee0782ce6a454b",
+            "quote": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+            "evidence_ids": [
+              "ev_7bf781653a264c40"
+            ],
+            "episode_id": "ep_55604febe0c14005",
+            "model_version": "deepseek-flash"
+          }
+        ],
+        "status": "supported",
+        "issues": [],
+        "independent_episodes": 1,
+        "evidence_ids": [
+          "ev_7bf781653a264c40",
+          "ev_8f88b38533f74820",
+          "ev_9de87b9a93a340f2"
+        ],
+        "support_weight": 0.45,
+        "temporal_relation": "BEFORE"
+      }
+    ]
+  },
+  "reported_causal_paths": [
+    {
+      "nodes": [
+        "node_f74876df35684f7980f5",
+        "node_09ec2bffde1b533dd33a"
+      ],
+      "evidence_ids": [
+        "ev_9de87b9a93a340f2",
+        "ev_d4a2146a0e024bbb",
+        "ev_e3295dfb1e6b4294"
+      ],
+      "context": null,
+      "edges": [
+        {
+          "cause": "node_f74876df35684f7980f5",
+          "effect": "node_09ec2bffde1b533dd33a",
+          "relation": "REPORTED_CAUSE",
+          "context": null,
+          "assertions": [
+            {
+              "memory_item_id": "mi_f83508e3c07d4d1a",
+              "quote": "因为搬去了苏州，所以我换了工作。",
+              "evidence_ids": [
+                "ev_e3295dfb1e6b4294"
+              ],
+              "episode_id": "ep_f4930a6dba284bed",
+              "model_version": "deepseek-flash"
+            }
+          ],
+          "status": "supported",
+          "issues": [],
+          "independent_episodes": 1,
+          "evidence_ids": [
+            "ev_9de87b9a93a340f2",
+            "ev_d4a2146a0e024bbb",
+            "ev_e3295dfb1e6b4294"
+          ],
+          "support_weight": 0.45,
+          "temporal_relation": "UNKNOWN"
+        }
+      ],
+      "kind": "REPORTED_CHAIN",
+      "weakest_support": 0.45
+    },
+    {
+      "nodes": [
+        "node_09ec2bffde1b533dd33a",
+        "node_d0ef143554f336b63317"
+      ],
+      "evidence_ids": [
+        "ev_7bf781653a264c40",
+        "ev_8f88b38533f74820",
+        "ev_9de87b9a93a340f2"
+      ],
+      "context": null,
+      "edges": [
+        {
+          "cause": "node_09ec2bffde1b533dd33a",
+          "effect": "node_d0ef143554f336b63317",
+          "relation": "REPORTED_CAUSE",
+          "context": null,
+          "assertions": [
+            {
+              "memory_item_id": "mi_67ee0782ce6a454b",
+              "quote": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+              "evidence_ids": [
+                "ev_7bf781653a264c40"
+              ],
+              "episode_id": "ep_55604febe0c14005",
+              "model_version": "deepseek-flash"
+            }
+          ],
+          "status": "supported",
+          "issues": [],
+          "independent_episodes": 1,
+          "evidence_ids": [
+            "ev_7bf781653a264c40",
+            "ev_8f88b38533f74820",
+            "ev_9de87b9a93a340f2"
+          ],
+          "support_weight": 0.45,
+          "temporal_relation": "BEFORE"
+        }
+      ],
+      "kind": "REPORTED_CHAIN",
+      "weakest_support": 0.45
+    },
+    {
+      "nodes": [
+        "node_f74876df35684f7980f5",
+        "node_09ec2bffde1b533dd33a",
+        "node_d0ef143554f336b63317"
+      ],
+      "evidence_ids": [
+        "ev_7bf781653a264c40",
+        "ev_8f88b38533f74820",
+        "ev_9de87b9a93a340f2",
+        "ev_d4a2146a0e024bbb",
+        "ev_e3295dfb1e6b4294"
+      ],
+      "context": null,
+      "edges": [
+        {
+          "cause": "node_f74876df35684f7980f5",
+          "effect": "node_09ec2bffde1b533dd33a",
+          "relation": "REPORTED_CAUSE",
+          "context": null,
+          "assertions": [
+            {
+              "memory_item_id": "mi_f83508e3c07d4d1a",
+              "quote": "因为搬去了苏州，所以我换了工作。",
+              "evidence_ids": [
+                "ev_e3295dfb1e6b4294"
+              ],
+              "episode_id": "ep_f4930a6dba284bed",
+              "model_version": "deepseek-flash"
+            }
+          ],
+          "status": "supported",
+          "issues": [],
+          "independent_episodes": 1,
+          "evidence_ids": [
+            "ev_9de87b9a93a340f2",
+            "ev_d4a2146a0e024bbb",
+            "ev_e3295dfb1e6b4294"
+          ],
+          "support_weight": 0.45,
+          "temporal_relation": "UNKNOWN"
+        },
+        {
+          "cause": "node_09ec2bffde1b533dd33a",
+          "effect": "node_d0ef143554f336b63317",
+          "relation": "REPORTED_CAUSE",
+          "context": null,
+          "assertions": [
+            {
+              "memory_item_id": "mi_67ee0782ce6a454b",
+              "quote": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+              "evidence_ids": [
+                "ev_7bf781653a264c40"
+              ],
+              "episode_id": "ep_55604febe0c14005",
+              "model_version": "deepseek-flash"
+            }
+          ],
+          "status": "supported",
+          "issues": [],
+          "independent_episodes": 1,
+          "evidence_ids": [
+            "ev_7bf781653a264c40",
+            "ev_8f88b38533f74820",
+            "ev_9de87b9a93a340f2"
+          ],
+          "support_weight": 0.45,
+          "temporal_relation": "BEFORE"
+        }
+      ],
+      "kind": "INFERRED_REPORTED_CHAIN",
+      "weakest_support": 0.45
+    }
+  ],
+  "capture_policy_decisions": [
+    {
+      "version": "adaptive-capture-v1",
+      "score": 0.3581595,
+      "information_gain_bits": 0.188722,
+      "uncertainty_bits": 1.0,
+      "importance": 1.8,
+      "urgency": 1.2,
+      "expected_minutes": 1.5,
+      "interaction_cost": 1.5,
+      "reliability": 0.75,
+      "discounted_trials": 0.0,
+      "exploration": 0.06,
+      "burden": {
+        "paused": false,
+        "reason": null,
+        "recent_minutes": 0.0,
+        "guided_burst": 0,
+        "fatigue": 0.0,
+        "budget": 3
+      },
+      "baseline": {
+        "statements": [],
+        "memory_ids": [],
+        "unresolved": 0
+      }
+    },
+    {
+      "version": "adaptive-capture-v1",
+      "score": 0.3581595,
+      "information_gain_bits": 0.188722,
+      "uncertainty_bits": 1.0,
+      "importance": 1.8,
+      "urgency": 1.2,
+      "expected_minutes": 1.5,
+      "interaction_cost": 1.5,
+      "reliability": 0.75,
+      "discounted_trials": 0.0,
+      "exploration": 0.06,
+      "burden": {
+        "paused": false,
+        "reason": null,
+        "recent_minutes": 0.0,
+        "guided_burst": 0,
+        "fatigue": 0.0,
+        "budget": 3
+      },
+      "baseline": {
+        "statements": [],
+        "memory_ids": [],
+        "unresolved": 0
+      }
+    },
+    {
+      "version": "adaptive-capture-v1",
+      "score": 0.3581595,
+      "information_gain_bits": 0.188722,
+      "uncertainty_bits": 1.0,
+      "importance": 1.8,
+      "urgency": 1.2,
+      "expected_minutes": 1.5,
+      "interaction_cost": 1.5,
+      "reliability": 0.75,
+      "discounted_trials": 0.0,
+      "exploration": 0.06,
+      "burden": {
+        "paused": false,
+        "reason": null,
+        "recent_minutes": 0.0,
+        "guided_burst": 0,
+        "fatigue": 0.0,
+        "budget": 3
+      },
+      "baseline": {
+        "statements": [],
+        "memory_ids": [],
+        "unresolved": 0
+      }
+    }
+  ],
+  "causal_twin": {
+    "answer_id": "ta_a1504c7acea545c5",
+    "subject_id": "subj_6c7c817649a344c6",
+    "question": "为什么开始每天步行上班？",
+    "answer": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+    "response_type": "ORIGINAL",
+    "confidence": 0.95,
+    "model_version": "deepseek-flash",
+    "person_model_version": 3,
+    "created_at": "2026-10-08T12:06:21.853363+00:00",
+    "stale": false,
+    "evidence": [
+      {
+        "evidence_id": "ev_7bf781653a264c40",
+        "excerpt": "因为换了工作，新办公室离家很近，所以我开始每天步行上班。",
+        "episode_id": "ep_55604febe0c14005",
+        "source_type": "SUBJECT"
+      }
+    ]
+  },
+  "counterfactual_twin": {
+    "answer_id": "ta_4bcea8cfdfab4291",
+    "subject_id": "subj_6c7c817649a344c6",
+    "question": "如果没有搬去苏州，还会开始每天步行上班吗？",
+    "answer": "现有记录不足以支持这个因果判断。",
+    "response_type": "UNKNOWN",
+    "confidence": 0,
+    "model_version": "deepseek-flash",
+    "person_model_version": 3,
+    "created_at": "2026-10-08T12:06:22.866195+00:00",
+    "stale": false,
+    "evidence": []
+  },
+  "passed": true
+}

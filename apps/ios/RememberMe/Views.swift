@@ -483,7 +483,7 @@ private struct HomeView: View {
                     }.buttonStyle(RecordRowStyle())
                     Divider()
                 }
-                if let question = model.questions.first {
+                if let question = model.suggestedQuestions.first {
                     VStack(alignment: .leading, spacing: 16) {
                         Eyebrow(text: "给你的一个小问题")
                         Text(question.text)

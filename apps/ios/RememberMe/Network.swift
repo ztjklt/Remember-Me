@@ -118,6 +118,30 @@ struct AudioObservation: Decodable {
 struct MemoryMetadata: Decodable {
     let facets: [FacetRecord]?
     let audio_observation: AudioObservation?
+    let temporal_causal_view: [CausalViewRecord]?
+}
+struct EventInterval: Decodable {
+    let start: String
+    let end: String
+    let precision: String
+}
+struct CausalNodeRecord: Decodable {
+    let memory_item_id: String
+    let quote: String
+    let evidence_ids: [String]
+    let time_text: String?
+    let event_time: EventInterval?
+}
+struct CausalViewRecord: Decodable {
+    let relation: String
+    let status: String
+    let issues: [String]
+    let cause: CausalNodeRecord
+    let effect: CausalNodeRecord
+    let evidence_ids: [String]
+    let context: String?
+    let independent_episodes: Int
+    let quotes: [String]
 }
 struct ProcessedMemory: Decodable {
     let content: String

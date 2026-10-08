@@ -314,3 +314,11 @@ Migrations under `migrations/` are the only schema authority; the application ne
 - The PostgreSQL driver, which a deployment adds as a prerequisite — see [infra/deployment.md](../../infra/deployment.md).
 - Anything that processes voice — Phase 3. Phase 1 defines the consent boundary and the third-party exclusion rule only.
 - Person Model, Twin, and Memory/Graph/Persona APIs — Phase 2.
+
+Capture planning now uses auditable mutual-information estimates, discounted
+subject-evidence outcomes and bounded interaction budgets rather than fixed
+priority alone. Run `alembic upgrade head` for private migration 0008. Temporal
+reasoning revalidates quoted event/causal assertions, retires invalid paths and
+provides complete reported-attribution chains to Twin. See
+`docs/verification/ADAPTIVE_CAPTURE_TEMPORAL_REASONING_2026_10_08.md` at repo root
+for verification and the limits of causal identification and burden estimates.

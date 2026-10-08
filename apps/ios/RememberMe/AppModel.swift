@@ -23,6 +23,21 @@ final class AppModel: ObservableObject {
     @Published var episodes: [EpisodeRecord] = []
     @Published var domains: [DomainRecord] = []
     @Published var questions: [QuestionRecord] = []
+    @Published var captureRestUntil: Date?
+    var guidancePaused: Bool { (captureRestUntil ?? .distantPast) > Date() }
+    var suggestedQuestions: [QuestionRecord] { guidancePaused ? [] : questions }
+
+    func restFromGuidance() {
+        guard let pairing else { return }
+        captureRestUntil = Date().addingTimeInterval(30 * 60)
+        defaults.set(captureRestUntil, forKey: "capture-rest-" + pairing.subjectID)
+    }
+
+    func resumeGuidance() {
+        guard let pairing else { return }
+        captureRestUntil = nil
+        defaults.removeObject(forKey: "capture-rest-" + pairing.subjectID)
+    }
     @Published var modelVersion = 0
     @Published var graphFacts: [GraphFactRecord] = []
     @Published var memoryMetadata: [String: MemoryMetadata] = [:]
@@ -82,6 +97,7 @@ final class AppModel: ObservableObject {
         self.pairing = pairing
         self.defaults = defaults
         self.clientFactory = clientFactory
+        if let pairing { captureRestUntil = defaults.object(forKey: "capture-rest-" + pairing.subjectID) as? Date }
         if let data = defaults.data(forKey: "pending-recording") {
             draft = try? JSONDecoder().decode(RecordingDraft.self, from: data)
             if let pending = draft, !FileManager.default.fileExists(atPath: pending.fileURL.path) {
@@ -164,6 +180,7 @@ final class AppModel: ObservableObject {
             memoryMetadata = [:]
             modelVersion = snapshot.version
             questions = updatedQuestions
+            captureRestUntil = defaults.object(forKey: "capture-rest-" + pairing.subjectID) as? Date
             questionRefreshError = nil
             cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
             voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id

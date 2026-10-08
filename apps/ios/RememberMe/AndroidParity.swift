@@ -142,10 +142,11 @@ private struct PortraitDashboard: View {
                 if categories.isEmpty { Text("没有匹配的画像分类。").foregroundStyle(Ink.muted) }
                 Divider()
                 Text("Today").font(.title3.weight(.medium))
-                if model.questions.isEmpty {
-                    Text("录音整理后，值得继续了解的问题会出现在这里。").foregroundStyle(Ink.muted)
+                GuidancePacingControls()
+                if model.suggestedQuestions.isEmpty {
+                    Text("当前没有建议问题。你可以自由记录，或休息后再刷新。").foregroundStyle(Ink.muted)
                 }
-                ForEach(model.questions.filter { search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) }) { question in
+                ForEach(model.suggestedQuestions.filter { search.isEmpty || $0.text.localizedCaseInsensitiveContains(search) }) { question in
                     Button {
                         selectedQuestion = question; showRecorder = true
                     } label: {
@@ -410,8 +411,9 @@ private struct AgentsDashboard: View {
                 }
                 Divider()
                 Text("下一轮采集").font(.title3.weight(.medium))
+                GuidancePacingControls()
                 if let error = model.questionRefreshError { Text(error).foregroundStyle(Ink.muted) }
-                ForEach(model.questions) { question in
+                ForEach(model.suggestedQuestions) { question in
                     NavigationLink { GuidedQuestionView(question: question) } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(question.text).foregroundStyle(Ink.text)
@@ -486,7 +488,7 @@ private struct PersonalDashboard: View {
                 metric("今日已转写文字", value: model.todayEpisodes.reduce(0) { $0 + ($1.transcript?.count ?? 0) }, unit: "字", symbol: "text.alignleft")
                 metric("今日记忆", value: model.todayMemories.count, unit: "条", symbol: "book.closed")
                 Text("Today's words to you").font(.title3.weight(.medium))
-                Text(model.questions.first?.text ?? "还没有根据真实记录生成的话语。你可以从今天的一件小事开始。")
+                Text(model.suggestedQuestions.first?.text ?? "你可以从今天的一件小事开始，或休息后继续。")
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
                 Text("颜色与字号跟随 iPhone 系统设置。你的录音授权、云端问答与个人声音授权分别管理。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
@@ -524,6 +526,7 @@ func captureReasonLabel(_ reason: String) -> String {
     case "missing_domain": "补充尚未了解的领域"
     case "weak_evidence": "补充具体经历和例外"
     case "deepen_pattern": "核对已积累的模式"
+    case "causal_gap": "核对原因、时间和其他解释"
     default: "继续了解你"
     }
 }
