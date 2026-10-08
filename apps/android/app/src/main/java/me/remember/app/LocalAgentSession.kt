@@ -43,7 +43,14 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         private set
     var portrait by mutableStateOf<LocalPortrait?>(null)
         private set
-    fun loadPortrait() = operation { portrait = engine!!.portrait() }
+    fun loadPortrait() = operation(refreshAgent = false) { portrait = engine!!.portrait() }
+    fun rebuildMemories() = operation { engine!!.rebuildMemories() }
+    var enabledDimensions by mutableStateOf(MemoryDimensionRegistry.dimensions.map { it.id }.toSet())
+        private set
+    fun setDimension(id: String, enabled: Boolean) = operation(refreshAgent = false) {
+        val values = if (enabled) enabledDimensions + id else enabledDimensions - id
+        engine!!.configureDimensions(values); enabledDimensions = values
+    }
     private var engine: LocalAgentEngine? = null
     private var database: SqliteLocalState? = null
     @Volatile var settings: LocalModelSettings? = null
@@ -62,6 +69,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
                 withContext(Dispatchers.IO) {
                     database = SqliteLocalState(application)
                     engine = LocalAgentEngine(database!!, client) { settings }
+                    enabledDimensions = engine!!.dimensions()
                     try { settings = secrets.read()?.let(LocalModelSettings::from) }
                     catch (_: Exception) { mutableState.value = mutableState.value.copy(error = "模型配置无法解密，请重新填写并保存。") }
                 }
@@ -168,7 +176,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
         }
     }
     private suspend fun restoreAnswer() { engine!!.latestCalibration()?.let { repository!!.resume(it) } }
-    private fun operation(block: suspend () -> Unit) {
+    private fun operation(refreshAgent: Boolean = true, block: suspend () -> Unit) {
         if (!BuildConfig.LOCAL_AGENT_ENABLED || !state.value.ready || state.value.busy || repository?.state?.value?.busy == true) return
         mutableState.value = mutableState.value.copy(busy = true, error = null, message = null)
         viewModelScope.launch {
@@ -180,7 +188,7 @@ class LocalAgentSession(application: Application) : AndroidViewModel(application
             }) }
             finally {
                 try {
-                    if (engine!!.granted()) repository!!.refresh()
+                    if (refreshAgent && engine!!.granted()) repository!!.refresh()
                     portrait = engine!!.portrait()
                 }
                 finally { mutableState.value = mutableState.value.copy(busy = false); syncPending() }

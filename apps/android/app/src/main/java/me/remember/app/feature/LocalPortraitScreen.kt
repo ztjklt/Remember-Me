@@ -25,50 +25,39 @@ fun LocalPortraitScreen(session: LocalAgentSession, back: () -> Unit, understand
     LaunchedEffect(agent?.snapshot?.revision, agent?.busy, state.ready) {
         if (agent?.busy != true && state.ready) session.loadPortrait()
     }
+    PortraitScreen(session.portrait, state.busy || agent?.busy == true, state.error, back, understanding,
+        rebuild = { if (state.pending) session.retry() else session.rebuildMemories() }, pending = state.pending)
+}
+
+@Composable
+fun PortraitScreen(graph: LocalPortrait?, busy: Boolean, error: String?, back: () -> Unit, understanding: () -> Unit,
+    rebuild: (() -> Unit)? = null, pending: Boolean = false, remoteMode: Boolean = false) {
     RmPage {
         TextButton(back) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.portrait_title), style = MaterialTheme.typography.headlineLarge)
-        Text(stringResource(R.string.portrait_explanation))
-        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        if (state.busy) LinearProgressIndicator()
-        val portrait = session.portrait
-        if (portrait == null || portrait.links.isEmpty()) Text(stringResource(R.string.portrait_empty))
-        portrait?.let { graph ->
-            Text(stringResource(R.string.portrait_revision, graph.revision, graph.links.size, graph.sources.size))
-            if (graph.links.isNotEmpty()) PortraitMap(graph)
-            graph.links.groupBy { it.domain }.forEach { (domain, links) ->
-                RmSectionHeader(portraitDomain(domain))
-                links.forEach { link ->
-                    Text(link.statement)
-                    if (link.context.isNotBlank()) Text(link.context, style = MaterialTheme.typography.bodySmall)
-                    var expanded by remember(link.id) { mutableStateOf(false) }
-                    TextButton({ expanded = !expanded }) { Text(stringResource(R.string.portrait_sources, link.evidenceIds.size)) }
-                    if (expanded) (link.evidenceIds + link.counterEvidenceIds).forEach { id ->
-                        graph.sources.firstOrNull { it.id == id }?.let {
-                            Text(stringResource(if (id in link.counterEvidenceIds) R.string.portrait_counter_source else if (it.sourceType == "CALIBRATION") R.string.evidence_calibration else R.string.evidence_original))
-                            Text(it.excerpt)
-                        }
-                    }
-                    RmDivider()
+        Text(stringResource(R.string.four_portraits_title), style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(if (remoteMode || graph?.remote == true) R.string.data_on_backend else R.string.data_on_device))
+        Text(stringResource(R.string.portrait_reader_role))
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (busy) LinearProgressIndicator()
+        if (graph == null) Text(stringResource(R.string.portrait_empty))
+        graph?.let {
+            Text(stringResource(R.string.memory_person_revisions, it.memoryRevision, it.revision, it.sources.size))
+            Text(stringResource(when (it.status) { "READY" -> R.string.portrait_ready; "FAILED" -> R.string.portrait_failed
+                "BUILDING" -> R.string.portrait_building; "REMOTE" -> R.string.remote_portrait_notice; else -> R.string.portrait_pending }))
+            Text(stringResource(R.string.audio_capability_notice))
+            PortraitPanels(it)
+            var showGraph by androidx.compose.runtime.saveable.rememberSaveable(it.subjectId) { mutableStateOf(false) }
+            TextButton({ showGraph = !showGraph }) { Text(stringResource(R.string.portrait_associations)) }
+            if (showGraph) {
+                if (it.links.isNotEmpty()) PortraitMap(it)
+                it.links.groupBy { link -> link.domain }.forEach { (domain, links) ->
+                    RmSectionHeader(portraitDomain(domain))
+                    links.forEach { link -> ClaimRow(it, link); RmDivider() }
                 }
             }
-            RmSectionHeader(stringResource(R.string.psychology_title))
-            Text(stringResource(R.string.psychology_notice))
-            if (graph.habits.isEmpty()) Text(stringResource(R.string.psychology_empty))
-            graph.habits.forEach { habit ->
-                Text(habit.pattern)
-                Text(habit.context, style = MaterialTheme.typography.bodySmall)
-                Text(stringResource(if (habit.independentEpisodes >= 2) R.string.psychology_repeated else R.string.psychology_single, habit.independentEpisodes))
-                var expanded by remember(habit.id) { mutableStateOf(false) }
-                TextButton({ expanded = !expanded }) { Text(stringResource(R.string.portrait_sources, habit.evidenceIds.size)) }
-                if (expanded) habit.evidenceIds.forEach { id -> graph.sources.firstOrNull { it.id == id }?.let {
-                    Text(stringResource(if (it.sourceType == "CALIBRATION") R.string.evidence_calibration else R.string.evidence_original))
-                    Text(it.excerpt)
-                } }
-                RmDivider()
-            }
         }
-        Button(understanding, enabled = !state.busy && agent?.busy != true) { Text(stringResource(R.string.portrait_correct)) }
+        rebuild?.let { TextButton(it, enabled = !busy) { Text(stringResource(if (pending) R.string.resume_task else R.string.rebuild_memories)) } }
+        Button(understanding, enabled = !busy) { Text(stringResource(R.string.portrait_correct)) }
     }
 }
 
