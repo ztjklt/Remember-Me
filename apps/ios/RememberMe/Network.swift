@@ -267,12 +267,12 @@ final class APIClient: @unchecked Sendable {
     }
 
     private func request(_ path: String, method: String = "GET", body: Data? = nil,
-                         contentType: String? = nil) async throws -> Data {
+                         contentType: String? = nil, timeout: TimeInterval = 300) async throws -> Data {
         guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
-        request.timeoutInterval = 300
+        request.timeoutInterval = timeout
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let contentType { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
         let (data, response) = try await session.data(for: request)
@@ -288,7 +288,7 @@ final class APIClient: @unchecked Sendable {
         let body = try JSONSerialization.data(withJSONObject: ["code": code])
         return try JSONDecoder().decode(PairingReply.self, from: await request(
             "/api/v1/local-pairing/claim", method: "POST", body: body,
-            contentType: "application/json"))
+            contentType: "application/json", timeout: 15))
     }
 
     func memories(_ id: String) async throws -> [MemoryRecord] {
@@ -304,14 +304,14 @@ final class APIClient: @unchecked Sendable {
         try JSONDecoder().decode(QuestionListReply.self, from: await request("/api/v1/subjects/\(id)/questions")).items
     }
     func status(_ episodeID: String) async throws -> Processing {
-        try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)"))
+        try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)", timeout: 15))
     }
     func result(_ episodeID: String) async throws -> [ProcessedMemory] {
         try JSONDecoder().decode(EpisodeResultReply.self, from: await request("/api/v1/episodes/\(episodeID)/result")).memory_items
     }
     func transcriptReview(_ episodeID: String) async throws -> TranscriptReview {
         try JSONDecoder().decode(TranscriptReview.self, from: await request(
-            "/api/v1/episodes/\(episodeID)/transcript-review"))
+            "/api/v1/episodes/\(episodeID)/transcript-review", timeout: 15))
     }
     func confirmTranscript(_ episodeID: String, transcript: String) async throws {
         let body = try JSONSerialization.data(withJSONObject: ["transcript": transcript])
@@ -436,7 +436,7 @@ final class APIClient: @unchecked Sendable {
         body.append(audio)
         body.append(Data("\r\n--\(boundary)--\r\n".utf8))
         let data = try await request("/api/v1/episodes", method: "POST", body: body,
-                                     contentType: "multipart/form-data; boundary=\(boundary)")
+                                     contentType: "multipart/form-data; boundary=\(boundary)", timeout: 30)
         return try JSONDecoder().decode(EpisodeCreated.self, from: data).episode_id
     }
 }

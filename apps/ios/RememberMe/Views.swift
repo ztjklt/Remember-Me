@@ -599,6 +599,10 @@ struct RecorderView: View {
                             if model.pairing == nil { showPairing = true }
                             else { Task { await model.sendRecording() } }
                         }.disabled(model.isBusy)
+                        if model.pairing != nil && model.episodeID == nil {
+                            Button("检查或更换服务连接") { showPairing = true }
+                                .disabled(model.isBusy)
+                        }
                     } else {
                         ActionButton(title: "开始录音", icon: "mic.fill") { showConsent = true }
                     }
@@ -611,8 +615,8 @@ struct RecorderView: View {
                             Button("关闭") { showPairing = false }
                         }
                     }
-                    .onChange(of: model.pairing?.subjectID) { _, id in
-                        if id != nil { showPairing = false }
+                    .onChange(of: model.pairing) { _, pairing in
+                        if pairing != nil { showPairing = false }
                     }
                 }
             }

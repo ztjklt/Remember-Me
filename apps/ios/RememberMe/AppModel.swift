@@ -79,6 +79,8 @@ final class AppModel: ObservableObject {
     @Published var voiceRefreshError: String?
     private let defaults: UserDefaults
     private let clientFactory: (Pairing) throws -> APIClient
+    private let connectionFactory: (String, String) throws -> APIClient
+    private let savePairing: (Pairing) throws -> Void
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
@@ -93,15 +95,34 @@ final class AppModel: ObservableObject {
     init(pairing: Pairing? = PairingStore.load(), defaults: UserDefaults = .standard,
          clientFactory: @escaping (Pairing) throws -> APIClient = {
              try APIClient(baseURL: $0.baseURL, fingerprint: $0.fingerprint, token: $0.token)
-         }) {
+         }, connectionFactory: @escaping (String, String) throws -> APIClient = {
+             try APIClient(baseURL: $0, fingerprint: $1)
+         }, savePairing: @escaping (Pairing) throws -> Void = PairingStore.save) {
         self.pairing = pairing
         self.defaults = defaults
         self.clientFactory = clientFactory
+        self.connectionFactory = connectionFactory
+        self.savePairing = savePairing
         if let pairing { captureRestUntil = defaults.object(forKey: "capture-rest-" + pairing.subjectID) as? Date }
         if let data = defaults.data(forKey: "pending-recording") {
             draft = try? JSONDecoder().decode(RecordingDraft.self, from: data)
             if let pending = draft, !FileManager.default.fileExists(atPath: pending.fileURL.path) {
-                self.draft = nil
+                // iOS may relocate the data container when updating the app.
+                let currentURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                    .appendingPathComponent("Recordings", isDirectory: true)
+                    .appendingPathComponent(pending.fileURL.lastPathComponent)
+                if FileManager.default.fileExists(atPath: currentURL.path) {
+                    let recovered = RecordingDraft(id: pending.id, fileURL: currentURL,
+                        recordedAt: pending.recordedAt, durationMS: pending.durationMS,
+                        questionID: pending.questionID, calibrationID: pending.calibrationID,
+                        consentConfirmedAt: pending.consentConfirmedAt)
+                    draft = recovered
+                    if let encoded = try? JSONEncoder().encode(recovered) {
+                        defaults.set(encoded, forKey: "pending-recording")
+                    }
+                } else {
+                    errorMessage = "暂时无法找到待提交的原音，请保持手机解锁并检查本地录音。待处理记录已保留。"
+                }
             }
         }
         episodeID = defaults.string(forKey: "pending-episode")
@@ -117,6 +138,14 @@ final class AppModel: ObservableObject {
         return try? clientFactory(pairing)
     }
 
+    private func connectionErrorDescription(_ error: Error) -> String {
+        if let network = error as? URLError,
+           [.notConnectedToInternet, .cannotFindHost, .cannotConnectToHost, .timedOut].contains(network.code) {
+            return "无法连接配对的 Mac。请让手机和 Mac 连接同一 Wi-Fi，在系统设置中允许 Remember Me 访问本地网络，并检查服务地址是否已变化。"
+        }
+        return error.localizedDescription
+    }
+
     func importPairingLink(_ url: URL) {
         guard url.scheme == "rememberme", url.host == "pair",
               let parts = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return }
@@ -128,7 +157,7 @@ final class AppModel: ObservableObject {
     }
 
     func connect() async {
-        guard pairing == nil || (draft == nil && episodeID == nil && !isRecording) else {
+        guard !isBusy, !isRecording, episodeID == nil else {
             errorMessage = "还有待处理的录音，请先在当前服务完成该任务后再更换连接。原音仍在手机里。"
             return
         }
@@ -138,12 +167,17 @@ final class AppModel: ObservableObject {
         do {
             let server = pairingServer.trimmingCharacters(in: .whitespacesAndNewlines)
             let fingerprint = pairingFingerprint.trimmingCharacters(in: .whitespacesAndNewlines)
-            let api = try APIClient(baseURL: server, fingerprint: fingerprint)
+            let api = try connectionFactory(server, fingerprint)
             let reply = try await api.claim(code: pairingCode.trimmingCharacters(in: .whitespacesAndNewlines))
             let connected = Pairing(baseURL: server, fingerprint: fingerprint,
                                     token: reply.actor_token, actorID: reply.actor_id,
                                     subjectID: reply.subject_id, consentID: reply.recording_consent_id)
-            try PairingStore.save(connected)
+            if draft != nil, let previous = pairing,
+               previous.subjectID != connected.subjectID || previous.actorID != connected.actorID {
+                errorMessage = "这段录音属于原来的本人和账号，不能改交给另一位人物。原音仍在手机里。"
+                return
+            }
+            try savePairing(connected)
             if pairing?.baseURL != connected.baseURL || pairing?.fingerprint != connected.fingerprint ||
                 pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
                 memories = []; episodes = []; domains = []; questions = []
@@ -157,7 +191,7 @@ final class AppModel: ObservableObject {
             pairing = connected
             showConnection = false
             await refresh()
-        } catch { errorMessage = error.localizedDescription }
+        } catch { errorMessage = connectionErrorDescription(error) }
     }
 
     func refresh() async {
@@ -420,6 +454,7 @@ final class AppModel: ObservableObject {
         guard let pairing, let client, draft != nil || episodeID != nil else { return }
         isBusy = true
         errorMessage = nil
+        processingStatus = episodeID == nil ? "正在上传录音" : "正在读取处理进度"
         defer { isBusy = false }
         do {
             if let episodeID {
@@ -435,7 +470,10 @@ final class AppModel: ObservableObject {
             episodeID = id
             defaults.set(id, forKey: "pending-episode")
             await pollEpisode()
-        } catch { errorMessage = "上传失败，录音仍在手机里，可重试。\n\(error.localizedDescription)" }
+        } catch {
+            processingStatus = "上传未完成"
+            errorMessage = "上传失败，录音仍在手机里，可重试。\n\(connectionErrorDescription(error))"
+        }
     }
 
     func pollEpisode() async {
@@ -474,7 +512,8 @@ final class AppModel: ObservableObject {
                     return
                 }
             } catch {
-                errorMessage = "连接中断，录音已保留。恢复网络后可继续查看。\n\(error.localizedDescription)"
+                processingStatus = "连接中断"
+                errorMessage = "连接中断，录音已保留。恢复网络后可继续查看。\n\(connectionErrorDescription(error))"
                 return
             }
             try? await Task.sleep(for: .seconds(2))

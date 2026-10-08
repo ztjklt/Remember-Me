@@ -6,6 +6,18 @@ private final class Responses: @unchecked Sendable {
     private let lock = NSLock()
     private var values: [String: (Int, Data)] = [:]
     private var paths: [String] = []
+    private var failures: [String: URLError] = [:]
+    private var timeouts: [String: TimeInterval] = [:]
+    func fail(_ path: String, error: URLError) {
+        lock.lock(); defer { lock.unlock() }; failures[path] = error
+    }
+    func failure(_ request: URLRequest) -> URLError? {
+        lock.lock(); defer { lock.unlock() }
+        return failures["\(request.httpMethod ?? "GET") \(request.url!.path)"]
+    }
+    func timeout(_ path: String) -> TimeInterval? {
+        lock.lock(); defer { lock.unlock() }; return timeouts[path]
+    }
     func set(_ path: String, status: Int = 200, json: String) {
         lock.lock(); defer { lock.unlock() }
         values[path] = (status, Data(json.utf8))
@@ -14,6 +26,7 @@ private final class Responses: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         let key = "\(request.httpMethod ?? "GET") \(request.url!.path)"
         paths.append(key)
+        timeouts[key] = request.timeoutInterval
         return values[key] ?? (500, Data("Unexpected test request".utf8))
     }
     var requests: [String] {
@@ -41,6 +54,9 @@ private final class StubProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse)); return
         }
         let (status, data) = responses.reply(request)
+        if let error = responses.failure(request) {
+            client?.urlProtocol(self, didFailWithError: error); return
+        }
         let response = HTTPURLResponse(url: request.url!, statusCode: status,
                                        httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -73,7 +89,92 @@ final class AgentCoreRecoveryTests: XCTestCase {
         let defaults = UserDefaults(suiteName: "AgentCoreTests-" + id)!
         return AppModel(pairing: pairing, defaults: defaults, clientFactory: {
             try APIClient(baseURL: $0.baseURL, fingerprint: $0.fingerprint, token: $0.token, session: session)
-        })
+        }, connectionFactory: {
+            try APIClient(baseURL: $0, fingerprint: $1, session: session)
+        }, savePairing: { _ in })
+    }
+    private func localDraft() throws -> RecordingDraft {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".m4a")
+        try Data("synthetic-test-audio".utf8).write(to: url)
+        return RecordingDraft(id: UUID().uuidString, fileURL: url, recordedAt: Date(),
+                              durationMS: 13000, questionID: nil, calibrationID: nil,
+                              consentConfirmedAt: Date())
+    }
+    func testAppUpdateRecoversRecordingFromRelocatedDataContainer() throws {
+        let id = UUID().uuidString
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Recordings", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let current = directory.appendingPathComponent(id + ".m4a")
+        try Data("preserved-original-audio".utf8).write(to: current)
+        let defaults = UserDefaults(suiteName: "RelocatedRecording-" + id)!
+        defer {
+            try? FileManager.default.removeItem(at: current)
+            defaults.removePersistentDomain(forName: "RelocatedRecording-" + id)
+        }
+        let stale = RecordingDraft(id: id, fileURL: URL(fileURLWithPath: "/old-container/Recordings/" + id + ".m4a"),
+            recordedAt: Date(), durationMS: 13000, questionID: "question", calibrationID: "calibration",
+            consentConfirmedAt: Date())
+        defaults.set(try JSONEncoder().encode(stale), forKey: "pending-recording")
+        let model = AppModel(pairing: nil, defaults: defaults)
+        XCTAssertEqual(model.draft?.id, id)
+        XCTAssertEqual(model.draft?.fileURL, current)
+        XCTAssertEqual(model.draft?.questionID, "question")
+        XCTAssertEqual(model.draft?.calibrationID, "calibration")
+        XCTAssertEqual(try Data(contentsOf: XCTUnwrap(model.draft).fileURL), Data("preserved-original-audio".utf8))
+        XCTAssertEqual(AppModel(pairing: nil, defaults: defaults).draft?.fileURL, current)
+    }
+    func testUnuploadedRecordingCanReconnectToSamePersonWithoutLosingAudio() async throws {
+        let responses = Responses(); coreResponses(responses)
+        responses.set("POST /api/v1/local-pairing/claim", json: #"{"actor_token":"new-synthetic","actor_id":"test-actor","subject_id":"test-subject","recording_consent_id":"recording-grant"}"#)
+        let model = makeModel(responses); let draft = try localDraft()
+        defer { try? FileManager.default.removeItem(at: draft.fileURL) }
+        model.draft = draft; model.pairingServer = "https://new.test.invalid"
+        model.pairingFingerprint = String(repeating: "b", count: 64); model.pairingCode = "synthetic-one-time-code"
+        await model.connect()
+        XCTAssertNil(model.errorMessage)
+        XCTAssertEqual(model.pairing?.baseURL, "https://new.test.invalid")
+        XCTAssertEqual(model.draft?.id, draft.id)
+        XCTAssertEqual(try Data(contentsOf: draft.fileURL), Data("synthetic-test-audio".utf8))
+        XCTAssertEqual(responses.timeout("POST /api/v1/local-pairing/claim"), 15)
+    }
+    func testPendingRecordingCannotBeMovedToAnotherPerson() async throws {
+        let responses = Responses()
+        responses.set("POST /api/v1/local-pairing/claim", json: #"{"actor_token":"synthetic-other","actor_id":"other-actor","subject_id":"other-subject","recording_consent_id":"other-grant"}"#)
+        let model = makeModel(responses); let original = model.pairing; let draft = try localDraft()
+        defer { try? FileManager.default.removeItem(at: draft.fileURL) }
+        model.draft = draft; model.pairingServer = "https://new.test.invalid"
+        model.pairingFingerprint = String(repeating: "b", count: 64)
+        await model.connect()
+        XCTAssertEqual(model.pairing, original)
+        XCTAssertEqual(model.draft?.id, draft.id)
+        XCTAssertNotNil(model.errorMessage)
+        XCTAssertEqual(responses.requests, ["POST /api/v1/local-pairing/claim"])
+    }
+    func testUploadedEpisodeCannotSwitchServices() async {
+        let responses = Responses(); let model = makeModel(responses)
+        model.episodeID = "already-uploaded"
+        await model.connect()
+        XCTAssertNotNil(model.errorMessage)
+        XCTAssertTrue(responses.requests.isEmpty)
+        XCTAssertEqual(model.episodeID, "already-uploaded")
+    }
+    func testUploadTimeoutEndsBusyStateAndPreservesRetryableRecording() async throws {
+        let responses = Responses(); responses.fail("POST /api/v1/episodes", error: URLError(.timedOut))
+        let model = makeModel(responses); let draft = try localDraft()
+        defer { try? FileManager.default.removeItem(at: draft.fileURL) }
+        model.draft = draft
+        await model.sendRecording()
+        XCTAssertFalse(model.isBusy)
+        XCTAssertNil(model.episodeID)
+        XCTAssertEqual(model.draft?.id, draft.id)
+        XCTAssertEqual(model.processingStatus, "上传未完成")
+        XCTAssertNotNil(model.errorMessage)
+        XCTAssertTrue(model.errorMessage?.contains("本地网络") == true)
+        XCTAssertEqual(responses.timeout("POST /api/v1/episodes"), 30)
+        await model.sendRecording()
+        XCTAssertEqual(model.draft?.id, draft.id)
+        XCTAssertEqual(responses.requests.count, 2)
     }
     private func coreResponses(_ responses: Responses) {
         responses.set("GET \(base)/memories", json: #"{"items":[\#(memoryJSON)]}"#)
