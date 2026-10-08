@@ -9,6 +9,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.remember.app.core.designsystem.RememberMeColors
 import me.remember.app.BuildConfig
+import me.remember.app.R
+import androidx.compose.ui.res.stringResource
+import me.remember.app.data.local.LocalPortrait
 import me.remember.app.data.repository.MemoryRepository
 import me.remember.app.model.*
 import me.remember.app.navigation.Routes
@@ -46,12 +49,30 @@ import me.remember.app.ui.components.*
             Loadable.Loading -> CircularProgressIndicator()
             is Loadable.Error -> Text(state.message, color = MaterialTheme.colorScheme.error)
         }
-        NavigationRow(go)
     }
 }
-@Composable private fun NavigationRow(go:(String)->Unit){Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.SpaceAround){listOf("我说过的" to Routes.Memories,"AI 的理解" to Routes.Understanding,"Twin" to Routes.Twin).forEach{(label,r)->Text(label,Modifier.clickable{go(r)}.padding(10.dp),style=MaterialTheme.typography.bodyLarge)}}}
-
-@Composable fun MemoriesScreen(memoryRepository:MemoryRepository,back:()->Unit){val state by memoryRepository.memories().collectAsState(initial=Loadable.Loading);RmPage{TextButton(back){Text("← 返回")};Text("记忆归档",style=MaterialTheme.typography.headlineLarge);Text("这里只展示当前模式下的真实材料，撤除的材料不再展示。",color=RememberMeColors.Muted);when(val s=state){is Loadable.Content->s.value.forEach{m->MemoryItem(m)};Loadable.Loading->CircularProgressIndicator();Loadable.Empty->Text("还没有真实记忆");is Loadable.Error->Text(s.message)}}}
+@Composable fun MemoriesScreen(memoryRepository: MemoryRepository, portrait: LocalPortrait? = null,
+    localMode: Boolean = false, busy: Boolean = false, rebuild: (() -> Unit)? = null, error: String? = null, back: () -> Unit) {
+    val state by memoryRepository.memories().collectAsState(initial = Loadable.Loading)
+    var originals by androidx.compose.runtime.saveable.rememberSaveable(localMode) { mutableStateOf(!localMode) }
+    RmPage {
+        TextButton(back) { Text(stringResource(R.string.back)) }
+        Text(stringResource(R.string.memory_browser_title), style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(if (localMode) R.string.data_on_device else R.string.data_on_backend))
+        if (busy) LinearProgressIndicator()
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        if (localMode && portrait != null) MemoryObservationBrowser(portrait, rebuild, busy)
+        else if (localMode) Text(stringResource(R.string.portrait_empty))
+        else Text(stringResource(R.string.remote_memory_notice))
+        TextButton({ originals = !originals }) { Text(stringResource(R.string.show_original_archive)) }
+        if (originals) when (val value = state) {
+            is Loadable.Content -> value.value.forEach { MemoryItem(it) }
+            Loadable.Loading -> CircularProgressIndicator()
+            Loadable.Empty -> Text(stringResource(R.string.agent_original_empty))
+            is Loadable.Error -> Text(value.message, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
 @Composable private fun MemoryItem(m:Memory){Column(Modifier.padding(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
     val location=listOf(m.date,m.place).filter{it.isNotBlank()}.joinToString(" · ")
     if(location.isNotBlank())Text(location,color=RememberMeColors.Muted)

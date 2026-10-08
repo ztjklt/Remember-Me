@@ -61,6 +61,12 @@ fun LocalSettingsScreen(session: LocalAgentSession, recording: AudioRecording?, 
         state.message?.let { Text(it) }
         Text(stringResource(R.string.local_key_notice), style = MaterialTheme.typography.bodySmall)
         ReminderSettings(session)
+        Text(stringResource(R.string.memory_dimensions_title), style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.memory_dimensions_notice))
+        MemoryDimensionRegistry.dimensions.forEach { dimension -> Row {
+            Checkbox(dimension.id in session.enabledDimensions, { session.setDimension(dimension.id, it) }, enabled = state.ready && !state.busy && !state.pending)
+            Text(dimension.label)
+        } }
     }
 }
 

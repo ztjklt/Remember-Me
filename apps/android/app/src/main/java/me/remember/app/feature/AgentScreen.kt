@@ -166,7 +166,7 @@ private fun AgentDetails(title: String, content: @Composable ColumnScope.() -> U
 }
 
 @Composable
-private fun AgentConnection(repository: AgentRepository) {
+internal fun AgentConnection(repository: AgentRepository) {
     val state by repository.state.collectAsState()
     val scope = rememberCoroutineScope()
     val current = repository.currentConnection()

@@ -47,16 +47,18 @@ Phase 1 Backend 接线在 `MainActivity` 组装：`HttpEpisodeGateway` 负责上
 
 `MainActivity` 的 Activity ViewModel 装配 `LocalAgentSession`；其中持有引擎、设置草稿及仓库，导航按模式选择既有 `MemoryRepository` 的本地/远程实现。
 `CaptureFlowViewModel` 只在内存中交接录音，Activity 重建保留；进程恢复缺失时页面提供返回提示。
-`LocalAgentEngine` 经 Mutex 顺序执行一个 Agent 的 CAPTURE/ASK/CORRECT 任务，没有子 Agent、工具执行、检索或压缩。
-ASR → `LocalInference` 画像 → `PsychologicalLearner` 候选按顺序执行；ASR 和画像检查点先持久化，全流程成功才发布新 revision。
+`LocalAgentEngine` 经 Mutex 顺序执行一个 Agent 的 CAPTURE/REINDEX/ASK/CORRECT 任务，没有子 Agent、委派、模型工具执行或压缩。
+ASR 原文先发布 → `MemoryObserver` 八维观察 → `LocalInference` 增量画像 → `PsychologicalLearner` 候选；各阶段有检查点，人物理解全流程成功才发布新 revision。
+原文/观察的 `memory_revision` 独立于人物理解 `revision`；派生失败仍可查询原文，校正同时校验两个版本。`rebuildMemories` 队列复用旧原文，升级不自动触发推理。
 失败保留任务，用户显式重试或取消。取消理解保留已完成的原文；删除旧来源使未发布的画像/心理草稿失效，继续时复用新 ASR。
-`LocalPortrait` 从当前 traits/materials/habits 投影多证据超边；不创建另一套 Memory 或无来源关系。
+`LocalEvidenceIndex` 从有效本人/校正原文构造中文双字和英文词索引，返回完整片段及父来源依赖；枚举不取固定 top-k，没有匹配时小型历史完整兜底。不是向量检索或有损压缩。
+`LocalPortrait` 从当前 traits/materials/habits/observations 投影多证据超边，`PortraitViews` 生成四图；不创建另一套 Memory 或无来源关系。电脑模式 `remotePortrait` 只读映射既有 Agent 状态，不扩展服务端契约。
 Memory keeper 使用本机 AlarmManager 的单次每日窗口并重排，不调用模型或录音；设置默认关闭，退出本地模式取消，清空资料清除设置。
 
 | 边界 | 实现与数据 |
 | --- | --- |
 | 推理 | `HttpLocalModelClient`，语音原生或兼容音频协议、文字兼容接口；模型地址和名称运行时配置 |
-| 业务存储 | `SqliteLocalState` journal：episodes/materials/traits/habits/revisions/calibrations/job；缺少 habits 的旧资料按空列表读取，shared schema 未变 |
+| 业务存储 | `SqliteLocalState` journal：episodes/materials/observations/traits/habits/revisions/calibrations/job/backfill_ids；附加字段兼容旧资料，shared schema 未变；结构化表迁移暂未实施 |
 | 凭证 | `LocalSettingsStore`：Keystore AES-GCM 加密、no-backup 文件；草稿仅 ViewModel 内存，禁止 saved state |
 | 录音 | `RecordingLibrary`：私有录音文件及 sidecar；同一 journal 投影到既有 Memory 模型 |
 | 历史 | 本地读取 calibrations；远程仅缓存已知记录，复用 GET by ID，无新增端点 |

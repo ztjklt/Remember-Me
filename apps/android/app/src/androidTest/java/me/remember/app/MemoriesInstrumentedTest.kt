@@ -31,8 +31,8 @@ class MemoriesInstrumentedTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Memory Archive").assertExists()
-        composeRule.onNodeWithText("这里只展示 Backend 返回的提取结果。").assertExists()
+        composeRule.onNodeWithText("我的记忆").assertExists()
+        composeRule.onNodeWithText("资料来源：电脑服务").assertExists()
         composeRule.onNodeWithText("“那年夏天，我第一次帮外婆整理老照片。她记得每个人拍照时的心情。”").assertExists()
         composeRule.onNodeWithText("“第一次独立完成一部短片以后，我才承认自己真的想做影像。”").assertExists()
         composeRule.onNodeWithText("“搬来杭州不是为了更安稳，而是想把生活过得更诚实一点。”").assertExists()
