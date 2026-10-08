@@ -81,10 +81,12 @@ class TranscriptReview(BaseModel):
     state: Literal["transcribing", "reviewing", "submitted", "not_required"]
     transcript: str | None = None
     stt_model_version: str | None = None
+    supplement: str = ''
 
 
 class ConfirmTranscript(BaseModel):
     transcript: str = Field(min_length=1, max_length=100_000)
+    supplement: str = Field(default='', max_length=3000)
 
 # Read the upload in bounded pieces so a body larger than the limit is refused
 # while it is being read rather than after it is all in memory.
@@ -449,6 +451,7 @@ def read_transcript_review(
         transcript=simplified_transcript(episode.transcript)
             if state == "reviewing" and episode.transcript is not None else None,
         stt_model_version=episode.stt_model_version,
+        supplement=(episode.capture_metadata or {}).get('review_supplement',''),
     )
 
 
@@ -468,7 +471,7 @@ def confirm_transcript(
     if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
         raise RequestInvalid("Transcript review requires iOS or imported capture")
     if episode.transcript_reviewed_at is not None:
-        if episode.transcript == text:
+        if episode.transcript == text and (episode.capture_metadata or {}).get('review_supplement','') == payload.supplement.strip():
             return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
                                     trace_id=episode.trace_id or None)
         raise RequestInvalid("This Episode's transcript was already confirmed")
@@ -487,6 +490,7 @@ def confirm_transcript(
     if claimed.rowcount != 1:
         raise RequestInvalid("The transcript was already confirmed")
     episode.transcript = text
+    episode.capture_metadata = {**(episode.capture_metadata or {}), 'review_supplement':payload.supplement.strip()}
     episode.transcript_reviewed_at = now
     episode.transcript_reviewed_by = actor.actor_id
     episode.status = str(EpisodeStatus.EXTRACTING)

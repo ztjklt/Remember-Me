@@ -27,9 +27,11 @@ def altered_story_ids(session, episode_ids):
     """
     from .models import MemoryItem, MemoryRevision
     from sqlalchemy import or_
-    altered = set(session.scalars(select(MemoryItem.episode_id).where(
+    from .language_support import is_owner_supplement
+    rows = session.scalars(select(MemoryItem).where(
         MemoryItem.episode_id.in_(episode_ids), or_(MemoryItem.deleted_at.is_not(None),
-            MemoryItem.review_state != 'active', MemoryItem.source_type == 'CALIBRATION'))))
+            MemoryItem.review_state != 'active', MemoryItem.source_type == 'CALIBRATION')))
+    altered = {m.episode_id for m in rows if m.deleted_at or m.review_state != 'active' or not is_owner_supplement(m)}
     altered.update(session.scalars(select(MemoryRevision.episode_id).where(
         MemoryRevision.episode_id.in_(episode_ids), MemoryRevision.status != 'confirmed')))
     return altered

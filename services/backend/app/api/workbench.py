@@ -24,6 +24,30 @@ class Strict(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
 
 
+class VocabularyInput(Strict):
+    text: str = Field(max_length=3000)
+
+
+@router.get('/subjects/{subject_id}/vocabulary')
+def vocabulary(subject_id: str, actor=Depends(current_actor), session=Depends(get_session)):
+    from ..models import SubjectVocabulary
+    require_owner(session,subject_id,actor.actor_id)
+    row=session.get(SubjectVocabulary,subject_id)
+    return {'text': row.text if row else '', 'scope':'owner', 'automatic_model_use':False}
+
+
+@router.put('/subjects/{subject_id}/vocabulary')
+def save_vocabulary(subject_id: str, body:VocabularyInput, actor=Depends(current_actor), session=Depends(get_session)):
+    from ..models import SubjectVocabulary
+    publication_lock(session,subject_id);require_owner(session,subject_id,actor.actor_id)
+    row=session.get(SubjectVocabulary,subject_id)
+    if row is None:
+        row=SubjectVocabulary(subject_id=subject_id,text=body.text);session.add(row)
+    else: row.text=body.text;row.updated_at=utcnow()
+    session.commit()
+    return {'text':row.text,'scope':'owner','automatic_model_use':False}
+
+
 class GrantInput(Strict):
     episode_id: str
     reader_actor_id: str
@@ -122,6 +146,7 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                 'memory_type': memory.memory_type, 'review_state': memory.review_state,
                 'domain': (memory.item_metadata or {}).get('domain'),
                 'source_type': memory.source_type,
+                'origin': (memory.item_metadata or {}).get('origin', 'extracted'),
                 'evidence': [{'evidence_id': e.evidence_id, 'excerpt': e.excerpt,
                     'source_type': e.source_type, 'episode_id': e.episode_id} for e in sources
                     if e is not None and e.episode_id == episode.episode_id]})
@@ -341,7 +366,7 @@ def portrait(subject_id: str, actor: Actor = Depends(current_actor), session: Se
                 continue
             category = ('重要的人' if memory['memory_type'] in {'PERSON', 'RELATIONSHIP'} else
                         '在意与选择' if memory['memory_type'] in {'VALUE', 'PREFERENCE'} else '人生经历')
-            groups[category].append({**memory, 'episode_id': story['episode_id'], 'label': '系统整理，依据本次讲述'})
+            groups[category].append({**memory, 'episode_id': story['episode_id'], 'label': '本人书面补充，不是录音原话' if memory['origin']=='owner_supplement' else '系统整理，依据本次讲述'})
             for evidence in memory['evidence']:
                 if evidence['source_type'] == 'SUBJECT':
                     groups['说话与表达'].append({**evidence, 'content': evidence['excerpt'], 'label': '核对文字中的原话'})

@@ -158,6 +158,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(RequestValidationError, _request_error_handler)
     app.include_router(health.router)
     app.include_router(session.router)
+    from .api import accounts
+    app.include_router(accounts.router)
     app.include_router(consents.router)
     app.include_router(episodes.router)
     app.include_router(person_model.router)
@@ -174,7 +176,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles
         from starlette.middleware.trustedhost import TrustedHostMiddleware
-        app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', '[::1]', 'testserver'])
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
         app.mount('/workbench', StaticFiles(directory=Path(__file__).parent / 'workbench', html=True), name='workbench')
         # Design-only assets from reviewed PR85; no prototype fixtures/audio or
         # repository root is exposed by the live application.

@@ -258,7 +258,7 @@ def test_original_router_copies_selected_source_instead_of_model_paraphrase():
         provider.close()
 
 
-@pytest.mark.parametrize('ids,source,length', [(['bad'],'SUBJECT',20),(['ev1','ev2'],'SUBJECT',20),(['ev1'],'AI_INFERENCE',20),(['ev1'],'SUBJECT',201)])
+@pytest.mark.parametrize('ids,source,length', [(['bad'],'SUBJECT',20),(['ev1','ev2'],'SUBJECT',20),(['ev1'],'AI_INFERENCE',20),(['ev1'],'CALIBRATION',20),(['ev1'],'SUBJECT',201)])
 def test_original_router_refuses_ambiguous_inferred_or_oversized_source(ids,source,length):
     from app.providers.weixin import WeixinTwinProvider
     from app.twin import TwinInput

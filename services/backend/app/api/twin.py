@@ -185,7 +185,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         try:
             result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
-            raise TwinFailed(str(exc)) from exc
+            failure = TwinFailed(str(exc))
+            if not exc.retryable:
+                failure.code = exc.code
+                failure.http_status = 502
+            raise failure from exc
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')

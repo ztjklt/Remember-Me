@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     environment: Literal["development", "staging", "test"] = "development"
     log_level: str = "INFO"
     enable_workbench: bool = False
+    allow_account_registration: bool | None = None
+    allowed_hosts: list[str] = ['127.0.0.1', 'localhost', '[::1]', 'testserver']
 
     # SQLite is the local development and test default. Deployment supplies a
     # PostgreSQL DSN and adds the driver (see ADR-0001 D3).

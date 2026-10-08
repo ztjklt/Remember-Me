@@ -22,6 +22,8 @@ data class NativeState(
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
+    val portrait: JSONObject = JSONObject(),
+    val vocabulary: String = "", val reviewSupplement: String = "",
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
@@ -33,12 +35,13 @@ data class NativeState(
 data class SourcePlayback(val episode: String = "", val playing: Boolean = false, val preparing: Boolean = false,
     val position: Long = 0, val duration: Long = 0)
 
-/** Tokens stay in memory. Local originals are indexed by authenticated actor and subject. */
+/** Account sessions use Keystore; local originals are scoped to the authenticated identity. */
 class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureService) : ViewModel() {
     private val gate = SessionGate()
     private val playbackGate = SourcePlaybackGate(gate)
     private val client = BackendClient(gate)
     private val reminders = LocalDailyReminder(context)
+    private val savedSession = SavedSession(context)
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
     val ui = state.asStateFlow()
@@ -51,16 +54,31 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var ticker: Job? = null
     private var foreground = true
     private var polling: Job? = null
-    init { reminders.disable() }
+    init { reminders.disable(); savedSession.load()?.let { connect(it.first, it.second, remember = true) } }
+
+    fun signIn(server: String, username: String, password: String, name: String? = null) {
+        if(state.value.busy) return
+        state.value = state.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            try {
+                val body = JSONObject().put("username", username.trim()).put("password", password)
+                if(name != null) body.put("display_name", name.trim())
+                val result = withContext(Dispatchers.IO) { accountRequest(server, if(name == null) "login" else "register", body) }
+                state.value = state.value.copy(busy = false)
+                connect(server, result.getString("actor_token"), remember = true)
+            } catch(error: Exception) { state.value = state.value.copy(busy = false, error = error.message ?: "登录未完成。") }
+        }
+    }
 
     fun report(message: String) { state.value = state.value.copy(error = message) }
-    fun connect(server: String, token: String) {
+    fun connect(server: String, token: String, remember: Boolean = false) {
         if(state.value.busy || state.value.recording) return
         clearIdentity()
         val next = runCatching { gate.connect(server, token) }.getOrElse { report(it.message ?: "服务地址无效。"); return }
         session = next
         operation(next) {
             val result = io { client.json(next, "/api/v1/workbench/spaces") }
+            if(remember) savedSession.save(next.server, next.token) else savedSession.clear()
             state.value = state.value.copy(actor = result.text("actor_id"), actorName = result.text("display_name"), spaces = result.rows())
             state.value = state.value.copy(space = result.rows().firstOrNull())
             refreshNow(next)
@@ -85,7 +103,15 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         } }
     }
     fun logout() {
-        if(state.value.recording) { finish { clearIdentity() } } else clearIdentity()
+        val previous = session
+        fun leave() {
+            savedSession.clear(); clearIdentity()
+            if(previous != null) viewModelScope.launch {
+                runCatching { withContext(Dispatchers.IO) { accountRequest(previous.server, "logout", token = previous.token) } }
+                    .onFailure { if(session == null) report("已清除本机登录；断网时无法撤销服务端会话，它将在到期后失效。") }
+            }
+        }
+        if(state.value.recording) { finish { leave() } } else leave()
     }
     private fun clearIdentity() {
         reminders.disable()
@@ -135,7 +161,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             if(gate.accepts(s)) {
                 stopSource(); audio.stopPlayback()
                 state.value = state.value.copy(stories = emptyList(), grants = emptyList(), revisions = emptyList(),
-                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), answer = null, search = emptyList(), reviewEpisode = null)
+                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), portrait = JSONObject(), vocabulary = "", answer = null, search = emptyList(), reviewEpisode = null)
             }
             throw error
         }
@@ -148,10 +174,12 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val grants = io { client.json(s, "$path/grants") }
         val requests = io { client.json(s, "$path/requests") }
         val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
+        val portrait = io { client.json(s, "$path/portrait").optJSONObject("views") ?: JSONObject() }
         val owner = stories.text("role") == "owner"
         val revisions = if(owner) io { client.json(s, "$path/revisions").rows() } else emptyList()
         val candidates = if(owner) io { client.json(s, "$path/profile-candidates") } else JSONObject()
         val updates = if(owner) io { client.json(s, "$path/profile-candidates/updates").rows() } else emptyList()
+        val vocabulary = if(owner) io { client.json(s, "$path/vocabulary").text("text") } else ""
         gate.requireCurrent(s)
         val changed = state.value.stories.map { it.toString() } != stories.rows().map { it.toString() } ||
             state.value.grants.map { it.toString() } != grants.rows().map { it.toString() } ||
@@ -159,7 +187,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(changed) { stopSource(); audio.stopPlayback() }
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role")), stories = stories.rows(),
             grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(), asrCapabilities = capabilities,
-            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, local = if(owner) localCaptures(s) else emptyList(),
+            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, local = if(owner) localCaptures(s) else emptyList(),
             answer = if(changed) null else state.value.answer, search = if(changed) emptyList() else state.value.search)
     }
     fun start(revision: RevisionTarget?) {
@@ -235,10 +263,12 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         operation(s) {
             val result = io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review") }
             check(result.text("state") == "reviewing") { "转写尚未完成或已经提交，请刷新后查看。" }
-            state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"))
+            state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"))
         }
     }
-    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "") }
+    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "") }
+    fun editSupplement(text: String) { if(text.length <= 3000) state.value = state.value.copy(reviewSupplement = text) }
+    fun saveVocabulary(text: String) { mutation("/vocabulary", "PUT", JSONObject().put("text", text)) }
     fun editReview(episode: String, text: String) {
         if(state.value.reviewEpisode == episode) state.value = state.value.copy(reviewText = text)
     }
@@ -247,7 +277,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(!cloudConfirmed) { report("请确认将核对后的文字交由服务器整理；其配置的云端模型会收到文字。"); return }
         if(text.isBlank()) { report("核对文字不能为空。"); return }
         operation(s) {
-            io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review", "PATCH", JSONObject().put("transcript", text.trim())) }
+            io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review", "PATCH", JSONObject().put("transcript", text.trim()).put("supplement", state.value.reviewSupplement.trim())) }
             closeReview(); state.value = state.value.copy(notice = "文字已核对提交，原音与机器转写保留。")
             refreshNow(s)
         }

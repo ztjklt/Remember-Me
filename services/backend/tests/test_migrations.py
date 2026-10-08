@@ -18,6 +18,7 @@ EXPECTED_TABLES = {
     "memory_embeddings", "twin_answers", "voice_profiles", "voice_assets", "calibration_runs",
     "story_grants", "memory_revisions", "question_requests",
     "profile_candidates", "profile_refreshes", "profile_updates",
+    "subject_vocabulary", "accounts", "account_attempts",
 }
 
 

@@ -155,6 +155,8 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
                          excerpt=content, confidence=1.0))
     memory.content = content
     memory.source_type = "CALIBRATION"
+    if (memory.item_metadata or {}).get('origin') == 'owner_supplement':
+        memory.item_metadata = {**memory.item_metadata, 'origin':'owner_correction'}
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
     embedding = session.get(MemoryEmbedding, memory_id)

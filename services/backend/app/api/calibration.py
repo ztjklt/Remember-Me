@@ -60,7 +60,8 @@ def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[
             if altered_story_ids(session, {episode.episode_id}):
                 return None
             memories = list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id == episode.episode_id)))
-            if any(m.deleted_at or m.review_state != 'active' or m.source_type == 'CALIBRATION' for m in memories):
+            from ..language_support import is_owner_supplement
+            if any(m.deleted_at or m.review_state != 'active' or (m.source_type == 'CALIBRATION' and not is_owner_supplement(m)) for m in memories):
                 return None
             snapshot.append({'memory_item_id': identifier, 'content': episode.transcript,
                              'evidence_ids': []})

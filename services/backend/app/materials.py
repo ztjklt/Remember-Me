@@ -9,6 +9,7 @@ import re
 from sqlalchemy import select
 from .errors import AppError
 from .models import Episode, MemoryItem, Evidence, MemoryRevision
+from .language_support import is_owner_supplement
 
 
 class ContextTooLarge(AppError):
@@ -33,7 +34,7 @@ def effective_materials(session, subject_id, episode_ids):
         memories = list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id == ep.episode_id).order_by(MemoryItem.ordinal)))
         blocked, suppress = [], False
         for memory in memories:
-            if memory.deleted_at or memory.review_state != 'active' or memory.source_type == 'CALIBRATION':
+            if memory.deleted_at or memory.review_state != 'active' or (memory.source_type == 'CALIBRATION' and not is_owner_supplement(memory)):
                 spans = [session.get(Evidence, id) for id in memory.evidence_ids]
                 if not spans or any(s is None or s.span_start is None or s.span_end is None or
                     text[s.span_start:s.span_end] != s.excerpt for s in spans):

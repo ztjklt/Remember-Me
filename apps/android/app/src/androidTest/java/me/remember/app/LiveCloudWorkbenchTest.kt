@@ -25,12 +25,13 @@ class LiveCloudWorkbenchTest {
         val credentialFile = File(context.filesDir, "live-cloud-test.json")
         assumeTrue("Explicit live test credentials required", credentialFile.exists())
         val configuration = JSONObject(credentialFile.readText())
-        composeRule.onNodeWithText("身份凭据").performTextInput(configuration.getString("actor_token"))
+        composeRule.onNodeWithText("连接设置 / 开发身份").performScrollTo().performClick()
+        composeRule.onNodeWithText("身份凭据").performScrollTo().performTextInput(configuration.getString("actor_token"))
         composeRule.onNodeWithText("进入空间").performClick()
         composeRule.waitUntil(30_000) {
-            composeRule.onAllNodesWithText("退出身份").fetchSemanticsNodes().isNotEmpty()
+            composeRule.onAllNodesWithText("今天").fetchSemanticsNodes().isNotEmpty()
         }
-        composeRule.onNodeWithText("故事", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("档案", useUnmergedTree = true).performClick()
         composeRule.waitUntil(30_000) {
             composeRule.onAllNodesWithText("打开故事").fetchSemanticsNodes().isNotEmpty()
         }
@@ -50,8 +51,9 @@ class LiveCloudWorkbenchTest {
         }
         composeRule.onNodeWithText("继续播放").performClick()
         composeRule.onNodeWithText("停止播放").performClick()
-        composeRule.onNodeWithText("退出身份").performClick()
-        composeRule.onNodeWithText("身份凭据").assertExists()
+        composeRule.onNodeWithText("我的", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("退出身份").performScrollTo().performClick()
+        composeRule.onNodeWithText("账号").assertExists()
         composeRule.onNodeWithText("停止播放").assertDoesNotExist()
     }
 }

@@ -4,7 +4,17 @@ import httpx
 
 
 class TwinUnavailable(RuntimeError):
-    pass
+    retryable = True
+    code = 'TWIN_UNAVAILABLE'
+
+
+class TwinRejected(TwinUnavailable):
+    retryable = False
+
+    def __init__(self, code):
+        self.code = code
+        super().__init__('模型连接鉴权失败，请检查服务配置。' if code == 'AI_AUTH_FAILED' else
+                         '模型回答未通过来源或格式校验，本次未保存答案。')
 
 
 class TwinClient:
@@ -16,6 +26,14 @@ class TwinClient:
         try:
             response = httpx.post(self.url, json={"question": question, "candidates": candidates},
                                   timeout=self.timeout, follow_redirects=False, trust_env=False)
+            if response.is_error:
+                try:
+                    body = response.json()
+                    code = body.get('error_code') if isinstance(body, dict) else None
+                except ValueError:
+                    code = None
+                if code in {'AI_SCHEMA_INVALID', 'EVIDENCE_INVALID', 'AI_AUTH_FAILED'}:
+                    raise TwinRejected(code)
             response.raise_for_status()
             return response.json()
         except (httpx.HTTPError, ValueError) as exc:

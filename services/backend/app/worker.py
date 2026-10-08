@@ -450,6 +450,8 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
         metadata = episode.capture_metadata or {}
+        from .language_support import store_supplement
+        store_supplement(session, episode)
         PersonModelRepository(session).rebuild(
             episode.subject_id,
             include_episode_id=episode.episode_id,

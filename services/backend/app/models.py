@@ -175,6 +175,13 @@ class Subject(Base):
     )
 
 
+class SubjectVocabulary(Base):
+    __tablename__ = 'subject_vocabulary'
+    subject_id: Mapped[str] = mapped_column(ForeignKey('subjects.subject_id'), primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False, default='')
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
 class Actor(Base):
     """Whoever currently operates the app.
 
@@ -597,6 +604,23 @@ class DeviceCredential(Base):
     __tablename__ = "device_credentials"
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class Account(Base):
+    __tablename__ = 'accounts'
+    username: Mapped[str] = mapped_column(String(64), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey('actors.actor_id'), nullable=False, unique=True)
+    salt: Mapped[str] = mapped_column(String(64), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class AccountAttempt(Base):
+    __tablename__ = 'account_attempts'
+    attempt_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    ip_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 

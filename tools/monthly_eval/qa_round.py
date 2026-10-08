@@ -66,7 +66,7 @@ def main():
                     save(target,state)
                     # Retry only transient transport/service failures, never a
                     # semantically wrong but completed model answer.
-                    if not any(s in str(exc) for s in ('HTTP 429','HTTP 502','HTTP 503','HTTP 504','timed out')):
+                    if any(s in str(exc) for s in ('AI_SCHEMA_INVALID','EVIDENCE_INVALID','AI_AUTH_FAILED')) or not any(s in str(exc) for s in ('HTTP 429','HTTP 502','HTTP 503','HTTP 504','timed out')):
                         row['terminal_error']=True;save(target,state);break
                     if attempt<2:time.sleep(2**attempt)
             print(row['id'],'saved' if 'result' in row else 'failed',flush=True)

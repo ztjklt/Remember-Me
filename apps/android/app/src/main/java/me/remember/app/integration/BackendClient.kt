@@ -106,6 +106,7 @@ class BackendClient(private val gate: SessionGate) {
         if(status !in 200..299) {
             val parsed = runCatching { JSONObject(bytes.toString(Charsets.UTF_8)) }.getOrNull()
             val message = parsed?.optJSONObject("error")?.optString("message")?.takeIf { it.isNotBlank() }
+                ?: parsed?.optString("error_message")?.takeIf { it.isNotBlank() }
                 ?: parsed?.optString("detail")?.takeIf { it.isNotBlank() } ?: "服务请求失败（HTTP $status）。"
             throw IllegalStateException(message.take(500))
         }
