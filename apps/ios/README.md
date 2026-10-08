@@ -1,4 +1,10 @@
+> **2026-10-08 Android 原型复刻：** 五个入口改为 Portrait / Graphs / Memories / Agents / Me，复用队友 #81 的画像卡片与关系图布局。已有 iOS 录音、证据问答、五维校准和独立声音授权保留；可先保存本地录音，再连接服务。范围与本地验证见 [复刻记录](../../docs/verification/IOS_ANDROID_PARITY_2026_10_08.md)。
+
+> **2026-10-09 录音恢复：** 应用更新后恢复原音路径；尚未上传的录音可重新配对同一人物与账号。上传和状态请求使用独立超时，网络失败保留草稿并提供重试提示。实际验证及手机网络待办见 [恢复记录](../../docs/verification/IOS_RECORDING_RECOVERY_2026_10_09.md)。
+
 # iOS 本机语音 → Person Model
+
+2026-10-08 已补上画像结论与反例的证据入口、纠正/删除后的同步失效、校准记录选择与失败恢复，以及声音状态不可用时的核心刷新降级。当前模拟器测试与仍待真人验证的边界见 [Agent Core 记录](../../docs/verification/IOS_AGENT_CORE_2026_10_08.md)。
 
 ## Twin 与个人声音
 
@@ -100,3 +106,14 @@ xcodebuild -project RememberMe.xcodeproj -scheme RememberMe \
 只需完整跑一次：自由录一段中文并提交；核对和修改转写文字，确认后看到 Episode 到 `ready`、记忆原文证据和七领域模型；回答 App 给出的一条追问并再次确认转写，再检查模型版本和领域内容更新。再单独同意云端 Twin 文字处理，提一个新问题，检查原话／推测／无法确定的标记和录音证据。单独录 5–15 秒只有本人说话的声音样本，核对样本文字并授权，在有证据的 Twin 回答上点播本机合成声音。最后纠正或删除一条错误记忆，确认 trait、下一条追问及旧 Twin 回答的失效。断网时同一段录音仍在 App 内，重新提交会用相同幂等键。把设备型号、iOS 版本、Episode ID、STT／AI／Voice 模型版本和实际观察写进 PR 的 “How it was tested”。
 
 实测的合成音频联调可以证明服务链和数据流，不应写成本人真机录音。真机录音必须由使用者在设备上亲自完成。
+
+## 完整软件循环与无真机验收
+
+当前五入口已经接入有证据的八类侧面、四个实际数据图谱、支持/冲突/变化的持续画像，以及五维校准后自动更新的采集问题。环境侧面仅来自原文明示场景/声音；原音状态观测报告响度等信号，不推断心理健康。查看 [2026-10-08 完整验证](../../docs/verification/IOS_FULL_AGENT_LOOP_2026_10_08.md)。
+
+暂不做真机时，在仓库根目录运行 `scripts/verify_full_agent_loop.py verify --env-file /absolute/path/to/private-ai.env`。它使用合成中文录音、本机 Whisper 与 BGE、真实 DeepSeek 和临时数据库，保留逐项报告；需要 backend 的 retrieval extra。iOS 用模拟器运行 RememberMeTests 与 RememberMeUITests。该测试不替代未来的真实用户质量评测，也不会把测试资料写入你的日常数据库。
+
+引导采集现在支持按人物保存的本机“休息 30 分钟”偏好，不阻止自由录音。
+事件/决策图展示重新验证的事件时间与本人归因、反证和待核对解释，可回到原文。
+Backend 用信息增益、历史效果与交互预算调整下一轮问题。验收与边界见
+`docs/verification/ADAPTIVE_CAPTURE_TEMPORAL_REASONING_2026_10_08.md`。

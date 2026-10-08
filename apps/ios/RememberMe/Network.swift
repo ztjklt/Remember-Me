@@ -2,7 +2,7 @@ import Foundation
 import CryptoKit
 import Security
 
-struct Pairing: Codable {
+struct Pairing: Codable, Equatable {
     let baseURL: String
     let fingerprint: String
     let token: String
@@ -77,6 +77,10 @@ struct TraitRecord: Decodable, Identifiable {
     let counter_evidence_ids: [String]
     let status: String
     let model_version: String
+    let source_type: String?
+    let valid_from: String?
+    let valid_to: String?
+    let memory_item_ids: [String]?
     var id: String { trait_id }
 }
 struct DomainRecord: Decodable, Identifiable {
@@ -87,7 +91,64 @@ struct DomainRecord: Decodable, Identifiable {
 struct PersonModelReply: Decodable {
     let version: Int
     let domains: [DomainRecord]
+    let graph_facts: [GraphFactRecord]?
 }
+struct GraphFactRecord: Decodable, Identifiable {
+    let fact_id: String
+    let kind: String
+    let content: String
+    let evidence_ids: [String]
+    let valid_from: String?
+    var id: String { fact_id }
+}
+struct FacetRecord: Decodable {
+    let category: String
+    let label: String
+    let quote: String
+    let evidence_ids: [String]
+}
+struct AudioObservation: Decodable {
+    let status: String
+    let rms_dbfs: Double?
+    let silence_fraction: Double?
+    let clipped_fraction: Double?
+    let analyzed_seconds: Double?
+    let reason: String?
+}
+struct MemoryMetadata: Decodable {
+    let facets: [FacetRecord]?
+    let audio_observation: AudioObservation?
+    let temporal_causal_view: [CausalViewRecord]?
+}
+struct EventInterval: Decodable {
+    let start: String
+    let end: String
+    let precision: String
+}
+struct CausalNodeRecord: Decodable {
+    let memory_item_id: String
+    let quote: String
+    let evidence_ids: [String]
+    let time_text: String?
+    let event_time: EventInterval?
+}
+struct CausalViewRecord: Decodable {
+    let relation: String
+    let status: String
+    let issues: [String]
+    let cause: CausalNodeRecord
+    let effect: CausalNodeRecord
+    let evidence_ids: [String]
+    let context: String?
+    let independent_episodes: Int
+    let quotes: [String]
+}
+struct ProcessedMemory: Decodable {
+    let content: String
+    let evidence_ids: [String]
+    let metadata: MemoryMetadata?
+}
+struct EpisodeResultReply: Decodable { let memory_items: [ProcessedMemory] }
 struct QuestionRecord: Decodable, Identifiable {
     let question_id: String
     let text: String
@@ -197,21 +258,21 @@ final class APIClient: @unchecked Sendable {
     private let session: URLSession
     private let token: String?
 
-    init(baseURL: String, fingerprint: String, token: String? = nil) throws {
+    init(baseURL: String, fingerprint: String, token: String? = nil, session: URLSession? = nil) throws {
         guard let url = URL(string: baseURL), url.scheme == "https", url.host != nil,
               fingerprint.filter({ $0.isHexDigit }).count == 64 else { throw APIError.invalidURL }
         self.baseURL = url
         self.token = token
-        self.session = URLSession(configuration: .default, delegate: CertificatePin(fingerprint), delegateQueue: nil)
+        self.session = session ?? URLSession(configuration: .default, delegate: CertificatePin(fingerprint), delegateQueue: nil)
     }
 
     private func request(_ path: String, method: String = "GET", body: Data? = nil,
-                         contentType: String? = nil) async throws -> Data {
+                         contentType: String? = nil, timeout: TimeInterval = 300) async throws -> Data {
         guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.httpBody = body
-        request.timeoutInterval = 300
+        request.timeoutInterval = timeout
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let contentType { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
         let (data, response) = try await session.data(for: request)
@@ -227,7 +288,7 @@ final class APIClient: @unchecked Sendable {
         let body = try JSONSerialization.data(withJSONObject: ["code": code])
         return try JSONDecoder().decode(PairingReply.self, from: await request(
             "/api/v1/local-pairing/claim", method: "POST", body: body,
-            contentType: "application/json"))
+            contentType: "application/json", timeout: 15))
     }
 
     func memories(_ id: String) async throws -> [MemoryRecord] {
@@ -243,11 +304,14 @@ final class APIClient: @unchecked Sendable {
         try JSONDecoder().decode(QuestionListReply.self, from: await request("/api/v1/subjects/\(id)/questions")).items
     }
     func status(_ episodeID: String) async throws -> Processing {
-        try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)"))
+        try JSONDecoder().decode(Processing.self, from: await request("/api/v1/episodes/\(episodeID)", timeout: 15))
+    }
+    func result(_ episodeID: String) async throws -> [ProcessedMemory] {
+        try JSONDecoder().decode(EpisodeResultReply.self, from: await request("/api/v1/episodes/\(episodeID)/result")).memory_items
     }
     func transcriptReview(_ episodeID: String) async throws -> TranscriptReview {
         try JSONDecoder().decode(TranscriptReview.self, from: await request(
-            "/api/v1/episodes/\(episodeID)/transcript-review"))
+            "/api/v1/episodes/\(episodeID)/transcript-review", timeout: 15))
     }
     func confirmTranscript(_ episodeID: String, transcript: String) async throws {
         let body = try JSONSerialization.data(withJSONObject: ["transcript": transcript])
@@ -372,7 +436,7 @@ final class APIClient: @unchecked Sendable {
         body.append(audio)
         body.append(Data("\r\n--\(boundary)--\r\n".utf8))
         let data = try await request("/api/v1/episodes", method: "POST", body: body,
-                                     contentType: "multipart/form-data; boundary=\(boundary)")
+                                     contentType: "multipart/form-data; boundary=\(boundary)", timeout: 30)
         return try JSONDecoder().decode(EpisodeCreated.self, from: data).episode_id
     }
 }

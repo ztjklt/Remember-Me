@@ -57,6 +57,9 @@ class OpenAICompatibleProvider:
         if self._owns_client:
             self._client.close()
 
+    def generate_structured(self, request: ModelRequest) -> dict[str, Any]:
+        return self.generate(request)
+
     def generate(self, request: ModelRequest) -> dict[str, Any]:
         versions = json.dumps({
             "model_version": request.model_version,

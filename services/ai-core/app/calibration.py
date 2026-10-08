@@ -59,6 +59,7 @@ SYSTEM = (
     "真人回答没有提到的维度写 NOT_OBSERVED，human_excerpt 为 null；其他维度"
     "必须给出真人回答里的原文短片段。alignment 只可用 MATCH、PARTIAL、DIFFERENT、NOT_OBSERVED。"
     "简短说明差异，若值得追问给一个具体问题，否则 suggested_question 为 null。"
+    "note 中明确区分证据不足、理解错误、语境不同、本人明确变化；仅措辞不同不能算人格差异。"
     "只返回 JSON：summary、dimensions、suggested_question。dimensions 必须是数组，"
     "不能是以中文维度名为键的对象；数组中每个元素必须使用英文键 dimension、alignment、note、human_excerpt。"
     "JSON 输出示例：{\"summary\":\"偏好有变化\",\"dimensions\":["

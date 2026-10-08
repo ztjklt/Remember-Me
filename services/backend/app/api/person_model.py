@@ -16,6 +16,7 @@ from ..models import (
 from ..repositories.person_model import PersonModelRepository
 from ..retrieval import invalidate_answers
 from ..security import current_actor
+from ..capture_planner import plan
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["person-model"])
 
@@ -122,9 +123,8 @@ def person_model(subject_id: str, actor: Actor = Depends(current_actor), session
 @router.get("/questions")
 def questions(subject_id: str, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     _authorized(session, subject_id, actor)
-    rows = list(session.scalars(select(CaptureQuestion).where(
-        CaptureQuestion.subject_id == subject_id, CaptureQuestion.status == "pending"
-    ).order_by(CaptureQuestion.created_at.desc())))
+    rows = plan(session, subject_id)
+    session.commit()
     return {"subject_id": subject_id, "items": [{
         "question_id": item.question_id, "subject_id": item.subject_id,
         "text": item.text,
@@ -154,6 +154,9 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
     memory.source_type = "CALIBRATION"
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
+    # Auxiliary interpretations refer to the old statement. A human correction
+    # cannot inherit its mood, environment, or previous merge instruction.
+    memory.item_metadata = {"domain": (memory.item_metadata or {}).get("domain")}
     embedding = session.get(MemoryEmbedding, memory_id)
     if embedding is not None:
         session.delete(embedding)

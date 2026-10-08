@@ -216,12 +216,40 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
                                     "human_excerpt": "我觉得自由" if dimension == "VALUE_PRIORITY" else None}
                                    for dimension in ("DECISION", "REASONING", "VALUE_PRIORITY",
                                                      "EMOTIONAL_REACTION", "EXPRESSION")]}
-    app.state.calibration_client = Comparison()
+    from app.calibration_client import CalibrationUnavailable
+    class OfflineComparison:
+        def compare(self, question, locked_answer, human_answer):
+            raise CalibrationUnavailable("synthetic provider outage")
+    app.state.calibration_client = OfflineComparison()
+    failed = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
+    assert failed.status_code == 503
+    session.expire_all()
+    checkpoint = session.get(CalibrationRun, run["calibration_id"])
+    assert checkpoint.status == "awaiting_human"
+    assert checkpoint.locked_answer == "我喜欢散步"
+    assert checkpoint.human_episode_id == human_id
+    assert session.get(Episode, human_id).status == "ready"
+    class RacingComparison:
+        def compare(self, question, locked_answer, human_answer):
+            # A second HTTP request finishes while the first provider call is
+            # still in flight. The first committed result must remain locked.
+            app.state.calibration_client = Comparison()
+            winner = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
+            assert winner.status_code == 200
+            later = Comparison().compare(question, locked_answer, human_answer)
+            later["summary"] = "This later comparison must not overwrite the committed one."
+            return later
+    app.state.calibration_client = RacingComparison()
     result = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
     assert result.status_code == 200, result.text
     assert result.json()["status"] == "complete"
+    assert result.json()["summary"] == "偏好与之前不同，值得继续确认。"
     assert result.json()["human_episode_id"] == human_id
     assert result.json()["dimensions"][2]["human_excerpt"] == "我觉得自由"
+    app.state.calibration_client = OfflineComparison()
+    replay = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
+    assert replay.status_code == 200
+    assert replay.json() == result.json()
     assert session.get(CalibrationRun, run["calibration_id"]).locked_answer == "我喜欢散步"
     source_memory_id = session.get(TwinAnswer, answer["answer_id"]).memory_item_ids[0]
     assert client.patch(f"/api/v1/subjects/{own.subject_id}/memories/{source_memory_id}",

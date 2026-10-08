@@ -54,18 +54,36 @@ def validate_output(payload: AICoreInput, output: AICoreOutput) -> AICoreOutput:
 
     evidence_by_id = _validate_evidence(payload, output)
 
+    trait_ids: set[str] = set()
     for trait in output.persona_updates:
         if not isinstance(trait, PersonTrait):
             raise AIOutputInvalid("persona_updates must be typed person traits")
+        if trait.trait_id in trait_ids:
+            raise AIOutputInvalid("person trait IDs must be unique")
+        trait_ids.add(trait.trait_id)
+        if not trait.statement.strip():
+            raise AIOutputInvalid("person trait statement must not be whitespace")
         if not trait.evidence_ids or any(eid not in evidence_by_id for eid in trait.evidence_ids):
             raise EvidenceInvalid("person trait has unverified evidence")
         if any(eid not in evidence_by_id for eid in trait.counter_evidence_ids):
             raise EvidenceInvalid("person trait has unverified counter evidence")
+        if set(trait.evidence_ids) & set(trait.counter_evidence_ids):
+            raise EvidenceInvalid("supporting and counter evidence must be distinct")
+        if trait.source_type != "AI_INFERENCE":
+            sources = [evidence_by_id[eid] for eid in trait.evidence_ids]
+            if any(source.source_type != trait.source_type for source in sources):
+                raise EvidenceInvalid("person trait attribution does not match its evidence")
+            if trait.statement not in {source.excerpt for source in sources}:
+                raise EvidenceInvalid("a person trait paraphrase must be labelled AI_INFERENCE")
+    fact_ids: set[str] = set()
     for fact in output.graph_updates:
         if not isinstance(fact, GraphFact):
             raise AIOutputInvalid("graph_updates must be typed graph facts")
         if fact.subject_id != payload.subject_id:
             raise AIOutputInvalid("graph fact belongs to another subject")
+        if fact.fact_id in fact_ids:
+            raise AIOutputInvalid("graph fact IDs must be unique")
+        fact_ids.add(fact.fact_id)
         if not fact.evidence_ids or any(eid not in evidence_by_id for eid in fact.evidence_ids):
             raise EvidenceInvalid("graph fact has unverified evidence")
 

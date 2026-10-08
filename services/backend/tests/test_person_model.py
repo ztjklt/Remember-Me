@@ -48,8 +48,9 @@ def test_second_episode_correction_delete_and_subject_isolation(app, client, ses
     first = memories[0]
     assert first["evidence"][0]["excerpt"]
     question = client.get(f"/api/v1/subjects/{seeded.subject_id}/questions", headers=headers).json()["items"]
-    assert len(question) == 1
-    Draft202012Validator(json.loads(schema_path.read_text())).validate(question[0])
+    assert len(question) == 3
+    for item in question:
+        Draft202012Validator(json.loads(schema_path.read_text())).validate(item)
     assert client.get(f"/api/v1/subjects/{other.subject_id}/person-model", headers=headers).status_code == 404
     assert client.get(f"/api/v1/subjects/{other.subject_id}/episodes", headers=headers).status_code == 404
     corrected = client.patch(f"/api/v1/subjects/{seeded.subject_id}/memories/{first['memory_item_id']}",
@@ -101,7 +102,7 @@ def test_conflicting_memories_coexist_and_prompt_for_clarification(app, client, 
     assert all(item.counter_evidence_ids for item in traits)
     question = session.scalar(select(CaptureQuestion).where(
         CaptureQuestion.subject_id == seeded.subject_id,
-        CaptureQuestion.status == "pending"))
+        CaptureQuestion.status == "pending", CaptureQuestion.reason == "contradiction"))
     assert question and question.reason == "contradiction"
     response = client.delete(f"/api/v1/subjects/{seeded.subject_id}/memories/{rows[1].memory_item_id}", headers=headers)
     assert response.status_code == 200

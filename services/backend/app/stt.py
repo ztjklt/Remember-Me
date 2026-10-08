@@ -122,6 +122,7 @@ class HttpSttProvider:
                 content=audio,
                 headers={"Content-Type": content_type},
                 timeout=httpx.Timeout(self.timeout_seconds),
+                trust_env=False,
             )
         except httpx.TimeoutException as error:
             raise SttTimeout(

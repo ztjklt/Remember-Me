@@ -11,6 +11,8 @@ Phase 1 scope: the Episode/Transcript → Memory Extractor schema, structured ou
 
 Inputs and outputs must conform to `packages/contracts`.
 
+Persona proposals now enforce direct-source attribution as well as verified spans: paraphrases remain `AI_INFERENCE`, third-party evidence cannot be relabelled as a Subject quote, and the same evidence cannot both support and contradict a trait. Duplicate trait/fact IDs are rejected before persistence. These checks enforce provenance consistency; semantic support still needs model evaluation. See the [iOS Core verification](../../docs/verification/IOS_AGENT_CORE_2026_10_08.md).
+
 ## Local verification
 
 From this directory:
@@ -123,3 +125,16 @@ failure state. It should call `POST /process` with `episode_id`, `subject_id`,
 `transcript`, `existing_model_version`, and optional `trace_id`. AI Core never
 creates or mutates `episode_id` and never writes a database. See
 `docs/team/02_KANGXIN_AI_CORE_HANDOFF.md` for the complete handoff checklist.
+
+## 完整循环的反思 worker
+
+Backend 可以在既有 `subject_context` 中发送当前 Subject 的有效画像与校准问题。支持结构化 worker 的供应商在提取后调用 `portrait-reflection-v1`，生成有新证据的 ADD/SUPPORT/CONFLICT/CHANGE 提议及精确引用的记忆侧面。历史目标来自 Backend 快照，程序校验目标、领域、语境和来源；失败返回既有错误，由持久化 worker 重试。AI Core 不直接写画像或数据库。旧调用/fixture 未发送快照时维持原提取路径。
+
+DeepSeek、Ollama 和通用结构化供应商保持同一适配边界；完整 live 验收选择已有 DeepSeek Twin/Calibration worker。供给方能力不一致时保留明确失败，不在客户端替代生成假回答。服务端内部约定、完整循环验收和真实模型质量边界见 [完整记录](../../docs/verification/IOS_FULL_AGENT_LOOP_2026_10_08.md)。公开 Contract 文件与服务 endpoints 均未升级。
+
+The optional `portrait-reflection-v2` schema worker emits quoted temporal/causal
+assertions in existing open Memory metadata. Historical anchors come from the
+Backend's subject-scoped snapshot. Assertions distinguish reported causes,
+denials, ordering, association and hypotheses; quote validation never proves
+objective causality. See the adaptive capture / temporal reasoning verification
+record under `docs/verification` for live synthetic evaluation and limitations.

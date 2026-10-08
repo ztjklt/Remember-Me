@@ -9,15 +9,42 @@
 /* Begin PBXBuildFile section */
 		25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA939DD4DAD788A194194175 /* AppModel.swift */; };
 		2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */; };
+		734B8B3097EB3E632B1A3156 /* PortraitGraphs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */; };
+		963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */; };
 		B0466C9C2E4FF25292D0B360 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F6922872B50B2440845465FA /* Assets.xcassets */; };
+		BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */; };
 		DE409B589F1CA246B89C7726 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC9EAE511EDB13B710E96D0 /* Views.swift */; };
+		EC73B8B003C0983CFCA43181 /* AgentCoreRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259FDA4B8ABFE6D29BE9B01E /* AgentCoreRecoveryTests.swift */; };
 		ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44F936F9AAC5B970D20CEF2 /* Network.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 58D23FBA1AD54488281E12E5;
+			remoteInfo = RememberMe;
+		};
+		F1C6E2FCCFF6293A7FCAFC99 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 58D23FBA1AD54488281E12E5;
+			remoteInfo = RememberMe;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortraitGraphs.swift; sourceTree = "<group>"; };
 		0DD6ABD0F11397F657B95172 /* RememberMe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RememberMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		15E87C6A763B9D344F407898 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		259FDA4B8ABFE6D29BE9B01E /* AgentCoreRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentCoreRecoveryTests.swift; sourceTree = "<group>"; };
+		4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParity.swift; sourceTree = "<group>"; };
 		5BC9EAE511EDB13B710E96D0 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParityUITests.swift; sourceTree = "<group>"; };
+		A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberMeApp.swift; sourceTree = "<group>"; };
 		D44F936F9AAC5B970D20CEF2 /* Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Network.swift; sourceTree = "<group>"; };
 		DA939DD4DAD788A194194175 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -29,6 +56,8 @@
 			isa = PBXGroup;
 			children = (
 				A527F2A08B55BADD6D04283C /* RememberMe */,
+				63860F068E60E5AEF543369A /* RememberMeTests */,
+				B7213A10661065465C8E56A1 /* RememberMeUITests */,
 				2C9F65D43AB78B97FE4FD98C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -37,26 +66,64 @@
 			isa = PBXGroup;
 			children = (
 				0DD6ABD0F11397F657B95172 /* RememberMe.app */,
+				A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */,
+				8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		63860F068E60E5AEF543369A /* RememberMeTests */ = {
+			isa = PBXGroup;
+			children = (
+				259FDA4B8ABFE6D29BE9B01E /* AgentCoreRecoveryTests.swift */,
+			);
+			path = RememberMeTests;
 			sourceTree = "<group>";
 		};
 		A527F2A08B55BADD6D04283C /* RememberMe */ = {
 			isa = PBXGroup;
 			children = (
+				4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */,
 				DA939DD4DAD788A194194175 /* AppModel.swift */,
 				F6922872B50B2440845465FA /* Assets.xcassets */,
 				15E87C6A763B9D344F407898 /* Info.plist */,
 				D44F936F9AAC5B970D20CEF2 /* Network.swift */,
+				03D4582EEE68521E836D2FBB /* PortraitGraphs.swift */,
 				B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */,
 				5BC9EAE511EDB13B710E96D0 /* Views.swift */,
 			);
 			path = RememberMe;
 			sourceTree = "<group>";
 		};
+		B7213A10661065465C8E56A1 /* RememberMeUITests */ = {
+			isa = PBXGroup;
+			children = (
+				8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */,
+			);
+			path = RememberMeUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1678C54CD3A15EE6A8588244 /* RememberMeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB1EEB672EBA55FCC69AF3CC /* Build configuration list for PBXNativeTarget "RememberMeTests" */;
+			buildPhases = (
+				63404A3556A1E61717F6893F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				39FC425529531E0C82690716 /* PBXTargetDependency */,
+			);
+			name = RememberMeTests;
+			packageProductDependencies = (
+			);
+			productName = RememberMeTests;
+			productReference = A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		58D23FBA1AD54488281E12E5 /* RememberMe */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 782E55CD96C868B6E0467EC7 /* Build configuration list for PBXNativeTarget "RememberMe" */;
@@ -75,6 +142,24 @@
 			productReference = 0DD6ABD0F11397F657B95172 /* RememberMe.app */;
 			productType = "com.apple.product-type.application";
 		};
+		E1EB39F04BC1AE96A01D14BE /* RememberMeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E475959C2788F83F78595FD2 /* Build configuration list for PBXNativeTarget "RememberMeUITests" */;
+			buildPhases = (
+				9CF2CBD9E3DA20ACC11B39E4 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E5C7B2C99FCA72177EA0EA37 /* PBXTargetDependency */,
+			);
+			name = RememberMeUITests;
+			packageProductDependencies = (
+			);
+			productName = RememberMeUITests;
+			productReference = 8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -84,9 +169,18 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1678C54CD3A15EE6A8588244 = {
+						DevelopmentTeam = BZ5FA6MS43;
+						ProvisioningStyle = Automatic;
+					};
 					58D23FBA1AD54488281E12E5 = {
 						DevelopmentTeam = BZ5FA6MS43;
 						ProvisioningStyle = Automatic;
+					};
+					E1EB39F04BC1AE96A01D14BE = {
+						DevelopmentTeam = BZ5FA6MS43;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 58D23FBA1AD54488281E12E5;
 					};
 				};
 			};
@@ -105,6 +199,8 @@
 			projectRoot = "";
 			targets = (
 				58D23FBA1AD54488281E12E5 /* RememberMe */,
+				1678C54CD3A15EE6A8588244 /* RememberMeTests */,
+				E1EB39F04BC1AE96A01D14BE /* RememberMeUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -121,18 +217,49 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		63404A3556A1E61717F6893F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EC73B8B003C0983CFCA43181 /* AgentCoreRecoveryTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		937261673F94C977419AD8EE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */,
 				25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */,
 				ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */,
+				734B8B3097EB3E632B1A3156 /* PortraitGraphs.swift in Sources */,
 				2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */,
 				DE409B589F1CA246B89C7726 /* Views.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9CF2CBD9E3DA20ACC11B39E4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		39FC425529531E0C82690716 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 58D23FBA1AD54488281E12E5 /* RememberMe */;
+			targetProxy = E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */;
+		};
+		E5C7B2C99FCA72177EA0EA37 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 58D23FBA1AD54488281E12E5 /* RememberMe */;
+			targetProxy = F1C6E2FCCFF6293A7FCAFC99 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		11C84392CBBF335CF08662B4 /* Release */ = {
@@ -200,7 +327,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RememberMe/Info.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你自己的 Mac，在本机处理录音与记忆。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "录下你的原话，保存为你自己的记忆。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -215,6 +342,74 @@
 			};
 			name = Release;
 		};
+		453C76EB92A511CA12C4B6E5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RememberMe;
+			};
+			name = Debug;
+		};
+		471429DB51642A3363A090AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RememberMe.app/RememberMe";
+			};
+			name = Debug;
+		};
+		78C534433744AE5A91C0AFAC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RememberMe.app/RememberMe";
+			};
+			name = Release;
+		};
+		BBE3AD7AB1344C90456807A8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = RememberMe;
+			};
+			name = Release;
+		};
 		C6F8C84D9D113E94F697BE11 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -222,7 +417,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RememberMe/Info.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你自己的 Mac，在本机处理录音与记忆。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "录下你的原话，保存为你自己的记忆。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -314,11 +509,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		CB1EEB672EBA55FCC69AF3CC /* Build configuration list for PBXNativeTarget "RememberMeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				471429DB51642A3363A090AD /* Debug */,
+				78C534433744AE5A91C0AFAC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		D3726B9BEA464E2A2355E925 /* Build configuration list for PBXProject "RememberMe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D34A05D2673DF95BE404EDE1 /* Debug */,
 				11C84392CBBF335CF08662B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E475959C2788F83F78595FD2 /* Build configuration list for PBXNativeTarget "RememberMeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				453C76EB92A511CA12C4B6E5 /* Debug */,
+				BBE3AD7AB1344C90456807A8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

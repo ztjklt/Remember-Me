@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..db import get_session
@@ -19,6 +19,7 @@ from ..retrieval import EmbeddingUnavailable, retrieve
 from ..security import current_actor
 from ..twin_client import TwinUnavailable
 from ..stt import SttProvider
+from ..temporal_reasoning import augment, is_causal_question, is_counterfactual
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["twin"])
 
@@ -110,6 +111,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         candidates = retrieve(session, subject_id, question, request.app.state.embedding_encoder)
     except EmbeddingUnavailable as exc:
         raise TwinFailed(str(exc)) from exc
+    candidates, causal_routes = augment(session, subject_id, question, candidates)
     candidate_ids = {row["memory_item_id"] for row in candidates}
     unresolved = set()
     for trait in session.scalars(select(PersonTrait).where(
@@ -122,6 +124,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                               "source_type": source["source_type"]}
                              for source in row["evidence"] if source["excerpt"]]}
                for row in candidates]
+    baseline = session.get(ModelRevision, subject_id)
+    baseline_version = baseline.version if baseline else 0
     # Retrieval may update cached vectors. Release its transaction before the
     # network call so revocation can proceed while DeepSeek is working.
     session.commit()
@@ -167,17 +171,35 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("模型给出的原话无法在录音转写中定位。")
     if kind == "SIMULATION" and any(valid[identifier][1]["memory_item_id"] in unresolved for identifier in cited):
         kind, content, cited, confidence = "UNKNOWN", "现有记录有不同说法，还不能确定。", [], 0
+    if is_causal_question(question):
+        counterfactual = is_counterfactual(question)
+        supported = any(set(route["evidence_ids"]) <= set(cited) for route in causal_routes)
+        explicit_original = kind == "ORIGINAL" and any(w in content for w in ("因为", "导致", "原因", "所以", "让我"))
+        if counterfactual or (kind != "UNKNOWN" and not supported and not explicit_original):
+            kind, content, cited, confidence = "UNKNOWN", "现有记录不足以支持这个因果判断。", [], 0
+        elif kind == "SIMULATION":
+            content = "按本人记录的归因推测：" + content[:460]
+            confidence = min(confidence, .65)  # Attribution support is not causal identification.
     session.commit()
     session.expire_all()
     ConsentRepository(session).require_active(payload.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
     revision = session.get(ModelRevision, subject_id)
+    if revision is not None:
+        held = session.execute(update(ModelRevision).where(
+            ModelRevision.subject_id == subject_id, ModelRevision.version == baseline_version
+        ).values(version=ModelRevision.version), execution_options={"synchronize_session": False})
+        if held.rowcount != 1:
+            session.rollback()
+            raise TwinFailed("记忆与画像在回答期间已更新，请重新提问。")
+    elif baseline_version:
+        raise TwinFailed("画像已更新，请重新提问。")
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
-                     person_model_version=revision.version if revision else 0,
+                     person_model_version=baseline_version,
                      created_at=utcnow())
     session.add(row)
     session.commit()

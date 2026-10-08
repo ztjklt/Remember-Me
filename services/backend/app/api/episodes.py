@@ -499,6 +499,8 @@ def read_result(
         )
 
     items = MemoryRepository(session).items_for(episode_id)
+    from ..temporal_reasoning import graph, presentation
+    causal = graph(session, episode.subject_id)
     return EpisodeResult(
         episode_id=episode.episode_id,
         status="ready",
@@ -515,7 +517,7 @@ def read_result(
                 effective_at=None
                 if item.effective_at is None
                 else as_utc(item.effective_at),
-                metadata=item.item_metadata,
+                metadata={**(item.item_metadata or {}), "temporal_causal_view": presentation(causal, item.memory_item_id)},
             )
             for item in items
         ],
