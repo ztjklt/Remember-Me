@@ -46,4 +46,19 @@ class MemoryObservationTest {
         while (offset < text.length) { val part = sourceChunk(text, offset); parts.add(part); offset += part.length }
         assertEquals(text, parts.joinToString("")); assertFalse(parts.any { it.last().isHighSurrogate() || it.first().isLowSurrogate() })
     }
+    @Test fun timeExpressionCanPrecedeTheMoodQuoteAndRetainsItsOwnCodePointSpan() = runBlocking {
+        val mood = observation().put("dimension", "mood").put("quote", "我紧张")
+            .put("event_time", "2026-10-07").put("time_text", "昨天")
+            .put("attributes", JSONObject().put("emotion", "紧张").put("time_scope", "EVENT").put("valence", "NEGATIVE"))
+        val result = worker(mood).extract(source(), 0, endpoint, setOf("mood")).getJSONObject(0)
+        assertEquals(11, result.getInt("time_start")); assertEquals(13, result.getInt("time_end"))
+    }
+    @Test fun nameCorrectionCannotReplaceAnEducationObservation() = runBlocking {
+        val old = observation().put("observation_id", "old_school").put("evidence_id", "ev_school")
+            .put("attributes", JSONObject().put("facet", "EDUCATION").put("entity", "本人").put("value", "读研"))
+        val correction = source().put("source_type", "CALIBRATION")
+        try { worker(observation().put("replaces", JSONArray().put("old_school")))
+            .extract(correction, 0, endpoint, setOf("identity"), JSONArray().put(old)); fail("school erased") }
+        catch (_: IllegalArgumentException) {}
+    }
 }

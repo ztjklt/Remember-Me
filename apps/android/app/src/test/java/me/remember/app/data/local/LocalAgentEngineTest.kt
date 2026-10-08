@@ -240,6 +240,17 @@ class LocalAgentEngineTest {
         assertNotNull(repo.state.value.error)
         assertFalse(store.saved!!.contains("旧问题的校正"))
     }
+    @Test fun rebuildingOldMemoriesUsesExistingTranscriptsAndRetainsCalibrations() = runBlocking {
+        val store = Store(); val model = FakeModel(); val engine = engine(store, model); val repo = grant(engine)
+        engine.capture(recording("旧原文一")); engine.capture(recording("旧原文二")); repo.refresh(); repo.ask("问题")
+        val locked = repo.state.value.answer
+        val subject = store.read()!!.getString("subject_id")
+        engine.rebuildMemories()
+        val rebuilt = engine(store, model); val restored = grant(rebuilt); restored.resume(rebuilt.latestCalibration()!!)
+        assertEquals(2, model.transcriptions); assertEquals(2, store.read()!!.getJSONArray("episodes").length())
+        assertEquals(subject, store.read()!!.getString("subject_id")); assertEquals(locked, restored.state.value.answer)
+        assertEquals("READY", rebuilt.portrait()!!.status)
+    }
     @Test fun repeatedHabitsUseDistinctRecordingsAndCorrectionFeedsAnswersThenDeletionErasesThem() = runBlocking {
         val store = Store(); val model = FakeModel().apply { learnHabits = true }; val engine = engine(store, model); val repo = grant(engine)
         val first = recording("昨天压力大，我通过散步整理想法。"); val second = recording("今天考试紧张，散步让我安静下来。")

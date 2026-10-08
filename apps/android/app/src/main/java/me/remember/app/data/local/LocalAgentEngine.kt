@@ -78,7 +78,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         put("traits", JSONArray(old.getJSONArray("traits").objects().filter { t -> t.getJSONArray("evidence_ids").strings().none { it in withdrawn() } }))
     } } + model()
     suspend fun deleteRecording(recording: AudioRecording, deleteFiles: () -> Unit) = withContext(Dispatchers.IO) { mutex.withLock {
-        check(pending() == null || pending()?.optString("kind") == "CAPTURE") { "请先继续或取消待处理问答。" }
+        check(pending() == null || pending()?.optString("kind") in setOf("CAPTURE", "REINDEX")) { "请先继续或取消待处理问答。" }
         val id = state.getJSONArray("episodes").objects().firstOrNull { it.getString("audio_path") == recording.audioPath }?.getString("id")
             ?: pending()?.takeIf { it.optString("kind") == "CAPTURE" && it.optString("audio_path") == recording.audioPath }?.getString("id")
             ?: "ep_" + digest(recording.audioPath + recording.createdAt)
@@ -148,7 +148,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                     val question = body!!.getString("question").trim()
                     require(question.length in 1..4000) { "问题为空或过长。" }
                     val job = pending()
-                    if (job != null && job.optString("kind") == "CAPTURE" && job.has("evidence")) {
+                    if (job != null && job.optString("kind") in setOf("CAPTURE", "REINDEX") && job.has("evidence")) {
                         // Read-only answering remains available while a derived portrait awaits retry.
                         lockAnswer(question, newId("cal_"), checkNotNull(settings()).language)
                     } else {
@@ -195,7 +195,29 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
         execute()
     } }
 
-    suspend fun retry() = withContext(Dispatchers.IO) { mutex.withLock { check(granted()); if (pending() != null) execute() } }
+    suspend fun rebuildMemories() = withContext(Dispatchers.IO) { mutex.withLock {
+        check(granted() && pending() == null) { "请先授权并完成或取消待处理任务。" }
+        persist(state.copyJson().put("backfill_ids", JSONArray(materials().objects().map { it.getString("evidence_id") })))
+        drainBackfill()
+    } }
+    private suspend fun drainBackfill() {
+        while ((state.optJSONArray("backfill_ids")?.length() ?: 0) > 0) {
+            val queue = state.getJSONArray("backfill_ids").strings()
+            val source = materials().objects().firstOrNull { it.getString("evidence_id") == queue.first() }
+            if (source != null) {
+                begin(JSONObject().put("kind", "REINDEX").put("id", "reindex_${queue.first()}").put("evidence", source))
+                execute()
+            }
+            persist(state.copyJson().put("backfill_ids", JSONArray(queue.drop(1))))
+        }
+    }
+    suspend fun retry() = withContext(Dispatchers.IO) { mutex.withLock {
+        check(granted())
+        val reindexId = pending()?.takeIf { it.optString("kind") == "REINDEX" }?.getJSONObject("evidence")?.getString("evidence_id")
+        if (pending() != null) execute()
+        if (reindexId != null) persist(state.copyJson().put("backfill_ids", JSONArray(state.optJSONArray("backfill_ids")?.strings().orEmpty().filter { it != reindexId })))
+        drainBackfill()
+    } }
     suspend fun cancelPending() = withContext(Dispatchers.IO) { mutex.withLock {
         val next = state.copyJson()
         next.optJSONObject("job")?.let { job ->
@@ -208,6 +230,7 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             }
         }
         next.remove("job")
+        next.remove("backfill_ids")
         persist(next)
     } }
     private fun begin(job: JSONObject) {
@@ -242,18 +265,30 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
             val source = job.getJSONObject("evidence")
             val full = source.getString("excerpt")
             val enabled = dimensions()
+            val relatedIds = source.optJSONArray("related_evidence_ids")?.strings()?.toSet() ?: state.getJSONArray("calibrations").objects()
+                .firstOrNull { source.getString("source_ref") == "calibration:${it.getString("calibration_id")}" }
+                ?.getJSONObject("locked_answer")?.let(::answerRoots).orEmpty()
+            val relatedObservations = JSONArray(state.optJSONArray("observations")?.objects().orEmpty().filter {
+                source.getString("source_type") == "CALIBRATION" && it.getString("evidence_id") in relatedIds && it.optString("status", "ACTIVE") == "ACTIVE" })
             while (job.optInt("observation_offset") < full.length) {
                 val offset = job.optInt("observation_offset")
-                val batch = observer.extract(source, offset, config.language, enabled)
+                val batch = observer.extract(source, offset, config.language, enabled, relatedObservations)
                 val accumulated = job.optJSONArray("observations") ?: JSONArray()
                 batch.objects().forEach(accumulated::put)
                 job.put("observations", accumulated).put("observation_offset", offset + sourceChunk(full, offset).length)
                 persist(state.copyJson().put("job", job))
             }
             val observations = job.optJSONArray("observations") ?: JSONArray()
-            persist(state.copyJson().put("observations", JSONArray(state.optJSONArray("observations")?.objects().orEmpty()
-                .filter { it.getString("evidence_id") != source.getString("evidence_id") } + observations.objects()))
-                .put("portrait_status", "BUILDING"))
+            persist(state.copyJson().apply {
+                val previous = optJSONArray("observations")?.objects().orEmpty().filter { it.getString("evidence_id") != source.getString("evidence_id") }
+                observations.objects().forEach { current ->
+                    val replaces = current.optJSONArray("replaces")?.strings().orEmpty()
+                    previous.filter { it.getString("observation_id") in replaces }.forEach { old ->
+                        old.put("status", "SUPERSEDED").put("superseded_by", current.getString("observation_id"))
+                    }
+                }
+                put("observations", JSONArray(previous + observations.objects())).put("portrait_status", "BUILDING")
+            })
             val chunks = evidenceSpans(source)
             if (job.has("traits") && !job.has("trait_chunks")) job.put("trait_chunks", chunks.size) // Resume a legacy full-material checkpoint.
             while (job.optInt("trait_chunks") < chunks.size) {
@@ -286,6 +321,8 @@ class LocalAgentEngine(private val store: LocalStateStore, private val client: L
                 result = next.getJSONArray("calibrations").objects().first { it.getString("calibration_id") == job.getString("id") }
                 result.put("state", "COMPLETED").put("resulting_revision", next.getInt("revision")).put("human_answer", job.getString("human_answer"))
             } else if (job.getString("kind") == "CAPTURE") publishEpisode(next, job, "READY")
+            if (job.getString("kind") == "REINDEX") next.getJSONArray("episodes").objects()
+                .firstOrNull { it.getString("id") == source.optString("episode_id") }?.put("observation_version", MemoryDimensionRegistry.version)
             persist(next)
             return result
         } catch (e: Exception) {

@@ -34,6 +34,8 @@ internal fun eraseRecording(state: JSONObject, episodeId: String): JSONObject = 
     put("observations", JSONArray(optJSONArray("observations")?.objects().orEmpty().filter { it.getString("evidence_id") !in removed }))
     put("memory_revision", optInt("memory_revision") + 1).put("portrait_status", "PENDING")
     optJSONObject("job")?.apply { remove("traits"); remove("habits"); remove("trait_chunks") }
+    optJSONObject("job")?.optJSONObject("evidence")?.getString("evidence_id")?.let { if (it in removed) remove("job") }
+    put("backfill_ids", JSONArray(optJSONArray("backfill_ids")?.strings().orEmpty().filter { it !in removed }))
     put("habits", JSONArray(optJSONArray("habits")?.objects().orEmpty().filter {
         it.getJSONArray("evidence_ids").strings().none(removed::contains)
     }))
