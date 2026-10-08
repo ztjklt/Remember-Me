@@ -1,5 +1,17 @@
 # Voice Service
 
+Reference-sample QA additionally rejects more than 2% near-full-scale clipping
+and fewer than two seconds above the existing RMS level threshold. The HTTP
+validation path caps the streamed sample before decoding. These are numerical
+audio-quality checks, not speech detection, speaker verification, or consent.
+The dedicated own-voice confirmation and separate VOICE grant remain required.
+Run the lightweight QA without loading Qwen/MLX:
+
+```bash
+cd services/backend
+uv run --locked pytest ../voice/tests -q
+```
+
 The iOS-first local Voice slice is authorized by the [Twin and Voice proposal](../../docs/architecture/twin-voice-contract-proposal.md). The original [task brief](../../docs/team/03_WANGHAOYU_BACKEND_VOICE.md) is historical.
 
 `local_voice.py` is a Mac-only Qwen3-TTS Base / MLX adapter. Start it with `uv run uvicorn local_voice:app --host 127.0.0.1 --port 8300` after `uv sync`. Its model weights are downloaded to the local model cache on first synthesis; they are not committed. Backend accepts only a separate VOICE grant and a dedicated, user-confirmed own-voice sample. The sidecar checks format, level, and 5–15 second duration. The user must confirm that no other person's speech is present; automated speaker verification is not yet implemented and must not be claimed as such.

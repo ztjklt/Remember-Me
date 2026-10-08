@@ -44,6 +44,11 @@ Every external provider — STT, LLM, vector/graph store, voice clone, hardware 
 
 ## Decision records
 
+The [reusable-components record](open-source-reuse.md) covers the optional local STT
+engine, scoped Graphiti projection preparation, interview/voice improvements and
+Phase 4 baseline preparation and existing hardware integration. Runtime readiness and remaining Contract
+decisions are recorded separately from Phase Gate acceptance.
+
 | ADR | Decision | Status |
 | --- | --- | --- |
 | [ADR-0001 — Backend platform, data, storage, auth, and failure model](backend-adr.md) | Language, deployment shape, data layer, migrations, object storage, upload transport, auth boundary, job model, provider boundaries, client security, failure model, idempotency, observability, local verification | Proposed — awaiting ratification (Issue #13) |
