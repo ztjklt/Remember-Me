@@ -24,12 +24,13 @@ contract's test asserts the job id never leaks.
 """
 
 import json
+import hashlib
 import logging
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -224,6 +225,37 @@ class CaptureEpisodeForm(BaseModel):
     metadata: str | None = Field(None, description="Arbitrary capture metadata, as JSON")
 
 
+class ClientTranscript(BaseModel):
+    """An owner's unverified client ASR report, never a server provider receipt."""
+    model_config = ConfigDict(extra='forbid', strict=True)
+    text: str = Field(min_length=1, max_length=100_000)
+    audio_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+    provider: Literal['groq']
+    model: Literal['whisper-large-v3']
+    audio_export_confirmed: StrictBool
+
+    @field_validator('text')
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError('client ASR text is empty')
+        return value
+
+    @field_validator('audio_export_confirmed')
+    @classmethod
+    def exported_with_consent(cls, value):
+        if value is not True:
+            raise ValueError('client audio export must be explicitly confirmed')
+        return value
+
+    def fingerprint(self):
+        return hashlib.sha256(self.model_dump_json().encode('utf-8')).hexdigest()
+
+
+class ClientCaptureForm(CaptureEpisodeForm):
+    client_transcript: str = Field(min_length=1, max_length=650_000)
+
+
 @router.post("", response_model=EpisodeCreated, status_code=status.HTTP_201_CREATED)
 def create_episode(
     response: Response,
@@ -233,6 +265,39 @@ def create_episode(
     settings: Settings = Depends(_settings),
     session: Session = Depends(get_session),
 ) -> EpisodeCreated:
+    return _create_episode(response, form, actor, store, settings, session)
+
+
+@router.post('/client-transcribed', response_model=EpisodeCreated, status_code=status.HTTP_201_CREATED)
+def create_client_transcribed_episode(
+    response: Response,
+    form: Annotated[ClientCaptureForm, Form(media_type='multipart/form-data')],
+    actor: Actor = Depends(current_actor),
+    store: ObjectStore = Depends(_object_store),
+    settings: Settings = Depends(_settings),
+    session: Session = Depends(get_session),
+) -> EpisodeCreated:
+    try:
+        transcript = ClientTranscript.model_validate_json(form.client_transcript)
+    except ValidationError as error:
+        # Never echo a transcript, arbitrary client field or secret into errors.
+        raise RequestInvalid('客户端转写格式无效；需要原始机器稿、原音哈希、模型及外发确认。') from error
+    if form.source not in {CaptureSource.IMPORT, CaptureSource.ANDROID_MIC, CaptureSource.IOS_MIC}:
+        raise RequestInvalid('客户端转写只接受支持核对的录音或文件导入来源。')
+    return _create_episode(response, form, actor, store, settings, session, transcript)
+
+
+def _check_replay(existing, checksum, client_transcript):
+    expected = client_transcript.fingerprint() if client_transcript else None
+    receipt = (existing.capture_metadata or {}).get('client_asr_receipt')
+    # Before this extension the metadata key was arbitrary user data. Only a
+    # server-written provenance column identifies captures from the new route.
+    actual = receipt.get('fingerprint') if existing.stt_backend == 'client' and isinstance(receipt, dict) else None
+    if existing.audio_checksum != checksum or actual != expected:
+        raise IdempotencyConflict('该上传标识已用于不同的原音或机器转写；原记录不会被覆盖。')
+
+
+def _create_episode(response, form, actor, store, settings, session, client_transcript=None):
     """Store one recording and queue its processing.
 
     Replaying a capture returns the Episode the first request created, with 200
@@ -270,6 +335,8 @@ def create_episode(
 
     data = _read_upload(form.file, limit_bytes=settings.max_upload_bytes)
     checksum = checksum_of(data)
+    if client_transcript and client_transcript.audio_sha256 != checksum:
+        raise RequestInvalid('客户端转写对应的原音哈希与上传文件不一致。')
 
     episodes = EpisodeRepository(session)
     existing = episodes.find_by_idempotency(
@@ -278,11 +345,7 @@ def create_episode(
         idempotency_key=form.idempotency_key,
     )
     if existing is not None:
-        if existing.audio_checksum != checksum:
-            raise IdempotencyConflict(
-                f"idempotency_key {form.idempotency_key} was already used for different audio "
-                f"(episode {existing.episode_id})"
-            )
+        _check_replay(existing, checksum, client_transcript)
         response.status_code = status.HTTP_200_OK
         return EpisodeCreated(
             episode_id=existing.episode_id, upload_status="uploaded"
@@ -292,14 +355,18 @@ def create_episode(
     # capture to the displayed relay policy; never accept a client-made receipt.
     capture_metadata = dict(capture_metadata or {})
     capture_metadata.pop('cloud_asr_receipt', None)
-    if settings.stt_backend in {'relay', 'groq'}:
+    capture_metadata.pop('client_asr_receipt', None)
+    capture_metadata.pop('asr_call', None)
+    capture_metadata.pop('transcript_normalization', None)
+    if settings.stt_backend == 'client' and client_transcript is None:
+        raise RequestInvalid('服务器采用客户端转写模式，请先在客户端转写，再上传原音和机器稿进行核对。')
+    if client_transcript is None and settings.stt_backend in {'relay', 'groq'}:
         from ..cloud_asr import cloud_policy, configured
         if not configured(settings):
             raise RequestInvalid('云端转写连接配置未完成，请先保留本机原音，配置完成后再上传。')
         policy = cloud_policy(settings)
         if capture_metadata.get('cloud_asr_policy') != policy:
             raise RequestInvalid('请刷新转写配置，并明确同意把本段原音发送到云端转写；尚未外发音频。')
-        from ..models import utcnow
         capture_metadata['cloud_asr_receipt'] = {
             'policy': policy, 'actor_id': actor.actor_id, 'confirmed_at': utcnow().isoformat()}
 
@@ -341,7 +408,26 @@ def create_episode(
         trace_id=trace_id_var.get() or "",
     )
     episodes.add(episode)
-    JobRepository(session).enqueue(episode.episode_id)
+    job = JobRepository(session).enqueue(episode.episode_id)
+    if client_transcript is not None:
+        from ..chinese_text import NORMALIZATION_VERSION
+        episode.stt_transcript = client_transcript.text
+        episode.transcript = simplified_transcript(client_transcript.text)
+        episode.stt_backend = 'client'
+        episode.stt_model_version = 'client-reported/groq/whisper-large-v3'
+        episode.capture_metadata = {**capture_metadata,
+            'transcript_normalization': NORMALIZATION_VERSION,
+            'client_asr_receipt': {
+                'actor_id': actor.actor_id, 'received_at': utcnow().isoformat(),
+                'verification': 'client_reported', 'audio_alignment_verified': False,
+                'provider': client_transcript.provider, 'model': client_transcript.model,
+                'audio_sha256': checksum, 'audio_export_confirmed': True,
+                'fingerprint': client_transcript.fingerprint(),
+            }}
+        # Existing review API releases EXTRACT only after explicit confirmation.
+        # Nothing can claim this job for ASR or extraction before that boundary.
+        episode.status = str(EpisodeStatus.TRANSCRIBING)
+        job.stage, job.state = str(JobStage.EXTRACT), str(JobState.WAITING)
 
     key = audio_object_key(form.subject_id, episode.episode_id)
     try:
@@ -376,11 +462,7 @@ def create_episode(
         )
         if existing is None:
             raise
-        if existing.audio_checksum != checksum:
-            raise IdempotencyConflict(
-                f"idempotency_key {form.idempotency_key} was already used for different audio "
-                f"(episode {existing.episode_id})"
-            ) from None
+        _check_replay(existing, checksum, client_transcript)
         logger.info(
             "upload.idempotent_race",
             extra={"extra_fields": {"episode_id": existing.episode_id}},

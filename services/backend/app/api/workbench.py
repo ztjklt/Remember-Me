@@ -113,13 +113,16 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
             pass
     return {'stt': settings.stt_backend, 'ai': settings.ai_backend,
         'live_configured': settings.stt_backend in {'http', *CLOUD_BACKENDS} and settings.ai_backend == 'http',
-        'stt_processing': 'cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http'),
+        'client_transcript_upload': True,
+        'client_transcript_endpoint': '/api/v1/episodes/client-transcribed',
+        'stt_processing': 'client' if settings.stt_backend == 'client' else ('cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http')),
         'stt_configured': configured(settings) if cloud else settings.stt_backend == 'http',
         'cloud_asr_policy': cloud_policy(settings) if cloud else None,
         'stt_model': destination(settings)['model'] if cloud else None,
         'stt_host': destination(settings)['host'] if cloud else None,
         'ai_available':available,
-        'notice': '配置不等于服务可用；实际结果保留模型版本。',
+        'notice': ('本服务接收客户端机器转写，等待本人核对；客户端转写是否可用需在该设备实际验证。'
+                   if settings.stt_backend == 'client' else '配置不等于服务可用；实际结果保留模型版本。'),
         'schema_version': '0.5.0', 'audio_alignment': False}
 
 

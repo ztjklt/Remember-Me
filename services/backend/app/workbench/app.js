@@ -9,6 +9,12 @@ const statuses = {uploaded:'已保存，等待转写',transcribing:'正在转写
 const root = () => '/api/v1/workbench/subjects/' + encodeURIComponent(state.space.subject_id);
 const subjectRoot = () => '/api/v1/subjects/' + encodeURIComponent(state.space.subject_id);
 const owner = () => state.space?.role === 'owner';
+function capturePresentation(caps){
+  if(caps.stt_processing==='client')return {serverUpload:false,notice:`客户端负责转写，本服务保存原音和机器稿并等待核对 · ${caps.ai==='http'?(caps.ai_available?'云端文字服务已连接':'云端文字服务未连接'):'文字整理仍为测试配置'}。当前网页可核对已导入故事；录下的新原音请先下载，再由客户端工具转写并导入。`};
+  const cloud=caps.stt_processing==='cloud';
+  const route=cloud?`云端转写 ${caps.stt_model||''} · ${caps.stt_host||'地址待配置'}`:'配置的转写服务';
+  return {serverUpload:true,notice:caps.live_configured?`${route} · ${caps.stt_configured?'配置已载入，实际可用性以处理结果为准':'连接配置未完成'} · ${caps.ai_available?'云端文字服务已连接':'云端文字服务未连接'}`:'当前配置含替代模型，仅可用于接口测试，不属于真实验收'};
+}
 function notice(message, error=false) { $('notice').hidden=false; $('notice').replaceChildren(node('span',message),button('收起',()=>{$('notice').hidden=true;})); $('notice').dataset.error=String(error); }
 async function api(path, options={}) {
   const epoch=state.epoch;
@@ -43,10 +49,11 @@ async function refresh(){if(!state.token||!state.space||refreshing)return;refres
   if(state.caps?.cloud_asr_policy!==caps.cloud_asr_policy)$('ownSpeech').checked=false;
   state.caps=caps;
   const cloud=caps.stt_processing==='cloud';
-  $('ownSpeech').disabled=cloud&&!caps.stt_configured;
-  const route=cloud?`云端转写 ${caps.stt_model||''} · ${caps.stt_host||'地址待配置'}`:'配置的转写服务';
-  $('capabilities').textContent=caps.live_configured?`${route} · ${caps.stt_configured?'配置已载入，实际可用性以处理结果为准':'连接配置未完成'} · ${caps.ai_available?'云端文字服务已连接':'云端文字服务未连接'}`:'当前配置含替代模型，仅可用于接口测试，不属于真实验收';
-  $('asrConsentText').textContent=cloud?`这是我本人的讲述，我同意保存原音，并将本段完整音频发送到 ${caps.stt_host||'待配置的服务'}（${caps.stt_model}）转写。核对后才整理记忆。`:'这是我本人的讲述，我同意保存原音并交给配置的转写服务。';
+  const presentation=capturePresentation(caps);
+  $('ownSpeech').disabled=!presentation.serverUpload||(cloud&&!caps.stt_configured);
+  if(!presentation.serverUpload)$('upload').disabled=true;
+  $('capabilities').textContent=presentation.notice;
+  $('asrConsentText').textContent=!presentation.serverUpload?'客户端导入后，请到故事页核对机器稿；本页不向ASR发送原音。':cloud?`这是我本人的讲述，我同意保存原音，并将本段完整音频发送到 ${caps.stt_host||'待配置的服务'}（${caps.stt_model}）转写。核对后才整理记忆。`:'这是我本人的讲述，我同意保存原音并交给配置的转写服务。';
   renderStories();renderGrants();renderRequests(requests.items);renderPortrait(portrait);LiveGarden.render($('liveGarden'),state.stories,openStory);$('profilePanel').hidden=!owner();if(owner())await renderProfiles(await api(root()+'/profile-candidates'));
   options($('grantEpisode'),state.stories.filter(s=>s.status==='ready'&&s.reviewed),'episode_id',s=>storyTitle(s));
   const memories=state.stories.flatMap(s=>s.memories).filter(m=>m.review_state==='active');options($('targetMemory'),memories,'memory_item_id',m=>m.content.slice(0,70));
@@ -77,7 +84,7 @@ on('finish','click',()=>state.recorder.stop());
 window.addEventListener('beforeunload',e=>{if(state.recorder?.state==='recording'||state.recorder?.state==='paused'||(state.blob&&!state.uploaded)){e.preventDefault();e.returnValue='';}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.recorder&&state.recorder.state!=='inactive'){state.recorder.stop();notice('已结束录音并保留在页面中，返回后请保存。');}});
 async function consent(scope){const data=await api('/api/v1/consents?subject_id='+encodeURIComponent(state.space.subject_id));const found=data.find(c=>c.scope===scope&&c.status==='granted');return found?.consent_id||(await api('/api/v1/consents',{method:'POST',body:{subject_id:state.space.subject_id,scope}})).consent_id;}
-on('upload','click',async()=>{if(!owner()||!state.blob)throw new Error('请先录音或导入。');if(!state.caps)throw new Error('请先刷新服务配置。');const captureCaps=state.caps;if(captureCaps.stt_processing==='cloud'&&!captureCaps.stt_configured)throw new Error('云端转写配置尚未完成，请先下载保留原音。');if(!$('ownSpeech').checked)throw new Error('请确认这是本人讲述，并同意本段原音的转写方式。');$('upload').disabled=true;try{
+on('upload','click',async()=>{if(!owner()||!state.blob)throw new Error('请先录音或导入。');if(!state.caps)throw new Error('请先刷新服务配置。');const captureCaps=state.caps;if(captureCaps.stt_processing==='client')throw new Error('请先下载原音，由客户端工具完成转写并导入，再到故事页核对。');if(captureCaps.stt_processing==='cloud'&&!captureCaps.stt_configured)throw new Error('云端转写配置尚未完成，请先下载保留原音。');if(!$('ownSpeech').checked)throw new Error('请确认这是本人讲述，并同意本段原音的转写方式。');$('upload').disabled=true;try{
   const mode=$('captureMode').value,target=$('targetMemory').value,time=$('timeText').value.trim();if(mode!=='normal'&&!target)throw new Error('请选择旧记忆。');if(mode==='change'&&!time)throw new Error('请填写变化的大致时间。');
   if(!state.uploaded){const data=new FormData();data.set('subject_id',state.space.subject_id);data.set('recording_consent_id',await consent('RECORDING'));data.set('idempotency_key',state.uploadKey);data.set('source','IMPORT');data.set('recorded_at',new Date().toISOString());data.set('audio_ref','workbench-recording');const metadata={capture_client:'local-web-workbench'};if(captureCaps.stt_processing==='cloud')metadata.cloud_asr_policy=captureCaps.cloud_asr_policy;if(state.captureQuestion)metadata.question_id=state.captureQuestion.question_id;if(state.calibration)metadata.calibration_id=state.calibration.calibration_id;data.set('metadata',JSON.stringify(metadata));data.set('file',state.blob,'recording.'+(state.blob.type.includes('mp4')?'m4a':'webm'));state.uploaded=(await api('/api/v1/episodes',{method:'POST',body:data})).episode_id;}
   if(mode!=='normal')await api(root()+'/revisions',{method:'POST',body:{episode_id:state.uploaded,target_memory_id:target,kind:mode,time_text:time||null}});

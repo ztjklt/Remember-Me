@@ -178,7 +178,15 @@ class HttpSttProvider:
         )
 
 
+class ClientOnlySttProvider:
+    """Refuse old queued ASR jobs; the server never performs client ASR."""
+    def transcribe(self, audio: bytes, content_type: str) -> Transcript:
+        raise SttFailed('服务器已关闭转写，请在客户端完成识别并提交原音与机器稿。')
+
+
 def build_stt_provider(settings: Settings) -> SttProvider:
+    if settings.stt_backend == 'client':
+        return ClientOnlySttProvider()
     if settings.stt_backend == 'groq':
         from .groq_asr import GroqSttProvider
         return GroqSttProvider(settings)

@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http", "relay", "groq"] = "fake"
+    stt_backend: Literal["fake", "http", "relay", "groq", "client"] = "fake"
     groq_api_key: SecretStr = SecretStr("")
     groq_asr_model: Literal["whisper-large-v3"] = "whisper-large-v3"
     groq_asr_state_dir: str = "./var/groq-asr"
