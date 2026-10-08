@@ -7,7 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from ..db import get_session
@@ -106,6 +106,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     question = payload.question.strip()
     if not question:
         raise TwinNotFound("Question is empty")
+    snapshot = session.get(ModelRevision, subject_id)
+    snapshot_revision = snapshot.version if snapshot else 0
     try:
         candidates = retrieve(session, subject_id, question, request.app.state.embedding_encoder)
     except EmbeddingUnavailable as exc:
@@ -169,15 +171,31 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         kind, content, cited, confidence = "UNKNOWN", "现有记录有不同说法，还不能确定。", [], 0
     session.commit()
     session.expire_all()
+    require_subject(session, subject_id, actor)
     ConsentRepository(session).require_active(payload.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
     revision = session.get(ModelRevision, subject_id)
+    if (revision.version if revision else 0) != snapshot_revision:
+        # An answer must describe the exact snapshot sent to the model. A
+        # correction/deletion/new Episode during inference cannot be relabeled
+        # with the latest revision and become a fresh answer to older evidence.
+        raise TwinFailed("记忆在回答期间已变化，请重新提问。")
+    if revision is not None:
+        # Reuse PR 86's conditional write fence. SELECT FOR UPDATE alone has
+        # no effect on SQLite, the local deployment baseline.
+        held = session.execute(update(ModelRevision).where(
+            ModelRevision.subject_id == subject_id,
+            ModelRevision.version == snapshot_revision,
+        ).values(version=ModelRevision.version), execution_options={"synchronize_session": False})
+        if held.rowcount != 1:
+            session.rollback()
+            raise TwinFailed("记忆在回答期间已变化，请重新提问。")
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
-                     person_model_version=revision.version if revision else 0,
+                     person_model_version=snapshot_revision,
                      created_at=utcnow())
     session.add(row)
     session.commit()

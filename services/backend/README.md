@@ -1,5 +1,25 @@
 # Backend Service
 
+## Reusable speech and memory components
+
+The existing loopback `app.local_stt` sidecar now supports an optional
+`faster-whisper==1.2.1` engine with Silero VAD. The default remains `whisper_cpp`.
+Use `uv sync --locked --extra local-stt`, set
+`REMEMBER_LOCAL_STT_ENGINE=faster_whisper` and
+`REMEMBER_FASTER_WHISPER_MODEL_PATH` to a downloaded multilingual CTranslate2
+model directory, then run the same sidecar entrypoint on `127.0.0.1:8200`.
+Models never download during a request. Backend still uses `REMEMBER_STT_BACKEND=http`.
+Weights and inference options are fingerprinted in the existing model-version
+field; restart the sidecar after replacing weights. Busy inference returns 503;
+the CLI engine's subprocess timeout returns 504. The HTTP timeout remains the
+Worker's budget, not a guarantee that an in-process faster-whisper call is canceled.
+
+`app.graph_projection` is a Phase 2 Graphiti adapter preparation, not an active
+graph backend. `app.legacy_baseline` is an immutable Phase 4 value object, not a
+Legacy activation or recipient-access API. Both leave the shared schema and
+current runtime unchanged. See [the reuse record](../../docs/architecture/open-source-reuse.md)
+for sources, integration conditions and local verification.
+
 ## iOS-first Twin and local Voice slice
 
 Migration `0006_twin_voice` adds subject-scoped local memory vectors, evidence-linked Twin answer snapshots, and separately consented voice profiles/audio. Run `uv sync --extra retrieval` before using memory search or Twin; this loads `BAAI/bge-small-zh-v1.5` locally on first query. `REMEMBER_EMBEDDING_MODEL` can point to an already downloaded local model directory. Twin uses the existing loopback AI Core at `POST /twin` and requires a `CLOUD_TWIN` consent in addition to recording access. Only selected memory snippets leave Backend for DeepSeek. `REMEMBER_VOICE_URL` defaults to `http://127.0.0.1:8300`, must stay on loopback, and calls the local adapter in `services/voice` only after a separate `VOICE` grant.

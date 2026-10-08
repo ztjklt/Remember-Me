@@ -17,13 +17,13 @@ DOMAIN_FOR_TYPE = {
 }
 
 QUESTIONS = {
-    "IDENTITY": "你会怎样向一个刚认识的人介绍自己？",
-    "EPISODIC_MEMORY": "有没有一段经历，对现在的你影响特别大？",
-    "RELATIONSHIPS": "你生命中现在最重要的人是谁？你们的关系是什么样的？",
-    "PREFERENCES": "最近有什么东西是你特别喜欢，或者特别不喜欢的？",
-    "VALUES_BELIEFS": "遇到两难选择时，你通常最看重什么？",
-    "DECISION_PATTERNS": "你做一个重要决定时，通常会先做什么？",
-    "EXPRESSION": "你希望别人用什么样的方式跟你交流？",
+    "IDENTITY": "你会怎样向一个刚认识的人介绍自己？可以从一段经历说起。",
+    "EPISODIC_MEMORY": "讲一段对你影响很大的经历吧。当时发生了什么？",
+    "RELATIONSHIPS": "选一个对你很重要的人，讲一件你们一起经历的事吧。",
+    "PREFERENCES": "最近有什么让你觉得特别舒服或不舒服？可以讲一个具体例子。",
+    "VALUES_BELIEFS": "讲一次你不得不取舍的经历吧。当时你最看重什么？",
+    "DECISION_PATTERNS": "最近一个难做的决定是什么？你最后是怎么决定的？",
+    "EXPRESSION": "别人用什么方式跟你交流时，你会觉得被理解？可以举一个例子。",
 }
 
 
@@ -116,7 +116,7 @@ class PersonModelRepository:
         unresolved = next((trait for trait in traits if trait.status == "unresolved"), None)
         if unresolved:
             domain = unresolved.domain
-            text = f"前面你对「{unresolved.statement}」有过不同说法。现在你会怎么描述它？"
+            text = f"关于「{unresolved.statement[:100]}」你有过不同说法。能讲讲各自发生在什么情境吗？"
             reason = "contradiction"
             evidence_ids = unresolved.evidence_ids + unresolved.counter_evidence_ids
         else:

@@ -20,6 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 retrieval = ["sentence-transformers>=3.0,<6"]
+# PyAV 19 removed metadata_errors, still passed by faster-whisper 1.2.1.
+local-stt = ["faster-whisper==1.2.1", "av==16.1.0"]
 
 [dependency-groups]
 dev = [

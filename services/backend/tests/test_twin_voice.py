@@ -1,6 +1,7 @@
 """A real Episode is the only source of Twin evidence; Voice has a separate gate."""
 
 from sqlalchemy import select
+import pytest
 
 from app.models import CalibrationRun, Episode, Evidence, MemoryEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
 from app.seed import seed_development_data
@@ -35,6 +36,35 @@ class TinyVoice:
 
     def synthesize(self, text, sample, transcript):
         return b"WAVE" + text.encode(), "qwen3-tts-test"
+
+
+@pytest.mark.parametrize("change", ["correct", "delete", "revoke_recording", "revoke_cloud"])
+def test_inflight_twin_cannot_publish_changed_or_revoked_context(app, client, session, change):
+    own = seed_development_data(session, subject_name="Own", actor_name="Own")
+    headers = {"Authorization": "Bearer " + own.actor_token}
+    _record(client, app, own.subject_id, own.consent_id, headers)
+    app.state.embedding_encoder = TinyEncoder()
+    app.state.settings.ai_backend = "http"
+    cloud = client.post("/api/v1/consents", headers=headers,
+        json={"subject_id": own.subject_id, "scope": "CLOUD_TWIN"}).json()["consent_id"]
+    class ChangingTwin(QuoteTwin):
+        def answer(self, question, candidates):
+            if change in {"correct", "delete"}:
+                path = (f"/api/v1/subjects/{own.subject_id}/memories/"
+                        + candidates[0]["memory_item_id"])
+                response = (client.patch(path, headers=headers, json={"content": "我更喜欢游泳"})
+                            if change == "correct" else client.delete(path, headers=headers))
+            else:
+                consent = own.consent_id if change == "revoke_recording" else cloud
+                response = client.post(f"/api/v1/consents/{consent}/revoke", headers=headers)
+            assert response.status_code == 200, response.text
+            return super().answer(question, candidates)
+    app.state.twin_client = ChangingTwin()
+    response = client.post(f"/api/v1/subjects/{own.subject_id}/twin/answers", headers=headers,
+        json={"question": "喜欢什么？", "cloud_consent_id": cloud})
+    assert response.status_code in {403, 404, 503}, response.text
+    session.expire_all()
+    assert session.scalar(select(TwinAnswer).where(TwinAnswer.subject_id == own.subject_id)) is None
 
 
 def _record(client, app, subject_id, recording_consent_id, headers):

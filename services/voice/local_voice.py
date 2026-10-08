@@ -14,6 +14,7 @@ from tempfile import TemporaryDirectory
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
+from voice_quality import assess_pcm16
 
 app = FastAPI(title="Remember Me local voice")
 MODEL = os.environ.get("REMEMBER_VOICE_MODEL", "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16")
@@ -37,11 +38,7 @@ def _sample_wav(sample: bytes, folder: Path) -> tuple[Path, float]:
             if audio.getsampwidth() != 2:
                 raise ValueError("声音样本格式不受支持。")
             samples = array("h", audio.readframes(audio.getnframes()))
-        if not 5 <= duration <= 15:
-            raise ValueError("请录制 5 到 15 秒的自然说话声音。")
-        energy = (sum(int(value) ** 2 for value in samples) / max(1, len(samples))) ** 0.5
-        if energy < 180:
-            raise ValueError("样本声音太轻或几乎无声，请重新录制。")
+        assess_pcm16(samples, 24000)
     except (OSError, subprocess.SubprocessError, wave.Error) as exc:
         raise ValueError("声音样本无法读取，请重新录制。") from exc
     return target, duration
@@ -80,7 +77,14 @@ def health() -> dict:
 
 @app.post("/validate")
 async def validate(request: Request) -> dict:
-    sample = await request.body()
+    chunks = []
+    size = 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > MAX_SAMPLE_BYTES:
+            raise HTTPException(422, "声音样本需在 8 MB 以内。")
+        chunks.append(chunk)
+    sample = b"".join(chunks)
     try:
         with TemporaryDirectory(prefix="remember-voice-check-") as name:
             _, duration = await run_in_threadpool(_sample_wav, sample, Path(name))
