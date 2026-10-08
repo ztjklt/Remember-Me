@@ -356,24 +356,41 @@ def dismiss_prompt(subject_id: str, question_id: str, body: RequestUpdate,
 
 @router.get('/subjects/{subject_id}/portrait')
 def portrait(subject_id: str, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+    from ..materials import effective_materials, ContextTooLarge
+    publication_lock(session,subject_id)
     data = stories(subject_id, actor, session)
     groups = {key: [] for key in ['人生经历', '重要的人', '在意与选择', '说话与表达']}
+    unavailable=[]
+    seen_sources=set()
     for story in data['items']:
-        if story['status'] != 'ready':
+        if story['status'] != 'ready' or story['unavailable']:
             continue
+        # Active siblings may share an excerpt with a now-invalid fact. Reuse
+        # the answer resolver instead of resurrecting raw text in current views.
+        try:
+            effective=effective_materials(session,subject_id,{story['episode_id']})
+        except ContextTooLarge:
+            unavailable.append(story['episode_id'])
+            continue
+        by_id={m['memory_item_id']:m for m in effective}
         for memory in story['memories']:
-            if memory['review_state'] != 'active':
+            current=by_id.get(memory['memory_item_id'])
+            if memory['review_state'] != 'active' or current is None:
                 continue
             category = ('重要的人' if memory['memory_type'] in {'PERSON', 'RELATIONSHIP'} else
                         '在意与选择' if memory['memory_type'] in {'VALUE', 'PREFERENCE'} else '人生经历')
-            groups[category].append({**memory, 'episode_id': story['episode_id'], 'label': '本人书面补充，不是录音原话' if memory['origin']=='owner_supplement' else '系统整理，依据本次讲述'})
-            for evidence in memory['evidence']:
-                if evidence['source_type'] == 'SUBJECT':
+            groups[category].append({**memory, 'evidence':current['evidence'], 'episode_id': story['episode_id'], 'label': '本人书面补充，不是录音原话' if memory['origin']=='owner_supplement' else '系统整理，依据本次讲述'})
+            for evidence in current['evidence']:
+                if evidence['source_type'] == 'SUBJECT' and evidence['evidence_id'] not in seen_sources:
+                    seen_sources.add(evidence['evidence_id'])
                     groups['说话与表达'].append({**evidence, 'content': evidence['excerpt'], 'label': '核对文字中的原话'})
     version = session.get(ModelRevision, subject_id)
     import hashlib,json
     visible_version=hashlib.sha256(json.dumps(groups,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
-    return {'subject_id': subject_id, 'version': version.version if version else 0,
+    version_number=version.version if version else 0
+    session.commit()
+    return {'subject_id': subject_id, 'version': version_number,
             'source_version':visible_version,
             'scope': 'owner' if data['role'] == 'owner' else 'shared_stories_only', 'views': groups,
-            'notice': '按可见证据组织，不代表稳定人格或完整人物画像。'}
+            'unavailable_episode_ids':unavailable,
+            'notice': '按可见证据组织，不代表稳定人格或完整人物画像。'+('部分故事过长，暂未在人物视图展开，可回故事查阅。' if unavailable else '')}

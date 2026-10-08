@@ -99,7 +99,7 @@ async function renderProfiles(data){
   const box=$('profileCandidates');box.replaceChildren();
   const labels={pending:'等待本人确认',confirmed:'本人已确认',rejected:'本人已拒绝',stale:'依据已变化',superseded:'历史理解',applied:'已用于更新',conflicted:'存在冲突，等待核对'};
   const actions={ADD:'新增理解',SUPPORT:'支持已有理解',CONFLICT:'与已有理解冲突',CHANGE:'理解随时间变化'};
-  for(const j of data.jobs.filter(j=>['queued','running','failed'].includes(j.status)))box.append(node('p',j.status==='failed'?(j.error||'归纳失败，可明确重试'):j.status==='running'?'正在分析有效资料…':'候选任务已排队'));
+  for(const j of data.jobs){const kind=j.kind==='relations'?'关系建议':'人物归纳';box.append(node('p',kind+'：'+(j.status==='failed'?(j.error||'失败，可明确重试'):j.status==='running'?'正在分析有效资料…':j.status==='complete'?'已完成，请核对结果':'任务已排队')));}
   for(const item of data.items){
     const article=node('article',undefined,'story');article.append(node('h3',item.statement),node('p',item.context),node('small',item.label+' · '+(labels[item.status]||item.status)));
     for(const id of [...item.evidence_ids,...item.counter_evidence_ids]){
@@ -135,12 +135,17 @@ async function renderProfiles(data){
     article.append(node('h3',(actions[update.action]||update.action)+' · '+(labels[update.status]||update.status)),node('p','新观察：'+(next?.statement||update.candidate_id)));
     if(old)article.append(node('p','已有理解：'+old.statement+'；情境：'+old.context));
     article.append(node('p',update.reason));if(update.time_text)article.append(node('p','时间：'+update.time_text));
+    if(update.origin==='model'){
+      article.append(node('small','系统建议 · '+update.model_version+' · '+update.prompt_version));
+      for(const id of update.suggestion_evidence_ids||[]){const source=[...(next?.evidence||[]),...(old?.evidence||[])].find(e=>e.evidence_id===id);if(source)article.append(node('blockquote',source.excerpt));}
+    }
     if(update.question)article.append(node('p',update.question));
     if(update.status==='pending')article.append(button('确认上述更新',async()=>{if(!confirm('已核对双方原文与情境？支持或变化会保留历史版本；冲突会暂停使用这两条理解。'))return;await api(root()+'/profile-candidates/updates/'+update.update_id+'/confirm',{method:'POST'});await refresh();}),button('拒绝这次更新',async()=>{await api(root()+'/profile-candidates/updates/'+update.update_id+'/reject',{method:'POST'});await refresh();}));
     box.append(article);
   }
 }
 on('refreshProfile','click',async()=>{if(!confirm('将当前有效的核对文字交给云端模型提出人物理解候选？归纳不会自动成为事实。'))return;await api(root()+'/profile-candidates/refresh',{method:'POST',body:{cloud_consent_id:await cloudConsent()}});await refresh();});
+on('suggestRelations','click',async()=>{if(!confirm('将候选、已有理解与相关原文交给云端比较？结果只作为待确认建议，不会自动修改事实。'))return;await api(root()+'/profile-candidates/suggest-relations',{method:'POST',body:{cloud_consent_id:await cloudConsent()}});await refresh();});
 
 let registering=false;
 on('switchRegister','click',()=>{registering=!registering;$('nameField').hidden=!registering;$('accountEnter').textContent=registering?'创建我的空间':'登录';$('switchRegister').textContent=registering?'已有账号，返回登录':'第一次使用，创建账号';});

@@ -15,6 +15,7 @@ from .errors import AIOutputInvalid, EvidenceInvalid, ProviderTimeout, ProviderU
 from .extractor import MemoryExtractor
 from .errors import ProviderAuthenticationFailed
 from .profile_proposals import ProfileProposalInput, ProfileProposalOutput, ProfileProposalProvider
+from .profile_relations import RelationInput, RelationOutput
 from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, WeixinCalibrationProvider
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
@@ -82,7 +83,7 @@ def create_app(
     active_profile = profile_provider
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
-        active_twin = twin_provider or WeixinTwinProvider(api_key=key)
+        active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints)
         active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
         active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key))
     slots = BoundedSemaphore(settings.max_concurrent_requests)
@@ -187,6 +188,17 @@ def create_app(
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_profile.propose(payload)
+        finally:
+            slots.release()
+
+    @app.post('/profile-relations',response_model=RelationOutput)
+    def profile_relations(payload: RelationInput):
+        if active_profile is None:
+            raise ProviderUnavailable('Profile relations require a configured provider')
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable('AI Core capacity is busy')
+        try:
+            return active_profile.propose_relations(payload)
         finally:
             slots.release()
 

@@ -48,6 +48,7 @@ def effective_materials(session, subject_id, episode_ids):
             if memory.deleted_at or memory.review_state != 'active':
                 continue
             evidence = []
+            memory_covered = []
             for id in memory.evidence_ids:
                 source = session.get(Evidence, id)
                 if source is None or source.episode_id != ep.episode_id or not source.excerpt:
@@ -62,8 +63,12 @@ def effective_materials(session, subject_id, episode_ids):
                       and text[source.span_start:source.span_end] == source.excerpt):
                     evidence.append(dict(evidence_id=id, excerpt=source.excerpt,
                         source_type=source.source_type, episode_id=ep.episode_id))
-                    covered.append((source.span_start, source.span_end))
-            if evidence:
+                    memory_covered.append((source.span_start, source.span_end))
+            # A summary may combine facts from all original references. Removing
+            # one reference cannot validate the unchanged combined statement.
+            # Keep safe raw gaps below, but withhold the unrepairable summary.
+            if evidence and len(evidence) == len(memory.evidence_ids):
+                covered.extend(memory_covered)
                 meta = memory.item_metadata or {}
                 temporal = ''
                 if memory.memory_item_id in changes:

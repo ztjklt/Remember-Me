@@ -29,7 +29,8 @@ def valid_snapshot(session,subject,actor,row,*,require_saved=False):
 
 
 def update_view(row):
-    keys=('update_id','candidate_id','target_candidate_id','result_candidate_id','action','reason','time_text','base_source_version','status')
+    keys=('update_id','candidate_id','target_candidate_id','result_candidate_id','action','reason','time_text','base_source_version','status',
+          'origin','model_version','prompt_version','suggestion_evidence_ids')
     return {key:getattr(row,key) for key in keys} | {
         'created_at':row.created_at.isoformat(),
         'question':'这两条理解是在不同时间或情境下的变化，还是其中一条不准确？' if row.action=='CONFLICT' else None}

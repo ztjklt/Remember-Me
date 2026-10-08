@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         validation_alias="AI_PROVIDER",
     )
     model: str = Field(default=FixtureProvider.default_model_version, validation_alias="AI_MODEL")
+    twin_focus_hints: bool = Field(default=False, validation_alias="AI_TWIN_FOCUS_HINTS")
     base_url: str = Field(
         default="http://127.0.0.1:8000/v1",
         validation_alias="AI_BASE_URL",

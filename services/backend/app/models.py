@@ -535,6 +535,10 @@ class ProfileUpdate(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False, default='pending')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    origin: Mapped[str] = mapped_column(String(16),nullable=False,default='owner')
+    model_version: Mapped[str | None] = mapped_column(String(128),nullable=True)
+    prompt_version: Mapped[str | None] = mapped_column(String(128),nullable=True)
+    suggestion_evidence_ids: Mapped[list | None] = mapped_column(JSON,nullable=True)
 
 
 class ProfileRefresh(Base):
@@ -543,6 +547,7 @@ class ProfileRefresh(Base):
     subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
     consent_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16),nullable=False,default='candidates')
     status: Mapped[str] = mapped_column(String(16), nullable=False, default='queued')
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

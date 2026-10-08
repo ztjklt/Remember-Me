@@ -61,6 +61,9 @@ class ProfileProposalProvider:
         self.chat = chat
     def close(self):
         self.chat.close()
+    def propose_relations(self, payload):
+        from .profile_relations import RelationProvider
+        return RelationProvider(self.chat).propose(payload)
     def propose(self, payload):
         if not payload.materials:
             return ProfileProposalOutput(candidates=[], model_version='no-evidence')

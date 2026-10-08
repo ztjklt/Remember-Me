@@ -212,6 +212,40 @@ def prioritize_twin_sources(question, sources, memories):
         (scores[id] for id in memory['source_ids']), default=0))
 
 
+def twin_focus_passages(question, sources):
+    """Verbatim sentence windows; full sources remain the authority.
+
+    Adjacent sentences preserve negation and reported-speech context. Oversized
+    sentences receive no hint rather than a silently clipped quotation.
+    """
+    query = _query_terms(question)
+    segments = [(source, list(re.finditer(r'[^。！？；\n]+[。！？；\n]*', source['excerpt'])))
+                for source in sources]
+    words = [_query_terms(m.group()) for _, matches in segments for m in matches]
+    frequency = Counter(term for terms in words for term in terms)
+    ranked = []
+    for source, matches in segments:
+        for index, match in enumerate(matches):
+            overlap = query & _query_terms(match.group())
+            if not overlap:
+                continue
+            score = sum(math.log(1+len(words)/frequency[t]) for t in overlap)
+            start, end = matches[max(0,index-1)].start(), matches[min(len(matches)-1,index+1)].end()
+            if end-start <= 1200:
+                ranked.append((score, {'evidence_id':source['evidence_id'],
+                    'source_type':source['source_type'], 'start':start, 'end':end,
+                    'excerpt':source['excerpt'][start:end]}))
+    result, used = [], 0
+    for _, item in sorted(ranked,key=lambda pair:-pair[0]):
+        if any(old['evidence_id']==item['evidence_id'] and old['start']<=item['start'] and old['end']>=item['end'] for old in result):
+            continue
+        if used+len(item['excerpt'])>5000:
+            continue
+        result.append(item); used+=len(item['excerpt'])
+        if len(result)==8: break
+    return result
+
+
 def compact_twin_materials(payload):
     """Lossless within the already-authorized input; no truncation.
 
@@ -247,11 +281,16 @@ def compact_twin_materials(payload):
                 understanding.append(entry)
             entry['source_ids'] = list(dict.fromkeys(entry['source_ids']+refs))
     prioritize_twin_sources(payload.question, sources, memories)
-    return {'question':payload.question, 'sources':sources, 'memories':memories,
+    return {'question':payload.question, 'focus_passages':twin_focus_passages(payload.question,sources),
+            'sources':sources, 'memories':memories,
             'confirmed_understanding':understanding}, aliases
 
 
 class WeixinTwinProvider(WeixinChat):
+    def __init__(self, *, focus_hints=False, **kwargs):
+        super().__init__(**kwargs)
+        self.focus_hints = focus_hints
+
     def answer(self, payload):
         from ..twin import TwinOutput, TWIN_SYSTEM
         from pydantic import ValidationError
@@ -296,6 +335,15 @@ class WeixinTwinProvider(WeixinChat):
             '不允许一边说现有记录不足以确定，一边用“因为”“所以”补出未确认的原因。'
         )
         compact, aliases = compact_twin_materials(payload)
+        if self.focus_hints:
+            system = system.replace('twin-compact-v6', 'twin-compact-v7').replace('逐条检查source_type：', (
+                'focus_passages是从sources定位的原文与相邻句，start/end只表示该excerpt内的字符位置，不是音频时间。'
+                '先定位所问事项的状态，再读完整sources核对人物、前后变化和矛盾。定位片段不是额外事实。'
+                '区分三种情况：原文明确已决定；原文明确未决定/不做；原文没有交代。前两种都能回答，只有第三种缺信息。'
+                '问题询问日期或地点时，如果原文明确日期/地点尚未定，简短回答尚未定并引用来源，不因没有具体日期/地点而拒答。'
+                '逐条检查source_type：'))
+        else:
+            compact.pop('focus_passages', None)
         raw, version = self.complete(system, compact)
         try:
             raw['model_version'] = version

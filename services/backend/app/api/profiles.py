@@ -122,16 +122,25 @@ def candidates(subject_id:str, actor=Depends(current_actor),session=Depends(get_
             for e in [session.get(Evidence,id)] if e is not None]
         items.append(value)
     return {'items':items, 'source_version':basis,
-            'jobs':[{'job_id':j.job_id,'status':j.status,'error':j.error} for j in jobs]}
+            'jobs':[{'job_id':j.job_id,'kind':j.kind,'status':j.status,'error':j.error} for j in jobs]}
 
 @router.post('/refresh',status_code=202)
 def refresh(subject_id:str,body:RefreshInput,actor=Depends(current_actor),session=Depends(get_session)):
+    return enqueue_refresh(subject_id,body,actor,session,'candidates')
+
+
+@router.post('/suggest-relations',status_code=202)
+def suggest_relations(subject_id:str,body:RefreshInput,actor=Depends(current_actor),session=Depends(get_session)):
+    return enqueue_refresh(subject_id,body,actor,session,'relations')
+
+
+def enqueue_refresh(subject_id,body,actor,session,kind):
     publication_lock(session,subject_id)
     require_owner(session,subject_id,actor.actor_id); require_cloud(session,subject_id,actor.actor_id,body.cloud_consent_id)
-    row=session.scalar(select(ProfileRefresh).where(ProfileRefresh.subject_id==subject_id,ProfileRefresh.status.in_(['queued','running'])))
+    row=session.scalar(select(ProfileRefresh).where(ProfileRefresh.subject_id==subject_id,ProfileRefresh.kind==kind,ProfileRefresh.status.in_(['queued','running'])))
     if row is None:
         row=ProfileRefresh(job_id='pf_'+uuid4().hex[:20], subject_id=subject_id,actor_id=actor.actor_id,
-            consent_id=body.cloud_consent_id,status='queued');session.add(row)
+            consent_id=body.cloud_consent_id,kind=kind,status='queued');session.add(row)
     session.commit()
     return {'job_id':row.job_id,'status':row.status}
 

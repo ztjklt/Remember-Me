@@ -19,6 +19,11 @@ class ProfileClient:
                       follow_redirects=False, trust_env=False)
         r.raise_for_status()
         return r.json()
+    def propose_relations(self, payload):
+        r=httpx.post(self.url.removesuffix('/profile-proposals')+'/profile-relations',json=payload,
+            timeout=self.timeout,follow_redirects=False,trust_env=False)
+        r.raise_for_status()
+        return r.json()
 
 
 def candidate_view(row, basis):
@@ -48,10 +53,14 @@ def run_profile_once(database, client):
         job = session.scalar(select(ProfileRefresh).where(ProfileRefresh.status=='queued').order_by(ProfileRefresh.created_at))
         if job is None:
             session.rollback(); return None
-        id, subject, actor, consent = job.job_id, job.subject_id, job.actor_id, job.consent_id
+        id, subject, actor, consent, kind = job.job_id, job.subject_id, job.actor_id, job.consent_id, job.kind
         job.status, job.updated_at = 'running', utcnow()
         session.commit()
     try:
+        if kind=='relations':
+            from .profile_relations import run_relations_job
+            run_relations_job(database,client,id,subject,actor,consent)
+            return id
         with database.session() as session:
             publication_lock(session,subject)
             require_owner(session,subject,actor); require_cloud(session,subject,actor,consent)
