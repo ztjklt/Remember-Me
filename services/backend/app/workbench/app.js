@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const state = {epoch:0,token:'', spaces:[], space:null, stories:[], grants:[], blob:null, recorder:null,
   stream:null, context:null, urls:new Set(), uploaded:null, uploadKey:null, review:null,
   answer:null, captureQuestion:null, selectedStory:null, calibration:null, request:null, recordingMs:0, tick:0, lastTick:0};
+const profileDrafts = new Map();
 const statuses = {uploaded:'已保存，等待转写',transcribing:'正在本机转写',extracting:'正在整理',modeling:'正在关联记忆',ready:'整理完成',failed:'处理失败，原音已保留'};
 const root = () => '/api/v1/workbench/subjects/' + encodeURIComponent(state.space.subject_id);
 const subjectRoot = () => '/api/v1/subjects/' + encodeURIComponent(state.space.subject_id);
@@ -24,7 +25,7 @@ function button(text,action){const n=node('button',text);n.addEventListener('cli
 function objectURL(blob){const url=URL.createObjectURL(blob);state.urls.add(url);return url;}
 function stopMedia(){document.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});for(const u of state.urls)URL.revokeObjectURL(u);state.urls.clear();}
 function clearView(){stopMedia();LiveGarden.clear();$('liveGarden').replaceChildren();$('profileCandidates').replaceChildren();['stories','recent','portraitViews','answer','grants','requests','revisions','calibrations','detail'].forEach(id=>$(id).replaceChildren());$('detailDialog').close();$('reviewDialog').close();state.answer=null;}
-function resetIdentityState(){state.epoch++;clearView();state.stories=[];state.grants=[];state.blob=null;state.uploaded=null;state.uploadKey=null;state.review=null;state.captureQuestion=null;state.calibration=null;state.request=null;refreshing=false;state.recorder=null;state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;state.context?.close();state.context=null;cancelAnimationFrame(state.tick);document.querySelectorAll('input,textarea').forEach(n=>{if(n.type==='checkbox')n.checked=false;else n.value='';});$('capturePreview').hidden=true;$('saveLocal').hidden=true;$('upload').disabled=true;$('recordState').textContent='尚未录音';$('captureMode').value='normal';$('revisionTarget').hidden=true;$('suggestion').replaceChildren();}
+function resetIdentityState(){state.epoch++;clearView();profileDrafts.clear();state.stories=[];state.grants=[];state.blob=null;state.uploaded=null;state.uploadKey=null;state.review=null;state.captureQuestion=null;state.calibration=null;state.request=null;refreshing=false;state.recorder=null;state.stream?.getTracks().forEach(t=>t.stop());state.stream=null;state.context?.close();state.context=null;cancelAnimationFrame(state.tick);document.querySelectorAll('input,textarea').forEach(n=>{if(n.type==='checkbox')n.checked=false;else n.value='';});$('capturePreview').hidden=true;$('saveLocal').hidden=true;$('upload').disabled=true;$('recordState').textContent='尚未录音';$('captureMode').value='normal';$('revisionTarget').hidden=true;$('suggestion').replaceChildren();}
 function tab(name){document.querySelectorAll('.page').forEach(p=>p.hidden=p.id!==name);document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===name?'page':'false'));}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.tab)));
 function options(select,rows,id,label){const old=select.value;select.replaceChildren();rows.forEach(row=>{const opt=node('option',label(row));opt.value=row[id];select.append(opt);});if(rows.some(row=>row[id]===old))select.value=old;}
@@ -39,13 +40,13 @@ async function refresh(){if(!state.token||!state.space||refreshing)return;refres
   state.stories=data.items;state.grants=grants.items;
   if(state.selectedStory&&!state.stories.some(s=>s.episode_id===state.selectedStory&&!s.unavailable)){stopMedia();$('detailDialog').close();$('detail').replaceChildren();state.selectedStory=null;}
   $('capabilities').textContent=caps.live_configured?(caps.ai_available===false?'本地转写可用 · 云端服务尚未连接；原音与核对文字会保留':'本地转写 · 云端文字整理 · 真实接口（以处理结果为准）'):'当前配置含替代模型，仅可用于接口测试，不属于真实验收';
-  renderStories();renderGrants();renderRequests(requests.items);renderPortrait(portrait);LiveGarden.render($('liveGarden'),state.stories,openStory);$('profilePanel').hidden=!owner();if(owner())renderProfiles(await api(root()+'/profile-candidates'));
+  renderStories();renderGrants();renderRequests(requests.items);renderPortrait(portrait);LiveGarden.render($('liveGarden'),state.stories,openStory);$('profilePanel').hidden=!owner();if(owner())await renderProfiles(await api(root()+'/profile-candidates'));
   options($('grantEpisode'),state.stories.filter(s=>s.status==='ready'&&s.reviewed),'episode_id',s=>storyTitle(s));
   const memories=state.stories.flatMap(s=>s.memories).filter(m=>m.review_state==='active');options($('targetMemory'),memories,'memory_item_id',m=>m.content.slice(0,70));
   if(owner()) {const [revisions, prompts, calibrations]=await Promise.all([api(root()+'/revisions'),api(subjectRoot()+'/questions'),api(subjectRoot()+'/calibrations')]);renderRevisions(revisions.items);renderSuggestion(prompts.items[0]);renderCalibrations(calibrations.items);}
   if(state.answer){const latest=await api(subjectRoot()+'/twin/answers/'+state.answer.answer_id);if(latest.stale){$('answer').replaceChildren(node('p','相关记忆或授权已变化，请重新提问。'));state.answer=null;stopMedia();}}
 }catch(e){if(e.status===404||e.status===401){clearView();state.stories=[];state.grants=[];}notice(e.message,true);}finally{refreshing=false;}}
-setInterval(()=>{if(!document.hidden&&!$('reviewDialog').open)refresh();},5000);
+setInterval(()=>{if(!document.hidden&&!$('reviewDialog').open&&!$('profilePanel').contains(document.activeElement))refresh();},5000);
 function storyTitle(s){return s.unavailable?'相关故事已更新':s.memories.find(m=>m.review_state==='active')?.content.slice(0,48)||s.transcript?.slice(0,48)||'一段尚待整理的讲述';}
 function storyCard(story){const card=node('article',undefined,'story');card.append(node('h3',storyTitle(story)),node('small',new Date(story.recorded_at).toLocaleString('zh-CN')+' · '+(story.waiting_for_review?'待核对文字':statuses[story.status]||story.status)));if(story.error_message)card.append(node('p',story.error_code?.startsWith('AI')?'记忆整理服务暂不可用。原音与核对文字已保留，请稍后重试。':'本机处理未完成，原音已保留。请检查服务后重试。','danger'));const actions=node('div',undefined,'actions');if(!story.unavailable){actions.append(button('打开故事',()=>openStory(story)));if(owner()&&!story.reviewed)actions.append(button('核对转写',()=>review(story.episode_id)));if(owner()&&story.status==='failed')actions.append(button('重试处理',async()=>{await api('/api/v1/episodes/'+story.episode_id+'/retry',{method:'POST'});await refresh();}));if(owner()&&story.can_reextract_empty)actions.append(button('未提取到记忆，重新整理',async()=>{await api('/api/v1/episodes/'+story.episode_id+'/reextract-empty',{method:'POST'});await refresh();}));}card.append(actions);return card;}
 function renderStories(){const q=$('search').value.trim();const rows=state.stories.filter(s=>!q||[s.transcript,...s.memories.map(m=>m.content)].some(t=>t?.includes(q)));$('stories').replaceChildren(...rows.map(storyCard));$('recent').replaceChildren(...state.stories.slice(0,3).map(storyCard));if(!rows.length)$('stories').append(node('p','这里还没有符合条件的故事。'));if(!state.stories.length)$('recent').append(node('p','还没有故事。录一段你愿意留下的话，或等待本人分享。'));}
@@ -87,5 +88,49 @@ function renderPortrait(data){const box=$('portraitViews');box.className='portra
 function renderSuggestion(q){const box=$('suggestion');box.replaceChildren();if(!owner()||!q)return;box.append(node('h2','如果愿意，再聊一点'),node('p',q.text),button('就聊这个问题',()=>{state.captureQuestion=q;state.calibration=null;$('captureContext').textContent=q.text+'（可以随时停止，无需回答所有问题）';tab('today');}),button('结束引导',()=>{state.captureQuestion=null;$('captureContext').textContent='可以自由讲述，不必回答建议问题。';}),button('稍后再聊',async()=>{await api(root()+'/questions/'+q.question_id,{method:'PATCH',body:{status:'snoozed'}});await refresh();}),button('跳过这个问题',async()=>{await api(root()+'/questions/'+q.question_id,{method:'PATCH',body:{status:'declined'}});await refresh();}));}
 function renderCalibrations(items){const box=$('calibrations');box.replaceChildren();for(const r of items){const row=node('article',undefined,'story');row.append(node('h3',r.question),node('p',r.status==='complete'?r.summary:r.status==='stale'?'来源已变化，这次校准已失效':'Twin 回答已锁定，等待本人回答'));if(r.status==='awaiting_human'&&r.human_episode_id)row.append(button('比较两份回答',async()=>{if(!confirm('将已确认的本人回答与锁定的 Twin 回答发送给云端进行比较？'))return;await api(subjectRoot()+'/calibrations/'+r.calibration_id+'/complete',{method:'POST',body:{cloud_consent_id:await cloudConsent()}});await refresh();}));for(const d of r.dimensions||[])row.append(node('p',JSON.stringify(d)));box.append(row);}}
 
-function renderProfiles(data){const box=$('profileCandidates');box.replaceChildren();for(const j of data.jobs.filter(j=>['queued','running','failed'].includes(j.status))){box.append(node('p',j.status==='failed'?(j.error||'归纳失败，可明确重试'):j.status==='running'?'正在分析有效资料…':'候选任务已排队'));}for(const item of data.items){const article=node('article',undefined,'story');article.append(node('h3',item.statement),node('p',item.context),node('small',item.label+' · '+({pending:'等待本人确认',confirmed:'本人已确认',rejected:'本人已拒绝',stale:'依据已变化'})[item.status]));for(const id of [...item.evidence_ids,...item.counter_evidence_ids]){const source=item.evidence?.find(e=>e.evidence_id===id);const story=state.stories.find(s=>s.episode_id===source?.episode_id||s.memories.some(m=>m.evidence.some(e=>e.evidence_id===id)));article.append(story?button('查看'+(item.counter_evidence_ids.includes(id)?'反例':'支持')+'来源',()=>openStory(story)):node('small','原文片段引用：'+id));}if(item.status!=='stale'){article.append(button('确认这条理解',async()=>{await api(root()+'/profile-candidates/'+item.candidate_id+'/confirm',{method:'POST'});await refresh();}),button('不符合我的意思',async()=>{await api(root()+'/profile-candidates/'+item.candidate_id+'/reject',{method:'POST'});await refresh();}));}box.append(article);}if(!data.items.length)box.append(node('p','还没有人物候选。生成和确认是两个独立步骤。','muted'));}
+async function renderProfiles(data){
+  const box=$('profileCandidates');box.replaceChildren();
+  const labels={pending:'等待本人确认',confirmed:'本人已确认',rejected:'本人已拒绝',stale:'依据已变化',superseded:'历史理解',applied:'已用于更新',conflicted:'存在冲突，等待核对'};
+  const actions={ADD:'新增理解',SUPPORT:'支持已有理解',CONFLICT:'与已有理解冲突',CHANGE:'理解随时间变化'};
+  for(const j of data.jobs.filter(j=>['queued','running','failed'].includes(j.status)))box.append(node('p',j.status==='failed'?(j.error||'归纳失败，可明确重试'):j.status==='running'?'正在分析有效资料…':'候选任务已排队'));
+  for(const item of data.items){
+    const article=node('article',undefined,'story');article.append(node('h3',item.statement),node('p',item.context),node('small',item.label+' · '+(labels[item.status]||item.status)));
+    for(const id of [...item.evidence_ids,...item.counter_evidence_ids]){
+      const source=item.evidence?.find(e=>e.evidence_id===id);
+      const story=state.stories.find(s=>s.episode_id===source?.episode_id||s.memories.some(m=>m.evidence.some(e=>e.evidence_id===id)));
+      article.append(node('blockquote',source?.excerpt||'原文片段：'+id));
+      if(story)article.append(button('查看'+(item.counter_evidence_ids.includes(id)?'反例':'支持')+'来源',()=>openStory(story)));
+    }
+    if(item.status==='pending'){
+      const action=node('select');action.setAttribute('aria-label','如何使用这条理解');
+      for(const [value,label] of Object.entries(actions)){const option=node('option',label);option.value=value;action.append(option);}
+      const target=node('select');target.setAttribute('aria-label','关联的已有理解');
+      const empty=node('option','请选择旧理解并核对情境');empty.value='';target.append(empty);
+      for(const old of data.items.filter(o=>o.candidate_id!==item.candidate_id&&(o.stored_status||o.status)==='confirmed'&&o.domain===item.domain&&o.kind===item.kind)){
+        const option=node('option',old.statement+' · '+old.context+(old.status==='stale'?'（需重新核对依据）':''));option.value=old.candidate_id;target.append(option);
+      }
+      const reason=node('textarea');reason.placeholder='为什么这样关联？请核对两条理解的含义和情境。';reason.setAttribute('aria-label','更新理由');reason.maxLength=1000;
+      const time=node('input');time.placeholder='变化时间，例如：退休以后（不必猜具体日期）';time.setAttribute('aria-label','变化时间');time.maxLength=200;
+      const draft=profileDrafts.get(item.candidate_id);if(draft){action.value=draft.action;target.value=draft.target;reason.value=draft.reason;time.value=draft.time;}
+      const rememberDraft=()=>profileDrafts.set(item.candidate_id,{action:action.value,target:target.value,reason:reason.value,time:time.value});
+      for(const input of [action,target,reason,time]){input.addEventListener('input',rememberDraft);input.addEventListener('change',rememberDraft);}
+      const sync=()=>{target.hidden=action.value==='ADD';time.hidden=action.value!=='CHANGE';};action.addEventListener('change',sync);sync();
+      article.append(action,target,reason,time,button('保存为待确认更新',async()=>{
+        await api(root()+'/profile-candidates/updates',{method:'POST',body:{candidate_id:item.candidate_id,action:action.value,target_candidate_id:action.value==='ADD'?null:target.value,reason:reason.value,time_text:action.value==='CHANGE'?time.value:''}});profileDrafts.delete(item.candidate_id);await refresh();
+      }),button('不符合我的意思',async()=>{await api(root()+'/profile-candidates/'+item.candidate_id+'/reject',{method:'POST'});await refresh();}));
+    }else if(item.status==='confirmed')article.append(button('撤回这项确认',async()=>{await api(root()+'/profile-candidates/'+item.candidate_id+'/reject',{method:'POST'});await refresh();}));
+    box.append(article);
+  }
+  if(!data.items.length)box.append(node('p','还没有人物候选。生成和确认是两个独立步骤。','muted'));
+  const updates=await api(root()+'/profile-candidates/updates');
+  for(const update of updates.items){
+    const article=node('article',undefined,'story');const next=data.items.find(i=>i.candidate_id===update.candidate_id);const old=data.items.find(i=>i.candidate_id===update.target_candidate_id);
+    article.append(node('h3',(actions[update.action]||update.action)+' · '+(labels[update.status]||update.status)),node('p','新观察：'+(next?.statement||update.candidate_id)));
+    if(old)article.append(node('p','已有理解：'+old.statement+'；情境：'+old.context));
+    article.append(node('p',update.reason));if(update.time_text)article.append(node('p','时间：'+update.time_text));
+    if(update.question)article.append(node('p',update.question));
+    if(update.status==='pending')article.append(button('确认上述更新',async()=>{if(!confirm('已核对双方原文与情境？支持或变化会保留历史版本；冲突会暂停使用这两条理解。'))return;await api(root()+'/profile-candidates/updates/'+update.update_id+'/confirm',{method:'POST'});await refresh();}),button('拒绝这次更新',async()=>{await api(root()+'/profile-candidates/updates/'+update.update_id+'/reject',{method:'POST'});await refresh();}));
+    box.append(article);
+  }
+}
 on('refreshProfile','click',async()=>{if(!confirm('将当前有效的核对文字交给云端模型提出人物理解候选？归纳不会自动成为事实。'))return;await api(root()+'/profile-candidates/refresh',{method:'POST',body:{cloud_consent_id:await cloudConsent()}});await refresh();});

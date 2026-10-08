@@ -20,6 +20,7 @@ data class NativeState(
     val space: JSONObject? = null, val stories: List<JSONObject> = emptyList(), val grants: List<JSONObject> = emptyList(),
     val revisions: List<JSONObject> = emptyList(), val requests: List<JSONObject> = emptyList(),
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
+    val profileUpdates: List<JSONObject> = emptyList(),
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
@@ -133,7 +134,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             if(gate.accepts(s)) {
                 stopSource(); audio.stopPlayback()
                 state.value = state.value.copy(stories = emptyList(), grants = emptyList(), revisions = emptyList(),
-                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), answer = null, search = emptyList(), reviewEpisode = null)
+                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), answer = null, search = emptyList(), reviewEpisode = null)
             }
             throw error
         }
@@ -148,6 +149,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val owner = stories.text("role") == "owner"
         val revisions = if(owner) io { client.json(s, "$path/revisions").rows() } else emptyList()
         val candidates = if(owner) io { client.json(s, "$path/profile-candidates") } else JSONObject()
+        val updates = if(owner) io { client.json(s, "$path/profile-candidates/updates").rows() } else emptyList()
         gate.requireCurrent(s)
         val changed = state.value.stories.map { it.toString() } != stories.rows().map { it.toString() } ||
             state.value.grants.map { it.toString() } != grants.rows().map { it.toString() } ||
@@ -155,7 +157,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(changed) { stopSource(); audio.stopPlayback() }
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role")), stories = stories.rows(),
             grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(),
-            candidateJobs = candidates.rows("jobs"), local = if(owner) localCaptures(s) else emptyList(),
+            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, local = if(owner) localCaptures(s) else emptyList(),
             answer = if(changed) null else state.value.answer, search = if(changed) emptyList() else state.value.search)
     }
     fun start(revision: RevisionTarget?) {

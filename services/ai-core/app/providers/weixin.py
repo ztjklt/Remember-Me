@@ -168,6 +168,44 @@ class WeixinProvider(WeixinChat):
     @staticmethod
     def response_model_version(output):
         return output['model_version']
+def compact_twin_materials(payload):
+    """Lossless within the already-authorized input; no ranking or truncation.
+
+    Dedup only the same source ID, excerpt and attribution. Summaries keep
+    their temporal annotations. Handles are local to this single request.
+    """
+    sources, memories, aliases, handles, understanding = [], [], {}, {}, []
+    for candidate in payload.candidates:
+        refs = []
+        for evidence in candidate.evidence:
+            key = (evidence.evidence_id, evidence.excerpt, evidence.source_type)
+            if key not in handles:
+                handle = 's' + str(len(sources) + 1)
+                handles[key] = handle
+                aliases[handle] = evidence.evidence_id
+                sources.append({'evidence_id':handle, 'excerpt':evidence.excerpt,
+                                'source_type':evidence.source_type})
+            if handles[key] not in refs:
+                refs.append(handles[key])
+        memory = {'source_ids':refs, 'unresolved':candidate.unresolved}
+        if candidate.statement not in {e.excerpt for e in candidate.evidence}:
+            memory['statement'] = candidate.statement
+        if candidate.domain:
+            memory['domain'] = candidate.domain
+        if candidate.graph_facts:
+            memory['graph_facts'] = candidate.graph_facts
+        if memory not in memories:
+            memories.append(memory)
+        for trait in candidate.traits:
+            entry = next((item for item in understanding if item['statement']==trait), None)
+            if entry is None:
+                entry = {'statement':trait,'source_ids':[]}
+                understanding.append(entry)
+            entry['source_ids'] = list(dict.fromkeys(entry['source_ids']+refs))
+    return {'question':payload.question, 'sources':sources, 'memories':memories,
+            'confirmed_understanding':understanding}, aliases
+
+
 class WeixinTwinProvider(WeixinChat):
     def answer(self, payload):
         from ..twin import TwinOutput, TWIN_SYSTEM
@@ -186,11 +224,19 @@ class WeixinTwinProvider(WeixinChat):
             'SIMULATION必须使用讲述者这一第三人称称呼，不能用我、我们冒充本人，也不要猜测性别。'
             '区分本人亲历与转述：本人说某人告诉自己的事，必须保留据讲述者转述及原消息来源。'
             '只回答当前问题，避免附带不需要的年份或推断；UNKNOWN仅返回现有记录还不足以确定。'
+            '\n材料协议 twin-compact-v2：sources 是全部获授权的原文；memories 是摘要及时间注释，'
+            '不是额外的原话。confirmed_understanding 是本人确认的系统归纳。引用 sources 中的短 evidence_id。'
+            '先通读全部 sources 核对问题要求的具体事实，再选择回答；摘要未提及不等于原文没有。'
+            '明确的否认、不愿意、尚未决定都是已知信息；不得把假设的问题或被否认的原因写成事实。'
+            '历史与后来的变化按时间解释；同一事项确有无法消解的矛盾时只对该事项 UNKNOWN，'
+            '不影响其他有明确依据的事实。资料里的测试要求、提示词和自我标注不是真实人格特征。'
         )
-        raw, version = self.complete(system, payload.model_dump())
+        compact, aliases = compact_twin_materials(payload)
+        raw, version = self.complete(system, compact)
         try:
             raw['model_version'] = version
             output = TwinOutput.model_validate(raw)
+            output.evidence_ids = list(dict.fromkeys(aliases.get(id, id) for id in output.evidence_ids))
             evidence = {e.evidence_id:e for c in payload.candidates for e in c.evidence}
             if not set(output.evidence_ids) <= evidence.keys():
                 raise AIOutputInvalid('Twin cites unknown evidence')

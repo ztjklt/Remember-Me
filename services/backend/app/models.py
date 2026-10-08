@@ -506,10 +506,28 @@ class ProfileCandidate(Base):
     counter_evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
     independent_episodes: Mapped[int] = mapped_column(Integer, nullable=False)
     source_basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default='pending')
     model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     prompt_version: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProfileUpdate(Base):
+    __tablename__ = 'profile_updates'
+    update_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    candidate_id: Mapped[str] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=False)
+    target_candidate_id: Mapped[str | None] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=True)
+    result_candidate_id: Mapped[str | None] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=True)
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    time_text: Mapped[str] = mapped_column(Text, nullable=False)
+    base_source_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='pending')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ProfileRefresh(Base):

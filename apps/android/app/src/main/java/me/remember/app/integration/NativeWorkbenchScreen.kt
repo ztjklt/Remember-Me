@@ -331,12 +331,47 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                 if(evidence != null) Evidence(evidence, state, model) else Text("依据：$evidenceId（可从故事中核对）", style = MaterialTheme.typography.bodySmall)
             }
             Text("反证：${candidate.optJSONArray("counter_evidence_ids") ?: "[]"}", style = MaterialTheme.typography.bodySmall)
-            if(candidate.text("status") !in setOf("stale", "rejected", "confirmed")) {
-                Action("确认此候选", enabled) { confirm("确认这个情境下的系统推断？它不会成为本人原话。") { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/confirm", "POST") } }
+            if(candidate.text("status") == "pending") {
+                var action by remember(candidate.text("candidate_id")) { mutableStateOf("ADD") }
+                var target by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                var reason by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                var time by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                listOf("ADD" to "新增理解", "SUPPORT" to "支持已有理解", "CONFLICT" to "与已有理解冲突", "CHANGE" to "随时间变化").forEach { (value, label) ->
+                    Action((if(action == value) "已选：" else "") + label, enabled) { action = value }
+                }
+                if(action != "ADD") {
+                    Text("请选择旧理解，并核对双方情境。过期理解必须重新验证来源。")
+                    state.candidates.filter { it.text("candidate_id") != candidate.text("candidate_id") &&
+                        it.text("stored_status") == "confirmed" && it.text("domain") == candidate.text("domain") && it.text("kind") == candidate.text("kind") }.forEach { old ->
+                        Action((if(target == old.text("candidate_id")) "已选：" else "") + old.text("statement") + " · " + old.text("context"), enabled) { target = old.text("candidate_id") }
+                    }
+                }
+                OutlinedTextField(value = reason, onValueChange = { reason = it.take(1000) }, label = { Text("关联理由") }, modifier = Modifier.fillMaxWidth())
+                if(action == "CHANGE") OutlinedTextField(value = time, onValueChange = { time = it.take(200) }, label = { Text("变化时间，例如退休后") }, modifier = Modifier.fillMaxWidth())
+                Action("保存为待确认更新", enabled && reason.isNotBlank() && (action == "ADD" || target.isNotBlank()) && (action != "CHANGE" || time.isNotBlank())) {
+                    model.mutation("/profile-candidates/updates", "POST", JSONObject().put("candidate_id", candidate.text("candidate_id"))
+                        .put("action", action).put("target_candidate_id", if(action == "ADD") JSONObject.NULL else target)
+                        .put("reason", reason).put("time_text", if(action == "CHANGE") time else ""))
+                }
                 Action("拒绝此候选", enabled) { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
             }
             if(candidate.text("status") == "confirmed") Action("撤回这项确认", enabled) {
                 confirm("撤回此候选的确认并使相关回答失效？") { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
+            }
+        } }
+        state.profileUpdates.forEach { update -> Panel {
+            val actions = mapOf("ADD" to "新增理解", "SUPPORT" to "支持已有理解", "CONFLICT" to "理解冲突", "CHANGE" to "随时间变化")
+            Text("${actions[update.text("action")]} · ${update.text("status")}")
+            state.candidates.firstOrNull { it.text("candidate_id") == update.text("candidate_id") }?.let { Text("新观察：${it.text("statement")}") }
+            state.candidates.firstOrNull { it.text("candidate_id") == update.text("target_candidate_id") }?.let { Text("旧理解：${it.text("statement")}；情境：${it.text("context")}") }
+            Text(update.text("reason"))
+            if(update.text("time_text").isNotBlank()) Text("变化时间：${update.text("time_text")}")
+            if(update.text("question").isNotBlank()) Text(update.text("question"))
+            if(update.text("status") == "pending") {
+                Action("确认上述更新", enabled) { confirm("已核对双方原文和情境？支持或变化保留历史；冲突暂停使用相关理解。") {
+                    model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/confirm", "POST")
+                } }
+                Action("拒绝这次更新", enabled) { model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/reject", "POST") }
             }
         } }
     }

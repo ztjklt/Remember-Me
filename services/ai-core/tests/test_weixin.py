@@ -7,6 +7,44 @@ from app.providers.weixin import WeixinChat
 from app.profile_proposals import ProfileProposalInput, ProfileProposalProvider
 
 
+def test_twin_compact_sources_preserve_type_time_and_contradictions():
+    from app.providers.weixin import compact_twin_materials
+    from app.twin import TwinInput
+    payload = TwinInput(question='现在住哪里？', candidates=[
+        {'memory_item_id':'old','statement':'住北京（历史记载，后来已有变化，不代表当前状态）',
+         'traits':['本人确认的系统归纳：谨慎'], 'evidence':[{'evidence_id':'old1','excerpt':'我住北京','source_type':'SUBJECT'}]},
+        {'memory_item_id':'repeat','statement':'我住北京','traits':['本人确认的系统归纳：谨慎'],
+         'evidence':[{'evidence_id':'old2','excerpt':'我住北京','source_type':'SUBJECT'}]},
+        {'memory_item_id':'new','statement':'变化后的记载；时间：后来','unresolved':True,
+         'evidence':[{'evidence_id':'new','excerpt':'后来不住北京了','source_type':'SUBJECT'},
+                     {'evidence_id':'third','excerpt':'我住北京','source_type':'THIRD_PARTY'}]}])
+    compact, aliases = compact_twin_materials(payload)
+    assert len(compact['sources']) == 4
+    assert aliases['s1'] == 'old1'
+    assert aliases['s2'] == 'old2'
+    assert {s['source_type'] for s in compact['sources']} == {'SUBJECT','THIRD_PARTY'}
+    assert '后来不住北京了' in [s['excerpt'] for s in compact['sources']]
+    assert any('历史记载' in m.get('statement','') for m in compact['memories'])
+    assert any(m['unresolved'] for m in compact['memories'])
+    assert compact['confirmed_understanding'] == [{'statement':'本人确认的系统归纳：谨慎','source_ids':['s1','s2']}]
+    assert all('excerpt' not in m for m in compact['memories'])
+
+
+def test_twin_short_source_selection_maps_back_to_real_evidence():
+    from app.providers.weixin import WeixinTwinProvider
+    from app.twin import TwinInput
+    provider=WeixinTwinProvider(api_key='test-only')
+    def complete(system, payload):
+        assert payload['sources'][0]['evidence_id']=='s1'
+        return {'answer':'','response_type':'ORIGINAL','evidence_ids':['s1'],'confidence':.9},'actual'
+    provider.complete=complete
+    try:
+        result=provider.answer(TwinInput(question='计划定了吗',candidates=[{'memory_item_id':'m1',
+            'statement':'尚未决定','evidence':[{'evidence_id':'real-source','excerpt':'我还没有决定','source_type':'SUBJECT'}]}]))
+        assert result.evidence_ids==['real-source'] and result.answer=='我还没有决定'
+    finally: provider.close()
+
+
 def test_weixin_settings_defaults_and_host_guard():
     s = Settings(_env_file=None, AI_PROVIDER='weixin', WEIXIN_CHAT_API_KEY='test-only')
     assert (s.base_url, s.model, s.timeout_seconds, s.max_concurrent_requests) == ('https://chatapi.weixin.qq.com/openai/v1', 'Deepseek-v4-flash', 45, 1)

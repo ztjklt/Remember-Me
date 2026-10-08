@@ -48,7 +48,7 @@ def test_real_adapter_boundary_preserves_unicode_and_rejects_bad_provenance(brok
     with httpx.Client(transport=httpx.MockTransport(upstream)) as transport:
         provider = OpenAICompatibleProvider(base_url="https://provider.test/v1", api_key="test-only-key", client=transport)
         extractor = MemoryExtractor(provider=provider, model="test", model_version="verified-revision")
-        with TestClient(create_app(Settings(environment="test"), extractor=extractor)) as client:
+        with TestClient(create_app(Settings(_env_file=None, environment="test"), extractor=extractor)) as client:
             response = client.post("/process", json={
                 "episode_id": "episode-unicode", "subject_id": "subject-unicode",
                 "transcript": "🙂我喜欢咖啡。她喜欢茶。", "existing_model_version": "v0",

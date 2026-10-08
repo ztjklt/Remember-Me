@@ -24,7 +24,8 @@ class ProfileClient:
 def candidate_view(row, basis):
     return {key:getattr(row,key) for key in ('candidate_id','domain','kind','statement','context',
         'evidence_ids','counter_evidence_ids','independent_episodes','model_version','prompt_version')} | {
-        'status': row.status if row.source_basis == basis else 'stale',
+        'status': row.status if row.source_basis == basis or row.status in {'superseded','applied','conflicted','rejected'} else 'stale',
+        'stored_status':row.status,
         'source_version': row.source_basis, 'scope':'owner',
         'label': '情境化观察' if row.independent_episodes < 2 else '多次材料支持的候选',
         'created_at':row.created_at.isoformat()}
