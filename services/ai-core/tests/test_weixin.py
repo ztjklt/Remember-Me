@@ -73,6 +73,39 @@ def test_twin_short_source_selection_maps_back_to_real_evidence():
     finally: provider.close()
 
 
+def test_twin_prioritization_keeps_all_sources_and_stable_handles():
+    from app.providers.weixin import compact_twin_materials
+    from app.twin import TwinInput
+    texts = ['曾经住在北京。', '两个李清不是同一人，一位是同学，一位是客户。',
+             '后来搬到了苏州，这是变化，不是否认过去。']
+    payload = TwinInput(question='两个同名的人是同一人吗？', candidates=[
+        {'memory_item_id':str(i), 'statement':text, 'unresolved':i == 2,
+         'evidence':[{'evidence_id':'ev'+str(i), 'excerpt':text, 'source_type':'SUBJECT'}]}
+        for i,text in enumerate(texts)])
+    before = payload.model_dump()
+    compact, aliases = compact_twin_materials(payload)
+    assert compact['sources'][0]['excerpt'] == texts[1]
+    assert compact['sources'][0]['evidence_id'] == 's2'
+    assert aliases == {'s1':'ev0','s2':'ev1','s3':'ev2'}
+    assert {s['excerpt'] for s in compact['sources']} == set(texts)
+    assert len(compact['memories']) == 3
+    assert any(m['unresolved'] for m in compact['memories'])
+    assert payload.model_dump() == before
+
+
+def test_twin_prioritization_does_not_merge_names_or_manufacture_sources():
+    from app.providers.weixin import prioritize_twin_sources
+    sources = [{'evidence_id':'s1','excerpt':'李清','source_type':'SUBJECT'},
+               {'evidence_id':'s2','excerpt':'李青','source_type':'THIRD_PARTY'}]
+    original = json.loads(json.dumps(sources))
+    memories = [{'source_ids':['s1']}, {'source_ids':['s2']}]
+    prioritize_twin_sources('李青', sources, memories)
+    assert sources == [original[1], original[0]]
+    assert memories == [{'source_ids':['s2']}, {'source_ids':['s1']}]
+    prioritize_twin_sources('没有匹配', sources, memories)
+    assert sources == [original[1], original[0]]  # Stable ties, no alias guess.
+
+
 def test_weixin_settings_defaults_and_host_guard():
     s = Settings(_env_file=None, AI_PROVIDER='weixin', WEIXIN_CHAT_API_KEY='test-only')
     assert (s.base_url, s.model, s.timeout_seconds, s.max_concurrent_requests) == ('https://chatapi.weixin.qq.com/openai/v1', 'Deepseek-v4-flash', 45, 1)

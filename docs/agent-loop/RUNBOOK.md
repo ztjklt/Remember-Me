@@ -109,22 +109,22 @@ Android运行adb reverse tcp:8877 tcp:8877，输入http://127.0.0.1:8877。
 本机API35模拟器名`remember-me-integration`，AVD目录`D:/codex_work/remember-me-toolchain/avds`，SDK目录`D:/codex_work/remember-me-toolchain/sdk`。当前使用WHPX和swiftshader，验证会话`emulator-5554`。
 安装最终APK后执行`adb -s emulator-5554 reverse tcp:8877 tcp:8877`，APP后端地址为`http://127.0.0.1:8877`。
 需要重新启动该模拟器时，设置`ANDROID_HOME`和`ANDROID_AVD_HOME`为上述目录，使用SDK的`emulator/emulator.exe -avd remember-me-integration -no-snapshot -gpu swiftshader`。实体设备另行授权USB调试并使用其实际serial，不与模拟器验证混记。
-月度材料的六个身份存于`services/backend/var/monthly-eval/identities.json`，不是旧双身份文件；三个故事已核对并完成云端整理；测试曾授权读者并在收尾撤权，当前需要Owner在界面再次主动授权。
+当前30段月度材料的六个身份存于`services/backend/var/monthly-eval/cloud-asr-runs/relay-compact/identities.json`；请勿与早期本地ASR样本身份混用。当前共享范围见该运行目录的实际grants与验收结果，不能按旧样本“全部撤权”的记录推定。
 
 新增0009人物候选和0010答案来源版本迁移；迁移前备份SQLite及objects，本机已用数据库副本检查完整性。人物页可排队归纳、确认/拒绝，读者不能取得所有者私人候选。新依据到来后旧候选显示过期。
 
-月度素材见evaluations/monthly-integration-v1/README.md。独立六个测试Actor在services/backend/var/monthly-eval/identities.json；三个owner各自管理一个虚构人物空间，三个reader分别授权。不要把身份凭据或云端密钥放进Git。
+月度素材见evaluations/monthly-integration-v1/README.md。三个owner各自管理一个虚构人物空间，三个reader分别授权。不要把身份凭据或云端密钥放进Git。
 
-原音、raw ASR、product ASR分别留存。微信密钥已配置，三个样本已完成实际提取、保存和问答。最新技术闭环见LIVE_LOOP_2026-10-07.md；sample-gate.json的人工听读条件尚未通过，不把技术运行改写为质量通过。
+原音、raw ASR、product ASR分别留存。当前30段云端处理见GROQ_LIVE_RESULTS_2026-10-08.md；Agent新验证见AGENT_CORE_RESULTS_2026-10-08.md。LIVE_LOOP_2026-10-07.md只记录历史小样本。人工听读条件尚未通过，不把技术运行改写为质量通过。
 
 网页花园采用PR85资产，入口只绑定后端有效故事/记忆ID。最新验证状态以INTEGRATION_ACCEPTANCE.md为准，旧ACCEPTANCE.md保留上一批历史证据。
 
 简体转写：Whisper 指定 zh 并提供简体提示；OpenCC t2s 生成简体核对草稿，原始 ASR 单独保留。已确认文字不自动转换。详见 [本次补验](STT_SIMPLIFIED_2026-10-07.md)。
 
 
-## 本轮真实运行补充
+## 历史记录：本地 Whisper 阶段（已停用，不按此启动）
 
-启动仍用services/backend目录的 `python run_workbench.py`。微信密钥保存在AI Core被忽略的.env中，启动器映射WEIXIN_CHAT_API_KEY，不进前端。当前8877为后端，8878为STT，8879为AI Core，仅本机访问。
-后续STT使用 `D:/codex_work/remember-me-toolchain/whisper/ggml-large-v3-turbo-q5_0.bin`，下载文件已核对官方SHA1 e050f7970618a659205450ad97eb95a18d69c9ee；原有三段base转写不自动重写。
+早期启动器运行过8877后端、8878本地STT、8879 AI Core。现在8878不启动，配置以本文件开头的Groq路线为准。
+历史STT曾使用 `D:/codex_work/remember-me-toolchain/whisper/ggml-large-v3-turbo-q5_0.bin`，下载文件曾核对SHA1 e050f7970618a659205450ad97eb95a18d69c9ee；保留旧结果作对照，不自动重写，也不作为当前启动依赖。
 独立技术循环身份在 `services/backend/var/monthly-eval/state-loop/identities.json`，与月度六身份分开。该空间最后做过删除并发测试，不是完整初始故事快照。
 整理成功却0条记忆时可按“未提取到记忆，重新整理”；服务端校验只有从未产生记忆行的录音可使用此入口。

@@ -3,6 +3,8 @@ import json
 import re
 import logging
 import hashlib
+import math
+from collections import Counter
 from time import perf_counter
 import httpx
 from typing import Literal
@@ -185,8 +187,33 @@ class WeixinProvider(WeixinChat):
     @staticmethod
     def response_model_version(output):
         return output['model_version']
+def _query_terms(text):
+    # Exact lexical matches only: no name correction or homophone resolution.
+    runs = re.findall(r'[\u3400-\u9fff]+|[a-z0-9]+', text.lower())
+    return {term for run in runs for term in
+            ([run] if re.fullmatch(r'[a-z0-9]+', run) else
+             [run[i:i + 2] for i in range(len(run) - 1)])}
+
+
+def prioritize_twin_sources(question, sources, memories):
+    """Reorder ALL authorized sources, keeping handles, text and facts intact.
+
+    Rare exact query terms come first to help long-context fact lookup. This
+    is an attention hint, never a truth score, entity merge or retrieval filter.
+    Stable ties preserve input order, and all temporal/conflicting material stays.
+    """
+    query = _query_terms(question)
+    terms = [_query_terms(source['excerpt']) for source in sources]
+    counts = Counter(term for words in terms for term in words)
+    scores = {source['evidence_id']: sum(math.log(1 + len(sources) / counts[t])
+              for t in query & words) for source, words in zip(sources, terms)}
+    sources.sort(key=lambda source: -scores[source['evidence_id']])
+    memories.sort(key=lambda memory: -max(
+        (scores[id] for id in memory['source_ids']), default=0))
+
+
 def compact_twin_materials(payload):
-    """Lossless within the already-authorized input; no ranking or truncation.
+    """Lossless within the already-authorized input; no truncation.
 
     Dedup only the same source ID, excerpt and attribution. Summaries keep
     their temporal annotations. Handles are local to this single request.
@@ -219,6 +246,7 @@ def compact_twin_materials(payload):
                 entry = {'statement':trait,'source_ids':[]}
                 understanding.append(entry)
             entry['source_ids'] = list(dict.fromkeys(entry['source_ids']+refs))
+    prioritize_twin_sources(payload.question, sources, memories)
     return {'question':payload.question, 'sources':sources, 'memories':memories,
             'confirmed_understanding':understanding}, aliases
 
@@ -241,7 +269,7 @@ class WeixinTwinProvider(WeixinChat):
             'SIMULATION必须使用讲述者这一第三人称称呼，不能用我、我们冒充本人，也不要猜测性别。'
             '区分本人亲历与转述：本人说某人告诉自己的事，必须保留据讲述者转述及原消息来源。'
             '只回答当前问题，避免附带不需要的年份或推断；UNKNOWN仅返回现有记录还不足以确定。'
-            '\n材料协议 twin-compact-v3：sources 是全部获授权的原文；memories 是摘要及时间注释，'
+            '\n材料协议 twin-compact-v5：sources 是全部获授权的原文；memories 是摘要及时间注释，'
             '不是额外的原话。confirmed_understanding 是本人确认的系统归纳。引用 sources 中的短 evidence_id。'
             '先通读全部 sources 核对问题要求的具体事实，再选择回答；摘要未提及不等于原文没有。'
             '明确的否认、不愿意、尚未决定都是已知信息；不得把假设的问题或被否认的原因写成事实。'
@@ -252,6 +280,15 @@ class WeixinTwinProvider(WeixinChat):
             '不是对当前请求者的权限判定，不得据此隐藏已提供的答案。'
             '例如材料明确写出某个东西放在哪里或某个动作的原因，且没有后来的纠正，必须据此回答，'
             '不能因同段提到私人记录而返回UNKNOWN；也不能推断未提供的私密内容。'
+            'sources按问题的字面相关性排序，靠前不等于更新、更可信或更重要；仍须检查后文的纠正和时间变化。'
+            '遇到问题里的姓名与材料字形不同，不能直接认定为同一个人；'
+            '若材料本身明确区分两位同名人物，可以按材料原写法说明已知关系，并注明与问题姓名的字形差异待核对。'
+            '只对没有依据的部分保留不确定，不要把已有明确证据的其他部分一概丢弃。'
+            '输出前逐句核对主语：原文的“我”是讲述者，不是同段里的同伴、客户或亲属。'
+            '回答谁说了什么时，只给所问事实和转述链，不附加任何人的爱好、经历或动机。'
+            '对于“为什么”问题，必须有明确说明该原因的证据；先后发生或同时提及不构成因果。'
+            '若可见材料明确说原因还未讲，只记录了读者问题，即便存在可能相关的物件或经历，也必须UNKNOWN。'
+            '不允许一边说现有记录不足以确定，一边用“因为”“所以”补出未确认的原因。'
         )
         compact, aliases = compact_twin_materials(payload)
         raw, version = self.complete(system, compact)

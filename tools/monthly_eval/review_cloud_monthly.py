@@ -15,12 +15,14 @@ BACKEND = ROOT / 'services/backend'
 sys.path.insert(0, str(BACKEND))
 
 
-def audit(run, annotations):
+def audit(run, annotations, *, batch_path=None, report_path=None):
     from app.db import Database
     from app.config import Settings
     from app.materials import effective_materials
     from app.access import visible_episodes, altered_story_ids
-    batch = json.loads((BACKEND / 'var/monthly-eval' / ('qa-' + run.name + '-cloud-v1.json')).read_text(encoding='utf-8'))
+    batch_path = batch_path or BACKEND / 'var/monthly-eval' / ('qa-' + run.name + '-cloud-v1.json')
+    report_path = report_path or run / 'qa-text-review.json'
+    batch = json.loads(batch_path.read_text(encoding='utf-8'))
     if not batch.get('finished_at'): raise RuntimeError('Wait for the complete batch.')
     rows = [row for g in batch['qa'].values() for row in g['checks']]
     if len(rows) != 60 or set(annotations) != {r['id'] for r in rows}:
@@ -51,7 +53,8 @@ def audit(run, annotations):
                 assert note['grade'] in {'supported', 'needs_quality_correction', 'failed'}
                 reviewed.append({'id': row['id'], 'role': role, 'question': row['question'],
                     'result': result, 'mechanical_errors': errors, **note})
-    report = {'recognition_run': run.name, 'reviewer': 'assistant offline text and evidence review',
+    report = {'recognition_run': run.name, 'question_round': batch['round'],
+        'reviewer': 'assistant offline text and evidence review',
         'human_listening': False, 'clinical_validation': False,
         'counts': dict(Counter(r['grade'] for r in reviewed)),
         'mechanical_failures': sum(bool(r['mechanical_errors']) for r in reviewed),
@@ -60,14 +63,21 @@ def audit(run, annotations):
                        'Exact quote does not alone prove semantic entailment.',
                        'Fictional synthesized speech, not natural speech accuracy validation.'],
         'items': sorted(reviewed, key=lambda r: r['id'])}
-    (run / 'qa-text-review.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'items'}, ensure_ascii=False))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(); parser.add_argument('--run', required=True)
+    parser.add_argument('--round', help='Separate real question round; preserves prior audits.')
     args = parser.parse_args()
     if not args.run.replace('-', '').isalnum(): raise SystemExit('Invalid run')
+    if args.round and not args.round.replace('-', '').isalnum(): raise SystemExit('Invalid round')
     os.chdir(BACKEND)
     run = BACKEND / 'var/monthly-eval/cloud-asr-runs' / args.run
-    audit(run, json.loads((run / 'qa-review-annotations.json').read_text(encoding='utf-8')))
+    if args.round:
+        audit(run, json.loads((run / (args.round+'-annotations.json')).read_text(encoding='utf-8')),
+              batch_path=BACKEND/'var/monthly-eval'/('qa-'+args.round+'.json'),
+              report_path=run/(args.round+'-review.json'))
+    else:
+        audit(run, json.loads((run / 'qa-review-annotations.json').read_text(encoding='utf-8')))
