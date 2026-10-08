@@ -21,6 +21,7 @@ data class NativeState(
     val revisions: List<JSONObject> = emptyList(), val requests: List<JSONObject> = emptyList(),
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
+    val asrCapabilities: JSONObject? = null,
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
@@ -146,6 +147,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         // Authoritative role comes from server, never from locally entered role labels.
         val grants = io { client.json(s, "$path/grants") }
         val requests = io { client.json(s, "$path/requests") }
+        val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
         val owner = stories.text("role") == "owner"
         val revisions = if(owner) io { client.json(s, "$path/revisions").rows() } else emptyList()
         val candidates = if(owner) io { client.json(s, "$path/profile-candidates") } else JSONObject()
@@ -156,7 +158,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             state.value.candidates.map { it.toString() } != candidates.rows().map { it.toString() }
         if(changed) { stopSource(); audio.stopPlayback() }
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role")), stories = stories.rows(),
-            grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(),
+            grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(), asrCapabilities = capabilities,
             candidateJobs = candidates.rows("jobs"), profileUpdates = updates, local = if(owner) localCaptures(s) else emptyList(),
             answer = if(changed) null else state.value.answer, search = if(changed) emptyList() else state.value.search)
     }
@@ -205,13 +207,15 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     fun upload(capture: LocalCapture, recordingConsent: Boolean) {
         val s = session ?: return
-        if(!recordingConsent) { report("请先确认将这段原音上传到共享后端并转写；原音仍保留本机。"); return }
+        if(!recordingConsent) { report("请先确认本段完整原音的上传与转写方式；原音仍保留本机。"); return }
+        val caps = state.value.asrCapabilities ?: run { report("请先刷新转写配置。"); return }
+        val asrPolicy = if(caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
         if(!state.value.owner) return
         val subject = state.value.subject; val path = root()
         operation(s) {
             val consent = io { client.consent(s, subject, "RECORDING") }
             submitCapture(capture,
-                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key) } },
+                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy) } },
                 persist = { saveCapture(s, it) },
                 link = { episode, revision ->
                 io { client.json(s, "$path/revisions", "POST", JSONObject().put("episode_id", episode)

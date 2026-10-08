@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Literal
+from pydantic import Field, SecretStr
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -41,7 +42,14 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http"] = "fake"
+    stt_backend: Literal["fake", "http", "relay"] = "fake"
+    # Complete relay endpoint, never inferred from another provider's URL/key.
+    relay_asr_url: str = ""
+    relay_asr_api_key: SecretStr = SecretStr("")
+    relay_asr_model: Literal["codestral-2508", "mistral-code-fim-latest"] = "codestral-2508"
+    relay_asr_format: Literal["audio_url", "input_audio"] = "audio_url"
+    relay_asr_max_tokens: int = Field(default=8192, ge=512, le=16384)
+    relay_asr_state_dir: str = "./var/cloud-asr"
     stt_url: str = "http://127.0.0.1:8200"
     stt_path: str = "/transcribe"
     # Transcription is slower than inference per byte of input, so this budget is

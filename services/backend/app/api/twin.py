@@ -52,17 +52,31 @@ async def transcribe_query(subject_id: str, request: Request,
                            session: Session = Depends(get_session)) -> dict:
     """Temporary speech-to-text; never create an Episode or Memory."""
     require_subject(session, subject_id, actor)
-    if request.app.state.settings.stt_backend != "http":
+    if request.app.state.settings.stt_backend not in {"http", "relay"}:
         raise TwinFailed("请先连接真实的中文语音识别服务。")
+    cloud = request.app.state.settings.stt_backend == 'relay'
+    if cloud:
+        from ..relay_asr import cloud_policy
+        from ..errors import RequestInvalid
+        if request.headers.get('X-Cloud-ASR-Policy') != cloud_policy(request.app.state.settings):
+            raise RequestInvalid('请明确同意将提问原音发送到当前云端转写服务。')
     audio = await request.body()
     if not audio or len(audio) > 8 * 1024 * 1024:
         raise TwinFailed("提问录音为空或过大。")
     provider: SttProvider = request.app.state.stt_provider
     try:
-        transcript = await run_in_threadpool(provider.transcribe, audio, "audio/mp4")
+        mime = request.headers.get('Content-Type', 'audio/mp4')
+        if cloud:
+            def authorize():
+                with request.app.state.database.session() as guard:
+                    require_subject(guard, subject_id, actor)
+            transcript = await run_in_threadpool(provider.transcribe_authorized, audio, mime, authorize)
+        else:
+            transcript = await run_in_threadpool(provider.transcribe, audio, mime)
     except AppError as exc:
         raise TwinFailed("提问录音暂时无法识别，可直接输入问题。") from exc
-    return {"text": transcript.text, "stt_model_version": transcript.model_version}
+    from ..chinese_text import simplified_transcript
+    return {"text": simplified_transcript(transcript.text), "stt_model_version": transcript.model_version}
 
 
 def require_subject(session: Session, subject_id: str, actor: Actor) -> None:

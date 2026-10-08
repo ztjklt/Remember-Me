@@ -52,7 +52,7 @@ class BackendClient(private val gate: SessionGate) {
         }
         return json(session, "/api/v1/consents", "POST", JSONObject().put("subject_id", subject).put("scope", scope)).getString("consent_id")
     }
-    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String): String {
+    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
         val boundary = "remember-${UUID.randomUUID()}"
@@ -64,7 +64,9 @@ class BackendClient(private val gate: SessionGate) {
                 val fields = mapOf("subject_id" to subject, "source" to "ANDROID_MIC", "recorded_at" to audio.createdAt,
                     "audio_ref" to file.name, "duration_ms" to audio.durationMillis.toString(),
                     "idempotency_key" to key, "recording_consent_id" to consent,
-                    "metadata" to "{\"capture_client\":\"native-android\"}")
+                    "metadata" to JSONObject().put("capture_client", "native-android").apply {
+                        cloudAsrPolicy?.let { put("cloud_asr_policy", it) }
+                    }.toString())
                 fields.forEach { (name, value) -> write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n") }
                 write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n")
                 file.inputStream().use { it.copyTo(output) }

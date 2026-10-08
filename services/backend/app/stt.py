@@ -33,7 +33,7 @@ The rule is shared with the AI Core boundary in app/providers.py, so the two
 cannot disagree about it.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import httpx
@@ -64,6 +64,7 @@ class Transcript:
     text: str
     backend: str
     model_version: str
+    metadata: dict = field(default_factory=dict)
 
 
 class SttProvider(Protocol):
@@ -174,6 +175,9 @@ class HttpSttProvider:
 
 
 def build_stt_provider(settings: Settings) -> SttProvider:
+    if settings.stt_backend == 'relay':
+        from .relay_asr import RelaySttProvider
+        return RelaySttProvider(settings)
     if settings.stt_backend == FAKE_BACKEND:
         refuse_fake_unless_permitted(settings, "speech-to-text")
         return FakeSttProvider()

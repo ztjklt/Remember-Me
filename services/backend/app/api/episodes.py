@@ -286,6 +286,19 @@ def create_episode(
             episode_id=existing.episode_id, upload_status="uploaded"
         )
 
+    # A prior RECORDING grant did not authorize exporting raw audio. Bind this
+    # capture to the displayed relay policy; never accept a client-made receipt.
+    capture_metadata = dict(capture_metadata or {})
+    capture_metadata.pop('cloud_asr_receipt', None)
+    if settings.stt_backend == 'relay':
+        from ..relay_asr import cloud_policy
+        policy = cloud_policy(settings)
+        if capture_metadata.get('cloud_asr_policy') != policy:
+            raise RequestInvalid('请刷新转写配置，并明确同意把本段原音发送到云端转写；尚未外发音频。')
+        from ..models import utcnow
+        capture_metadata['cloud_asr_receipt'] = {
+            'policy': policy, 'actor_id': actor.actor_id, 'confirmed_at': utcnow().isoformat()}
+
     calibration = None
     calibration_id = (capture_metadata or {}).get("calibration_id")
     if calibration_id is not None:

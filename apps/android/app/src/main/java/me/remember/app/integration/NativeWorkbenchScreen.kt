@@ -197,13 +197,16 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
     Text("本机原音", style = MaterialTheme.typography.titleLarge)
     if(state.local.isEmpty()) Text("当前身份和空间尚无本机录音。")
     state.local.forEach { capture -> Panel {
-        var uploadConsent by remember(capture.key) { mutableStateOf(false) }
+        var uploadConsent by remember(capture.key, state.asrCapabilities?.text("cloud_asr_policy")) { mutableStateOf(false) }
         Text(capture.recording.createdAt + " · " + clock(capture.recording.durationMillis))
         Text(if(capture.episode.isBlank()) "尚未上传" else if(!capture.linked) "已上传，关联未完成，请重试" else "已上传 · ${capture.episode}", style = MaterialTheme.typography.bodySmall)
         capture.revision?.let { Text("${kindName(it.kind)}旧记忆；关联完成后才可确认转写。", style = MaterialTheme.typography.bodySmall) }
         Action("播放本机原音", !state.busy && !state.recording) { model.playLocal(capture) }
         if(!capture.linked) {
-            Check("同意上传这段原音到共享后端并转写（本机文件继续保留）。", uploadConsent, { uploadConsent = it })
+            val caps = state.asrCapabilities
+            val destination = if(caps?.text("stt_processing") == "cloud")
+                "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
+            Check("同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, caps != null)
             Action(if(capture.episode.isBlank()) "上传并等待核对" else "重试上传与关联", !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
         }
     } }

@@ -371,7 +371,25 @@ class ProcessingWorker:
             ) from error
 
         try:
-            transcript = self.stt.transcribe(audio, episode.audio_content_type)
+            from .relay_asr import RelaySttProvider
+            if isinstance(self.stt, RelaySttProvider):
+                episode_id = episode.episode_id
+                def authorize():
+                    from .repositories.consents import ConsentRepository
+                    from .models import ConsentScope
+                    from .errors import SttFailed
+                    # Fresh session after quota wait; no stale consent/owner snapshot.
+                    with self.database.session() as guard:
+                        fresh = guard.get(Episode, episode_id)
+                        receipt = (fresh.capture_metadata or {}).get('cloud_asr_receipt', {}) if fresh else {}
+                        if (not fresh or receipt.get('policy') != self.stt.policy_id
+                                or receipt.get('actor_id') != fresh.actor_id):
+                            raise SttFailed('本段原音未同意当前云端转写配置，原音保留，未外发。')
+                        ConsentRepository(guard).require_active(fresh.recording_consent_id,
+                            subject_id=fresh.subject_id, scope=ConsentScope.RECORDING, actor_id=fresh.actor_id)
+                transcript = self.stt.transcribe_authorized(audio, episode.audio_content_type, authorize)
+            else:
+                transcript = self.stt.transcribe(audio, episode.audio_content_type)
         except AppError:
             raise
         except Exception as error:  # noqa: BLE001 - a provider failure is one code
@@ -387,6 +405,8 @@ class ProcessingWorker:
         episode.stt_transcript = transcript.text
         episode.capture_metadata = {**(episode.capture_metadata or {}),
                                     'transcript_normalization': NORMALIZATION_VERSION}
+        if transcript.metadata:
+            episode.capture_metadata['asr_call'] = transcript.metadata
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
 

@@ -1,4 +1,4 @@
-"""Start real local adapters and workbench; never fall back to fake providers.
+"""Start workbench with cloud ASR; never fall back to local/fake transcription.
 
 Run with a Python environment containing backend + AI Core dependencies and
 sentence-transformers. Read .env locally; no credentials on the command line.
@@ -14,10 +14,12 @@ ROOT = Path(__file__).resolve().parent
 AI_ROOT = ROOT.parent / 'ai-core'
 
 
-def main():
-    env = {**os.environ, **{k: v for k, v in dotenv_values(ROOT / '.env').items() if v is not None}}
-    env.update(REMEMBER_STT_BACKEND='http', REMEMBER_AI_BACKEND='http', REMEMBER_ENABLE_WORKBENCH='true')
-    cli = env.get('WHISPER_CLI')
+def prepare_runtime(backend_env, ai_overrides):
+    env = dict(backend_env)
+    env.setdefault('REMEMBER_STT_BACKEND', 'relay')
+    env.update(REMEMBER_AI_BACKEND='http', REMEMBER_ENABLE_WORKBENCH='true')
+    local = env['REMEMBER_STT_BACKEND'] == 'http' and env.get('REMEMBER_START_LOCAL_STT', '').lower() == 'true'
+    cli = env.get('WHISPER_CLI') if local else None
     if cli:
         env['PATH'] = str(Path(cli).parent) + os.pathsep + env.get('PATH', '')
     env.setdefault('REMEMBER_STT_URL', 'http://127.0.0.1:8878')
@@ -25,7 +27,7 @@ def main():
     env.setdefault('REMEMBER_STT_TIMEOUT_SECONDS', '300')
     env.setdefault('REMEMBER_AI_TIMEOUT_SECONDS', '90')
     env.setdefault('NO_PROXY', 'localhost,127.0.0.1,::1')
-    ai_env = {**env, **{k: v for k, v in dotenv_values(AI_ROOT / '.env').items() if v is not None}}
+    ai_env = {**env, **ai_overrides}
     ai_env.setdefault('AI_PROVIDER', 'weixin')
     if ai_env['AI_PROVIDER'] == 'weixin':
         ai_env.setdefault('AI_BASE_URL', 'https://chatapi.weixin.qq.com/openai/v1')
@@ -34,16 +36,26 @@ def main():
         ai_env['AI_MAX_CONCURRENT_REQUESTS'] = '1'
     ai_env.setdefault('AI_MODEL', 'deepseek-v4-flash')
     ai_env.setdefault('AI_MODEL_VERSION', ai_env['AI_MODEL'])
-    (ROOT / 'var').mkdir(exist_ok=True)
     commands = [('backend', ROOT, env, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8877']),
-                ('stt', ROOT, env, ['-m', 'uvicorn', 'app.local_stt:app', '--host', '127.0.0.1', '--port', '8878']),
                 ('worker', ROOT, env, ['-m', 'app.worker']),
                 ('profile-worker', ROOT, env, ['-m', 'app.profile_worker'])]
+    if local:
+        commands.append(('stt', ROOT, env, ['-m', 'uvicorn', 'app.local_stt:app', '--host', '127.0.0.1', '--port', '8878']))
     key_name = 'WEIXIN_CHAT_API_KEY' if ai_env['AI_PROVIDER'] == 'weixin' else 'AI_API_KEY'
     if ai_env.get(key_name, '').strip():
         commands.append(('ai-core', AI_ROOT, ai_env, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8879']))
-    else:
-        print(key_name + ' missing: cloud extraction/Twin/profile proposals unavailable; local audio + STT remain usable.', flush=True)
+    return env, ai_env, commands
+
+
+def main():
+    backend_env = {**os.environ, **{k: v for k, v in dotenv_values(ROOT / '.env').items() if v is not None}}
+    ai_overrides = {k: v for k, v in dotenv_values(AI_ROOT / '.env').items() if v is not None}
+    env, ai_env, commands = prepare_runtime(backend_env, ai_overrides)
+    (ROOT / 'var').mkdir(exist_ok=True)
+    if env['REMEMBER_STT_BACKEND'] == 'relay' and not (env.get('REMEMBER_RELAY_ASR_URL') and env.get('REMEMBER_RELAY_ASR_API_KEY')):
+        print('Cloud ASR configuration missing. Originals remain usable; no Whisper/fake fallback will start.', flush=True)
+    if not any(name == 'ai-core' for name, *_ in commands):
+        print('Cloud text key missing: extraction/Twin/profile proposals unavailable; originals remain usable.', flush=True)
     processes, logs = [], []
     try:
         for name, cwd, variables, args in commands:

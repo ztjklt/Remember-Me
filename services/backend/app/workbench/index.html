@@ -13,7 +13,7 @@
 <div class="actions"><button id="record" class="primary">开始录音</button><button id="pause" hidden>暂停</button><button id="finish" hidden>完成并保存</button></div>
 <label class="file">或导入一段本人讲述的音频<input id="audioFile" type="file" accept="audio/*"></label>
 <audio id="capturePreview" controls hidden aria-label="刚录制的原音"></audio>
-<label><input id="ownSpeech" type="checkbox"> 这是我本人的讲述，我同意保存原音并在本机转写</label><button id="upload" disabled>保存并开始本机转写</button><button id="saveLocal" hidden>下载尚未上传的原音</button></div>
+<label><input id="ownSpeech" type="checkbox"> <span id="asrConsentText">正在读取转写配置，请稍候。</span></label><button id="upload" disabled>保存原音并转写</button><button id="saveLocal" hidden>下载尚未上传的原音</button></div>
 <section id="suggestion"></section><div id="liveGarden"></div><h2>最近的故事</h2><div id="recent"></div></section>
 <section id="archive" class="page" hidden><h2>每段记忆，都有来处。</h2><label>查找故事<input id="search" type="search" placeholder="搜索核对文字与记忆内容"></label><div id="stories"></div><h2>待确认的修订</h2><div id="revisions"></div><h2>校准记录</h2><div id="calibrations"></div></section>
 <section id="portrait" class="page" hidden><h2>从这些故事，慢慢认识一个人。</h2><p>展示范围跟随授权。系统整理不是稳定人格判断，每条内容都能回到故事。</p><div id="portraitViews"></div><section id="profilePanel"><h2>有依据的理解，先由你确认。</h2><p>仅代表材料支持的情境化观察。确认前不会用于回答；新材料会让旧归纳等待重新核查。</p><button id="refreshProfile">将有效文字交给云端生成候选</button><div id="profileCandidates"></div></section></section>
