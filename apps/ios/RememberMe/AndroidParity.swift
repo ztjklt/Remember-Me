@@ -229,27 +229,47 @@ private struct PortraitCategoryView: View {
     }
 }
 
-private struct TraitEvidenceView: View {
+struct TraitEvidenceView: View {
     @EnvironmentObject private var model: AppModel
     let trait: TraitRecord
+    private var currentTrait: TraitRecord? {
+        model.domains.flatMap(\.traits).first { $0.id == trait.id }
+    }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(trait.statement).font(.title2.weight(.medium))
-                if let context = trait.context, !context.isEmpty { Text(context).foregroundStyle(Ink.muted) }
-                if trait.status == "unresolved" { Label("有不同说法，等待本人澄清", systemImage: "questionmark.circle").foregroundStyle(Ink.coral) }
-                ForEach(trait.evidence_ids + trait.counter_evidence_ids, id: \.self) { id in
-                    let memory = model.memories.first { $0.evidence.contains { $0.id == id } }
-                    let source = memory?.evidence.first { $0.id == id }
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(trait.counter_evidence_ids.contains(id) ? "另一种说法" : "支持这项理解的原文").font(.headline)
-                        Text(source?.excerpt ?? "该证据目前未在记忆列表中返回，不能还原原文。")
-                            .foregroundStyle(Ink.muted)
-                        if let memory { NavigationLink("查看记忆、听原音或纠正") { MemoryDetailView(memory: memory) } }
-                    }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+                if let trait = currentTrait {
+                    Text(trait.statement).font(.title2.weight(.medium))
+                        .accessibilityIdentifier("trait.statement")
+                    if let context = trait.context, !context.isEmpty { Text(context).foregroundStyle(Ink.muted) }
+                    if trait.status == "unresolved" { Label("有不同说法，等待本人澄清", systemImage: "questionmark.circle").foregroundStyle(Ink.coral) }
+                    Text("\(sourceLabel(trait.source_type ?? "")) · 当前画像 v\(model.modelVersion)")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                    DisclosureGroup("有效时间与处理详情") {
+                        Text("有效起点：\(trait.valid_from ?? "未确认")\n有效终点：\(trait.valid_to ?? "未确认")\n处理模型：\(trait.model_version)")
+                            .font(.caption).foregroundStyle(Ink.muted)
+                    }
+                    ForEach(Array(Set(trait.evidence_ids + trait.counter_evidence_ids)).sorted(), id: \.self) { id in
+                        let memory = model.memories.first { $0.evidence.contains { $0.id == id } }
+                        let source = memory?.evidence.first { $0.id == id }
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(trait.counter_evidence_ids.contains(id) ? "另一种说法" : "支持这项理解的原文").font(.headline)
+                            Text(source?.excerpt ?? "该证据目前未在记忆列表中返回，不能还原原文。")
+                                .foregroundStyle(Ink.muted)
+                            if let source {
+                                Text(sourceLabel(source.source_type)).font(.caption).foregroundStyle(Ink.coral)
+                                DisclosureGroup("证据来源") { Text(source.source_ref).font(.caption).textSelection(.enabled) }
+                            }
+                            if let memory { NavigationLink("查看记忆、听原音或纠正") { MemoryDetailView(memory: memory) } }
+                        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                } else {
+                    ContentUnavailableView("这项理解已更新或移除", systemImage: "arrow.clockwise",
+                                           description: Text("返回画像查看当前有效的结论与依据。"))
                 }
             }.padding(20)
         }.background(Ink.paper.ignoresSafeArea()).navigationTitle("理解的依据").navigationBarTitleDisplayMode(.inline)
+        .refreshable { await model.refresh() }
     }
 }
 
@@ -390,7 +410,7 @@ private struct AgentsDashboard: View {
                 Divider()
                 Text("Recent work").font(.title3.weight(.medium))
                 if let calibration = model.calibrationRun {
-                    Text(calibration.summary ?? "\(calibration.question) · \(calibration.status)").foregroundStyle(Ink.muted)
+                    Text(calibration.summary ?? "\(calibration.question) · \(calibrationStatusLabel(calibration.status))").foregroundStyle(Ink.muted)
                 } else if let episode = model.episodes.first {
                     Text("最近录音：\(episode.recorded_at.prefix(10)) · \(episode.status)").foregroundStyle(Ink.muted)
                 } else { Text("暂无真实运行记录。录下一段经历后再来看看。").foregroundStyle(Ink.muted) }

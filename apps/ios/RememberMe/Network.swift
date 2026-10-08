@@ -2,7 +2,7 @@ import Foundation
 import CryptoKit
 import Security
 
-struct Pairing: Codable {
+struct Pairing: Codable, Equatable {
     let baseURL: String
     let fingerprint: String
     let token: String
@@ -77,6 +77,9 @@ struct TraitRecord: Decodable, Identifiable {
     let counter_evidence_ids: [String]
     let status: String
     let model_version: String
+    let source_type: String?
+    let valid_from: String?
+    let valid_to: String?
     var id: String { trait_id }
 }
 struct DomainRecord: Decodable, Identifiable {
@@ -197,12 +200,12 @@ final class APIClient: @unchecked Sendable {
     private let session: URLSession
     private let token: String?
 
-    init(baseURL: String, fingerprint: String, token: String? = nil) throws {
+    init(baseURL: String, fingerprint: String, token: String? = nil, session: URLSession? = nil) throws {
         guard let url = URL(string: baseURL), url.scheme == "https", url.host != nil,
               fingerprint.filter({ $0.isHexDigit }).count == 64 else { throw APIError.invalidURL }
         self.baseURL = url
         self.token = token
-        self.session = URLSession(configuration: .default, delegate: CertificatePin(fingerprint), delegateQueue: nil)
+        self.session = session ?? URLSession(configuration: .default, delegate: CertificatePin(fingerprint), delegateQueue: nil)
     }
 
     private func request(_ path: String, method: String = "GET", body: Data? = nil,

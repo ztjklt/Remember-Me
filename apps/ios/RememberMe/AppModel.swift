@@ -15,7 +15,7 @@ struct RecordingDraft: Codable, Identifiable {
 @MainActor
 final class AppModel: ObservableObject {
     @Published var showConnection = false
-    @Published var pairing: Pairing? = PairingStore.load()
+    @Published var pairing: Pairing?
     @Published var pairingServer = ""
     @Published var pairingCode = ""
     @Published var pairingFingerprint = ""
@@ -55,6 +55,11 @@ final class AppModel: ObservableObject {
     @Published var memorySearchResults: [MemorySearchRecord] = []
     @Published var auxiliarySeconds = 0
     @Published var calibrationRun: CalibrationRecord?
+    @Published var calibrationRuns: [CalibrationRecord] = []
+    @Published var calibrationRefreshError: String?
+    @Published var voiceRefreshError: String?
+    private let defaults: UserDefaults
+    private let clientFactory: (Pairing) throws -> APIClient
 
     private var recorder: AVAudioRecorder?
     private var player: AVAudioPlayer?
@@ -66,25 +71,30 @@ final class AppModel: ObservableObject {
     private var auxiliaryTimer: Timer?
     private var auxiliaryStartedAt: Date?
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "pending-recording") {
+    init(pairing: Pairing? = PairingStore.load(), defaults: UserDefaults = .standard,
+         clientFactory: @escaping (Pairing) throws -> APIClient = {
+             try APIClient(baseURL: $0.baseURL, fingerprint: $0.fingerprint, token: $0.token)
+         }) {
+        self.pairing = pairing
+        self.defaults = defaults
+        self.clientFactory = clientFactory
+        if let data = defaults.data(forKey: "pending-recording") {
             draft = try? JSONDecoder().decode(RecordingDraft.self, from: data)
             if let pending = draft, !FileManager.default.fileExists(atPath: pending.fileURL.path) {
                 self.draft = nil
             }
         }
-        episodeID = UserDefaults.standard.string(forKey: "pending-episode")
-        if let path = UserDefaults.standard.string(forKey: "pending-voice-sample"),
+        episodeID = defaults.string(forKey: "pending-episode")
+        if let path = defaults.string(forKey: "pending-voice-sample"),
            FileManager.default.fileExists(atPath: path) {
             voiceSampleURL = URL(fileURLWithPath: path)
-            voiceSampleTranscript = UserDefaults.standard.string(forKey: "pending-voice-transcript") ?? ""
+            voiceSampleTranscript = defaults.string(forKey: "pending-voice-transcript") ?? ""
         }
     }
 
     private var client: APIClient? {
         guard let pairing else { return nil }
-        return try? APIClient(baseURL: pairing.baseURL, fingerprint: pairing.fingerprint,
-                              token: pairing.token)
+        return try? clientFactory(pairing)
     }
 
     func importPairingLink(_ url: URL) {
@@ -118,6 +128,7 @@ final class AppModel: ObservableObject {
                 pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
                 memories = []; episodes = []; domains = []; questions = []
                 modelVersion = 0; twinAnswer = nil; calibrationRun = nil
+                calibrationRuns = []; calibrationRefreshError = nil; voiceRefreshError = nil
                 cloudConsentID = nil; voiceConsentID = nil; voiceProfileReady = false
                 memorySearchResults = []; memorySearchQuery = ""; queryDraft = ""
                 stopPlayback()
@@ -138,30 +149,58 @@ final class AppModel: ObservableObject {
             async let nextConsents = client.consents(subjectID: pairing.subjectID)
             async let nextVoiceProfile = client.voiceProfile(subjectID: pairing.subjectID)
             async let nextCalibrations = client.calibrations(subjectID: pairing.subjectID)
-            memories = try await nextMemories
-            episodes = try await nextEpisodes
-            let snapshot = try await nextModel
+            let (updatedMemories, updatedEpisodes, snapshot, updatedQuestions, grants) = try await
+                (nextMemories, nextEpisodes, nextModel, nextQuestions, nextConsents)
+            guard self.pairing == pairing else { return }
+            memories = updatedMemories
+            episodes = updatedEpisodes
             domains = snapshot.domains
             modelVersion = snapshot.version
-            questions = try await nextQuestions
-            let grants = try await nextConsents
+            questions = updatedQuestions
             cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
             voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
-            let profile = try await nextVoiceProfile
-            voiceProfileReady = profile.ready
-            calibrationRun = try await nextCalibrations.first
+            do {
+                let runs = try await nextCalibrations
+                guard self.pairing == pairing else { return }
+                calibrationRuns = runs
+                calibrationRun = runs.first { $0.id == calibrationRun?.id }
+                    ?? runs.first { $0.status == "awaiting_human" } ?? runs.first
+                calibrationRefreshError = nil
+            } catch {
+                guard self.pairing == pairing else { return }
+                calibrationRun = nil; calibrationRuns = []
+                calibrationRefreshError = "校准记录暂时无法刷新，可稍后重试。"
+            }
+            do {
+                let profile = try await nextVoiceProfile
+                guard self.pairing == pairing else { return }
+                voiceProfileReady = profile.ready
+                voiceRefreshError = nil
+            } catch {
+                guard self.pairing == pairing else { return }
+                voiceProfileReady = false
+                voiceRefreshError = "个人声音状态暂时无法刷新，可稍后重试。"
+            }
             if cloudConsentID != nil,
-               let answerID = UserDefaults.standard.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
-                twinAnswer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
+               let answerID = defaults.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
+                let updatedAnswer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
+                guard self.pairing == pairing else { return }
+                twinAnswer = updatedAnswer
             } else {
                 twinAnswer = nil
             }
             errorMessage = nil
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            if self.pairing == pairing { errorMessage = error.localizedDescription }
+        }
     }
 
     func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
         guard !isRecording else { return }
+        guard draft == nil && episodeID == nil else {
+            errorMessage = "已有待处理的录音，请先继续核对或提交；原音仍在手机里。"
+            return
+        }
         stopPlayback()
         errorMessage = nil
         transcriptDraft = ""
@@ -249,7 +288,7 @@ final class AppModel: ObservableObject {
                                     calibrationID: draft.calibrationID,
                                     consentConfirmedAt: draft.consentConfirmedAt)
         if let data = try? JSONEncoder().encode(self.draft) {
-            UserDefaults.standard.set(data, forKey: "pending-recording")
+            defaults.set(data, forKey: "pending-recording")
         }
     }
 
@@ -317,7 +356,7 @@ final class AppModel: ObservableObject {
 
     func saveTranscriptDraft() {
         guard let episodeID else { return }
-        UserDefaults.standard.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
+        defaults.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
     }
 
     func sendRecording() async {
@@ -336,7 +375,7 @@ final class AppModel: ObservableObject {
             }
             let id = try await client.upload(draft, pairing: pairing)
             episodeID = id
-            UserDefaults.standard.set(id, forKey: "pending-episode")
+            defaults.set(id, forKey: "pending-episode")
             await pollEpisode()
         } catch { errorMessage = "上传失败，录音仍在手机里，可重试。\n\(error.localizedDescription)" }
     }
@@ -349,9 +388,9 @@ final class AppModel: ObservableObject {
                 processingStatus = status.status
                 if status.status == "ready" {
                     let calibrationID = draft?.calibrationID
-                    UserDefaults.standard.removeObject(forKey: "transcript-edit-\(episodeID)")
-                    UserDefaults.standard.removeObject(forKey: "pending-recording")
-                    UserDefaults.standard.removeObject(forKey: "pending-episode")
+                    defaults.removeObject(forKey: "transcript-edit-\(episodeID)")
+                    defaults.removeObject(forKey: "pending-recording")
+                    defaults.removeObject(forKey: "pending-episode")
                     draft = nil
                     self.episodeID = nil
                     isTranscriptReviewReady = false
@@ -369,7 +408,7 @@ final class AppModel: ObservableObject {
                 }
                 let review = try await client.transcriptReview(episodeID)
                 if review.state == "reviewing", let text = review.transcript {
-                    if !isTranscriptReviewReady { transcriptDraft = UserDefaults.standard.string(forKey: "transcript-edit-\(episodeID)") ?? text }
+                    if !isTranscriptReviewReady { transcriptDraft = defaults.string(forKey: "transcript-edit-\(episodeID)") ?? text }
                     isTranscriptReviewReady = true
                     processingStatus = "请核对转写文字"
                     return
@@ -403,15 +442,26 @@ final class AppModel: ObservableObject {
 
     func correct(_ memory: MemoryRecord, to content: String) async -> Bool {
         guard let pairing, let client else { return false }
-        do { try await client.correct(subjectID: pairing.subjectID, memoryID: memory.id, content: content); await refresh(); return true }
+        isBusy = true
+        defer { isBusy = false }
+        do {
+            try await client.correct(subjectID: pairing.subjectID, memoryID: memory.id, content: content)
+            guard self.pairing == pairing else { return true }
+            invalidateUnderstanding()
+            await refresh()
+            return true
+        }
         catch { errorMessage = error.localizedDescription; return false }
     }
     func delete(_ memory: MemoryRecord) async -> Bool {
         guard let pairing, let client else { return false }
+        isBusy = true
+        defer { isBusy = false }
         do {
             try await client.delete(subjectID: pairing.subjectID, memoryID: memory.id)
-            memories.removeAll { $0.id == memory.id }
-            memorySearchResults.removeAll { $0.id == memory.id }
+            guard self.pairing == pairing else { return true }
+            invalidateUnderstanding()
+            await refresh()
             return true
         } catch { errorMessage = error.localizedDescription; return false }
     }
@@ -437,6 +487,8 @@ final class AppModel: ObservableObject {
 
     func retryEpisode(_ episodeID: String) async {
         guard let client else { return }
+        isBusy = true
+        defer { isBusy = false }
         do {
             try await client.retry(episodeID)
             await refresh()
@@ -460,9 +512,12 @@ final class AppModel: ObservableObject {
         guard let cloudConsentID, let pairing, let client else { return }
         do {
             try await client.revokeConsent(cloudConsentID)
+            guard self.pairing == pairing else { return }
             self.cloudConsentID = nil
             twinAnswer = nil
-            UserDefaults.standard.removeObject(forKey: "last-twin-answer-\(pairing.subjectID)")
+            calibrationRun = nil; calibrationRuns = []; calibrationRefreshError = nil
+            stopPlayback()
+            defaults.removeObject(forKey: "last-twin-answer-\(pairing.subjectID)")
         } catch { errorMessage = "Twin 授权未能撤销：\(error.localizedDescription)" }
     }
 
@@ -483,8 +538,9 @@ final class AppModel: ObservableObject {
         do {
             let result = try await client.askTwin(subjectID: pairing.subjectID, question: question,
                                                   cloudConsentID: cloudConsentID)
+            guard self.pairing == pairing, self.cloudConsentID == cloudConsentID else { return }
             twinAnswer = result
-            UserDefaults.standard.set(result.id, forKey: "last-twin-answer-\(pairing.subjectID)")
+            defaults.set(result.id, forKey: "last-twin-answer-\(pairing.subjectID)")
         } catch { errorMessage = "Twin 暂时没能回答：\(error.localizedDescription)" }
     }
 
@@ -558,8 +614,8 @@ final class AppModel: ObservableObject {
                 voiceSampleURL = url
                 let transcript = try? await client.transcribeQuery(subjectID: pairing.subjectID, audio: audio)
                 voiceSampleTranscript = transcript?.text ?? ""
-                UserDefaults.standard.set(url.path, forKey: "pending-voice-sample")
-                UserDefaults.standard.set(voiceSampleTranscript, forKey: "pending-voice-transcript")
+                defaults.set(url.path, forKey: "pending-voice-sample")
+                defaults.set(voiceSampleTranscript, forKey: "pending-voice-transcript")
                 if voiceSampleTranscript.isEmpty {
                     errorMessage = "样本已保留。请按你实际说的话填写文字，再确认提交。"
                 }
@@ -589,8 +645,8 @@ final class AppModel: ObservableObject {
             voiceProfileReady = profile.ready
             try? FileManager.default.removeItem(at: voiceSampleURL)
             self.voiceSampleURL = nil
-            UserDefaults.standard.removeObject(forKey: "pending-voice-sample")
-            UserDefaults.standard.removeObject(forKey: "pending-voice-transcript")
+            defaults.removeObject(forKey: "pending-voice-sample")
+            defaults.removeObject(forKey: "pending-voice-transcript")
         } catch { errorMessage = "声音样本未能提交，手机里的样本还在：\(error.localizedDescription)" }
     }
 
@@ -602,8 +658,8 @@ final class AppModel: ObservableObject {
             voiceProfileReady = false
             if let voiceSampleURL { try? FileManager.default.removeItem(at: voiceSampleURL) }
             voiceSampleURL = nil
-            UserDefaults.standard.removeObject(forKey: "pending-voice-sample")
-            UserDefaults.standard.removeObject(forKey: "pending-voice-transcript")
+            defaults.removeObject(forKey: "pending-voice-sample")
+            defaults.removeObject(forKey: "pending-voice-transcript")
         } catch { errorMessage = "声音授权未能撤销：\(error.localizedDescription)" }
     }
 
@@ -624,8 +680,10 @@ final class AppModel: ObservableObject {
         isBusy = true
         defer { isBusy = false }
         do {
-            calibrationRun = try await client.startCalibration(
+            let run = try await client.startCalibration(
                 subjectID: pairing.subjectID, answerID: twinAnswer.id, cloudConsentID: cloudConsentID)
+            guard self.pairing == pairing, self.cloudConsentID == cloudConsentID else { return }
+            updateCalibration(run)
         } catch { errorMessage = "暂时无法锁定 Twin 回答：\(error.localizedDescription)" }
     }
 
@@ -634,9 +692,29 @@ final class AppModel: ObservableObject {
         isBusy = true
         defer { isBusy = false }
         do {
-            calibrationRun = try await client.completeCalibration(
+            let run = try await client.completeCalibration(
                 subjectID: pairing.subjectID, calibrationID: calibrationID,
                 cloudConsentID: cloudConsentID)
+            guard self.pairing == pairing, self.cloudConsentID == cloudConsentID else { return }
+            updateCalibration(run)
+            errorMessage = nil
         } catch { errorMessage = "录音已保存，校准比较可稍后重试：\(error.localizedDescription)" }
+    }
+
+    private func updateCalibration(_ run: CalibrationRecord) {
+        calibrationRun = run
+        if let index = calibrationRuns.firstIndex(where: { $0.id == run.id }) {
+            calibrationRuns[index] = run
+        } else {
+            calibrationRuns.insert(run, at: 0)
+        }
+        calibrationRefreshError = nil
+    }
+
+    private func invalidateUnderstanding() {
+        memories = []; domains = []; questions = []
+        twinAnswer = nil; calibrationRun = nil; calibrationRuns = []
+        memorySearchResults = []
+        stopPlayback()
     }
 }

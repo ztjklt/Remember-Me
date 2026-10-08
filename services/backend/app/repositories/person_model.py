@@ -46,6 +46,19 @@ class PersonModelRepository:
 
     def rebuild(self, subject_id: str, *, answered_question_id: str | None = None) -> int:
         session = self.session
+        # IDs belong to durable Memory records, not a model-generated proposal.
+        # Preserve existing IDs (including those made by older deployments) when
+        # rebuilding after a correction or an unrelated new Episode.
+        previous_traits = {
+            memory_id: row.trait_id
+            for row in session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id))
+            for memory_id in row.memory_item_ids
+        }
+        previous_facts = {
+            memory_id: row.fact_id
+            for row in session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id))
+            for memory_id in row.memory_item_ids
+        }
         if answered_question_id:
             question = session.get(CaptureQuestion, answered_question_id)
             if question and question.subject_id == subject_id:
@@ -75,7 +88,7 @@ class PersonModelRepository:
                 domain = DOMAIN_FOR_TYPE[memory.memory_type]
             evidence = session.get(Evidence, memory.evidence_ids[0]) if memory.evidence_ids else None
             trait = PersonTrait(
-                trait_id=(proposal or {}).get("trait_id") or "trait_" + memory.memory_item_id,
+                trait_id=previous_traits.get(memory.memory_item_id) or "trait_" + memory.memory_item_id,
                 subject_id=subject_id, domain=domain, statement=memory.content,
                 context=(proposal or {}).get("context") or (evidence.excerpt if evidence else None),
                 confidence=memory.confidence, source_type=memory.source_type,
@@ -94,7 +107,7 @@ class PersonModelRepository:
                                       if item.get("content") == memory.content
                                       and set(item.get("evidence_ids", [])) & set(memory.evidence_ids)), None)
                 session.add(GraphFact(
-                    fact_id=(fact_proposal or {}).get("fact_id") or "fact_" + memory.memory_item_id,
+                    fact_id=previous_facts.get(memory.memory_item_id) or "fact_" + memory.memory_item_id,
                     subject_id=subject_id, kind=(fact_proposal or {}).get("kind") or memory.memory_type,
                     content=memory.content, evidence_ids=list(memory.evidence_ids),
                     memory_item_ids=[memory.memory_item_id],
@@ -111,8 +124,6 @@ class PersonModelRepository:
         pending = list(session.scalars(select(CaptureQuestion).where(
             CaptureQuestion.subject_id == subject_id, CaptureQuestion.status == "pending"
         )))
-        for question in pending:
-            question.status = "skipped"
         unresolved = next((trait for trait in traits if trait.status == "unresolved"), None)
         if unresolved:
             domain = unresolved.domain
@@ -121,11 +132,24 @@ class PersonModelRepository:
             evidence_ids = unresolved.evidence_ids + unresolved.counter_evidence_ids
         else:
             covered = {trait.domain for trait in traits}
-            domain = next((name for name in PERSON_DOMAINS if name not in covered), None)
+            answered = set(session.scalars(select(CaptureQuestion.target_domain).where(
+                CaptureQuestion.subject_id == subject_id,
+                CaptureQuestion.status == "answered",
+                CaptureQuestion.reason == "missing_domain",
+            )))
+            domain = next((name for name in PERSON_DOMAINS if name not in covered and name not in answered), None)
             text = QUESTIONS[domain] if domain else None
             reason = "missing_domain"
             evidence_ids = []
-        if text and domain:
+        evidence_ids = sorted(set(evidence_ids))
+        retained = None
+        for question in pending:
+            if (retained is None and text and question.text == text and question.target_domain == domain
+                    and question.reason == reason and sorted(set(question.evidence_ids)) == evidence_ids):
+                retained = question
+            else:
+                question.status = "skipped"
+        if text and domain and retained is None:
             session.add(CaptureQuestion(
                 question_id="question_" + uuid4().hex[:16], subject_id=subject_id,
                 text=text, target_domain=domain, reason=reason,

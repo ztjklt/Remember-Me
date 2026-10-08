@@ -2,6 +2,8 @@
 
 # iOS 本机语音 → Person Model
 
+2026-10-08 已补上画像结论与反例的证据入口、纠正/删除后的同步失效、校准记录选择与失败恢复，以及声音状态不可用时的核心刷新降级。当前模拟器测试与仍待真人验证的边界见 [Agent Core 记录](../../docs/verification/IOS_AGENT_CORE_2026_10_08.md)。
+
 ## Twin 与个人声音
 
 现有 Mac 服务及迁移启动后，执行 `cd services/backend && uv sync --extra retrieval` 安装本机中文检索依赖；另开终端执行 `cd services/voice && uv sync && uv run uvicorn local_voice:app --host 127.0.0.1 --port 8300`。首次检索会下载 BGE 中文向量模型，首次点播会下载 Qwen3-TTS Base 权重；它们只留在 Mac 的模型缓存。AI Core 和 Voice 仍只监听本机，iPhone 只连接已配对的 HTTPS Backend。DeepSeek 密钥仍只在 AI Core 的本机环境中。

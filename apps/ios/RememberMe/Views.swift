@@ -71,12 +71,23 @@ private func statusLabel(_ state: String) -> String {
     }
 }
 
-private func sourceLabel(_ source: String) -> String {
+func sourceLabel(_ source: String) -> String {
     switch source {
     case "SUBJECT": return "本人叙述"
     case "THIRD_PARTY": return "他人提供"
     case "AI_INFERENCE": return "AI 推测"
+    case "CALIBRATION": return "核对与纠正"
+    case "OBJECTIVE": return "客观材料"
     default: return "来源待核对"
+    }
+}
+
+func calibrationStatusLabel(_ status: String) -> String {
+    switch status {
+    case "awaiting_human": "等待本人回答与比较"
+    case "complete": "已完成"
+    case "stale": "证据或授权已变化"
+    default: "状态待核对"
     }
 }
 
@@ -821,11 +832,23 @@ struct TwinView: View {
                             Task { await model.startCalibration() }
                         }
                         .buttonStyle(.bordered)
+                        .disabled(model.isBusy)
+                    }
+                }
+                if let message = model.calibrationRefreshError {
+                    Text(message).foregroundStyle(Ink.coral)
+                    Button("刷新校准记录") { Task { await model.refresh() } }
+                }
+                if !model.calibrationRuns.isEmpty {
+                    Menu("选择校准记录") {
+                        ForEach(model.calibrationRuns) { run in
+                            Button("\(run.question) · \(calibrationStatusLabel(run.status))") { model.calibrationRun = run }
+                        }
                     }
                 }
                 if let run = model.calibrationRun {
                     VStack(alignment: .leading, spacing: 12) {
-                        Eyebrow(text: "TWIN 校准 · \(run.status)")
+                        Eyebrow(text: "TWIN 校准 · \(calibrationStatusLabel(run.status))")
                         Text(run.question)
                             .font(.system(.title3, design: .default).weight(.semibold)).foregroundStyle(Ink.text)
                         if run.status == "stale" {
@@ -839,6 +862,13 @@ struct TwinView: View {
                                     ActionButton(title: "录下我真正的回答", icon: "mic") {
                                         showCalibrationRecorder = true
                                     }
+                                    .disabled(model.isBusy || model.draft != nil)
+                                    if model.draft?.calibrationID == run.id {
+                                        Button("继续已保存的本人回答") { showCalibrationRecorder = true }
+                                    } else if model.draft != nil {
+                                        Text("请先完成已保存的录音，再开始这次校准。")
+                                            .font(.subheadline).foregroundStyle(Ink.muted)
+                                    }
                                 } else if model.episodes.first(where: { $0.id == run.human_episode_id })?.status == "ready" {
                                     ActionButton(title: model.isBusy ? "正在比较…" : "比较 Twin 和我的回答",
                                                  icon: "arrow.left.arrow.right") {
@@ -848,6 +878,16 @@ struct TwinView: View {
                                 } else {
                                     Text("回答已保存。请核对转写并等待记忆处理完成；之后可重试比较。")
                                         .font(.subheadline).foregroundStyle(Ink.muted)
+                                    if model.draft?.calibrationID == run.id {
+                                        Button("继续核对或处理本人回答") { showCalibrationRecorder = true }
+                                    } else if let episodeID = run.human_episode_id,
+                                              model.episodes.first(where: { $0.id == episodeID })?.status == "failed" {
+                                        Button("重试这段回答的处理") {
+                                            Task { await model.retryEpisode(episodeID) }
+                                        }.disabled(model.isBusy)
+                                    } else {
+                                        Button("刷新回答处理状态") { Task { await model.refresh() } }
+                                    }
                                 }
                             } else if run.status == "complete" {
                                 Text(run.summary ?? "校准完成")
@@ -874,6 +914,9 @@ struct TwinView: View {
                         }
                     }
                     .journalCard()
+                }
+                if let message = model.voiceRefreshError {
+                    Text(message).font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 VoiceSetupView()
             }
@@ -995,9 +1038,10 @@ struct MemoryDetailView: View {
                     ActionButton(title: "保存纠正", icon: "checkmark") {
                         Task { if await model.correct(memory, to: correction) { dismiss() } }
                     }
-                    .disabled(correction.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(model.isBusy || correction.trimmingCharacters(in: .whitespaces).isEmpty)
                     Button("删除这条记忆", role: .destructive) { showDelete = true }
                         .font(.subheadline)
+                        .disabled(model.isBusy)
                 }
                 .journalCard()
             }
@@ -1047,18 +1091,22 @@ struct ModelView: View {
                                 .foregroundStyle(Ink.muted)
                         }
                         ForEach(domain.traits) { trait in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(trait.statement)
-                                    .font(.subheadline)
-                                    .foregroundStyle(Ink.text)
-                                if trait.status == "unresolved" {
-                                    Label("有不同说法，等待确认", systemImage: "questionmark.circle")
+                            NavigationLink { TraitEvidenceView(trait: trait) } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(trait.statement)
                                         .font(.subheadline)
-                                        .foregroundStyle(Ink.coral)
+                                        .foregroundStyle(Ink.text)
+                                    if trait.status == "unresolved" {
+                                        Label("有不同说法，等待确认", systemImage: "questionmark.circle")
+                                            .font(.subheadline)
+                                            .foregroundStyle(Ink.coral)
+                                    }
+                                    Label("查看原文、反例与纠正入口", systemImage: "chevron.right")
+                                        .font(.caption).foregroundStyle(Ink.coral)
                                 }
-                            }
-                            .padding(.leading, 10)
-                            .overlay(alignment: .leading) { Capsule().fill(Ink.peach).frame(width: 3) }
+                                .padding(.leading, 10)
+                                .overlay(alignment: .leading) { Capsule().fill(Ink.peach).frame(width: 3) }
+                            }.buttonStyle(.plain)
                         }
                     }
                     .journalCard()

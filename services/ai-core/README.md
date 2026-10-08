@@ -11,6 +11,8 @@ Phase 1 scope: the Episode/Transcript → Memory Extractor schema, structured ou
 
 Inputs and outputs must conform to `packages/contracts`.
 
+Persona proposals now enforce direct-source attribution as well as verified spans: paraphrases remain `AI_INFERENCE`, third-party evidence cannot be relabelled as a Subject quote, and the same evidence cannot both support and contradict a trait. Duplicate trait/fact IDs are rejected before persistence. These checks enforce provenance consistency; semantic support still needs model evaluation. See the [iOS Core verification](../../docs/verification/IOS_AGENT_CORE_2026_10_08.md).
+
 ## Local verification
 
 From this directory:
