@@ -85,7 +85,7 @@ def create_app(
     active_profile = profile_provider
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
-        active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers, structured_answers=settings.twin_structured_answers)
+        active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers, structured_answers=settings.twin_structured_answers, quote_answers=settings.twin_quote_answers)
         active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
         active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key))
     slots = BoundedSemaphore(settings.max_concurrent_requests)

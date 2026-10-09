@@ -174,6 +174,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(session.router)
     from .api import accounts
     app.include_router(accounts.router)
+    from .api import sharing
+    app.include_router(sharing.router)
+    @app.get('/api/v1/service-info')
+    def service_info():
+        import os
+        allowed=settings.allow_account_registration
+        return {'release_id':os.environ.get('REMEMBER_RELEASE_ID','development'),
+            'api_version':'0.7.0','sharing_invitations':True,
+            'registration_allowed':allowed if allowed is not None else settings.environment in {'development','test'}}
     app.include_router(consents.router)
     app.include_router(episodes.router)
     app.include_router(person_model.router)

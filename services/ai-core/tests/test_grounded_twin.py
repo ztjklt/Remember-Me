@@ -58,8 +58,8 @@ def test_review_requires_every_point_and_false_is_error_not_unknown():
     class Chat:
         def complete(self,system,payload):
             if 'points' not in payload:return raw(),'actual'
-            return {'checks':[{'point':1,'supported':True,'complete':True,'attribution':True,'time_consistent':True,'mode_correct':True},
-                              {'point':2,'supported':False,'complete':True,'attribution':True,'time_consistent':True,'mode_correct':True}]},'actual'
+            return {'checks':[{'point':1,'supported':True,'complete':True,'attribution':True,'time_consistent':True,'mode_correct':True,'unsupported_claims':[]},
+                              {'point':2,'supported':False,'complete':True,'attribution':True,'time_consistent':True,'mode_correct':True,'unsupported_claims':[]}]},'actual'
     with pytest.raises(AIOutputInvalid,match='review'):GroundedTwin(Chat()).answer(data())
 
 
@@ -69,7 +69,7 @@ def test_review_cannot_omit_or_duplicate_questions(checks):
     class Chat:
         def complete(self,system,payload):
             if 'points' not in payload:return raw(),'actual'
-            return {'checks':[dict(point=n,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True) for n in checks]},'actual'
+            return {'checks':[dict(point=n,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True,unsupported_claims=[]) for n in checks]},'actual'
     with pytest.raises(AIOutputInvalid):GroundedTwin(Chat()).answer(data())
 
 
@@ -80,7 +80,7 @@ def test_original_selection_is_also_reviewed_for_answer_relevance():
         def complete(self,system,payload):
             self.calls+=1
             if self.calls==1:return dict(points=[dict(question_part='原话',mode='ORIGINAL',text='',source_ids=['s1'],names=[])]),'actual'
-            return {'checks':[dict(point=1,supported=True,complete=False,attribution=True,time_consistent=True,mode_correct=True)]},'actual'
+            return {'checks':[dict(point=1,supported=True,complete=False,attribution=True,time_consistent=True,mode_correct=True,unsupported_claims=[])]},'actual'
     chat=Chat()
     with pytest.raises(AIOutputInvalid):GroundedTwin(chat).answer(data())
     assert chat.calls==2
@@ -133,7 +133,7 @@ def test_review_receives_materialized_original_and_final_visible_answer():
             assert payload['points'][0]['text']==data().candidates[0].evidence[0].excerpt
             assert payload['rendered_answer']['answer']==payload['points'][0]['text']
             assert payload['rendered_answer']['response_type']=='ORIGINAL'
-            return {'checks':[dict(point=1,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True)]},'actual'
+            return {'checks':[dict(point=1,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True,unsupported_claims=[])]},'actual'
     assert GroundedTwin(Chat()).answer(data()).response_type=='ORIGINAL'
 
 
@@ -151,5 +151,82 @@ def test_evidence_about_an_unanswered_question_is_not_a_known_answer():
     class Chat:
         def complete(self,system,payload):
             if 'points' not in payload:return raw(),'actual'
-            return {'checks':[dict(point=n,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=False if n==1 else True) for n in [1,2]]},'actual'
+            return {'checks':[dict(point=n,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=False if n==1 else True,unsupported_claims=[]) for n in [1,2]]},'actual'
     with pytest.raises(AIOutputInvalid,match='failed evidence review'):GroundedTwin(Chat()).answer(data())
+
+
+def test_exact_names_can_be_selected_without_a_second_redundant_source_handle():
+    from app.grounded_twin import validate_answer
+    value=raw();value['points'][0]['names']=['老周']
+    result=validate_answer(value,data(),'actual')
+    assert result.evidence_ids==['e1'] and '老周' in result.answer
+
+
+@pytest.mark.parametrize('name',['老张','周先生','母亲'])
+def test_compact_names_still_require_same_point_source_and_answer(name):
+    from app.grounded_twin import validate_answer
+    value=raw();value['points'][0]['names']=[name]
+    with pytest.raises(AIOutputInvalid):validate_answer(value,data(),'actual')
+
+
+def test_compact_name_cannot_borrow_from_uncited_source():
+    from app.grounded_twin import validate_answer
+    value=data();value.candidates[0].evidence.append(value.candidates[0].evidence[0].model_copy(update={'evidence_id':'e2','excerpt':'父亲老张。'}))
+    answer=raw();answer['points'][0].update(text='老张的经历。',names=['老张'])
+    with pytest.raises(AIOutputInvalid):validate_answer(answer,value,'actual')
+
+
+def test_one_bounded_draft_correction_still_requires_full_validation_and_review():
+    from app.grounded_twin import GroundedTwin
+    class Chat:
+        calls=[]
+        def complete(self,system,payload):
+            self.calls.append(payload)
+            if len(self.calls)==1:
+                invalid=raw();invalid['points'][0]['names']=['不存在的名字'];return invalid,'actual'
+            if len(self.calls)==2:
+                assert payload['validation_error'] and payload['rejected_draft']
+                assert payload['recordings']==self.calls[0]['recordings']
+                return raw(),'actual'
+            return {'checks':[dict(point=n,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True,unsupported_claims=[]) for n in [1,2]]},'actual'
+    chat=Chat();answer=GroundedTwin(chat).answer(data())
+    assert len(chat.calls)==3 and answer.evidence_ids==['e1']
+    assert '不存在' not in answer.answer
+
+
+def test_bad_correction_is_not_dropped_or_replaced_with_unknown():
+    from app.grounded_twin import GroundedTwin
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1;invalid=raw();invalid['points'][0]['source_ids']=['made-up'];return invalid,'actual'
+    chat=Chat()
+    with pytest.raises(AIOutputInvalid):GroundedTwin(chat).answer(data())
+    assert chat.calls==2
+
+
+def test_transport_or_malformed_json_failure_is_never_retried_as_draft_correction():
+    from app.grounded_twin import GroundedTwin
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1;raise AIOutputInvalid('Weixin malformed JSON output')
+    chat=Chat()
+    with pytest.raises(AIOutputInvalid):GroundedTwin(chat).answer(data())
+    assert chat.calls==1
+
+
+def test_reviewer_gets_point_scoped_sources_and_rejects_unasserted_negative():
+    from app.grounded_twin import GroundedTwin
+    value=data();value.candidates[0].evidence[0].excerpt='摄影朋友和队友不是同一人。我没有说摄影朋友在消防队工作。'
+    value.candidates[0].evidence.append(value.candidates[0].evidence[0].model_copy(update={'evidence_id':'e2','excerpt':'另一天我回到住处。'}))
+    draft=raw();draft['points']=draft['points'][:1];draft['points'][0].update(text='摄影朋友不在消防队工作。',names=[])
+    class Chat:
+        def complete(self,system,payload):
+            if 'points' not in payload:return draft,'actual'
+            cited=payload['cited_material'][0]
+            assert cited['point']==1 and [s['id'] for s in cited['sources']]==['s1']
+            assert '另一天' not in str(cited)
+            return {'checks':[dict(point=1,supported=True,complete=True,attribution=True,time_consistent=True,mode_correct=True,
+                unsupported_claims=['摄影朋友不在消防队工作'])]},'actual'
+    with pytest.raises(AIOutputInvalid,match='failed evidence review'):GroundedTwin(Chat()).answer(value)

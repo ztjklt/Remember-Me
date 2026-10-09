@@ -40,3 +40,39 @@ def test_auth_rate_limit_and_remote_transport(client):
     assert client.post('/api/v1/accounts/login',json={k:BODY[k] for k in ('username','password')}).status_code==429
     assert client.post('/api/v1/accounts/register',json=BODY,headers={'Origin':'https://attacker.invalid'}).status_code==422
     assert client.post('http://remote.invalid/api/v1/accounts/register',json=BODY).status_code==422
+
+
+def test_admin_account_works_with_closed_registration_and_reset_revokes_sessions(app,client,session):
+    from app.account_admin import create_account, reset_password
+    app.state.settings.allow_account_registration=False
+    assert client.post('/api/v1/accounts/register',json=BODY).status_code==422
+    created=create_account(session,**BODY)
+    session.commit()
+    credentials={k:BODY[k] for k in ('username','password')}
+    login=client.post('/api/v1/accounts/login',json=credentials)
+    assert login.status_code==200
+    old={'Authorization':'Bearer '+login.json()['actor_token']}
+    assert client.get('/api/v1/workbench/spaces',headers=old).json()['items'][0]['role']=='owner'
+    reset_password(session,BODY['username'],'a-different-test-password');session.commit()
+    assert client.get('/api/v1/session',headers=old).status_code==401
+    assert client.post('/api/v1/accounts/login',json=credentials).status_code==401
+    assert client.post('/api/v1/accounts/login',json={**credentials,'password':'a-different-test-password'}).status_code==200
+    assert 'password' not in created
+
+
+def test_password_reset_during_login_cannot_issue_session_for_old_password(app,client,session,monkeypatch):
+    from app.api import accounts
+    from app import account_admin
+    client.post('/api/v1/accounts/register',json=BODY)
+    digest=accounts.password_digest
+    def interrupted(password,salt):
+        result=digest(password,salt)
+        with app.state.database.session() as other:
+            from app.access import publication_lock
+            publication_lock(other,'')
+            account_admin.reset_password(other,BODY['username'],'new-password-after-reset')
+            other.commit()
+        return result
+    monkeypatch.setattr(accounts,'password_digest',interrupted)
+    response=client.post('/api/v1/accounts/login',json={k:BODY[k] for k in ('username','password')})
+    assert response.status_code==401

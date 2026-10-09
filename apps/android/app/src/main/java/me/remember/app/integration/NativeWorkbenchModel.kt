@@ -22,6 +22,10 @@ data class NativeState(
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
+    val serviceInfo: ServiceInfo = ServiceInfo(),
+    val invitations: List<JSONObject> = emptyList(), val recipients: List<JSONObject> = emptyList(),
+    val sharePreview: JSONObject? = null, val shareSelection: ShareSelection? = null,
+    val issuedInvitation: JSONObject? = null,
     val portrait: JSONObject = JSONObject(),
     val narrative: JSONObject = JSONObject(), val narrativeJobs: List<JSONObject> = emptyList(),
     val vocabulary: String = "", val reviewSupplement: String = "",
@@ -35,6 +39,9 @@ data class NativeState(
 }
 data class SourcePlayback(val episode: String = "", val playing: Boolean = false, val preparing: Boolean = false,
     val position: Long = 0, val duration: Long = 0)
+
+internal fun NativeState.forSpaceFallback(spaces: List<JSONObject>, selected: JSONObject?) =
+    NativeState(actor = actor, actorName = actorName, spaces = spaces, space = selected, busy = busy, notice = "可访问空间已更新。")
 
 /** Account sessions use Keystore; local originals are scoped to the authenticated identity. */
 class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureService) : ViewModel() {
@@ -55,6 +62,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var ticker: Job? = null
     private var foreground = true
     private var polling: Job? = null
+    private var serviceInfoJob: Job? = null
     private data class CaptureTransfer(val id: String, val session: BackendSession, val capture: LocalCapture, val importing: Boolean)
     private var pendingTransfer: CaptureTransfer? = null
     init { reminders.disable(); savedSession.load()?.let { connect(it.first, it.second, remember = true) } }
@@ -74,6 +82,42 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
 
     fun report(message: String) { state.value = state.value.copy(error = message) }
+    fun loadServiceInfo(server: String) {
+        serviceInfoJob?.cancel()
+        serviceInfoJob = viewModelScope.launch {
+            state.value = state.value.copy(serviceInfo = ServiceInfo())
+            val result = runCatching { withContext(Dispatchers.IO) { serviceInfoRequest(server) } }
+            ensureActive()
+            result.onSuccess { state.value = state.value.copy(serviceInfo = it) }
+        }
+    }
+    fun clearSharePreview() { state.value = state.value.copy(sharePreview = null, shareSelection = null) }
+    fun previewShare(selection: ShareSelection) {
+        val s = session ?: return; val path = root()
+        operation(s) {
+            val result = io { client.json(s, "$path/sharing/preview", "POST", selection.json()) }
+            state.value = state.value.copy(sharePreview = result, shareSelection = selection)
+        }
+    }
+    fun createInvitation(audioConfirmed: Boolean, cloud: Boolean, recipient: String?) {
+        val s = session ?: return; val path = root()
+        val selection = state.value.shareSelection ?: return
+        val preview = state.value.sharePreview ?: return
+        operation(s) {
+            val result = io { client.json(s, "$path/invitations", "POST", selection.invitation(preview, audioConfirmed, cloud, recipient)) }
+            state.value = state.value.copy(issuedInvitation = result, sharePreview = null, shareSelection = null,
+                notice = if(result.has("code")) "邀请码已生成，亲友领取后仍需你确认。" else "接收人已选定，请核对账号后批准分享。")
+            refreshNow(s)
+        }
+    }
+    fun claimInvitation(code: String) {
+        val s = session ?: return
+        operation(s) {
+            io { client.json(s, "/api/v1/workbench/invitations/claim", "POST", JSONObject().put("code", code.trim())) }
+            state.value = state.value.copy(notice = "已领取邀请，等待记录者确认。批准后点击空间名称进入。")
+            refreshNow(s)
+        }
+    }
     fun connect(server: String, token: String, remember: Boolean = false) {
         if(state.value.busy || state.value.recording) return
         clearIdentity()
@@ -169,12 +213,19 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             if(gate.accepts(s)) {
                 stopSource(); audio.stopPlayback()
                 state.value = state.value.copy(stories = emptyList(), grants = emptyList(), revisions = emptyList(),
-                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), portrait = JSONObject(), narrative = JSONObject(), narrativeJobs = emptyList(), vocabulary = "", answer = null, search = emptyList(), reviewEpisode = null)
+                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), portrait = JSONObject(), narrative = JSONObject(), narrativeJobs = emptyList(), vocabulary = "", answer = null, search = emptyList(), reviewEpisode = null,
+                    invitations = emptyList(), recipients = emptyList(), sharePreview = null, shareSelection = null, issuedInvitation = null)
             }
             throw error
         }
     } }
     private suspend fun refreshNow(s: BackendSession) {
+        val spaces = io { client.json(s, "/api/v1/workbench/spaces").rows() }
+        val selected = spaces.firstOrNull { it.text("subject_id") == state.value.subject } ?: spaces.firstOrNull()
+        if(selected?.text("subject_id") != state.value.subject) {
+            stopSource(); audio.stopPlayback()
+            state.value = state.value.forSpaceFallback(spaces, selected)
+        } else state.value = state.value.copy(spaces = spaces, space = selected)
         if(state.value.subject.isBlank()) return
         val path = root()
         val stories = io { client.json(s, "$path/stories") }
@@ -184,6 +235,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
         val portrait = io { client.json(s, "$path/portrait").optJSONObject("views") ?: JSONObject() }
         val owner = stories.text("role") == "owner"
+        val info = io { ServiceInfo.parse(client.json(s, "/api/v1/service-info")) }
+        val invitations = if(owner && info.invitations) io { client.json(s, "$path/invitations").rows() } else emptyList()
+        val recipients = if(owner && info.invitations) io { client.json(s, "$path/recipients").rows() } else emptyList()
         val narrative = if(capabilities.optBoolean("narrative")) io { client.json(s, "$path/narrative") } else JSONObject()
         val narrativeJobs = if(owner && capabilities.optBoolean("narrative")) io { client.json(s, "$path/narrative/jobs").rows() } else emptyList()
         val revisions = if(owner) io { client.json(s, "$path/revisions").rows() } else emptyList()
@@ -197,6 +251,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(changed) { stopSource(); audio.stopPlayback() }
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role")), stories = stories.rows(),
             grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(), asrCapabilities = capabilities,
+            serviceInfo = info, invitations = invitations, recipients = recipients,
             candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, narrative = narrative, narrativeJobs = narrativeJobs, local = if(owner) localCaptures(s) else emptyList(),
             answer = if(changed) null else state.value.answer, search = if(changed) emptyList() else state.value.search)
     }

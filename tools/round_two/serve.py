@@ -12,6 +12,7 @@ BACKEND=ROOT/'services/backend'; AI=ROOT/'services/ai-core'; OUT=BACKEND/'var/ro
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--structured-twin',action='store_true')
+    parser.add_argument('--quoted-twin',action='store_true')
     parser.add_argument('--trace-twin-metadata',action='store_true')
     args=parser.parse_args()
     OUT.mkdir(exist_ok=True)
@@ -30,6 +31,7 @@ def main():
     ai_env.update(AI_PROVIDER='weixin',AI_BASE_URL='https://chatapi.weixin.qq.com/openai/v1',AI_MODEL='Deepseek-v4-flash',
         AI_TIMEOUT_SECONDS='45',AI_MAX_CONCURRENT_REQUESTS='1',AI_NARRATIVE_TRACE_DIR='')
     ai_env['AI_TWIN_STRUCTURED_ANSWERS']='true' if args.structured_twin else 'false'
+    ai_env['AI_TWIN_QUOTE_ANSWERS']='true' if args.quoted_twin else 'false'
     with (OUT/'migration.log').open('a',encoding='utf8') as log:
         subprocess.run([str(BACKEND/'.venv/Scripts/python.exe'),'-m','alembic','upgrade','head'],cwd=BACKEND,env=env,stdout=log,stderr=log,check=True)
     ai_command=[str(ROOT/'tools/round_two/traced_ai.py')] if args.trace_twin_metadata else ['-m','uvicorn','app.main:app','--port','8891']

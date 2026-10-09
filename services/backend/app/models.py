@@ -673,6 +673,24 @@ class AccountAttempt(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 
+class ShareInvitation(Base):
+    __tablename__ = 'share_invitations'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey('subjects.subject_id'), index=True, nullable=False)
+    creator_actor_id: Mapped[str] = mapped_column(ForeignKey('actors.actor_id'), nullable=False)
+    recipient_actor_id: Mapped[str | None] = mapped_column(ForeignKey('actors.actor_id'), nullable=True)
+    code_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='created')
+    selection: Mapped[dict] = mapped_column(JSON, nullable=False)
+    source_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    cloud_processing_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    grant_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    created_grant_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class MemoryEmbedding(Base):
     __tablename__ = "memory_embeddings"
     __table_args__ = (Index("ix_memory_embeddings_subject", "subject_id"),)

@@ -98,6 +98,13 @@ def login(payload:Credentials,request:Request,response:Response,session:Session=
     digest=password_digest(payload.password,account.salt if account else '00'*16)
     if not account or not hmac.compare_digest(digest,account.password_hash):
         raise AuthInvalid('账号或密码不正确。')
+    # Password hashing does not hold a write lock. Reset and session issuance
+    # must nevertheless be serialized: an in-flight old password cannot win.
+    verified_salt,verified_hash=account.salt,account.password_hash
+    publication_lock(session,'')
+    session.refresh(account)
+    if account.salt!=verified_salt or not hmac.compare_digest(account.password_hash,verified_hash):
+        raise AuthInvalid('账号凭据已更新，请重新登录。')
     return issue(session,session.get(Actor,account.actor_id),request,response)
 
 @router.post('/logout')

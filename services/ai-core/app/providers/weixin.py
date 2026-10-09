@@ -300,11 +300,12 @@ def compact_twin_materials(payload):
 
 
 class WeixinTwinProvider(WeixinChat):
-    def __init__(self, *, focus_hints=False, verify_answers=False, structured_answers=False, **kwargs):
+    def __init__(self, *, focus_hints=False, verify_answers=False, structured_answers=False, quote_answers=False, **kwargs):
         super().__init__(**kwargs)
         self.focus_hints = focus_hints
         self.verify_answers = verify_answers
         self.structured_answers = structured_answers
+        self.quote_answers = quote_answers
 
     def review_answer(self,output,compact,evidence):
         # This extra pass is a fallible quality guard, not an external fact check.
@@ -330,6 +331,9 @@ class WeixinTwinProvider(WeixinChat):
         if not all(result.values()):raise AIOutputInvalid('Twin answer failed evidence review')
 
     def answer(self, payload):
+        if self.quote_answers:
+            from ..quoted_twin import QuotedTwin
+            return QuotedTwin(self).answer(payload)
         if self.structured_answers:
             from ..grounded_twin import GroundedTwin
             return GroundedTwin(self).answer(payload)

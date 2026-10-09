@@ -186,22 +186,10 @@ def audio(subject_id: str, episode_id: str, request: Request,
 def grant(subject_id: str, body: GrantInput, request: Request,
           actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
     publication_lock(session, subject_id)
-    episode = own_episode(session, subject_id, body.episode_id, actor)
-    if episode.status != 'ready' or episode.transcript_reviewed_at is None:
-        raise RequestInvalid('请先核对文字并完成整理。')
-    if body.reader_actor_id == actor.actor_id or session.get(Actor, body.reader_actor_id) is None:
-        raise RequestInvalid('请提供另一个已创建的读者身份。')
-    if altered_story_ids(session, {body.episode_id}):
-        raise RequestInvalid('请先处理这个故事的修订。')
-    previous = session.scalar(select(StoryGrant).where(StoryGrant.episode_id == body.episode_id,
-        StoryGrant.reader_actor_id == body.reader_actor_id, StoryGrant.revoked_at.is_(None)))
-    if previous:
-        if bool(previous.cloud_processing_allowed) != body.cloud_processing_allowed:
-            raise RequestInvalid('变更分享范围前，请先撤销旧授权。')
-        return view(previous)
-    row = StoryGrant(grant_id='grant_' + uuid4().hex[:16], episode_id=body.episode_id,
-                    reader_actor_id=body.reader_actor_id, cloud_processing_allowed=int(body.cloud_processing_allowed))
-    session.add(row)
+    from ..sharing import grant_batch
+    rows, created = grant_batch(session,subject_id,actor.actor_id,body.reader_actor_id,
+                               [body.episode_id],body.cloud_processing_allowed)
+    row=rows[0]
     invalidate_answers(session, request.app.state.object_store, subject_id)
     session.commit()
     return view(row)

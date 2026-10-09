@@ -14,7 +14,7 @@ def save(path,data):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(path)
 
 def main():
-    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked','context-v8','context-v8-full','points-v1','points-v1-full','points-v2','points-v3'],default='initial')
+    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked','context-v8','context-v8-full','points-v1','points-v1-full','points-v2','points-v3','points-v4','points-v5','points-v6','quotes-v7','quotes-v8','quotes-v9'],default='initial')
     args.add_argument('--case',action='append',help='Run only specified development-case IDs; no gold answer is sent')
     args=args.parse_args()
     auth=json.loads(AUTH.read_text(encoding='utf8'));path=OUT/(args.stage+('-'+args.run_name if args.run_name!='initial' else '')+'.json')
