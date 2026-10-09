@@ -36,7 +36,7 @@ def test_copied_but_irrelevant_quote_still_requires_review():
         def complete(self,system,payload):
             if 'selection' not in payload:return {'points':[{'known':True,'source_ids':['s1']},{'known':False,'source_ids':[]}]},'actual'
             assert payload['rendered_answer'] and payload['selection']['points'][0]['quotes']
-            return {'valid':False,'failure_codes':['irrelevant'],'replacement':None},'actual'
+            return {'reasoning':'Test finding with referenced material','valid':False,'failure_codes':['irrelevant'],'replacement':None},'actual'
     with pytest.raises(AIOutputInvalid,match='relevance'):QuotedTwin(Chat()).answer(data())
 
 def test_one_review_correction_is_rechecked_without_adding_a_fourth_call():
@@ -47,9 +47,9 @@ def test_one_review_correction_is_rechecked_without_adding_a_fourth_call():
             self.calls+=1
             p={'points':[{'known':True,'source_ids':['s1']},{'known':False,'source_ids':[]}]}
             if self.calls==1:return {'points':[{'known':False,'source_ids':[]}]},'actual'
-            if self.calls==2:return {'valid':False,'failure_codes':['missing_known'],'replacement':p},'actual'
+            if self.calls==2:return {'reasoning':'Test finding with referenced material','valid':False,'failure_codes':['missing_known'],'replacement':p},'actual'
             assert payload['selection']['points'][0]['known'] is True
-            return {'valid':True,'failure_codes':[],'replacement':None},'actual'
+            return {'reasoning':'Test supported quote','valid':True,'failure_codes':[],'replacement':None},'actual'
     chat=Chat();answer=QuotedTwin(chat).answer(data())
     assert chat.calls==3 and '老周' in answer.answer and answer.evidence_ids==['e1']
 
@@ -60,7 +60,7 @@ def test_failed_repair_review_never_publishes_or_retries_again():
         def complete(self,system,payload):
             self.calls+=1;p={'points':[{'known':True,'source_ids':['s1']}]}
             if self.calls==1:return p,'actual'
-            return {'valid':False,'failure_codes':['attribution'],'replacement':p},'actual'
+            return {'reasoning':'Test finding with referenced material','valid':False,'failure_codes':['attribution'],'replacement':p},'actual'
     chat=Chat()
     with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
     assert chat.calls==3
