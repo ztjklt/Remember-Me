@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Literal
 
 import httpx
@@ -16,6 +17,21 @@ class TwinEvidence(BaseModel):
     evidence_id: str
     excerpt: str = Field(min_length=1, max_length=24000)
     source_type: str
+    episode_id: str | None = Field(default=None, max_length=128)
+    recorded_at: datetime | None = None
+    span_start: int | None = Field(default=None, ge=0)
+    span_end: int | None = Field(default=None, ge=0)
+    temporal_context: str = Field(default='', max_length=1000)
+
+    @model_validator(mode='after')
+    def context_consistent(self):
+        if (self.span_start is None) != (self.span_end is None):
+            raise ValueError('Both character bounds are required')
+        if self.span_start is not None and (not self.episode_id or self.span_end-self.span_start != len(self.excerpt)):
+            raise ValueError('Character bounds must match an episode excerpt')
+        if self.recorded_at is not None and (not self.episode_id or self.recorded_at.tzinfo is None):
+            raise ValueError('Recording time requires an episode and timezone')
+        return self
 
 
 class TwinCandidate(BaseModel):
@@ -89,7 +105,7 @@ class DeepSeekTwinProvider:
             "model": self.model,
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": TWIN_SYSTEM},
-                         {"role": "user", "content": json.dumps(payload.model_dump(), ensure_ascii=False)}],
+                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True), ensure_ascii=False)}],
             "response_format": {"type": "json_object"},
             "max_tokens": 700,
             "temperature": 0,

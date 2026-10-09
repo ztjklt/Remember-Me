@@ -39,6 +39,7 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
     var query by remember(state.subject) { mutableStateOf("") }
     var editor by remember(state.subject) { mutableStateOf<JSONObject?>(null) }
     var history by remember(state.subject) { mutableStateOf<JSONObject?>(null) }
+    var relatedId by remember(state.actor,state.subject) { mutableStateOf<String?>(null) }
     var feelingsOnly by remember(state.subject) { mutableStateOf(false) }
     var auditQueue by remember(state.subject) { mutableStateOf(false) }
     val ready = !state.busy && !state.recording
@@ -90,6 +91,12 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
                 Text(if(source.text("source_type") == "CALIBRATION") "本人书面补充 / 修订" else "核对文字 · 不代表音频逐字对齐", style = MaterialTheme.typography.bodySmall)
                 TextButton(onClick = { openSource(source.text("episode_id")) }, enabled = ready) { Text("打开来源与完整原音") }
             }
+            val linked = relatedNarrativeStories(row,records)
+            if(linked.isNotEmpty()) {
+                Text("从这些故事继续了解",style=MaterialTheme.typography.titleMedium)
+                Text("这些内容共用原文依据；不代表系统判定了关系或亲密程度。",style=MaterialTheme.typography.bodySmall)
+                linked.forEach { story -> TextButton(onClick={relatedId=story.text("id")},enabled=ready) { Text("读故事："+story.text("title")) } }
+            }
             if(state.owner) {
                 if(row.text("status") == "pending") Button(onClick = { model.mutation("/narrative/records/${row.text("id")}/confirm","POST",JSONObject().put("revision",row.getInt("revision"))) }, enabled = ready) { Text("核对无误，确认整理") }
                 FlowRow(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -120,7 +127,26 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
             Text("允许使用已确认的表达范例；回应仍标明系统生成。",Modifier.weight(1f)) }
     }
     Text(data.text("notice"),style=MaterialTheme.typography.bodySmall)
-    history?.let { log -> Dialog(onDismissRequest={history=null}) { Surface(shape=MaterialTheme.shapes.large) {
+    relatedId?.let { id ->
+        // Look up live state on each render. A cached JSONObject could outlive a
+        // revocation or correction during the open sheet.
+        val story=records.firstOrNull{it.text("id")==id&&it.text("status")=="confirmed"&&it.optBoolean("source_valid")}
+        Dialog(onDismissRequest={relatedId=null}) { Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=1f)) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick={relatedId=null}) { Text("返回人物") }
+                if(story==null) Text("相关内容已经变化，请返回刷新后的资料。") else {
+                    Text(story.text("title"),style=MaterialTheme.typography.titleLarge)
+                    if(story.text("time_text").isNotBlank()) Text("发生时间："+story.text("time_text"))
+                    Text(story.text("text"),style=MaterialTheme.typography.bodyLarge)
+                    story.rows("evidence").forEach { source ->
+                        Text("“${source.text("excerpt")}”")
+                        TextButton(onClick={relatedId=null;openSource(source.text("episode_id"))},enabled=ready){Text("打开故事原音")}
+                    }
+                }
+            }
+        } }
+    }
+    history?.let { log -> Dialog(onDismissRequest={history=null}) { Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=1f)) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("理解怎样改变",style=MaterialTheme.typography.titleLarge)
             log.rows("items").forEach { item -> Text("版本 ${item.optInt("revision")} · ${item.text("action")} · ${item.text("created_at")}");Text(item.optJSONObject("record")?.text("text").orEmpty()) }
@@ -143,7 +169,7 @@ private fun statusName(value:String)=mapOf("confirmed" to "本人已核对","pen
     var selectedFacets by remember { mutableStateOf(strings(row,"facets").toSet()) }
     var aliases by remember { mutableStateOf(strings(row,"aliases").joinToString("、")) }
     Dialog(close,properties=DialogProperties(usePlatformDefaultWidth=false)) {
-        Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(12.dp),shape=MaterialTheme.shapes.large) {
+        Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(12.dp),shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=1f)) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Text("让故事更完整",style=MaterialTheme.typography.headlineSmall); TextButton(onClick=close){Text("返回")}
                 if(row.text("id").isBlank()) Row(Modifier.horizontalScroll(rememberScrollState())) { kinds.forEach { (id,label) -> FilterChip(kind==id,{kind=id;if(id in setOf("style","letter"))selectedFacets=setOf("EXPRESSION");if(id!="story")same=false},label={Text(label)}) } }

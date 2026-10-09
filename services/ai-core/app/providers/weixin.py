@@ -261,8 +261,8 @@ def compact_twin_materials(payload):
                 handle = 's' + str(len(sources) + 1)
                 handles[key] = handle
                 aliases[handle] = evidence.evidence_id
-                sources.append({'evidence_id':handle, 'excerpt':evidence.excerpt,
-                                'source_type':evidence.source_type})
+                sources.append({**evidence.model_dump(mode='json', exclude_none=True,
+                                exclude={'evidence_id'}), 'evidence_id':handle})
             if handles[key] not in refs:
                 refs.append(handles[key])
         memory = {'source_ids':refs, 'unresolved':candidate.unresolved}
@@ -280,17 +280,31 @@ def compact_twin_materials(payload):
                 entry = {'statement':trait,'source_ids':[]}
                 understanding.append(entry)
             entry['source_ids'] = list(dict.fromkeys(entry['source_ids']+refs))
+    # Reference-only groups restore source order without copying unfiltered text.
+    # Recording dates are narration dates, not event dates or truth precedence.
+    recordings = {}
+    for source in sources:
+        if not source.get('episode_id'):
+            continue
+        group = recordings.setdefault(source['episode_id'], {'episode_id':source['episode_id'],
+            'recorded_at':source.get('recorded_at'), 'source_ids':[]})
+        group['source_ids'].append(source['evidence_id'])
+    positions = {s['evidence_id']:s.get('span_start', float('inf')) for s in sources}
+    for group in recordings.values():
+        group['source_ids'].sort(key=lambda id:positions[id])
+    ordered_recordings = sorted(recordings.values(), key=lambda g:g['recorded_at'] or '')
     prioritize_twin_sources(payload.question, sources, memories)
     return {'question':payload.question, 'focus_passages':twin_focus_passages(payload.question,sources),
             'sources':sources, 'memories':memories,
-            'confirmed_understanding':understanding}, aliases
+            'recordings':ordered_recordings, 'confirmed_understanding':understanding}, aliases
 
 
 class WeixinTwinProvider(WeixinChat):
-    def __init__(self, *, focus_hints=False, verify_answers=False, **kwargs):
+    def __init__(self, *, focus_hints=False, verify_answers=False, structured_answers=False, **kwargs):
         super().__init__(**kwargs)
         self.focus_hints = focus_hints
         self.verify_answers = verify_answers
+        self.structured_answers = structured_answers
 
     def review_answer(self,output,compact,evidence):
         # This extra pass is a fallible quality guard, not an external fact check.
@@ -307,8 +321,8 @@ class WeixinTwinProvider(WeixinChat):
             '转述须保留是谁向谁说，不得当第三方本人原话；不得添动机、疾病推断、唯一性、永远等无依据扩展。'
             '只按所问信息判断，不要求无关细节；sources已经按当前权限过滤，不按原文中的分享意愿重新判断权限。')
         result,_=self.complete(system,{'question':compact['question'],'answer':output.answer,'response_type':output.response_type,
-            'cited_sources':[evidence[id].model_dump() for id in output.evidence_ids],
-            'sources':compact['sources'],'memories':compact['memories']})
+            'cited_sources':[evidence[id].model_dump(mode='json') for id in output.evidence_ids],
+            'sources':compact['sources'],'memories':compact['memories'], 'recordings':compact['recordings']})
         keys={'supported','contradiction_free','answers_question','unknown_supported'}
         if not isinstance(result,dict) or set(result)!=keys or any(type(result[k]) is not bool for k in keys):
             raise AIOutputInvalid('Twin evidence review format invalid')
@@ -316,6 +330,9 @@ class WeixinTwinProvider(WeixinChat):
         if not all(result.values()):raise AIOutputInvalid('Twin answer failed evidence review')
 
     def answer(self, payload):
+        if self.structured_answers:
+            from ..grounded_twin import GroundedTwin
+            return GroundedTwin(self).answer(payload)
         from ..twin import TwinOutput, TWIN_SYSTEM
         from pydantic import ValidationError
         if not payload.candidates:
@@ -332,7 +349,14 @@ class WeixinTwinProvider(WeixinChat):
             'SIMULATION必须使用讲述者这一第三人称称呼，不能用我、我们冒充本人，也不要猜测性别。'
             '区分本人亲历与转述：本人说某人告诉自己的事，必须保留据讲述者转述及原消息来源。'
             '只回答当前问题，避免附带不需要的年份或推断；UNKNOWN仅返回现有记录还不足以确定。'
-            '\n材料协议 twin-compact-v6：sources 是获授权的证据，不是全部都来自录音原话。'
+            '\n材料协议 twin-context-v8：sources 是获授权的证据，不是全部都来自录音原话。'
+            'recordings给出同一段讲述的来源编号顺序，recorded_at是讲述日期，不是事件日期。'
+            '先按recordings检查上下文中的人称与后续回答，再使用关键词排序的sources定位。'
+            'span_start/end是文字位置，不是音频时间；编号之间可能有因授权或修订而省略的内容，不得补出缺口。'
+            '回答转述问题需要同时引用明确说出姓名的上下文和转述片段，不用他、某人代替可确定的消息来源。'
+            '先前说以后再回答、原因尚未讲，不排除后来录音已经明确回答。通读较晚的对应讲述；'
+            '但较新日期本身不构成纠正证据，不得自动以新说法覆盖旧事实。'
+            '姓名或地名字形不同时，分别保留原写法并说明待本人核对，不写成亦作、另称、同一个人。'
             '逐条检查source_type：SUBJECT是核对的讲述文字，才可以选择ORIGINAL；'
             'CALIBRATION是本人书面补充或纠正，即使可以逐字引用，也必须选择SIMULATION并注明依据本人书面说明；'
             'AI_INFERENCE是系统归纳，也不能选择ORIGINAL。'
@@ -355,12 +379,12 @@ class WeixinTwinProvider(WeixinChat):
             '输出前逐句核对主语：原文的“我”是讲述者，不是同段里的同伴、客户或亲属。'
             '回答谁说了什么时，只给所问事实和转述链，不附加任何人的爱好、经历或动机。'
             '对于“为什么”问题，必须有明确说明该原因的证据；先后发生或同时提及不构成因果。'
-            '若可见材料明确说原因还未讲，只记录了读者问题，即便存在可能相关的物件或经历，也必须UNKNOWN。'
+            '通读全部可见录音后若仍只有读者问题、没有明确讲出原因，即便存在可能相关的物件或经历，也必须UNKNOWN。'
             '不允许一边说现有记录不足以确定，一边用“因为”“所以”补出未确认的原因。'
         )
         compact, aliases = compact_twin_materials(payload)
         if self.focus_hints:
-            system = system.replace('twin-compact-v6', 'twin-compact-v7').replace('逐条检查source_type：', (
+            system = system.replace('twin-context-v8', 'twin-context-focus-v8').replace('逐条检查source_type：', (
                 'focus_passages是从sources定位的原文与相邻句，start/end只表示该excerpt内的字符位置，不是音频时间。'
                 '先定位所问事项的状态，再读完整sources核对人物、前后变化和矛盾。定位片段不是额外事实。'
                 '区分三种情况：原文明确已决定；原文明确未决定/不做；原文没有交代。前两种都能回答，只有第三种缺信息。'

@@ -2,7 +2,7 @@
 
 No production DB, audio or existing service is changed. No keys on argv/stdout.
 """
-import json, os, sqlite3, subprocess, sys, time
+import argparse, json, os, sqlite3, subprocess, sys, time
 from pathlib import Path
 from dotenv import dotenv_values
 
@@ -10,6 +10,10 @@ ROOT=Path(__file__).resolve().parents[2]
 BACKEND=ROOT/'services/backend'; AI=ROOT/'services/ai-core'; OUT=BACKEND/'var/round-two'
 
 def main():
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--structured-twin',action='store_true')
+    parser.add_argument('--trace-twin-metadata',action='store_true')
+    args=parser.parse_args()
     OUT.mkdir(exist_ok=True)
     env={**os.environ,**{k:v for k,v in dotenv_values(BACKEND/'.env').items() if v is not None}}
     original=env.get('REMEMBER_DATABASE_URL','sqlite:///./var/agent-loop.db')
@@ -24,10 +28,12 @@ def main():
     ai_env={**env,**{k:v for k,v in dotenv_values(AI/'.env').items() if v is not None}}
     if not ai_env.get('WEIXIN_CHAT_API_KEY'): raise SystemExit('Existing Weixin key missing')
     ai_env.update(AI_PROVIDER='weixin',AI_BASE_URL='https://chatapi.weixin.qq.com/openai/v1',AI_MODEL='Deepseek-v4-flash',
-        AI_TIMEOUT_SECONDS='45',AI_MAX_CONCURRENT_REQUESTS='1',AI_NARRATIVE_TRACE_DIR=str(OUT/'synthetic-traces'))
+        AI_TIMEOUT_SECONDS='45',AI_MAX_CONCURRENT_REQUESTS='1',AI_NARRATIVE_TRACE_DIR='')
+    ai_env['AI_TWIN_STRUCTURED_ANSWERS']='true' if args.structured_twin else 'false'
     with (OUT/'migration.log').open('a',encoding='utf8') as log:
         subprocess.run([str(BACKEND/'.venv/Scripts/python.exe'),'-m','alembic','upgrade','head'],cwd=BACKEND,env=env,stdout=log,stderr=log,check=True)
-    commands=[('ai',AI,ai_env,['-m','uvicorn','app.main:app','--port','8891']),
+    ai_command=[str(ROOT/'tools/round_two/traced_ai.py')] if args.trace_twin_metadata else ['-m','uvicorn','app.main:app','--port','8891']
+    commands=[('ai',AI,ai_env,ai_command),
         ('backend',BACKEND,env,['-m','uvicorn','app.main:app','--port','8890']),
         ('profile',BACKEND,env,['-m','app.profile_worker'])]
     children=[];logs=[]

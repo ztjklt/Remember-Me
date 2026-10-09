@@ -167,6 +167,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
+    from ..twin_context import contextual_evidence
+    twin_sources = contextual_evidence(session, sources)
     basis = source_basis(session, subject_id)
     revision = session.get(ModelRevision, subject_id)
     basis_version = revision.version if revision else 0
@@ -181,8 +183,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     limited = [{"memory_item_id": row["memory_item_id"], "statement": row["statement"],
                 "domain": row["domain"], "unresolved": row["memory_item_id"] in unresolved,
                 "traits": row["traits"], "graph_facts": row["graph_facts"],
-                "evidence": [{"evidence_id": source["evidence_id"], "excerpt": source["excerpt"],
-                              "source_type": source["source_type"]}
+                "evidence": [twin_sources[source["evidence_id"]]
                              for source in row["evidence"] if source["excerpt"]]}
                for row in candidates]
     # Retrieval may update cached vectors. Release its transaction before the

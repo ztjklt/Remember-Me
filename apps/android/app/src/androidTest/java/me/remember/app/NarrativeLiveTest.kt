@@ -1,10 +1,10 @@
 package me.remember.app
 
 import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import org.json.JSONObject
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
@@ -24,7 +24,13 @@ class NarrativeLiveTest {
         node.performClick()
     }
     private fun shot(name:String) {
-        File(ui.activity.filesDir,name+".png").outputStream().use { ui.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG,100,it) }
+        ui.waitForIdle()
+        // Compose idle does not cover the platform Dialog window fade.
+        val automation=InstrumentationRegistry.getInstrumentation().uiAutomation
+        automation.waitForIdle(500,5_000)
+        val bitmap=automation.takeScreenshot()
+        File(ui.activity.filesDir,name+".png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+        bitmap.recycle()
     }
     @Test fun reviewedStoryViewsHistoryAndRealAudio() {
         val file=File(ui.activity.filesDir,"narrative-test.json")
@@ -48,6 +54,11 @@ class NarrativeLiveTest {
         shot("round-two-history");click("返回")
         click("重要的人");ui.onNodeWithText("女儿",substring=false).performScrollTo().assertExists()
         click("在意与选择");ui.onNodeWithText("喝茶口味偏好").performScrollTo().assertExists();shot("round-two-understanding")
+        if(config.has("linked_story_title")) {
+            click("读故事："+config.getString("linked_story_title"))
+            ui.onAllNodesWithText(config.getString("linked_story_title")).onLast().assertExists()
+            shot("round-two-related-story");click("返回人物")
+        }
         click("声音与表达")
         ui.onNodeWithText("允许使用已确认的表达范例；回应仍标明系统生成。").performScrollTo().assertExists()
         click("人生足迹");click("为什么这样整理 · 听原声");click("打开来源与完整原音")

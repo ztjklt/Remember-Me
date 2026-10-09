@@ -50,7 +50,8 @@ def test_deepseek_twin_uses_only_selected_evidence_and_actual_model_identity():
     assert result.model_version == "deepseek-flash"
     assert observed["thinking"] == {"type": "disabled"}
     assert json.loads(observed["messages"][1]["content"]) == {**PAYLOAD, "candidates": [{
-        **PAYLOAD["candidates"][0], "unresolved": False, "traits": [], "graph_facts": []}]}
+        **PAYLOAD["candidates"][0], "unresolved": False, "traits": [], "graph_facts": [],
+        "evidence": [{**e, "temporal_context": ""} for e in PAYLOAD["candidates"][0]["evidence"]]}]}
     assert "subject_id" not in observed["messages"][1]["content"]
 
 

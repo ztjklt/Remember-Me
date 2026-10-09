@@ -7,6 +7,11 @@ const NarrativeView = (() => {
   const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
   const button=(text,fn)=>{const e=node('button',text);e.type='button';e.addEventListener('click',()=>Promise.resolve().then(fn).catch(err=>window.dispatchEvent(new CustomEvent('narrative-error',{detail:err.message}))));return e;};
   let editor=null,selected=0,query='',review=false,identity='',callbacks=null,latest=null,signature='';
+  function relatedStories(record,visibleRecords){
+    if(!['person','observation'].includes(record.kind)||record.status!=='confirmed'||!record.source_valid)return [];
+    const refs=new Set(record.evidence_ids||[]);
+    return visibleRecords.filter(r=>r.kind==='story'&&r.status==='confirmed'&&r.source_valid&&(r.evidence_ids||[]).some(id=>refs.has(id)));
+  }
   function clear(){editor?.remove();editor=null;identity='';selected=0;query='';review=false;latest=null;callbacks=null;signature='';document.getElementById('narrativeViews')?.replaceChildren();}
   function edit(record,split=false){
     editor?.remove();const dialog=node('dialog');editor=dialog;dialog.className='narrative-editor';
@@ -60,6 +65,9 @@ const NarrativeView = (() => {
       const detail=node('details');detail.append(node('summary','为什么这样整理 · 听原声'));
       for(const e of row.evidence){detail.append(node('blockquote',e.excerpt),node('small',e.source_type==='CALIBRATION'?'本人书面补充 / 修订':'核对文字；尚非音频逐字对齐'),button('打开来源与完整原音',()=>cb.open(e.episode_id)));}
       article.append(detail);
+      const linked=relatedStories(row,data.records);
+      if(linked.length){article.append(node('h4','从这些故事继续了解'),node('small','这些内容共用原文依据；不代表系统判定了关系或亲密程度。'));
+        for(const story of linked)article.append(button('读故事：'+story.title,()=>focusRecord(story.id)));}
       if(data.role==='owner'){
         if(row.status==='pending')article.append(button('核对无误，确认整理',()=>cb.mutate('/records/'+row.id+'/confirm','POST',{revision:row.revision})));
         article.append(button('编辑 / 移出来源',()=>edit(row)),button('撤回整理',()=>cb.mutate('/records/'+row.id+'/reject','POST',{revision:row.revision})));
@@ -79,5 +87,5 @@ const NarrativeView = (() => {
     const article=[...box.querySelectorAll('[data-record-id]')].find(e=>e.dataset.recordId===id);
     if(article){article.tabIndex=-1;article.focus({preventScroll:true});article.scrollIntoView({block:'start'});}
   }
-  return {render,clear,focusRecord};
+  return {render,clear,focusRecord,relatedStories};
 })();

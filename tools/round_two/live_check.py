@@ -14,8 +14,10 @@ def save(path,data):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(path)
 
 def main():
-    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked'],default='initial');args=args.parse_args()
-    auth=json.loads(AUTH.read_text(encoding='utf8'));path=OUT/(args.stage+('-checked' if args.run_name=='checked' else '')+'.json')
+    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked','context-v8','context-v8-full','points-v1','points-v1-full','points-v2','points-v3'],default='initial')
+    args.add_argument('--case',action='append',help='Run only specified development-case IDs; no gold answer is sent')
+    args=args.parse_args()
+    auth=json.loads(AUTH.read_text(encoding='utf8'));path=OUT/(args.stage+('-'+args.run_name if args.run_name!='initial' else '')+'.json')
     report=json.loads(path.read_text(encoding='utf8')) if path.exists() else {'started':datetime.now(timezone.utc).isoformat(),'people':{},'human_listening':False,'new_asr':False}
     for pid,pair in auth.items():
         owner=pair['owner'];subject=owner['subject_id'];root=f'/api/v1/workbench/subjects/{subject}'
@@ -51,6 +53,7 @@ def main():
                 call('GET',root+'/stories',who=pair['reader'])['items'],call('GET',root+'/revisions')['items'])
             reader_consent=next(g['grant_id'] for g in grants if g['cloud_processing_allowed'] and not g.get('revoked_at'))
             for case in gold['qa']:
+                if args.case and case['id'] not in args.case:continue
                 if case['id'] in item:continue
                 result={'question':case['question'],'role':case['role'],'semantic_review':'pending'}
                 start=time.monotonic()

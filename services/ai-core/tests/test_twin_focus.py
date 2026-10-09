@@ -39,4 +39,4 @@ def test_unproven_focus_protocol_is_not_default():
     try: provider.answer(payload)
     finally: provider.close()
     assert 'focus_passages' not in observed['data']
-    assert 'twin-compact-v6' in observed['system']
+    assert 'twin-context-v8' in observed['system']
