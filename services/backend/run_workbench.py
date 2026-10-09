@@ -19,7 +19,7 @@ def prepare_runtime(backend_env, ai_overrides):
     env.setdefault('REMEMBER_STT_BACKEND', 'relay')
     env.update(REMEMBER_AI_BACKEND='http', REMEMBER_ENABLE_WORKBENCH='true')
     local = env['REMEMBER_STT_BACKEND'] == 'http' and env.get('REMEMBER_START_LOCAL_STT', '').lower() == 'true'
-    if not local and env['REMEMBER_STT_BACKEND'] not in {'relay', 'groq'}:
+    if not local and env['REMEMBER_STT_BACKEND'] not in {'relay', 'groq', 'client', 'paraformer'}:
         env['REMEMBER_STT_BACKEND'] = 'relay'
     cli = env.get('WHISPER_CLI') if local else None
     if cli:

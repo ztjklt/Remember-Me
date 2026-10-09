@@ -373,7 +373,8 @@ class ProcessingWorker:
         try:
             from .relay_asr import RelaySttProvider
             from .groq_asr import GroqSttProvider
-            if isinstance(self.stt, (RelaySttProvider, GroqSttProvider)):
+            from .paraformer_asr import ParaformerSttProvider
+            if isinstance(self.stt, (RelaySttProvider, GroqSttProvider, ParaformerSttProvider)):
                 episode_id = episode.episode_id
                 def authorize():
                     from .repositories.consents import ConsentRepository

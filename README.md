@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-10-09 服务端 ASR 增量：** ECS 现使用百炼 Paraformer V2；Android 公网直连完成既有录音上传、核对纠错、真实微信模型记忆整理、来源播放与问答，不再要求电脑参与 ASR。查看[本轮验收及待办](docs/agent-loop/PARAFORMER_SERVER_ASR_2026-10-09.md)和[用户旅程地图](docs/agent-loop/USER_JOURNEY_2026-10-09.md)。实体手机新录音、iOS及不同网络仍待验证。
+
 > **本地 Agent 工作台分支，2026-10-08：** 三个虚构人物的 30 段音频已完成实际云端 ASR、技术核对与微信模型处理；新录音使用 Groq。查看[当前结果与边界](docs/agent-loop/GROQ_LIVE_RESULTS_2026-10-08.md)及[启动说明](docs/agent-loop/RUNBOOK.md)。合成素材、助手文本复核和 Android 模拟器测试分别记录；不代表实体手机、人工听读或生产发布验收。
 
 > **2026-09-27 双端集成：** Android 的 #78／#79 和随后提交的 #81 界面与 iOS 的 #76／#77／#80 已接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。

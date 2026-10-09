@@ -54,6 +54,7 @@ async function refresh(){if(!state.token||!state.space||refreshing)return;refres
   if(!presentation.serverUpload)$('upload').disabled=true;
   $('capabilities').textContent=presentation.notice;
   $('asrConsentText').textContent=!presentation.serverUpload?'客户端导入后，请到故事页核对机器稿；本页不向ASR发送原音。':cloud?`这是我本人的讲述，我同意保存原音，并将本段完整音频发送到 ${caps.stt_host||'待配置的服务'}（${caps.stt_model}）转写。核对后才整理记忆。`:'这是我本人的讲述，我同意保存原音并交给配置的转写服务。';
+  if(cloud&&caps.stt_model==='paraformer-v2')$('asrConsentText').textContent+=' 百炼使用私有临时音频副本，有效期48小时；不需要电脑接力。';
   renderStories();renderGrants();renderRequests(requests.items);renderPortrait(portrait);LiveGarden.render($('liveGarden'),state.stories,openStory);$('profilePanel').hidden=!owner();if(owner())await renderProfiles(await api(root()+'/profile-candidates'));
   options($('grantEpisode'),state.stories.filter(s=>s.status==='ready'&&s.reviewed),'episode_id',s=>storyTitle(s));
   const memories=state.stories.flatMap(s=>s.memories).filter(m=>m.review_state==='active');options($('targetMemory'),memories,'memory_item_id',m=>m.content.slice(0,70));

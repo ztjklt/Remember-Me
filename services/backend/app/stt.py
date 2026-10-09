@@ -185,6 +185,9 @@ class ClientOnlySttProvider:
 
 
 def build_stt_provider(settings: Settings) -> SttProvider:
+    if settings.stt_backend == 'paraformer':
+        from .paraformer_asr import ParaformerSttProvider
+        return ParaformerSttProvider(settings)
     if settings.stt_backend == 'client':
         return ClientOnlySttProvider()
     if settings.stt_backend == 'groq':

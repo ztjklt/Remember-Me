@@ -1,5 +1,7 @@
 # 公网 IP 直连恢复与 Android 验收
 
+> 后续增量：ECS 已接入百炼 Paraformer V2，并通过 Android 上传、核对、记忆及问答联调；下文电脑接力是本报告原批次状态。见 [最新服务端 ASR 验收](PARAFORMER_SERVER_ASR_2026-10-09.md)。
+
 核验时间：2026-10-09，北京时间。范围：自用 Demo，ECS 代码仍为 `b2f827b`，未迁移数据库、未 push/merge。这个结果替代此前“Android 只能经 SSH/ADB 访问”的连接结论，不代表 ASR 或实体手机已经摆脱电脑。
 
 ## 本轮已经解决

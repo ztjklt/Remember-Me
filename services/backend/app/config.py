@@ -44,7 +44,12 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http", "relay", "groq", "client"] = "fake"
+    stt_backend: Literal["fake", "http", "relay", "groq", "client", "paraformer"] = "fake"
+    paraformer_api_key: SecretStr = SecretStr("")
+    paraformer_base_url: str = ""
+    paraformer_state_dir: str = "./var/paraformer-asr"
+    paraformer_poll_interval_seconds: float = 2.0
+    paraformer_poll_timeout_seconds: float = 120.0
     groq_api_key: SecretStr = SecretStr("")
     groq_asr_model: Literal["whisper-large-v3"] = "whisper-large-v3"
     groq_asr_state_dir: str = "./var/groq-asr"

@@ -297,6 +297,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                 (!clientAsr || capture.transcript != null || capture.episode.isNotBlank())
             val destination = if(caps?.text("stt_processing") == "cloud")
                 "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
+            if(!clientAsr && caps?.text("stt_model") == "paraformer-v2") Text("服务器调用百炼识别；音频会进入百炼私有临时存储，临时副本有效期为48小时。无需电脑接力。", style = MaterialTheme.typography.bodySmall)
             Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。" else "同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, configured)
             if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
             Action(if(capture.episode.isBlank()) "上传并等待核对" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }

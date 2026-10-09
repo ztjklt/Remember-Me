@@ -360,7 +360,8 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
     capture_metadata.pop('transcript_normalization', None)
     if settings.stt_backend == 'client' and client_transcript is None:
         raise RequestInvalid('服务器采用客户端转写模式，请先在客户端转写，再上传原音和机器稿进行核对。')
-    if client_transcript is None and settings.stt_backend in {'relay', 'groq'}:
+    from ..cloud_asr import CLOUD_BACKENDS
+    if client_transcript is None and settings.stt_backend in CLOUD_BACKENDS:
         from ..cloud_asr import cloud_policy, configured
         if not configured(settings):
             raise RequestInvalid('云端转写连接配置未完成，请先保留本机原音，配置完成后再上传。')

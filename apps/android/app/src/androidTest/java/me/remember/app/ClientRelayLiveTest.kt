@@ -32,12 +32,79 @@ class ClientRelayLiveTest {
     private fun tab(label: String) = ui.onNodeWithText(label, useUnmergedTree = true).performClick()
     private fun check(label: String) = ui.onAllNodes(isToggleable() and isEnabled() and hasAnySibling(hasText(label, substring = true))).onFirst().performScrollTo().performClick()
     private fun idle() { ui.waitUntil(90_000) { !model.ui.value.busy }; assertNull(model.ui.value.error) }
-    private fun shot(name: String) { File(ui.activity.filesDir,"relay-$name.png").outputStream().use { ui.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG,100,it) } }
+    private fun shot(name: String) { File(ui.activity.filesDir,"relay-$name.png").outputStream().use { ui.onAllNodes(isRoot()).onLast().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG,100,it) } }
     private fun transfer(capture: LocalCapture, importing: Boolean): String {
         var id: String? = null
         // Same enabled-state rule as the UI button; polling may start during screenshots.
         ui.waitUntil(30_000) { ui.runOnIdle { if(id == null) id = model.beginCaptureTransfer(capture, importing) }; id != null }
         return checkNotNull(id)
+    }
+
+    /** Real server ASR on archived native microphone audio. This is not a new
+     * microphone capture, not a human recording, and never uses desktop ASR. */
+    @Test fun paraformerServerUploadReviewMemoryAndTwin() {
+        val configFile = File(ui.activity.filesDir, "paraformer-config.json")
+        assumeTrue("Explicit live test configuration required", configFile.exists())
+        val config = JSONObject(configFile.readText())
+        ui.waitUntil(45_000) { !model.ui.value.busy }
+        if(model.ui.value.actor.isNotBlank()) { tab("我的"); click("退出身份") }
+        ui.onNodeWithText("账号").performTextInput(config.getString("username"))
+        ui.onNodeWithText("密码（至少10个字符）").performTextInput(config.getString("password"))
+        click("登录"); idle()
+        ui.waitUntil(45_000) { model.ui.value.subject.isNotBlank() && model.ui.value.asrCapabilities != null }
+        val caps = model.ui.value.asrCapabilities!!
+        assertEquals("paraformer-v2", caps.getString("stt_model"))
+        assertEquals("cloud", caps.getString("stt_processing"))
+        val saved = checkNotNull(SavedSession(ui.activity).load())
+        assertEquals("https://39.108.183.47", saved.first)
+        val gate = SessionGate(); val session = gate.connect(saved.first,saved.second)
+        val client = BackendClient(gate)
+        val subject = model.ui.value.subject
+        val source = File(ui.activity.filesDir,"paraformer-original.m4a")
+        assertEquals("Test audio transfer must preserve bytes before cloud submission", config.getString("audio_sha256"),
+            MessageDigest.getInstance("SHA-256").digest(source.readBytes()).joinToString("") { "%02x".format(it) })
+        val audio = me.remember.app.data.repository.AudioRecording(source.absolutePath,19622,"audio/mp4",source.length(),44100,1,config.getString("recorded_at"))
+        val checkpoint = File(ui.activity.filesDir,"paraformer-episode.txt")
+        val episode = if(checkpoint.exists()) checkpoint.readText().trim() else client.upload(session,subject,
+            client.consent(session,subject,"RECORDING"),audio,config.getString("idempotency_key"),caps.getString("cloud_asr_policy")).also { checkpoint.writeText(it) }
+        ui.runOnIdle { model.refresh() }; idle()
+        ui.waitUntil(150_000) { model.ui.value.stories.any { it.optString("episode_id")==episode && (it.optBoolean("waiting_for_review") || it.optString("status") in listOf("failed","ready")) } }
+        var story = model.ui.value.stories.first { it.optString("episode_id")==episode }
+        assertNotEquals(story.optString("error_message"), "failed", story.optString("status"))
+        val machine = story.getString("machine_transcript")
+        assertTrue(machine.contains("家人安全"))
+        if(story.optBoolean("waiting_for_review")) {
+            assertEquals(0,story.getJSONArray("memories").length())
+            File(ui.activity.filesDir,"paraformer-before-review.json").writeText(story.toString(2))
+            tab("档案"); ui.runOnIdle { model.review(episode) }; idle()
+            shot("paraformer-review")
+            // Only the observed ASR typo is edited; do not replace with a script.
+            val edited = model.ui.value.reviewText.replace("不要正经", "不要挣钱")
+            ui.runOnIdle { model.editReview(episode,edited); model.confirmReview(edited,true) }; idle()
+            ui.waitUntil(180_000) { model.ui.value.stories.any { it.optString("episode_id")==episode && it.optString("status") in listOf("ready","failed") } }
+        }
+        story=model.ui.value.stories.first { it.optString("episode_id")==episode }
+        assertEquals(story.optString("error_message"),"ready",story.optString("status"))
+        assertEquals(machine,story.getString("machine_transcript"))
+        assertTrue(story.getJSONArray("memories").length()>0)
+        shot("paraformer-memory")
+        ui.runOnIdle { model.playSource(episode) }
+        ui.waitUntil(20_000) { model.ui.value.player.playing }
+        ui.runOnIdle { model.seekSource(2000); model.pauseSource() }
+        assertFalse(model.ui.value.player.playing)
+        ui.runOnIdle { model.stopSource() }
+        val hash=MessageDigest.getInstance("SHA-256").digest(client.audio(session,subject,episode)).joinToString("") { "%02x".format(it) }
+        assertEquals(config.getString("audio_sha256"),hash)
+        tab("对话"); ui.onNodeWithText("想了解什么？").performTextInput(config.getString("question"))
+        check("同意本次将问题和有权访问"); click("提问"); idle()
+        val answer=checkNotNull(model.ui.value.answer); shot("paraformer-twin")
+        tab("档案");click("人物")
+        ui.onNodeWithText("在意与选择").performScrollTo().assertExists(); shot("paraformer-portrait")
+        File(ui.activity.filesDir,"paraformer-result.json").writeText(JSONObject()
+            .put("episode",episode).put("story",story).put("answer",answer).put("portrait",model.ui.value.portrait)
+            .put("server",saved.first).put("audio_sha256",hash).put("server_asr",true).put("desktop_asr",false)
+            .put("new_microphone_capture",false).put("real_handset",false).put("human_listening",false).toString(2))
+        tab("我的");click("退出身份");assertNull(SavedSession(ui.activity).load())
     }
 
     /** Public-IP acceptance only: remove ADB reverse before running. Uses an
