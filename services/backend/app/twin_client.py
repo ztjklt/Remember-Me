@@ -22,6 +22,20 @@ class TwinClient:
         self.url = url.rstrip("/") + "/twin"
         self.timeout = timeout
 
+    def express(self, answer, examples):
+        try:
+            response=httpx.post(self.url.removesuffix('/twin')+'/expression',
+                json={'answer':answer,'examples':examples},timeout=110,follow_redirects=False,trust_env=False)
+            response.raise_for_status(); data=response.json()
+            if (not isinstance(data,dict) or set(data)!={'status','text','model_version','prompt_version'}
+                or data['status'] not in {'available','rejected'} or not isinstance(data['text'],str)
+                or len(data['text'])>500 or any(not isinstance(data[k],str) or not 0<len(data[k])<=128 for k in ('model_version','prompt_version'))
+                or (data['status']=='rejected' and data['text'])):
+                raise ValueError('Invalid expression')
+            return data
+        except (httpx.HTTPError,ValueError):
+            return {'status':'unavailable','text':'','model_version':'','prompt_version':'expression-v1'}
+
     def answer(self, question: str, candidates: list[dict]) -> dict:
         try:
             response = httpx.post(self.url, json={"question": question, "candidates": candidates},

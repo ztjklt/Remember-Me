@@ -19,6 +19,7 @@ EXPECTED_TABLES = {
     "story_grants", "memory_revisions", "question_requests",
     "profile_candidates", "profile_refreshes", "profile_updates",
     "subject_vocabulary", "accounts", "account_attempts",
+    "narrative_records", "narrative_history", "narrative_preferences", "narrative_question_decisions",
 }
 
 

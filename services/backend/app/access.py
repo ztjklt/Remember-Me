@@ -89,6 +89,9 @@ def source_basis(session, subject_id, *, include_profiles=True):
         select(MemoryRevision).where(MemoryRevision.subject_id == subject_id)]
     if include_profiles:
         queries.append(select(ProfileCandidate).where(ProfileCandidate.subject_id == subject_id))
+        from .models import NarrativeRecord, NarrativePreference
+        queries.extend([select(NarrativeRecord).where(NarrativeRecord.subject_id==subject_id,NarrativeRecord.status=='confirmed'),
+                        select(NarrativePreference).where(NarrativePreference.subject_id==subject_id)])
     for query in queries:
         rows = [{column.name: getattr(row, column.name) for column in row.__table__.columns}
                 for row in session.scalars(query.execution_options(populate_existing=True))]

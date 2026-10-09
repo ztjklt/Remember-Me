@@ -16,6 +16,8 @@ from .extractor import MemoryExtractor
 from .errors import ProviderAuthenticationFailed
 from .profile_proposals import ProfileProposalInput, ProfileProposalOutput, ProfileProposalProvider
 from .profile_relations import RelationInput, RelationOutput
+from .narrative import NarrativeInput
+from .expression import ExpressionInput, ExpressionProvider
 from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, WeixinCalibrationProvider
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
@@ -83,7 +85,7 @@ def create_app(
     active_profile = profile_provider
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
-        active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints)
+        active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers)
         active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
         active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key))
     slots = BoundedSemaphore(settings.max_concurrent_requests)
@@ -199,6 +201,27 @@ def create_app(
             raise ProviderUnavailable('AI Core capacity is busy')
         try:
             return active_profile.propose_relations(payload)
+        finally:
+            slots.release()
+
+    @app.post('/narrative-proposals')
+    def narrative_proposals(payload:NarrativeInput):
+        if active_profile is None:
+            raise ProviderUnavailable('Narrative organization requires configured provider')
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable('AI Core capacity is busy')
+        try:
+            return active_profile.propose_narrative(payload)
+        finally:
+            slots.release()
+
+    @app.post('/expression')
+    def expression(payload: ExpressionInput):
+        if active_profile is None or not hasattr(active_profile,'chat'):
+            raise ProviderUnavailable('Expression requires configured provider')
+        if not slots.acquire(timeout=15): raise ProviderUnavailable('AI Core capacity is busy')
+        try:
+            return ExpressionProvider(active_profile.chat).express(payload)
         finally:
             slots.release()
 

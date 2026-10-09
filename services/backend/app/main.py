@@ -186,6 +186,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from .profiles import ProfileClient
     app.state.profile_client = ProfileClient(settings.ai_core_url, settings.ai_timeout_seconds)
     app.include_router(profiles.router)
+    from .api import narrative
+    app.include_router(narrative.router)
     if settings.enable_workbench:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles

@@ -123,7 +123,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
         'ai_available':available,
         'notice': ('本服务接收客户端机器转写，等待本人核对；客户端转写是否可用需在该设备实际验证。'
                    if settings.stt_backend == 'client' else '配置不等于服务可用；实际结果保留模型版本。'),
-        'schema_version': '0.5.0', 'audio_alignment': False}
+        'schema_version': '0.6.0', 'audio_alignment': False, 'narrative': True}
 
 
 @router.get('/subjects/{subject_id}/stories')

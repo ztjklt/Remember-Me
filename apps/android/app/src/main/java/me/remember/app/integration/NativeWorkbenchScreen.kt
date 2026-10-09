@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -118,9 +119,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                         TextButton(onClick = model.audio::stopPlayback) { Text("停止本机播放") } }
                 }
                 if(state.subject.isNotBlank()) {
-                    Column(Modifier.weight(1f).verticalScroll(scrollPositions[tab]).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f).clipToBounds().verticalScroll(scrollPositions[tab]).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when(tab) {
-                            0 -> CaptureTab(state, model, revision, { revision = it })
+                            0 -> {
+                                if(state.owner) NarrativeQuestion(state, model)
+                                CaptureTab(state, model, revision, { revision = it })
+                            }
                             1 -> {
                                 Text("每段记忆，都有来处。", style = MaterialTheme.typography.headlineMedium)
                                 var archiveMode by remember { mutableIntStateOf(0) }
@@ -133,21 +137,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                                     Text(if(memory.text("origin") == "owner_supplement") "本人书面补充" else "从讲述中整理", style = MaterialTheme.typography.labelMedium)
                                     TextButton(onClick = { detail = story.text("episode_id") }) { Text("查看故事与原音") }; HorizontalDivider()
                                 } }
-                                if(archiveMode == 2) {
-                                    Text("来自有权查看的材料，每一项都是有情境的理解。")
-                                    state.portrait.keys().forEach { heading ->
-                                        Text(heading, style = MaterialTheme.typography.titleLarge)
-                                        val entries=state.portrait.rows(heading)
-                                        if(entries.isEmpty()) Text("还没有足够材料。", style = MaterialTheme.typography.bodySmall)
-                                        entries.forEach { item ->
-                                            Text(item.text("content"))
-                                            Text(item.text("label"), style = MaterialTheme.typography.labelMedium)
-                                            TextButton(onClick={ detail=item.text("episode_id") }) { Text("查看依据") }
-                                        }
-                                    }
-                                    if(state.owner && state.candidates.isEmpty()) Text("还没有人物理解候选。可在“我的”中生成并核对。")
-                                    state.candidates.forEach { candidate -> Panel { Text(candidate.text("statement")); Text(candidate.text("context"), style = MaterialTheme.typography.bodySmall); Text(if(candidate.text("status") == "confirmed") "本人已确认" else "待本人确认 · 尚不用于回答", style = MaterialTheme.typography.labelMedium) } }
-                                }
+                                if(archiveMode == 2) NarrativeScreen(state, model) { detail = it }
                             }
                             2 -> AskTab(state, model)
                             3 -> {
@@ -333,6 +323,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
     state.answer?.let { answer -> Panel {
         Text(when(answer.text("response_type")) { "ORIGINAL" -> "本人原话 · 核对文字"; "SIMULATION" -> "依据记录生成 · 不是本人原话"; else -> "目前记录还不足以回答" }, style = MaterialTheme.typography.titleMedium)
         Text(answer.text("answer"))
+        answer.optJSONObject("expression")?.let { expression ->
+            Text(if(expression.text("status")=="available") "表达参考 · 系统生成，不是本人新发言" else "表达处理未通过或不可用，保留有来源的回答。",style=MaterialTheme.typography.bodySmall)
+            if(expression.text("status")=="available") Text(expression.text("text"))
+        }
         answer.rows("evidence").forEach { evidence -> Evidence(evidence, state, model) }
         Text("模型：${answer.text("model_version")} · 资料版本：${answer.text("person_model_version")}", style = MaterialTheme.typography.bodySmall)
     } }

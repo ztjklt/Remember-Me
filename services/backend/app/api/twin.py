@@ -102,6 +102,7 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
         "source_version": row.source_basis,
         "created_at": row.created_at.isoformat(),
         "stale": row.invalidated_at is not None,
+        "expression": row.expression if row.invalidated_at is None else None,
         "evidence": [{"evidence_id": source.evidence_id, "excerpt": source.excerpt,
                       "episode_id": source.episode_id, "source_type": source.source_type}
                      for source in sources if source is not None] if row.invalidated_at is None else [],
@@ -144,12 +145,26 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if reader:
         ids -= altered_story_ids(session, ids)
     candidates = effective_materials(session, subject_id, ids)
-    if not reader:
-        from ..profiles import approved_traits
-        for trait in approved_traits(session, subject_id):
-            for candidate in candidates:
-                if set(trait.evidence_ids).intersection(e['evidence_id'] for e in candidate['evidence']):
-                    candidate['traits'].append(f'本人确认的系统归纳：{trait.statement}；情境：{trait.context}')
+    from ..narrative import visible_records,contextual_sources
+    from ..models import NarrativePreference
+    from ..profiles import approved_traits
+    sources = contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
+    organized = [r for r in visible_records(session,subject_id,actor_id,sources=sources)
+                 if r['status']=='confirmed' and r['source_valid']]
+    for trait in (approved_traits(session, subject_id) if not reader else []):
+        # Conditions and counterexamples need the same permission check as support.
+        if not set(trait.evidence_ids+trait.counter_evidence_ids)<=sources.keys(): continue
+        for candidate in candidates:
+            if set(trait.evidence_ids).intersection(e['evidence_id'] for e in candidate['evidence']):
+                candidate['traits'].append(f'本人确认的系统归纳：{trait.statement}；情境：{trait.context}；不得扩展为所有场景的人格。')
+    for record in organized:
+        if record['kind'] not in {'story','person','observation'}: continue
+        for candidate in candidates:
+            if set(record['evidence_ids']).intersection(e['evidence_id'] for e in candidate['evidence']):
+                candidate['traits'].append('本人审核的故事整理（非原话，以证据为准）：'+record['text'])
+    pref=session.get(NarrativePreference,subject_id)
+    examples=[{'id':r['id'],'text':r['text']} for r in organized if r['kind']=='style'] if pref and pref.style_enabled else []
+    style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
     basis = source_basis(session, subject_id)
@@ -191,6 +206,18 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 failure.code = exc.code
                 failure.http_status = 502
             raise failure from exc
+    expression=None
+    if examples and result.get('response_type')=='SIMULATION' and style_over_budget:
+        expression={'status':'unavailable','text':'','model_version':'','prompt_version':'expression-checked-v1',
+                    'reason':'表达范例超过8条或4000字，本次仅提供有来源的回答。'}
+    elif examples and result.get('response_type')=='SIMULATION':
+        publication_lock(session,subject_id)
+        if basis!=source_basis(session,subject_id):
+            raise SourceChanged('资料或授权已变化，请重新提问。')
+        require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+        session.commit()
+        # Only this optional pass may degrade; never replace a failed fact answer.
+        expression=request.app.state.twin_client.express(result['answer'],examples)
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
@@ -234,6 +261,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                      confidence=confidence, model_version=version,
                      person_model_version=basis_version,
                      source_basis=basis,
+                     expression=expression,
                      created_at=utcnow())
     session.add(row)
     session.commit()

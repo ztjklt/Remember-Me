@@ -31,5 +31,26 @@
     }controls.append(el('small',`第 ${page+1} / ${Math.ceil(rows.length/3)} 页`));host.append(controls);}
   }
   function clear(){signature='';page=0;generation++;}
-  const api={model,render,clear};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.LiveGarden=api;
+  function organizedModel(data){return data.records.filter(r=>r.kind==='story'&&r.status==='confirmed'&&r.source_valid);}
+  function renderOrganized(host,data,open){
+    const rows=organizedModel(data),key='organized:'+JSON.stringify(rows);if(signature===key&&host.childElementCount)return;
+    signature=key;page=Math.min(page,Math.max(0,Math.ceil(rows.length/3)-1));host.replaceChildren();
+    const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
+    host.append(el('h2','把讲过的日子，慢慢连起来'),el('p',`${rows.length} 簇已核对故事 · 同一故事可以来自多次讲述`,'muted'));
+    if(!rows.length){host.append(el('p','还没有已核对的故事花簇。原有录音都在档案里；到人物页整理并核对后，会在这里相遇。'));return;}
+    const scene=el('div',null,'live-garden-scene');scene.setAttribute('aria-label','每一簇对应一个已组织并核对的故事');
+    for(const [i,row] of rows.slice(page*3,page*3+3).entries()){
+      const plant=el('article',null,'living-story living-story-'+i);plant.dataset.recordId=row.id;
+      const stem=el('img',null,'living-stem');stem.src='/brand/v21/stem.png';stem.alt='';
+      const bloom=el('img',null,'living-bloom');bloom.src='/brand/v20/bloom-'+(i===1?'side':'cupped')+'.png';bloom.alt='';
+      const enter=el('button',null,'flower-enter');enter.setAttribute('aria-label','了解故事：'+row.title);enter.append(bloom);enter.onclick=()=>open(row);
+      const caption=el('button',row.title,'flower-caption');caption.onclick=()=>open(row);
+      plant.append(stem,enter,caption,el('small',row.time_text||'发生时间尚未确定'));scene.append(plant);
+    }
+    host.append(scene);
+    if(rows.length>3){const controls=el('div',null,'actions');for(const [title,delta]of[['上一簇',-1],['下一簇',1]]){
+      const b=el('button',title);b.disabled=page+delta<0||page+delta>=Math.ceil(rows.length/3);b.onclick=()=>{page+=delta;signature='';renderOrganized(host,data,open);};controls.append(b);
+    }host.append(controls);}
+  }
+  const api={model,organizedModel,render,renderOrganized,clear};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.LiveGarden=api;
 })(typeof window==='undefined'?{}:window);

@@ -64,6 +64,10 @@ class ProfileProposalProvider:
     def propose_relations(self, payload):
         from .profile_relations import RelationProvider
         return RelationProvider(self.chat).propose(payload)
+    def propose_narrative(self,payload):
+        import os
+        from .narrative import NarrativeProvider
+        return NarrativeProvider(self.chat,os.environ.get('AI_NARRATIVE_TRACE_DIR')).propose(payload)
     def propose(self, payload):
         if not payload.materials:
             return ProfileProposalOutput(candidates=[], model_version='no-evidence')

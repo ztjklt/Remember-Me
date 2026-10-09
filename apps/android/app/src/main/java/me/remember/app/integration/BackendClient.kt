@@ -96,7 +96,7 @@ class BackendClient(private val gate: SessionGate) {
         gate.requireCurrent(session)
         require(path.startsWith("/api/v1/") && !path.contains("\r") && !path.contains("\n"))
         return (URI(session.server + path).toURL().openConnection() as HttpURLConnection).apply {
-            requestMethod = method; connectTimeout = 15_000; readTimeout = 65_000
+            requestMethod = method; connectTimeout = 15_000; readTimeout = 210_000
             instanceFollowRedirects = false; useCaches = false
             setRequestProperty("Authorization", "Bearer ${session.token}")
             setRequestProperty("Cache-Control", "no-store")

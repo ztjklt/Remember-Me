@@ -17,13 +17,13 @@ class ContextTooLarge(AppError):
     http_status = 413
 
 
-def effective_materials(session, subject_id, episode_ids):
+def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True):
     episodes = list(session.scalars(select(Episode).where(Episode.subject_id == subject_id,
         Episode.episode_id.in_(episode_ids), Episode.status == 'ready',
         Episode.episode_id.not_in(select(MemoryRevision.episode_id).where(MemoryRevision.status!='confirmed')),
         Episode.transcript_reviewed_at.is_not(None)).order_by(Episode.recorded_at, Episode.episode_id)))
     # Check before any truncation, including text later masked by a correction.
-    if sum(len(e.transcript or '') for e in episodes) > 24000:
+    if enforce_budget and sum(len(e.transcript or '') for e in episodes) > 24000:
         raise ContextTooLarge('当前有效材料超过24000字符，请缩小故事范围；没有截断原文。')
     candidates = []
     changes = {r.target_memory_id: r for r in session.scalars(select(MemoryRevision).where(
@@ -103,7 +103,7 @@ def effective_materials(session, subject_id, episode_ids):
             candidates.append(dict(memory_item_id='episode:'+ep.episode_id, episode_id=ep.episode_id,
                 statement=excerpt, domain=None, traits=[], graph_facts=[], source_type='SUBJECT',
                 evidence=[dict(evidence_id=id, excerpt=excerpt, source_type='SUBJECT', episode_id=ep.episode_id)], score=1.0))
-    if sum(map(len,{e['excerpt'] for c in candidates for e in c['evidence']})) > 24000:
+    if enforce_budget and sum(map(len,{e['excerpt'] for c in candidates for e in c['evidence']})) > 24000:
         raise ContextTooLarge('有效证据（含重叠片段）超过24000字符，请缩小故事范围；没有截断。')
     session.flush()
     return candidates

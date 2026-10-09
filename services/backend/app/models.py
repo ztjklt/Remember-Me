@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -548,10 +549,53 @@ class ProfileRefresh(Base):
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
     consent_id: Mapped[str] = mapped_column(String(64), nullable=False)
     kind: Mapped[str] = mapped_column(String(16),nullable=False,default='candidates')
+    request_payload: Mapped[dict | None] = mapped_column(JSON,nullable=True)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default='queued')
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativeRecord(Base):
+    """Reviewed organization of existing evidence; never a second fact store."""
+    __tablename__ = 'narrative_records'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='pending')
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    evidence_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False, default='owner')
+    prompt_version: Mapped[str] = mapped_column(String(128), nullable=False, default='owner')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativeHistory(Base):
+    __tablename__ = 'narrative_history'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    record_id: Mapped[str] = mapped_column(String(64), ForeignKey('narrative_records.id'), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    action: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativePreference(Base):
+    __tablename__ = 'narrative_preferences'
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), primary_key=True)
+    style_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class NarrativeQuestionDecision(Base):
+    __tablename__ = 'narrative_question_decisions'
+    id: Mapped[str] = mapped_column(String(192), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class GraphFact(Base):
@@ -656,6 +700,7 @@ class TwinAnswer(Base):
     model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     person_model_version: Mapped[int] = mapped_column(Integer, nullable=False)
     source_basis: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    expression: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

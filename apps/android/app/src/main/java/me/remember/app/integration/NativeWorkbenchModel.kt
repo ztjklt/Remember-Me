@@ -23,6 +23,7 @@ data class NativeState(
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
     val portrait: JSONObject = JSONObject(),
+    val narrative: JSONObject = JSONObject(), val narrativeJobs: List<JSONObject> = emptyList(),
     val vocabulary: String = "", val reviewSupplement: String = "",
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
@@ -168,7 +169,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             if(gate.accepts(s)) {
                 stopSource(); audio.stopPlayback()
                 state.value = state.value.copy(stories = emptyList(), grants = emptyList(), revisions = emptyList(),
-                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), portrait = JSONObject(), vocabulary = "", answer = null, search = emptyList(), reviewEpisode = null)
+                    requests = emptyList(), candidates = emptyList(), candidateJobs = emptyList(), profileUpdates = emptyList(), portrait = JSONObject(), narrative = JSONObject(), narrativeJobs = emptyList(), vocabulary = "", answer = null, search = emptyList(), reviewEpisode = null)
             }
             throw error
         }
@@ -183,6 +184,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
         val portrait = io { client.json(s, "$path/portrait").optJSONObject("views") ?: JSONObject() }
         val owner = stories.text("role") == "owner"
+        val narrative = if(capabilities.optBoolean("narrative")) io { client.json(s, "$path/narrative") } else JSONObject()
+        val narrativeJobs = if(owner && capabilities.optBoolean("narrative")) io { client.json(s, "$path/narrative/jobs").rows() } else emptyList()
         val revisions = if(owner) io { client.json(s, "$path/revisions").rows() } else emptyList()
         val candidates = if(owner) io { client.json(s, "$path/profile-candidates") } else JSONObject()
         val updates = if(owner) io { client.json(s, "$path/profile-candidates/updates").rows() } else emptyList()
@@ -190,11 +193,11 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         gate.requireCurrent(s)
         val changed = state.value.stories.map { it.toString() } != stories.rows().map { it.toString() } ||
             state.value.grants.map { it.toString() } != grants.rows().map { it.toString() } ||
-            state.value.candidates.map { it.toString() } != candidates.rows().map { it.toString() }
+            state.value.candidates.map { it.toString() } != candidates.rows().map { it.toString() } || state.value.narrative.toString() != narrative.toString()
         if(changed) { stopSource(); audio.stopPlayback() }
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role")), stories = stories.rows(),
             grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(), asrCapabilities = capabilities,
-            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, local = if(owner) localCaptures(s) else emptyList(),
+            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, narrative = narrative, narrativeJobs = narrativeJobs, local = if(owner) localCaptures(s) else emptyList(),
             answer = if(changed) null else state.value.answer, search = if(changed) emptyList() else state.value.search)
     }
     fun start(revision: RevisionTarget?) {
@@ -333,11 +336,11 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             refreshNow(s)
         }
     }
-    fun mutation(suffix: String, method: String, body: JSONObject? = null, subjectApi: Boolean = false) {
+    fun mutation(suffix: String, method: String, body: JSONObject? = null, subjectApi: Boolean = false, onSuccess: (() -> Unit)? = null) {
         val s = session ?: return; val path = if(subjectApi) subjectRoot() else root()
         operation(s) {
             stopSource(); audio.stopPlayback(); state.value = state.value.copy(answer = null, search = emptyList())
-            io { client.json(s, path + suffix, method, body) }; refreshNow(s)
+            io { client.json(s, path + suffix, method, body) }; refreshNow(s); onSuccess?.invoke()
         }
     }
     fun retry(episode: String, emptyResult: Boolean = false) {
@@ -378,8 +381,26 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             refreshNow(s)
         }
     }
+    fun organizeNarrative(cloudConfirmed: Boolean, episodes: List<String>) {
+        val s = session ?: return
+        if(!state.value.owner || !cloudConfirmed) { report("请确认将已核对的文字交由云端组织故事。"); return }
+        val path = root()
+        operation(s) {
+            val consent = io { cloudConsent(s) }
+            io { client.json(s, "$path/narrative/suggest", "POST", JSONObject().put("cloud_consent_id", consent).put("episode_ids",JSONArray(episodes))) }
+            refreshNow(s)
+        }
+    }
     fun playLocal(capture: LocalCapture) {
         stopSource(); audio.play(capture.recording, {}, ::report)
+    }
+    fun narrativeHistory(id: String, show: (JSONObject) -> Unit) {
+        val s=session ?: return
+        val path=root()+"/narrative/records/"+segment(id)+"/history"
+        operation(s) {
+            val history=io { client.json(s,path) }
+            gate.requireCurrent(s);show(history)
+        }
     }
     fun playSource(episode: String) {
         val s = session ?: return; val subject = state.value.subject

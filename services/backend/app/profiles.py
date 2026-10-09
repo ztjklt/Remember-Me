@@ -25,6 +25,12 @@ class ProfileClient:
         r.raise_for_status()
         return r.json()
 
+    def propose_narrative(self, payload):
+        r=httpx.post(self.url.removesuffix('/profile-proposals')+'/narrative-proposals',json=payload,
+            timeout=self.timeout,follow_redirects=False,trust_env=False)
+        r.raise_for_status()
+        return r.json()
+
 
 def candidate_view(row, basis):
     return {key:getattr(row,key) for key in ('candidate_id','domain','kind','statement','context',
@@ -57,6 +63,10 @@ def run_profile_once(database, client):
         job.status, job.updated_at = 'running', utcnow()
         session.commit()
     try:
+        if kind=='narrative':
+            from .narrative_worker import run_narrative_job
+            run_narrative_job(database,client,id,subject,actor,consent)
+            return id
         if kind=='relations':
             from .profile_relations import run_relations_job
             run_relations_job(database,client,id,subject,actor,consent)
