@@ -55,8 +55,14 @@ def run_profile_once(database, client):
     worker startup, never silently resubmitted to the cloud.
     """
     with database.session() as session:
-        publication_lock(session, '')
-        job = session.scalar(select(ProfileRefresh).where(ProfileRefresh.status=='queued').order_by(ProfileRefresh.created_at))
+        queued=select(ProfileRefresh).where(ProfileRefresh.status=='queued').order_by(ProfileRefresh.created_at)
+        if session.bind.dialect.name=='postgresql':
+            # Claim only a queue row. Idle polling must not lock every source
+            # table or deadlock with ordinary episode/worker writes.
+            job=session.scalar(queued.with_for_update(skip_locked=True).limit(1))
+        else:
+            publication_lock(session, '')
+            job=session.scalar(queued.limit(1))
         if job is None:
             session.rollback(); return None
         id, subject, actor, consent, kind = job.job_id, job.subject_id, job.actor_id, job.consent_id, job.kind

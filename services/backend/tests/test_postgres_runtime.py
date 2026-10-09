@@ -76,3 +76,49 @@ def test_postgres_lock_timeout_is_retryable_without_sql_or_secret_leak(app):
             assert 'private' not in response.text and 'INSERT' not in response.text
         finally:
             holder.rollback()
+
+
+def test_idle_profile_worker_does_not_lock_unrelated_source_tables(app):
+    require_postgres(app)
+    from app.profiles import run_profile_once
+    with app.state.database.engine.connect() as writer:
+        writer.execute(text('LOCK TABLE subjects IN ROW EXCLUSIVE MODE'))
+        try:
+            # No pending job: do not compete with an ordinary audio/source write.
+            assert run_profile_once(app.state.database,object()) is None
+        finally:writer.rollback()
+
+
+def test_publication_contention_fails_promptly_and_releases_partial_locks(app):
+    require_postgres(app)
+    import time
+    from sqlalchemy.exc import OperationalError
+    with app.state.database.engine.connect() as writer,app.state.database.session() as publisher:
+        writer.execute(text('LOCK TABLE subjects IN ROW EXCLUSIVE MODE'))
+        started=time.monotonic()
+        try:
+            with pytest.raises(OperationalError) as error:publication_lock(publisher,'')
+            assert error.value.orig.sqlstate=='55P03'
+            assert time.monotonic()-started<2
+            # The failed all-table acquisition must not retain its earlier locks.
+            with app.state.database.engine.connect() as other:
+                other.execute(text("SET LOCAL lock_timeout = '100ms'"))
+                other.execute(text('LOCK TABLE accounts IN ROW EXCLUSIVE MODE'))
+                other.rollback()
+        finally:writer.rollback()
+
+
+def test_profile_claim_skips_a_job_already_claimed_by_another_transaction(app,session):
+    require_postgres(app)
+    from app.models import ProfileRefresh
+    from app.profiles import run_profile_once
+    seeded=seed_development_data(session,subject_name='测试',actor_name='本人')
+    session.add(ProfileRefresh(job_id='claimed-job',subject_id=seeded.subject_id,
+        actor_id=seeded.actor_id,consent_id=seeded.consent_id,status='queued'))
+    session.commit()
+    with app.state.database.session() as claiming:
+        claiming.scalar(select(ProfileRefresh).where(ProfileRefresh.job_id=='claimed-job').with_for_update())
+        try:assert run_profile_once(app.state.database,object()) is None
+        finally:claiming.rollback()
+    session.expire_all()
+    assert session.get(ProfileRefresh,'claimed-job').status=='queued'

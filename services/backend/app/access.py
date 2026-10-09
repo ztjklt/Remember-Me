@@ -116,10 +116,26 @@ def publication_lock(session, subject_id):
         session.execute(text('BEGIN IMMEDIATE'))
     elif session.bind.dialect.name == 'postgresql':
         from .models import Base
-        session.connection(execution_options={'isolation_level': 'READ COMMITTED'})
-        session.execute(text("SET LOCAL lock_timeout = '5s'"))
+        from sqlalchemy.exc import OperationalError
+        from time import sleep
         quote = session.bind.dialect.identifier_preparer.quote
         tables = ', '.join(quote(name) for name in sorted(Base.metadata.tables))
-        session.execute(text(f'LOCK TABLE {tables} IN SHARE ROW EXCLUSIVE MODE'))
+        # Do not hold a prefix of the table set while waiting for a writer
+        # that may in turn need one of those tables (the upload/profile cycle).
+        # A conflict fails the short transaction, never the source validation.
+        for attempt in range(8):
+            session.connection(execution_options={'isolation_level': 'READ COMMITTED'})
+            try:
+                session.execute(text(f'LOCK TABLE {tables} IN SHARE ROW EXCLUSIVE MODE NOWAIT'))
+                break
+            except OperationalError as exc:
+                session.rollback()
+                if getattr(exc.orig,'sqlstate',None)!='55P03' or attempt==7:raise
+                # At most 0.9s backoff, with no partial locks held and no model
+                # call replay. Concurrent approvals can still serialize cleanly.
+                sleep(min(.02*(2**attempt),.2))
+            except Exception:
+                session.rollback()
+                raise
     else:
         raise RuntimeError('Publication locking supports SQLite and PostgreSQL only')
