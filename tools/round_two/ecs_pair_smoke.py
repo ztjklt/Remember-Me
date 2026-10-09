@@ -4,7 +4,7 @@ Reuses a documented fictional archived microphone file as IMPORT. Separate
 written supplements test corrections without pretending they were spoken.
 Passwords/tokens are read from ignored files; result files never contain them.
 """
-import hashlib,json,ssl,time
+import argparse,hashlib,json,ssl,time
 from pathlib import Path
 from datetime import datetime,timezone
 import httpx
@@ -12,9 +12,14 @@ ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'services/backend/var/paired-d
 SOURCE=ROOT/'services/backend/var/android-client-relay-probe/native-original.m4a'
 
 def main():
-    credentials=json.loads((OUT/'ecs-accounts.json').read_text('utf8'))
-    report_path=OUT/'ecs-pair-smoke.json'
+    parser=argparse.ArgumentParser();parser.add_argument('--staging-root',type=Path);args=parser.parse_args()
+    stage=args.staging_root
+    if stage and (stage.parent!=Path('/var/lib/remember-me') or not stage.name.startswith('paired-stage-')):
+        raise ValueError('Only explicit ECS staging roots are allowed')
+    credentials=json.loads(((stage/'accounts.json') if stage else OUT/'ecs-accounts.json').read_text('utf8'))
+    report_path=(stage/'smoke.json') if stage else OUT/'ecs-pair-smoke.json'
     report=json.loads(report_path.read_text('utf8')) if report_path.exists() else {'fresh_asr':True,'source':'archived fictional native audio imported over IP HTTPS','human_listening':False,'physical_phone':False,'episodes':{},'cycles':[]}
+    if stage:report.update(network='ECS loopback isolated staging, not public APK validation',source='archived fictional audio imported in isolated staging')
     def save():
         temp=report_path.with_suffix('.tmp');temp.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(report_path)
     def result(r):
@@ -24,7 +29,7 @@ def main():
     clients={}
     try:
         for role,row in credentials.items():
-            c=httpx.Client(base_url='https://39.108.183.47',verify=context,trust_env=False,timeout=150)
+            c=httpx.Client(base_url='http://127.0.0.1:8880' if stage else 'https://39.108.183.47',verify=context,trust_env=False,timeout=150)
             auth=result(c.post('/api/v1/accounts/login',json={k:row[k] for k in ['username','password']}))
             c.headers['Authorization']='Bearer '+auth['actor_token'];clients[role]=c
         owner,reader=clients['owner'],clients['reader'];subject=credentials['owner']['subject_id'];root=f'/api/v1/workbench/subjects/{subject}'
