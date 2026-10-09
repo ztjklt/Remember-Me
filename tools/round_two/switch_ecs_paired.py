@@ -34,10 +34,15 @@ def main():
     try:
         command(['systemctl','stop',*[f'remember-me@{x}' for x in ['api','worker','profile']]])
         # python-dotenv is already a runtime dependency. No config values go to logs.
-        migrate="""import os,subprocess
+        migrate="""import os,subprocess,pwd
 from dotenv import dotenv_values
+from sqlalchemy.engine import make_url
 env={**os.environ,**{k:v for k,v in dotenv_values('/etc/remember-me/api.env').items() if v is not None}}
-subprocess.run(['.venv/bin/python','-m','alembic','upgrade','head'],env=env,check=True)
+url=make_url(env['REMEMBER_DATABASE_URL']);identity={}
+if url.drivername.startswith('postgresql') and not url.host and not url.password:
+    account=pwd.getpwnam(url.username)
+    identity={'user':account.pw_uid,'group':account.pw_gid,'extra_groups':[]}
+subprocess.run(['.venv/bin/python','-m','alembic','upgrade','head'],env=env,check=True,**identity)
 """
         with (snapshot/'production-migration.log').open('w') as log:
             command([str(release/'services/backend/.venv/bin/python'),'-c',migrate],cwd=release/'services/backend',stdout=log,stderr=log)
