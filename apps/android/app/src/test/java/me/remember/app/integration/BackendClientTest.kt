@@ -6,6 +6,8 @@ import org.junit.Test
 import java.io.File
 import java.net.ServerSocket
 import java.util.concurrent.Executors
+import java.security.MessageDigest
+import org.json.JSONObject
 
 class BackendClientTest {
     @Test fun realHttpUsesBearerNoCacheAndDoesNotFollowRedirect() {
@@ -49,6 +51,28 @@ class BackendClientTest {
             }
         } finally { file.delete() }
     }
+    @Test fun clientDraftUsesNewEndpointWithoutLosingAndroidSourceOrRetryIdentity() {
+        val file=File.createTempFile("capture", ".m4a").apply { writeText("retained original") }
+        val checksum=MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+        val draft=ClientTranscript.parse(JSONObject().put("text","原始机器稿，不等于已核对。")
+            .put("audio_sha256",checksum).put("provider","groq").put("model","whisper-large-v3")
+            .put("audio_export_confirmed",true).toString())
+        val errors=mutableListOf<Throwable>(); val bodies=mutableListOf<String>(); val requests=mutableListOf<Map<String,String>>()
+        val server=TinyServer(2,errors) { headers,body ->
+            requests+=headers; bodies+=body;ok("{\"episode_id\":\"ep-client\"}")
+        }
+        try {
+            server.use {
+                val gate=SessionGate();val session=gate.connect(server.url,"owner")
+                val recording=AudioRecording(file.absolutePath,1000,"audio/mp4",file.length(),44100,1,"2026-10-09T00:00:00Z")
+                repeat(2) { assertEquals("ep-client",BackendClient(gate).upload(session,"subject","consent",recording,"stable-key",transcript=draft)) }
+            }
+            assertTrue(errors.toString(),errors.isEmpty())
+            requests.forEach { assertEquals("POST /api/v1/episodes/client-transcribed HTTP/1.1",it[":request-line"]); assertEquals("Bearer owner",it["authorization"]) }
+            bodies.forEach { assertTrue(it.contains("ANDROID_MIC"));assertTrue(it.contains("name=\"client_transcript\""));assertTrue(it.contains(checksum));assertTrue(it.contains("stable-key"));assertFalse(it.contains("reviewed_at")) }
+            assertEquals("retained original",file.readText())
+        } finally { file.delete() }
+    }
     private fun ok(body: String): String = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.toByteArray().size}\r\nConnection: close\r\n\r\n$body"
     /** Exercise real HTTP without introducing a mocked networking stack. */
     private class TinyServer(count: Int, errors: MutableList<Throwable>, handler: (Map<String,String>, String) -> String) : AutoCloseable {
@@ -64,8 +88,9 @@ class BackendClientTest {
                         while(true) { val b = input.read(); if(b < 0 || b == 10) break; if(b != 13) value.append(b.toChar()) }
                         return value.toString()
                     }
-                    line()
+                    val requestLine = line()
                     val headers = mutableMapOf<String,String>()
+                    headers[":request-line"] = requestLine
                     while(true) { val row = line(); if(row.isEmpty()) break; val split = row.indexOf(':'); headers[row.substring(0, split).lowercase()] = row.substring(split + 1).trim() }
                     val body = java.io.ByteArrayOutputStream()
                     if(headers["transfer-encoding"] == "chunked") {

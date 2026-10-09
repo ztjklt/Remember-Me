@@ -21,6 +21,9 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+# Public server certificates for the opt-in Android debug demo (never private keys).
+!apps/android/app/src/debug/res/raw/remember_ecs_internal.pem
+!apps/android/app/src/debug/res/raw/remember_ecs_ip_demo.pem
 /agent-loop-tests.log
 /services/backend/var/
 /services/ai-core/var/

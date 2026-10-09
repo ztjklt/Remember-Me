@@ -54,6 +54,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var ticker: Job? = null
     private var foreground = true
     private var polling: Job? = null
+    private data class CaptureTransfer(val id: String, val session: BackendSession, val capture: LocalCapture, val importing: Boolean)
+    private var pendingTransfer: CaptureTransfer? = null
     init { reminders.disable(); savedSession.load()?.let { connect(it.first, it.second, remember = true) } }
 
     fun signIn(server: String, username: String, password: String, name: String? = null) {
@@ -86,20 +88,20 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             polling = viewModelScope.launch {
                 while(isActive && gate.accepts(next)) {
                     delay(8_000)
-                    if(foreground && !state.value.busy && !state.value.recording && state.value.subject.isNotBlank()) refresh()
+                    if(foreground && pendingTransfer == null && !state.value.busy && !state.value.recording && state.value.subject.isNotBlank()) refresh()
                 }
             }
         }
     }
     fun selectSpace(space: JSONObject) {
         if(state.value.busy || state.value.recording) return
-        stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable()
+        stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
         refresh()
         val next = session ?: return
         polling = viewModelScope.launch { while(isActive && gate.accepts(next)) {
-            delay(8_000); if(foreground && !state.value.busy && !state.value.recording) refresh()
+            delay(8_000); if(foreground && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()
         } }
     }
     fun logout() {
@@ -115,7 +117,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     private fun clearIdentity() {
         reminders.disable()
-        gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null
+        gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null; pendingTransfer = null
         stopSource(); audio.stopPlayback(); state.value = NativeState()
     }
     private fun root() = "${BackendClient.WORKBENCH}/${segment(state.value.subject)}"
@@ -143,13 +145,18 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         return (0 until links.length()).mapNotNull { i ->
             val row = links.getJSONObject(i)
             available[row.text("path")]?.let { recording -> LocalCapture(recording, row.text("key"), row.text("episode"),
-                row.optJSONObject("revision")?.let { RevisionTarget(it.text("memory"), it.text("kind"), it.text("time")) }, row.optBoolean("linked")) }
+                row.optJSONObject("revision")?.let { RevisionTarget(it.text("memory"), it.text("kind"), it.text("time")) }, row.optBoolean("linked"),
+                row.optJSONObject("client_transcript")?.let { runCatching { ClientTranscript.parse(it.toString()) }.getOrNull() }, row.optBoolean("upload_attempted"),
+                if(row.has("upload_with_transcript")) row.getBoolean("upload_with_transcript") else null) }
         }.reversed()
     }
     private fun saveCapture(s: BackendSession, capture: LocalCapture) {
         gate.requireCurrent(s)
         val all = records(); val key = scopeKey(s); val values = all.optJSONArray(key) ?: JSONArray()
         val row = JSONObject().put("path", capture.recording.audioPath).put("key", capture.key).put("episode", capture.episode).put("linked", capture.linked)
+            .put("upload_attempted", capture.uploadAttempted)
+        capture.transcript?.let { row.put("client_transcript", it.toJson()) }
+        capture.uploadWithTranscript?.let { row.put("upload_with_transcript", it) }
         capture.revision?.let { row.put("revision", JSONObject().put("memory", it.memory).put("kind", it.kind).put("time", it.time)) }
         val index = (0 until values.length()).firstOrNull { values.getJSONObject(it).text("path") == capture.recording.audioPath }
         if(index == null) values.put(row) else values.put(index, row)
@@ -237,24 +244,68 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val s = session ?: return
         if(!recordingConsent) { report("请先确认本段完整原音的上传与转写方式；原音仍保留本机。"); return }
         val caps = state.value.asrCapabilities ?: run { report("请先刷新转写配置。"); return }
-        if(caps.text("stt_processing") == "cloud" && !caps.optBoolean("stt_configured")) {
+        val clientAsr = capture.usesClientTranscript(caps.text("stt") == "client")
+        if(!clientAsr && caps.text("stt_processing") == "cloud" && !caps.optBoolean("stt_configured")) {
             report("云端转写配置尚未完成，原音保留本机，请配置后再上传。"); return
         }
-        val asrPolicy = if(caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
+        val asrPolicy = if(!clientAsr && caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
+        if(clientAsr && capture.episode.isBlank() && capture.transcript == null) {
+            report("请先取回这段原音对应的机器转写，再上传并核对；原音已保存。"); return
+        }
         if(!state.value.owner) return
         val subject = state.value.subject; val path = root()
         operation(s) {
+            if(clientAsr) capture.transcript?.requireMatches(File(capture.recording.audioPath))
+            val sending = capture.beginUpload(clientAsr).also { saveCapture(s, it) }
             val consent = io { client.consent(s, subject, "RECORDING") }
-            submitCapture(capture,
-                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy) } },
+            submitCapture(sending,
+                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null) } },
                 persist = { saveCapture(s, it) },
                 link = { episode, revision ->
                 io { client.json(s, "$path/revisions", "POST", JSONObject().put("episode_id", episode)
                     .put("target_memory_id", revision.memory).put("kind", revision.kind)
                     .put("time_text", revision.time.ifBlank { null })) }
             })
-            state.value = state.value.copy(notice = "上传已接收，原音留在本机。等待转写后核对文字。")
+            state.value = state.value.copy(notice = if(clientAsr) "原音与机器稿已保存到服务器，请到档案核对文字后再整理。" else "上传已接收，原音留在本机。等待转写后核对文字。")
             refreshNow(s)
+        }
+    }
+    fun beginCaptureTransfer(capture: LocalCapture, importing: Boolean): String? {
+        val s = session ?: return null
+        if(state.value.busy || state.value.recording || !state.value.owner || pendingTransfer != null) return null
+        if(state.value.local.none { it.key == capture.key && it.recording.audioPath == capture.recording.audioPath }) return null
+        if(importing && (capture.uploadAttempted || capture.episode.isNotBlank())) {
+            report("已开始上传，不能替换机器稿。请重试原请求，再到核对页修改。"); return null
+        }
+        return java.util.UUID.randomUUID().toString().also { pendingTransfer = CaptureTransfer(it, s, capture, importing) }
+    }
+    fun cancelCaptureTransfer(id: String) { if(pendingTransfer?.id == id) pendingTransfer = null }
+    fun importTranscript(id: String, read: () -> java.io.InputStream?) {
+        val transfer = pendingTransfer?.takeIf { it.id == id && it.importing } ?: return
+        pendingTransfer = null
+        if(!gate.accepts(transfer.session)) return
+        operation(transfer.session) {
+            val draft = io {
+                val bytes = requireNotNull(read()) { "无法打开转写文件。" }.use { it.readBytesLimited(ClientTranscript.MAX_DOCUMENT_BYTES) }
+                ClientTranscript.parse(bytes.toString(Charsets.UTF_8))
+            }
+            gate.requireCurrent(transfer.session)
+            saveCapture(transfer.session, transfer.capture.withTranscript(draft))
+            state.value = state.value.copy(notice = "机器稿已与原音匹配并保存在本机；上传后仍需核对，尚未整理记忆。")
+        }
+    }
+    fun exportOriginal(id: String, write: () -> java.io.OutputStream?) {
+        val transfer = pendingTransfer?.takeIf { it.id == id && !it.importing } ?: return
+        pendingTransfer = null
+        if(!gate.accepts(transfer.session)) return
+        operation(transfer.session) {
+            io {
+                val file = File(transfer.capture.recording.audioPath)
+                require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
+                requireNotNull(write()) { "无法写入选择的位置。" }.use { output -> file.inputStream().use { it.copyTo(output) } }
+            }
+            gate.requireCurrent(transfer.session)
+            state.value = state.value.copy(notice = "已导出原音副本，手机内原音保留。转写后选择对应机器稿继续。")
         }
     }
     fun review(episode: String) {
@@ -372,7 +423,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         foreground = value
         playbackGate.setForeground(value)
         if(!value) { stopSource(); audio.stopPlayback(); if(state.value.recording) finish() }
-        else if(session != null && !state.value.busy && !state.value.recording) refresh()
+        else if(session != null && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()
     }
     private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
     private fun operation(s: BackendSession, block: suspend () -> Unit) {

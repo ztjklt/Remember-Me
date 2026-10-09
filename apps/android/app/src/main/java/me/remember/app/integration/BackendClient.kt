@@ -52,21 +52,24 @@ class BackendClient(private val gate: SessionGate) {
         }
         return json(session, "/api/v1/consents", "POST", JSONObject().put("subject_id", subject).put("scope", scope)).getString("consent_id")
     }
-    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null): String {
+    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
+        transcript?.requireMatches(file)
         val boundary = "remember-${UUID.randomUUID()}"
-        val connection = connection(session, "/api/v1/episodes", "POST", "multipart/form-data; boundary=$boundary")
+        val endpoint = if(transcript == null) "/api/v1/episodes" else "/api/v1/episodes/client-transcribed"
+        val connection = connection(session, endpoint, "POST", "multipart/form-data; boundary=$boundary")
         try {
             connection.setChunkedStreamingMode(64 * 1024)
             connection.outputStream.use { output ->
                 fun write(value: String) { output.write(value.toByteArray(Charsets.UTF_8)) }
-                val fields = mapOf("subject_id" to subject, "source" to "ANDROID_MIC", "recorded_at" to audio.createdAt,
+                val fields = mutableMapOf("subject_id" to subject, "source" to "ANDROID_MIC", "recorded_at" to audio.createdAt,
                     "audio_ref" to file.name, "duration_ms" to audio.durationMillis.toString(),
                     "idempotency_key" to key, "recording_consent_id" to consent,
                     "metadata" to JSONObject().put("capture_client", "native-android").apply {
                         cloudAsrPolicy?.let { put("cloud_asr_policy", it) }
                     }.toString())
+                transcript?.let { fields["client_transcript"] = it.toJson().toString() }
                 fields.forEach { (name, value) -> write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n") }
                 write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n")
                 file.inputStream().use { it.copyTo(output) }

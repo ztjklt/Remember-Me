@@ -15,7 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -232,6 +234,17 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
 
 @Composable private fun CaptureTab(state: NativeState, model: NativeWorkbenchModel, revision: RevisionTarget?, setRevision: (RevisionTarget?) -> Unit) {
     if(!state.owner) { Text("这里可以查看记录者授权的故事。你也可以在管理页提出想了解的问题。"); return }
+    val resolver = LocalContext.current.contentResolver
+    var exportTicket by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
+    var importTicket by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
+    val exportAudio = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/mp4")) { uri ->
+        exportTicket?.let { id -> if(uri == null) model.cancelCaptureTransfer(id) else model.exportOriginal(id) { resolver.openOutputStream(uri) } }
+        exportTicket = null
+    }
+    val importDraft = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        importTicket?.let { id -> if(uri == null) model.cancelCaptureTransfer(id) else model.importTranscript(id) { resolver.openInputStream(uri) } }
+        importTicket = null
+    }
     var localConsent by remember(state.actor, state.subject) { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if(granted) model.start(revision) else model.report("麦克风权限未授予。可在 Android 系统设置中允许后重试。")
@@ -257,18 +270,35 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
     Text("本机原音", style = MaterialTheme.typography.titleLarge)
     if(state.local.isEmpty()) Text("当前身份和空间尚无本机录音。")
     state.local.forEach { capture -> Panel {
-        var uploadConsent by remember(capture.key, state.asrCapabilities?.text("cloud_asr_policy")) { mutableStateOf(false) }
+        val caps = state.asrCapabilities
+        val clientAsr = capture.usesClientTranscript(caps?.text("stt") == "client")
+        var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
         Text(capture.recording.createdAt + " · " + clock(capture.recording.durationMillis))
         Text(if(capture.episode.isBlank()) "尚未上传" else if(!capture.linked) "已上传，关联未完成，请重试" else "已上传 · ${capture.episode}", style = MaterialTheme.typography.bodySmall)
         capture.revision?.let { Text("${kindName(it.kind)}旧记忆；关联完成后才可确认转写。", style = MaterialTheme.typography.bodySmall) }
         Action("播放本机原音", !state.busy && !state.recording) { model.playLocal(capture) }
+        if(clientAsr && !capture.linked) {
+            Text("当前演示由电脑接力转写：导出原音，经转写工具处理后取回 JSON 机器稿。手机会核验它是否对应这段录音。", style = MaterialTheme.typography.bodySmall)
+            Action("导出这段原音", !state.busy && !state.recording) {
+                model.beginCaptureTransfer(capture, importing = false)?.let { id ->
+                    exportTicket = id; exportAudio.launch("${capture.key}.m4a")
+                }
+            }
+            Action(if(capture.transcript == null) "取回机器转写" else "重新选择机器稿", !state.busy && !state.recording && !capture.uploadAttempted && capture.episode.isBlank()) {
+                model.beginCaptureTransfer(capture, importing = true)?.let { id ->
+                    importTicket = id; importDraft.launch(arrayOf("application/json", "text/plain"))
+                }
+            }
+            if(capture.transcript != null) Text("机器稿已匹配原音，尚未本人核对。", style = MaterialTheme.typography.labelMedium)
+            if(capture.uploadAttempted) Text("已开始上传，重试沿用同一份机器稿；识别错误可在核对页修改。", style = MaterialTheme.typography.bodySmall)
+        }
         if(!capture.linked) {
-            val caps = state.asrCapabilities
-            val configured = caps != null && (caps.text("stt_processing") != "cloud" || caps.optBoolean("stt_configured"))
+            val configured = caps != null && (clientAsr || caps.text("stt_processing") != "cloud" || caps.optBoolean("stt_configured")) &&
+                (!clientAsr || capture.transcript != null || capture.episode.isNotBlank())
             val destination = if(caps?.text("stt_processing") == "cloud")
                 "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
-            Check("同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, configured)
-            if(!configured) Text("转写连接配置未完成，原音仍保留本机。")
+            Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。" else "同意保存原音，并将本段完整音频交给$destination 转写；本机文件保留，核对后才整理记忆。", uploadConsent, { uploadConsent = it }, configured)
+            if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
             Action(if(capture.episode.isBlank()) "上传并等待核对" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
         }
     } }
