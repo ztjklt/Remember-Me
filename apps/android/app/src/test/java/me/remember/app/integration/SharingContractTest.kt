@@ -5,6 +5,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SharingContractTest {
+    @Test fun legacyServerWithoutCapabilityEndpointKeepsCoreLoginAndClosedFeatures() {
+        val info = loadServiceInfo { throw BackendHttpException(404, "Not Found") }
+        assertFalse(info.registrationAllowed)
+        assertFalse(info.invitations)
+        assertEquals("", info.release)
+    }
+    @Test fun capabilityFallbackDoesNotMaskAuthorizationNetworkOrServerErrors() {
+        for(status in listOf(401,403,429,500)) {
+            val error=assertThrows(BackendHttpException::class.java) {
+                loadServiceInfo { throw BackendHttpException(status,"rejected") }
+            }
+            assertEquals(status,error.status)
+        }
+        assertThrows(java.io.IOException::class.java) { loadServiceInfo { throw java.io.IOException("offline") } }
+        assertTrue(loadServiceInfo { JSONObject().put("sharing_invitations",true) }.invitations)
+    }
     @Test fun loginDoesNotOfferRegistrationWithoutExplicitCapability() {
         assertFalse(ServiceInfo.parse(JSONObject()).registrationAllowed)
         assertFalse(ServiceInfo.parse(JSONObject("""{"registration_allowed":false,"sharing_invitations":true}""")).registrationAllowed)

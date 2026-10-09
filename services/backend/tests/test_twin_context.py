@@ -16,6 +16,38 @@ def capture(app):
     return seen
 
 
+def test_unextracted_context_does_not_cut_negation_from_sentence(app, client, session):
+    from app.models import Evidence
+    owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
+    memory=session.scalar(select(MemoryItem).where(MemoryItem.episode_id == ep))
+    source=session.get(Evidence,memory.evidence_ids[0])
+    text='我没有说搬家能解决所有困难。'
+    session.get(Episode,ep).transcript=text
+    source.excerpt='我没有说';source.span_start=0;source.span_end=4
+    session.commit()
+    seen=capture(app)
+    assert client.post(f'/api/v1/subjects/{owner.subject_id}/twin/answers',headers=oh,
+        json={'question':'搬家解决了所有困难吗？','cloud_consent_id':cloud}).status_code==200
+    excerpts=[e['excerpt'] for c in seen for e in c['evidence']]
+    assert text in excerpts
+    assert '搬家能解决所有困难。' not in excerpts
+
+
+def test_complete_context_never_expands_into_a_deleted_span(app, client, session):
+    from app.models import Evidence
+    from app.materials import effective_materials
+    owner, reader, oh, rh, ep, cloud=setup_pair(app,client,session)
+    memory=session.scalar(select(MemoryItem).where(MemoryItem.episode_id==ep))
+    source=session.get(Evidence,memory.evidence_ids[0])
+    text='我没有说搬家能解决所有困难。今天散步。'
+    session.get(Episode,ep).transcript=text
+    source.excerpt='我没有说';source.span_start=0;source.span_end=4
+    memory.review_state='superseded';session.commit()
+    excerpts=[e['excerpt'] for c in effective_materials(session,owner.subject_id,{ep}) for e in c['evidence']]
+    assert not any('搬家' in e or '我没有说' in e for e in excerpts)
+    assert '今天散步。' in excerpts
+
+
 def test_twin_preserves_recording_and_text_positions(app, client, session):
     owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
     row = session.get(Episode, ep)

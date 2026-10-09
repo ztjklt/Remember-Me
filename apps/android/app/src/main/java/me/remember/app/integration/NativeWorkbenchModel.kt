@@ -235,7 +235,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
         val portrait = io { client.json(s, "$path/portrait").optJSONObject("views") ?: JSONObject() }
         val owner = stories.text("role") == "owner"
-        val info = io { ServiceInfo.parse(client.json(s, "/api/v1/service-info")) }
+        val info = io { loadServiceInfo { client.json(s, "/api/v1/service-info") } }
         val invitations = if(owner && info.invitations) io { client.json(s, "$path/invitations").rows() } else emptyList()
         val recipients = if(owner && info.invitations) io { client.json(s, "$path/recipients").rows() } else emptyList()
         val narrative = if(capabilities.optBoolean("narrative")) io { client.json(s, "$path/narrative") } else JSONObject()

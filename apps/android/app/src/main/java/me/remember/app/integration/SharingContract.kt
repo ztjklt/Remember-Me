@@ -25,12 +25,20 @@ fun invitationStatus(value: String): String = when(value) {
     else -> "状态待刷新"
 }
 
-fun serviceInfoRequest(server: String): ServiceInfo {
+// Only absence of this additive endpoint means a legacy server. Never hide auth or transport failures.
+fun loadServiceInfo(request: () -> JSONObject): ServiceInfo = try {
+    ServiceInfo.parse(request())
+} catch(error: BackendHttpException) {
+    if(error.status == 404) ServiceInfo() else throw error
+}
+
+fun serviceInfoRequest(server: String): ServiceInfo = loadServiceInfo {
     val connection = URI(normalizeServer(server) + "/api/v1/service-info").toURL().openConnection() as HttpURLConnection
     try {
         connection.connectTimeout = 15_000; connection.readTimeout = 15_000
         connection.instanceFollowRedirects = false; connection.useCaches = false
-        check(connection.responseCode == 200) { "服务版本信息暂不可用，注册入口保持关闭。" }
-        return ServiceInfo.parse(JSONObject(connection.inputStream.bufferedReader().use { it.readText() }))
+        val status=connection.responseCode
+        if(status != 200) throw BackendHttpException(status,"服务版本信息暂不可用，注册入口保持关闭。")
+        JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
     } finally { connection.disconnect() }
 }

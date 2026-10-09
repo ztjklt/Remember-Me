@@ -43,7 +43,7 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
                     blocked.extend((s.span_start, s.span_end) for s in spans)
         def allowed(start, end):
             return not suppress and not any(start < b and end > a for a, b in blocked)
-        covered = []
+        covered, third_party_spans = [], []
         for memory in memories:
             if memory.deleted_at or memory.review_state != 'active':
                 continue
@@ -64,6 +64,8 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
                     evidence.append(dict(evidence_id=id, excerpt=source.excerpt,
                         source_type=source.source_type, episode_id=ep.episode_id))
                     memory_covered.append((source.span_start, source.span_end))
+                    if source.source_type == 'THIRD_PARTY':
+                        third_party_spans.append((source.span_start, source.span_end))
             # A summary may combine facts from all original references. Removing
             # one reference cannot validate the unchanged combined statement.
             # Keep safe raw gaps below, but withhold the unrepairable summary.
@@ -82,27 +84,33 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
         # offsets and the narrator's wording. No generated summary is quoted.
         gaps = []
         for match in re.finditer(r'[^。！？\n]+[。！？\n]*', text):
-            intervals = [match.span()]
-            for a,b in covered:
-                intervals = [(x,y) for start,end in intervals
-                    for x,y in ((start,min(end,a)),(max(start,b),end)) if x<y]
-            gaps.extend(intervals)
+            start,end=match.span()
+            # Partial extraction must not amputate a negation, subject or
+            # condition from the remaining sentence. Deliberate overlap is
+            # safer than presenting the remainder as standalone evidence.
+            if not any(a<=start and b>=end for a,b in covered):
+                gaps.append((start,end))
         for start,end in gaps:
             if not allowed(start,end):
                 continue
             excerpt = text[start:end]
             if not re.search(r'\w',excerpt):
                 continue
-            id = 'src_' + hashlib.sha256(f'{ep.episode_id}:{start}:{end}:{excerpt}'.encode()).hexdigest()[:40]
+            # Expanding context around reported speech cannot upgrade it to
+            # the subject's direct experience. Keep the conservative attribution.
+            source_type='THIRD_PARTY' if any(start<b and end>a for a,b in third_party_spans) else 'SUBJECT'
+            identity=f'{ep.episode_id}:{start}:{end}:{excerpt}'
+            if source_type!='SUBJECT':identity+=':'+source_type
+            id = 'src_' + hashlib.sha256(identity.encode()).hexdigest()[:40]
             source = session.get(Evidence, id)
             if source is None:
-                source = Evidence(evidence_id=id, episode_id=ep.episode_id, source_type='SUBJECT',
+                source = Evidence(evidence_id=id, episode_id=ep.episode_id, source_type=source_type,
                     source_ref=f'episode:{ep.episode_id}#span:{start}-{end}', excerpt=excerpt,
                     span_start=start, span_end=end, confidence=None)
                 session.add(source)
             candidates.append(dict(memory_item_id='episode:'+ep.episode_id, episode_id=ep.episode_id,
-                statement=excerpt, domain=None, traits=[], graph_facts=[], source_type='SUBJECT',
-                evidence=[dict(evidence_id=id, excerpt=excerpt, source_type='SUBJECT', episode_id=ep.episode_id)], score=1.0))
+                statement=excerpt, domain=None, traits=[], graph_facts=[], source_type=source_type,
+                evidence=[dict(evidence_id=id, excerpt=excerpt, source_type=source_type, episode_id=ep.episode_id)], score=1.0))
     if enforce_budget and sum(map(len,{e['excerpt'] for c in candidates for e in c['evidence']})) > 24000:
         raise ContextTooLarge('有效证据（含重叠片段）超过24000字符，请缩小故事范围；没有截断。')
     session.flush()

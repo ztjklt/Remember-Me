@@ -10,6 +10,7 @@ import java.net.URLEncoder
 import java.util.UUID
 
 data class BackendSession(val server: String, val token: String, val epoch: Long)
+class BackendHttpException(val status: Int, message: String): IllegalStateException(message)
 
 /** Request snapshots prevent a response from a former identity repopulating the UI. */
 class SessionGate {
@@ -111,7 +112,7 @@ class BackendClient(private val gate: SessionGate) {
             val message = parsed?.optJSONObject("error")?.optString("message")?.takeIf { it.isNotBlank() }
                 ?: parsed?.optString("error_message")?.takeIf { it.isNotBlank() }
                 ?: parsed?.optString("detail")?.takeIf { it.isNotBlank() } ?: "服务请求失败（HTTP $status）。"
-            throw IllegalStateException(message.take(500))
+            throw BackendHttpException(status, message.take(500))
         }
         return bytes
     }
