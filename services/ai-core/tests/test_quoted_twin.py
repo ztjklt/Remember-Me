@@ -100,3 +100,82 @@ def test_quote_packet_does_not_merge_different_recordings_or_temporal_context():
     packet,_=quote_packet(d);assert len(packet['recordings'])==2
     other.evidence[0].episode_id='ep1';other.evidence[0].temporal_context='历史记载，后来发生变化'
     packet,_=quote_packet(d);assert len(packet['recordings'][0]['sources'])==2
+
+
+@pytest.mark.parametrize('failed_call',[1,2])
+def test_transient_failure_retried_within_same_three_request_budget(failed_call):
+    from app.quoted_twin import QuotedTwin
+    from app.errors import ProviderTimeout
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1
+            if self.calls==failed_call:raise ProviderTimeout('temporary')
+            if 'selection' not in payload:return {'points':[{'known':True,'source_ids':['s1']}]},'actual'
+            return {'reasoning':'Source supports this exact answer','valid':True,'failure_codes':[],'replacement':None},'actual'
+    chat=Chat();answer=QuotedTwin(chat).answer(data())
+    assert chat.calls==3 and answer.response_type=='ORIGINAL'
+
+
+def test_exhausted_selection_retries_leave_budget_for_review_but_never_publish():
+    from app.quoted_twin import QuotedTwin
+    from app.errors import ProviderUnavailable
+    class Chat:
+        calls=0
+        def complete(self,*args):
+            self.calls+=1;raise ProviderUnavailable('temporary')
+    chat=Chat()
+    with pytest.raises(ProviderUnavailable):QuotedTwin(chat).answer(data())
+    assert chat.calls==2
+
+
+def test_transient_retry_does_not_create_a_fourth_semantic_repair_request():
+    from app.quoted_twin import QuotedTwin
+    from app.errors import ProviderTimeout
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1
+            if self.calls==1:raise ProviderTimeout('temporary')
+            p={'points':[{'known':True,'source_ids':['s1']}]}
+            if self.calls==2:return p,'actual'
+            return {'reasoning':'Attribution still not established','valid':False,'failure_codes':['attribution'],'replacement':p},'actual'
+    chat=Chat()
+    with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
+    assert chat.calls==3
+
+
+def test_authentication_failure_is_never_retried():
+    from app.quoted_twin import QuotedTwin
+    from app.errors import ProviderAuthenticationFailed
+    class Chat:
+        calls=0
+        def complete(self,*args):
+            self.calls+=1;raise ProviderAuthenticationFailed('auth')
+    chat=Chat()
+    with pytest.raises(ProviderAuthenticationFailed):QuotedTwin(chat).answer(data())
+    assert chat.calls==1
+
+
+def test_malformed_transport_output_is_not_retried():
+    from app.quoted_twin import QuotedTwin
+    class Chat:
+        calls=0
+        def complete(self,*args):
+            self.calls+=1;raise AIOutputInvalid('Malformed response JSON')
+    chat=Chat()
+    with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
+    assert chat.calls==1
+
+
+def test_no_retry_started_after_total_time_budget(monkeypatch):
+    import app.quoted_twin as module
+    from app.errors import ProviderTimeout
+    now=[0.0];monkeypatch.setattr(module,'monotonic',lambda:now[0])
+    class Chat:
+        calls=0
+        def complete(self,*args):
+            self.calls+=1;now[0]=66;raise ProviderTimeout('late timeout')
+    chat=Chat()
+    with pytest.raises(ProviderTimeout):module.QuotedTwin(chat).answer(data())
+    assert chat.calls==1

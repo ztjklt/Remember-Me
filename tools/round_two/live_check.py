@@ -14,11 +14,19 @@ def save(path,data):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(path)
 
 def main():
-    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked','context-v8','context-v8-full','points-v1','points-v1-full','points-v2','points-v3','points-v4','points-v5','points-v6','quotes-v7','quotes-v8','quotes-v9','quotes-v10'],default='initial')
+    args=argparse.ArgumentParser();args.add_argument('--stage',choices=['proposals','qa'],default='proposals');args.add_argument('--run-name',choices=['initial','checked','context-v8','context-v8-full','points-v1','points-v1-full','points-v2','points-v3','points-v4','points-v5','points-v6','quotes-v7','quotes-v8','quotes-v9','quotes-v10','quotes-v11'],default='initial')
     args.add_argument('--case',action='append',help='Run only specified development-case IDs; no gold answer is sent')
+    args.add_argument('--dataset',choices=['legacy','cloud-monthly'],default='legacy')
     args=args.parse_args()
-    auth=json.loads(AUTH.read_text(encoding='utf8'));path=OUT/(args.stage+('-'+args.run_name if args.run_name!='initial' else '')+'.json')
+    dataset=ROOT/'services/backend/var/monthly-eval'
+    if args.dataset=='cloud-monthly':dataset=dataset/'cloud-asr-runs/relay-compact'
+    auth=json.loads((dataset/'identities.json').read_text(encoding='utf8'))
+    label=args.run_name+('-cloud' if args.dataset=='cloud-monthly' else '')
+    path=OUT/(args.stage+('-'+label if label!='initial' else '')+'.json')
     report=json.loads(path.read_text(encoding='utf8')) if path.exists() else {'started':datetime.now(timezone.utc).isoformat(),'people':{},'human_listening':False,'new_asr':False}
+    if report.get('dataset',args.dataset)!=args.dataset:raise SystemExit('Dataset mismatch; original run retained')
+    report['dataset']=args.dataset
+    report['source_mapping']=str((dataset/'product-episodes.json').relative_to(ROOT))
     for pid,pair in auth.items():
         owner=pair['owner'];subject=owner['subject_id'];root=f'/api/v1/workbench/subjects/{subject}'
         def call(method,url,who=owner,**kw):
@@ -47,7 +55,7 @@ def main():
             gold=json.loads((ROOT/'evaluations/monthly-integration-v1/gold'/ (pid+'.json')).read_text(encoding='utf8'))
             sys.path.insert(0,str(ROOT/'tools/monthly_eval'))
             from product_loop import check_qa_scope,MAPPING
-            mapping=json.loads(MAPPING.read_text(encoding='utf8'))
+            mapping=json.loads((dataset/'product-episodes.json').read_text(encoding='utf8'))
             grants=call('GET',root+'/grants',who=pair['reader'])['items']
             check_qa_scope(pid,gold['qa_protocol'],mapping,grants,
                 call('GET',root+'/stories',who=pair['reader'])['items'],call('GET',root+'/revisions')['items'])

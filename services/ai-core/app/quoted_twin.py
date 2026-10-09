@@ -4,14 +4,15 @@ Exactness is deterministic. Relevance, speaker context and completeness still
 need semantic review and project evaluation; this is not a guarantee of truth.
 """
 import json,logging
-from time import monotonic
+from time import monotonic, sleep
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field,ValidationError
-from .errors import AIOutputInvalid,ProviderTimeout
+from .errors import AIOutputInvalid,ProviderTimeout,ProviderUnavailable
 from .grounded_twin import source_packet
 from .twin import TwinOutput
 
-VERSION='twin-quotes-v10'
+# v11 changes transport recovery only; the frozen v10 prompts stay identical.
+VERSION='twin-quotes-v11'
 logger=logging.getLogger('remember_me.ai_core')
 
 class Quote(BaseModel):
@@ -133,18 +134,32 @@ class QuotedTwin:
         if not payload.candidates:
             return TwinOutput(answer='现有记录还不足以确定。',response_type='UNKNOWN',evidence_ids=[],confidence=0,model_version='no-evidence')
         start=monotonic();packet,_=quote_packet(payload)
-        calls=1
-        raw,model=self.chat.complete(SYSTEM,packet)
+        calls=0
+        def complete(system,request,*,reserve_review=False):
+            nonlocal calls
+            limit=2 if reserve_review else 3
+            for attempt in range(2):
+                if calls>=limit or monotonic()-start>65:
+                    raise ProviderTimeout('Quote request budget exhausted')
+                calls+=1
+                try:return self.chat.complete(system,request)
+                except (ProviderTimeout,ProviderUnavailable):
+                    # Reuse precisely the same authorized payload. A retry consumes
+                    # the shared three-request budget, including semantic repair.
+                    if attempt or calls>=limit or monotonic()-start>65:raise
+                    logger.warning(json.dumps({'event':'quote_transport_retry','prompt_version':VERSION,'calls':calls}))
+                    sleep(.3)
+            raise AssertionError('unreachable')
+        raw,model=complete(SYSTEM,packet,reserve_review=True)
         try:output,selection=render_ids(raw,payload,model)
         except AIOutputInvalid as exc:
             logger.warning(json.dumps({'event':'quote_selection_invalid','prompt_version':VERSION,'reason':exc.message}))
-            raw,model=self.chat.complete(SYSTEM+'\n这是唯一一次修正。草稿不是事实。严格依据原始sources修正所选编号或JSON格式。总长过长时选择能回答的更少、更短的来源；不得通过伪造未知躲过校验。',
-                {**packet,'rejected_draft':raw,'validation_error':exc.message})
-            calls+=1
+            raw,model=complete(SYSTEM+'\n这是唯一一次修正。草稿不是事实。严格依据原始sources修正所选编号或JSON格式。总长过长时选择能回答的更少、更短的来源；不得通过伪造未知躲过校验。',
+                {**packet,'rejected_draft':raw,'validation_error':exc.message},reserve_review=True)
             output,selection=render_ids(raw,payload,model)
         if monotonic()-start>65:raise ProviderTimeout('Quote review budget exhausted')
         def review():
-            checked,_=self.chat.complete(REVIEW,{**packet,'selection':selection.model_dump(),
+            checked,_=complete(REVIEW,{**packet,'selection':selection.model_dump(),
                 'rendered_answer':output.model_dump(exclude={'model_version','confidence'})})
             try:verdict=Verdict.model_validate(checked)
             except ValidationError as exc:raise AIOutputInvalid('Quote review schema invalid') from exc
@@ -153,11 +168,11 @@ class QuotedTwin:
             if not verdict.valid and not verdict.failure_codes:raise AIOutputInvalid('Negative review requires explicit failure class')
             logger.info(json.dumps({'event':'quote_review','prompt_version':VERSION,'valid':verdict.valid,'failure_codes':verdict.failure_codes}))
             return verdict
-        verdict=review();calls+=1
+        verdict=review()
         if not verdict.valid and verdict.replacement is not None and calls<3:
             output,selection=render_ids(verdict.replacement.model_dump(),payload,model)
             if monotonic()-start>65:raise ProviderTimeout('Quote correction review budget exhausted')
-            verdict=review();calls+=1
+            verdict=review()
             logger.info(json.dumps({'event':'quote_correction_reviewed','prompt_version':VERSION,'calls':calls,'valid':verdict.valid}))
         if not verdict.valid:raise AIOutputInvalid('Quoted answer failed relevance review')
         return output
