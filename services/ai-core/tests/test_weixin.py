@@ -7,6 +7,24 @@ from app.providers.weixin import WeixinChat
 from app.profile_proposals import ProfileProposalInput, ProfileProposalProvider
 
 
+def test_429_cooldown_prevents_more_network_requests(monkeypatch):
+    import app.providers.weixin as module
+    from app.errors import ProviderUnavailable
+    now=[0.0];sent=[]
+    monkeypatch.setattr(module,'perf_counter',lambda:now[0])
+    def handle(req):
+        sent.append(req)
+        return httpx.Response(429,headers={'Retry-After':'120'})
+    chat=WeixinChat(api_key='test-only',client=httpx.Client(transport=httpx.MockTransport(handle)))
+    with pytest.raises(ProviderUnavailable):chat.complete('system',{})
+    now[0]=30
+    with pytest.raises(ProviderUnavailable):chat.complete('system',{})
+    assert len(sent)==1
+    now[0]=121
+    with pytest.raises(ProviderUnavailable):chat.complete('system',{})
+    assert len(sent)==2
+
+
 def test_extraction_schema_failure_logs_shape_without_private_content(caplog):
     from types import SimpleNamespace
     from app.providers.weixin import WeixinProvider

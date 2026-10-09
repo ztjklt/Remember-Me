@@ -1,5 +1,7 @@
 # Android 双角色内测接口及执行记录
 
+**此文件保留实施历史。最新状态、质量门槛与未完成项以 `docs/agent-loop/PAIRED_DELIVERY_ACCEPTANCE_2026-10-09.md` 为准；下方早期计数不是最终计数。**
+
 授权：用户于 2026-10-09 明确要求执行本对话《勿忘我下一阶段》计划。基线 f194bef，codex/agent-integration。仅限定网络 ECS 内测，不开放注册、不扩大网络、不 push/merge。既有未跟踪产品差距文件保留。
 
 ## 交付契约

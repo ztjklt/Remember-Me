@@ -7,12 +7,12 @@ import json,logging
 from time import monotonic, sleep
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field,ValidationError
-from .errors import AIOutputInvalid,ProviderTimeout,ProviderUnavailable
+from .errors import AIOutputInvalid,ProviderTimeout,ProviderUnavailable,ProviderRateLimited
 from .grounded_twin import source_packet
 from .twin import TwinOutput
 
-# v11 changes transport recovery only; the frozen v10 prompts stay identical.
-VERSION='twin-quotes-v11'
+# v11 adds bounded recovery; v12 adds rate-limit cooldown. Prompts stay at v10.
+VERSION='twin-quotes-v12'
 logger=logging.getLogger('remember_me.ai_core')
 
 class Quote(BaseModel):
@@ -143,6 +143,7 @@ class QuotedTwin:
                     raise ProviderTimeout('Quote request budget exhausted')
                 calls+=1
                 try:return self.chat.complete(system,request)
+                except ProviderRateLimited:raise
                 except (ProviderTimeout,ProviderUnavailable):
                     # Reuse precisely the same authorized payload. A retry consumes
                     # the shared three-request budget, including semantic repair.

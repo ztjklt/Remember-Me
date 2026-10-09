@@ -1,4 +1,4 @@
-"""Bounded Weixin JSON-object transport; retry policy belongs to backend jobs."""
+"""Single-request JSON transport, with 429 cooldown; callers bound their retries."""
 import json
 import re
 import logging
@@ -9,7 +9,7 @@ from time import perf_counter
 import httpx
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable, ProviderAuthenticationFailed
+from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable, ProviderAuthenticationFailed, ProviderRateLimited
 from .ollama import grounded_result, locate_quote
 
 BASE_URL = 'https://chatapi.weixin.qq.com/openai/v1'
@@ -35,6 +35,7 @@ class WeixinChat:
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
         self.client = client or httpx.Client(timeout=45, trust_env=False)
+        self._blocked_until = 0.0
 
     def close(self):
         if self._owns_client:
@@ -47,6 +48,9 @@ class WeixinChat:
                      'prompt_sha256': hashlib.sha256(system.encode('utf-8')).hexdigest(),
                      'json_object_parsed': False}
         try:
+            if started < self._blocked_until:
+                telemetry['cooldown_remaining_seconds'] = round(self._blocked_until-started, 1)
+                raise ProviderRateLimited(self._blocked_until-started)
             body = {'model': self.model, 'messages':[
                 {'role':'system','content':system},
                 {'role':'user','content':json.dumps(payload, ensure_ascii=False)}],
@@ -59,7 +63,15 @@ class WeixinChat:
                     raise ProviderAuthenticationFailed('Weixin authentication failed')
                 if response.status_code in {408,504}:
                     raise ProviderTimeout('Weixin timed out')
-                if response.status_code == 429 or response.status_code >= 500:
+                if response.status_code == 429:
+                    try:delay=float(response.headers.get('Retry-After','60'))
+                    except ValueError:delay=60
+                    if not math.isfinite(delay):delay=60
+                    delay=max(1,min(delay,3600))
+                    self._blocked_until=perf_counter()+delay
+                    telemetry['retry_after_seconds']=delay
+                    raise ProviderRateLimited(delay)
+                if response.status_code >= 500:
                     raise ProviderUnavailable('Weixin temporarily unavailable')
                 if not response.is_success:
                     raise AIOutputInvalid('Weixin rejected request')

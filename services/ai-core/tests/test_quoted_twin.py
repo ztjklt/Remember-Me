@@ -179,3 +179,15 @@ def test_no_retry_started_after_total_time_budget(monkeypatch):
     chat=Chat()
     with pytest.raises(ProviderTimeout):module.QuotedTwin(chat).answer(data())
     assert chat.calls==1
+
+
+def test_rate_limit_is_returned_without_immediate_retry():
+    from app.quoted_twin import QuotedTwin
+    from app.errors import ProviderRateLimited
+    class Chat:
+        calls=0
+        def complete(self,*args):
+            self.calls+=1;raise ProviderRateLimited(60)
+    chat=Chat()
+    with pytest.raises(ProviderRateLimited):QuotedTwin(chat).answer(data())
+    assert chat.calls==1
