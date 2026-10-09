@@ -3,7 +3,11 @@
 set -euo pipefail
 umask 077
 test "$(id -u)" = 0
-candidate=/opt/remember-me/releases/paired-20261009-candidate
+candidate=${1:?Usage: backup_ecs_paired.sh /opt/remember-me/releases/paired-COMMIT}
+candidate=$(readlink -e -- "$candidate")
+[[ "$candidate" == /opt/remember-me/releases/paired-* && "${candidate%/*}" == /opt/remember-me/releases ]]
+test -f "$candidate/services/backend/alembic.ini"
+test -x "$candidate/services/backend/.venv/bin/python"
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 snapshot=/var/lib/remember-me/backups/paired-$stamp
 restore_db=remember_paired_restore_${stamp,,}_test
@@ -41,6 +45,7 @@ files=list(restored.rglob('*'))
 checks=[(str(p.relative_to(restored)),hashlib.sha256(p.read_bytes()).hexdigest()) for p in files if p.is_file()]
 assert checks and all((original/name).is_file() and hashlib.sha256((original/name).read_bytes()).hexdigest()==digest for name,digest in checks)
 result={'database':engine.url.database,'migration':revision,'row_counts':counts,'restored_files':len(checks),'audio_hash_match':True,'config_archive_retained_on_server_only':True,'cutover':False}
+result['migration_source']=str(Path.cwd().resolve().parents[1])
 (root/'restore-check.json').write_text(json.dumps(result,indent=2))
 print(json.dumps({'snapshot':str(root),'database':engine.url.database,'restored_files':len(checks),'migration':revision,'cutover':False}))
 PY

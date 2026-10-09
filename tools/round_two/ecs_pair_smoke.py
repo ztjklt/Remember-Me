@@ -1,4 +1,4 @@
-"""Real IP HTTPS test with fresh Paraformer and Weixin calls; no desktop ASR.
+"""Real IP HTTPS test with server Paraformer and Weixin; no desktop ASR.
 
 Reuses a documented fictional archived microphone file as IMPORT. Separate
 written supplements test corrections without pretending they were spoken.
@@ -26,11 +26,12 @@ def main():
         raise ValueError('Only explicit ECS staging roots are allowed')
     credentials=json.loads(((stage/'accounts.json') if stage else OUT/'ecs-accounts.json').read_text('utf8'))
     report_path=(stage/'smoke.json') if stage else OUT/'ecs-pair-smoke.json'
-    report=json.loads(report_path.read_text('utf8')) if report_path.exists() else {'fresh_asr':True,'source':'archived fictional native audio imported over IP HTTPS','human_listening':False,'physical_phone':False,'episodes':{},'cycles':[]}
+    report=json.loads(report_path.read_text('utf8')) if report_path.exists() else {'fresh_asr':None,'source':'archived fictional native audio imported over IP HTTPS','human_listening':False,'physical_phone':False,'episodes':{},'cycles':[]}
     if report.get('finished'):
         print('Completed report preserved; use a new isolated run for another verification.')
         return
     report['asr_scope']='One distinct audio hash; later uploads may reuse its Paraformer checkpoint.'
+    report['asr_provenance_note']='Server Paraformer path exercised; verify provider checkpoint timestamps separately before claiming a new upstream ASR call.'
     if stage:report.update(network='ECS loopback isolated staging, not public APK validation',source='archived fictional audio imported in isolated staging')
     def save():
         temp=report_path.with_suffix('.tmp');temp.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(report_path)

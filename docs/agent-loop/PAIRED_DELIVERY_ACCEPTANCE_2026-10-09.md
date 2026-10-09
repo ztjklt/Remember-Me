@@ -1,5 +1,7 @@
 # Android 双角色内测：实施结果与未完成项
 
+> 本文保留10月9日历史基线。10月10日限流恢复后的修复、完整54/60结果、ECS升级及手机验收进展，见 [本轮恢复与交付记录](PAIRED_DELIVERY_RECOVERY_2026-10-10.md)。以下“未切换ECS”不再代表最新运行状态。
+
 **结论：主要接口、邀请和 Android 交互已经实现，但本阶段尚未完成交付。问答完整评测未达门槛，微信接口随后连续返回429，因此没有将候选版本切换到 ECS。**
 
 工作区：`D:/codex_work/remember-me-agent-loop`，分支 `codex/agent-integration`。未修改饮食项目，未 push、merge、开放注册或扩大网络白名单。
