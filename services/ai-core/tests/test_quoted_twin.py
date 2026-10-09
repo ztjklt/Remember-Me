@@ -191,3 +191,75 @@ def test_rate_limit_is_returned_without_immediate_retry():
     chat=Chat()
     with pytest.raises(ProviderRateLimited):QuotedTwin(chat).answer(data())
     assert chat.calls==1
+
+
+def test_review_receives_selected_material_separately_from_uncited_context():
+    from app.quoted_twin import QuotedTwin
+    d=data(); other=d.candidates[0].evidence[0].model_copy(deep=True)
+    other.evidence_id='unselected';other.excerpt='这是未选入答案的另一件事。'
+    other.span_start=100;other.span_end=100+len(other.excerpt)
+    d.candidates[0].evidence.append(other)
+    class Chat:
+        def complete(self,system,payload):
+            if 'selection' not in payload:
+                return {'points':[{'known':True,'source_ids':['s1']},{'known':False,'source_ids':[]}]},'actual'
+            assert payload['cited_material']==[{'known':True,'sources':[{'id':'s1','text':'同事老周告诉我，他父亲曾在铁路工作。','type':'SUBJECT'}]}, {'known':False,'sources':[]}]
+            return {'reasoning':'selected quote supports attribution','valid':True,'failure_codes':[],'replacement':None},'actual'
+    assert '老周' in QuotedTwin(Chat()).answer(d).answer
+
+
+def test_quote_failure_has_correlated_stage_metadata_without_private_text(caplog):
+    import json
+    from app.quoted_twin import QuotedTwin
+    class Chat:
+        def complete(self,*args):raise AIOutputInvalid('private text and key MUST NOT appear')
+    with caplog.at_level('INFO',logger='remember_me.ai_core'):
+        with pytest.raises(AIOutputInvalid):QuotedTwin(Chat()).answer(data())
+    events=[json.loads(r.message) for r in caplog.records if r.message.startswith('{')]
+    result=next(e for e in events if e.get('event')=='quote_request')
+    assert result['stage']=='selection' and result['error_type']=='AIOutputInvalid'
+    assert result['status']=='failed' and len(result['trace_id'])==32
+    assert 'private text' not in str(events) and '同事老周' not in str(events)
+
+
+def test_selected_context_is_rendered_before_its_later_pronoun():
+    from app.quoted_twin import render_ids
+    d=data();e=d.candidates[0].evidence[0]
+    e.excerpt='车队的老周是我的同事。';e.span_end=len(e.excerpt)
+    later=e.model_copy(deep=True);later.evidence_id='later'
+    later.excerpt='后来他告诉我，他父亲在铁路工作。'
+    later.span_start=100;later.span_end=100+len(later.excerpt)
+    d.candidates[0].evidence.append(later)
+    answer,_=render_ids({'points':[{'known':True,'source_ids':['s2','s1']}]},d,'actual')
+    assert answer.answer.index('车队的老周') < answer.answer.index('后来他')
+    assert answer.evidence_ids==['e1','later']
+
+
+def test_long_unpunctuated_source_has_exact_selectable_windows_and_parent_context():
+    from app.quoted_twin import quote_packet,render_ids
+    d=data();e=d.candidates[0].evidence[0]
+    d.question='休息时为什么把手机静音？'
+    e.excerpt='我休息时把手机静音主要是想听完一张唱片不被提示音打断'+('这是后来继续讲述的生活细节'*80)
+    e.span_end=len(e.excerpt)
+    packet,aliases=quote_packet(d)
+    parts=[s for s in packet['recordings'][0]['sources'] if s.get('parent_id')=='s1']
+    assert parts and parts[0]['text'].startswith('我休息时把手机静音')
+    assert packet['recordings'][0]['sources'][0]['text']==e.excerpt
+    for part in parts:
+        assert part['text']==e.excerpt[part['start']:part['end']]
+        assert len(part['text'])<=260 and aliases[part['id']]=='e1'
+    answer,_=render_ids({'points':[{'known':True,'source_ids':[parts[0]['id']]}]},d,'actual')
+    assert len(answer.answer)<=500 and answer.evidence_ids==['e1']
+
+
+def test_long_windows_never_fetch_or_reintroduce_excluded_material():
+    from app.quoted_twin import quote_packet
+    d=data();e=d.candidates[0].evidence[0]
+    e.excerpt='可见有效材料'*90;e.span_start=300;e.span_end=300+len(e.excerpt)
+    d.question='有效材料是什么？'
+    packet,aliases=quote_packet(d)
+    windows=[s for s in packet['recordings'][0]['sources'] if 'parent_id' in s]
+    assert windows
+    for part in windows:
+        assert part['text']==e.excerpt[part['start']:part['end']]
+        assert aliases[part['id']]=='e1'

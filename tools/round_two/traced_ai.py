@@ -13,10 +13,10 @@ OUT=ROOT/'services/backend/var/round-two/twin-call-metadata'
 def traced(self,system,payload):
     # Corpus labels cannot establish authorization to log personal materials.
     # Store no materials even when the caller labels them synthetic.
-    if not system.startswith(('twin-points-v','twin-points-review-v')):
+    if not system.startswith(('twin-points-v','twin-points-review-v','twin-quotes-v','twin-quotes-review-v')):
         return original(self,system,payload)
     OUT.mkdir(parents=True,exist_ok=True)
-    version=re.match(r'twin-points-(?:review-)?v[0-9]+',system)
+    version=re.match(r'twin-(?:points|quotes)-(?:review-)?v[0-9]+',system)
     record={'started':datetime.now(timezone.utc).isoformat(),
         'prompt_version':version.group(0) if version else 'unknown',
         'prompt_sha256':hashlib.sha256(system.encode()).hexdigest()}

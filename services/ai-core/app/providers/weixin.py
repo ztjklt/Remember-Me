@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable, ProviderAuthenticationFailed, ProviderRateLimited
 from .ollama import grounded_result, locate_quote
+from ..telemetry import quote_trace_id
 
 BASE_URL = 'https://chatapi.weixin.qq.com/openai/v1'
 MODEL = 'Deepseek-v4-flash'
@@ -47,6 +48,7 @@ class WeixinChat:
                      'endpoint': self.base_url + '/chat/completions',
                      'prompt_sha256': hashlib.sha256(system.encode('utf-8')).hexdigest(),
                      'json_object_parsed': False}
+        if quote_trace_id.get(): telemetry['trace_id'] = quote_trace_id.get()
         try:
             if started < self._blocked_until:
                 telemetry['cooldown_remaining_seconds'] = round(self._blocked_until-started, 1)

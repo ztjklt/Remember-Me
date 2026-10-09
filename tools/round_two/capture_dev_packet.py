@@ -9,12 +9,14 @@ OUT=ROOT/'services/backend/var/paired-delivery'
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('case');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('case');p.add_argument('--dataset',choices=['legacy','cloud-monthly'],default='legacy');args=p.parse_args()
     pid=args.case.rsplit('-q',1)[0]
     if pid not in {'bus_driver','firefighter','life_review'}:raise SystemExit('Named synthetic development corpus only')
     gold=json.loads((ROOT/'evaluations/monthly-integration-v1/gold'/f'{pid}.json').read_text(encoding='utf8'))
     case=next(c for c in gold['qa'] if c['id']==args.case)
-    identities=json.loads((ROOT/'services/backend/var/monthly-eval/identities.json').read_text(encoding='utf8'))[pid]
+    dataset=ROOT/'services/backend/var/monthly-eval'
+    if args.dataset=='cloud-monthly':dataset=dataset/'cloud-asr-runs/relay-compact'
+    identities=json.loads((dataset/'identities.json').read_text(encoding='utf8'))[pid]
     who=identities[case['role']];subject=identities['owner']['subject_id']
     OUT.mkdir(exist_ok=True)
     target=OUT/'diagnostic.db'
@@ -32,7 +34,10 @@ def main():
     app=create_app(Settings(_env_file=None,environment='test',database_url='sqlite:///'+target.as_posix(),object_store_backend='memory',ai_backend='http',log_level='ERROR'))
     class Capture:
         def answer(self,question,candidates):
-            (OUT/(args.case+'-packet.json')).write_text(json.dumps({'question':question,'candidates':candidates},ensure_ascii=False,indent=2),encoding='utf8')
+            suffix='-cloud' if args.dataset=='cloud-monthly' else ''
+            target=OUT/(args.case+suffix+'-packet.json')
+            if target.exists():raise RuntimeError('Captured packet already exists; preserve it')
+            target.write_text(json.dumps({'question':question,'candidates':candidates},ensure_ascii=False,indent=2),encoding='utf8')
             raise TwinUnavailable('Packet captured; no model called')
     app.state.twin_client=Capture()
     with TestClient(app) as client:
