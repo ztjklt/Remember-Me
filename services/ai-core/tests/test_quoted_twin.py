@@ -247,7 +247,7 @@ def test_long_unpunctuated_source_has_exact_selectable_windows_and_parent_contex
     assert packet['recordings'][0]['sources'][0]['text']==e.excerpt
     for part in parts:
         assert part['text']==e.excerpt[part['start']:part['end']]
-        assert len(part['text'])<=260 and aliases[part['id']]=='e1'
+        assert len(part['text'])<=140 and aliases[part['id']]=='e1'
     answer,_=render_ids({'points':[{'known':True,'source_ids':[parts[0]['id']]}]},d,'actual')
     assert len(answer.answer)<=500 and answer.evidence_ids==['e1']
 
@@ -263,3 +263,38 @@ def test_long_windows_never_fetch_or_reintroduce_excluded_material():
     for part in windows:
         assert part['text']==e.excerpt[part['start']:part['end']]
         assert aliases[part['id']]=='e1'
+
+
+@pytest.mark.parametrize('last_valid',[True,False])
+def test_review_schema_can_be_repaired_once_without_bypassing_semantics(last_valid):
+    from app.quoted_twin import QuotedTwin
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1
+            if self.calls==1:return {'points':[{'known':True,'source_ids':['s1']}]},'actual'
+            if self.calls==2:return {'valid':True},'actual'  # Missing required review fields.
+            assert payload['response_schema']['required']
+            assert payload['selection']['points'][0]['quotes'][0]['source_id']=='s1'
+            return {'reasoning':'Rechecked attribution','valid':last_valid,
+                'failure_codes':[] if last_valid else ['attribution'],'replacement':None},'actual'
+    chat=Chat()
+    if last_valid:assert QuotedTwin(chat).answer(data()).response_type=='ORIGINAL'
+    else:
+        with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
+    assert chat.calls==3
+
+
+def test_malformed_negative_review_cannot_turn_into_a_positive_revote():
+    from app.quoted_twin import QuotedTwin
+    class Chat:
+        calls=0
+        def complete(self,system,payload):
+            self.calls+=1
+            if self.calls==1:return {'points':[{'known':True,'source_ids':['s1']}]},'actual'
+            if self.calls==2:return {'reasoning':'x'*601,'valid':False,
+                'failure_codes':['attribution'],'replacement':None},'actual'
+            return {'reasoning':'Another vote','valid':True,'failure_codes':[],'replacement':None},'actual'
+    chat=Chat()
+    with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
+    assert chat.calls==2

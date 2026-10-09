@@ -42,6 +42,7 @@ def main():
     from dotenv import dotenv_values
     env={**os.environ,**{k:v for k,v in dotenv_values('/etc/remember-me/api.env').items() if v is not None}}
     common={'REMEMBER_DATABASE_URL':'postgresql+psycopg:///'+plan['database'],
+        'REMEMBER_ENVIRONMENT':'test',
         'REMEMBER_OBJECT_STORE_BACKEND':'local','REMEMBER_OBJECT_STORE_ROOT':str(stage/'audio'),
         'REMEMBER_PARAFORMER_STATE_DIR':str(stage/'asr'),
         'REMEMBER_AI_CORE_URL':'http://127.0.0.1:8899','REMEMBER_AI_TIMEOUT_SECONDS':'120',

@@ -11,6 +11,14 @@ import httpx
 ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'services/backend/var/paired-delivery'
 SOURCE=ROOT/'services/backend/var/android-client-relay-probe/native-original.m4a'
 
+def check_private_before_share(report,key,share_key,read_status,save):
+    # A resumed run may already have shared the story. Preserve the earlier
+    # observation rather than demanding 404 after a legitimate grant.
+    if report.get(key):return
+    if report.get(share_key):raise RuntimeError('Missing private-before-share evidence: '+key)
+    if read_status()!=404:raise RuntimeError('Story was visible before explicit sharing')
+    report[key]=True;save()
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--staging-root',type=Path);args=parser.parse_args()
     stage=args.staging_root
@@ -19,6 +27,10 @@ def main():
     credentials=json.loads(((stage/'accounts.json') if stage else OUT/'ecs-accounts.json').read_text('utf8'))
     report_path=(stage/'smoke.json') if stage else OUT/'ecs-pair-smoke.json'
     report=json.loads(report_path.read_text('utf8')) if report_path.exists() else {'fresh_asr':True,'source':'archived fictional native audio imported over IP HTTPS','human_listening':False,'physical_phone':False,'episodes':{},'cycles':[]}
+    if report.get('finished'):
+        print('Completed report preserved; use a new isolated run for another verification.')
+        return
+    report['asr_scope']='One distinct audio hash; later uploads may reuse its Paraformer checkpoint.'
     if stage:report.update(network='ECS loopback isolated staging, not public APK validation',source='archived fictional audio imported in isolated staging')
     def save():
         temp=report_path.with_suffix('.tmp');temp.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8');temp.replace(report_path)
@@ -87,16 +99,19 @@ def main():
             report['request']=result(reader.post(root+'/requests',json={'text':'你为什么一直保留这个蓝色水杯？'}));save()
         reply,reply_story=upload('reply','虚构测试的本人书面回答：我保留蓝色水杯，因为那是母亲送我的生日礼物。')
         result(owner.patch(root+'/requests/'+report['request']['request_id'],json={'status':'answered','answer_episode_id':reply}))
-        assert reader.get(root+f'/stories/{reply}/audio').status_code==404
-        report['reply_private_before_share']=True
+        check_private_before_share(report,'reply_private_before_share','reply_share',
+            lambda:reader.get(root+f'/stories/{reply}/audio').status_code,save)
         if 'reply_share' not in report:
             inv,path=share(reply,True);report['reply_share']={'invitation':inv,'path':path};save()
         if 'reply_answer' not in report:
             report['reply_answer']=ask(reader,'为什么保留蓝色水杯？',gid);save()
-        target=next(m['memory_item_id'] for m in initial['memories'] if '2011' in m['statement'])
+        if 'correction_target' not in report:
+            report['correction_target']=next(m['memory_item_id'] for m in initial['memories'] if '2011' in m['content']);save()
+        target=report['correction_target']
         corrected,corrected_story=upload('correction','虚构测试的本人书面纠正：之前的2011年写错了，第一份工作是2012年开始，不是2011年。',target)
         rev=report['episodes']['correction']['revision'];result(owner.post(root+'/revisions/'+rev['revision_id']+'/confirm'))
-        assert reader.get(root+f'/stories/{corrected}/audio').status_code==404
+        check_private_before_share(report,'correction_private_before_share','correction_share',
+            lambda:reader.get(root+f'/stories/{corrected}/audio').status_code,save)
         if 'corrected_owner_answer' not in report:
             report['corrected_owner_answer']=ask(owner,'第一份工作从哪一年开始？',cloud);save()
         if 'correction_share' not in report:
@@ -105,12 +120,21 @@ def main():
             report['corrected_reader_answer']=ask(reader,'第一份工作从哪一年开始？',report['correction_share']['invitation']['grant_ids'][0]);save()
         # Bounded repeated read/revoke/explicit reshare on the new answer story.
         for n in range(len(report['cycles']),3):
-            entry=report['reply_share'] if n==0 else None
-            if entry:inv,path=entry['invitation'],entry['path']
-            else:inv,path=share(reply,True)
-            data=reader.get(root+f'/stories/{reply}/audio');assert data.status_code==200
-            result(owner.post(path+'/revoke'));denied=reader.get(root+f'/stories/{reply}/audio').status_code;assert denied==404
-            report['cycles'].append({'round':n+1,'invitation_id':inv['id'],'audio_before':200,'audio_after':denied});save()
+            pending=report.get('cycle_pending')
+            if not pending:
+                entry=report['reply_share'] if n==0 else None
+                if entry:inv,path=entry['invitation'],entry['path']
+                else:inv,path=share(reply,True)
+                pending={'round':n+1,'invitation_id':inv['id'],'path':path}
+                report['cycle_pending']=pending;save()
+            assert pending['round']==n+1
+            if 'audio_before' not in pending:
+                assert reader.get(root+f'/stories/{reply}/audio').status_code==200
+                pending['audio_before']=200;save()
+            result(owner.post(pending['path']+'/revoke'))
+            denied=reader.get(root+f'/stories/{reply}/audio').status_code;assert denied==404
+            report['cycles'].append({'round':n+1,'invitation_id':pending['invitation_id'],'audio_before':200,'audio_after':denied})
+            report.pop('cycle_pending');save()
         # Leave a usable explicit final sharing for interactive installation checks.
         if 'interactive_reply_share' not in report:
             inv,path=share(reply,True);report['interactive_reply_share']={'invitation':inv,'path':path};save()
