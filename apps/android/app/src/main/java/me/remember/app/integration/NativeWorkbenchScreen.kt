@@ -80,7 +80,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                     OutlinedTextField(token, { token = it }, label = { Text("身份凭据") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
                         visualTransformation = PasswordVisualTransformation())
                     Button(onClick = { model.connect(server, token); token = "" }, enabled = !state.busy && token.isNotBlank()) { Text("进入空间") }
-                    Text("手机和模拟器先运行 adb reverse tcp:8877 tcp:8877，再使用 http://127.0.0.1:8877 连接共享工作台。HTTP 只允许本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
+                    Text("云端演示使用预设 HTTPS 地址直接连接，无需电脑转发。连接本机开发服务时才需要局域网或 ADB；HTTP 仅支持本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
                     Text("每日提醒：关闭。录音、上传和云端文字处理均由你主动发起。", style = MaterialTheme.typography.bodySmall)
                     }
                 }

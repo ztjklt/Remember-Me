@@ -40,6 +40,56 @@ class ClientRelayLiveTest {
         return checkNotNull(id)
     }
 
+    /** Public-IP acceptance only: remove ADB reverse before running. Uses an
+     * existing real story; does not pretend to perform new recording or ASR. */
+    @Test fun publicIpLoginSourcePlaybackAndTwin() {
+        val file = File(ui.activity.filesDir, "public-ip-config.json")
+        assumeTrue("Explicit real public-IP test credentials required", file.exists())
+        val config = JSONObject(file.readText())
+        assertEquals("https://39.108.183.47", BuildConfig.SERVICE_URL)
+        ui.waitUntil(45_000) { !model.ui.value.busy }
+        if(model.ui.value.actor.isNotBlank()) { tab("我的"); click("退出身份") }
+        ui.onNodeWithText("账号").performTextInput(config.getString("username"))
+        ui.onNodeWithText("密码（至少10个字符）").performTextInput(config.getString("password"))
+        click("登录")
+        ui.waitUntil(45_000) { model.ui.value.subject.isNotBlank() && !model.ui.value.busy }
+        assertNull(model.ui.value.error)
+        val saved = checkNotNull(SavedSession(ui.activity).load())
+        assertEquals(BuildConfig.SERVICE_URL, saved.first)
+        val episode = config.getString("episode")
+        val story = model.ui.value.stories.first { it.optString("episode_id") == episode }
+        assertEquals("ready", story.getString("status"))
+        assertTrue(story.getJSONArray("memories").length() > 0)
+        tab("档案"); shot("public-stories")
+        ui.runOnIdle { model.playSource(episode) }
+        ui.waitUntil(20_000) { model.ui.value.player.playing }
+        ui.runOnIdle { model.seekSource(2_000); model.pauseSource() }
+        assertFalse(model.ui.value.player.playing)
+        shot("public-player")
+        ui.runOnIdle { model.stopSource() }
+        val gate = SessionGate()
+        val session = gate.connect(saved.first, saved.second)
+        val source = BackendClient(gate).audio(session, model.ui.value.subject, episode)
+        val hash = MessageDigest.getInstance("SHA-256").digest(source).joinToString("") { "%02x".format(it) }
+        assertEquals(config.getString("audio_sha256"), hash)
+        tab("对话")
+        ui.onNodeWithText("想了解什么？").performTextInput(config.getString("question"))
+        check("同意本次将问题和有权访问"); click("提问"); idle()
+        val answer = checkNotNull(model.ui.value.answer)
+        shot("public-twin")
+        tab("档案"); click("人物")
+        ui.onNodeWithText("在意与选择").performScrollTo().assertExists()
+        shot("public-portrait")
+        File(ui.activity.filesDir,"public-ip-result.json").writeText(JSONObject()
+            .put("server",saved.first).put("episode",episode).put("audio_sha256",hash)
+            .put("story",story).put("answer",answer).put("portrait",model.ui.value.portrait)
+            .put("source_playback",true).put("new_recording_tested",false)
+            .put("new_asr_tested",false).put("real_handset",false).toString(2))
+        tab("我的"); click("退出身份")
+        assertNull(SavedSession(ui.activity).load())
+        assertTrue(model.ui.value.stories.isEmpty())
+    }
+
     @Test fun systemPickersOpenAndCancelWithoutLosingOriginals() {
         val configFile=File(ui.activity.filesDir,"client-relay-config.json")
         assumeTrue(configFile.exists())
