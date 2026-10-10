@@ -8,7 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from .errors import AIOutputInvalid
 
 PROMPT_VERSION='narrative-evidence-v5'
-SCHEMA=json.loads((Path(__file__).resolve().parents[3]/'packages/contracts/schemas/narrative-draft-v1.schema.json').read_text(encoding='utf-8'))
+# Wheels carry the canonical contract; source checkouts read that same file.
+_schema_path = Path(__file__).resolve().parent / 'schemas' / 'narrative-draft-v1.schema.json'
+if not _schema_path.is_file():
+    _schema_path = Path(__file__).resolve().parents[3] / 'packages/contracts/schemas/narrative-draft-v1.schema.json'
+SCHEMA=json.loads(_schema_path.read_text(encoding='utf-8'))
 class Material(BaseModel):
     model_config=ConfigDict(extra='forbid')
     evidence_id:str=Field(min_length=1,max_length=128)

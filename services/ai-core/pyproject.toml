@@ -30,3 +30,4 @@ packages = ["app"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "fixtures" = "app/fixtures"
+"../../packages/contracts/schemas/narrative-draft-v1.schema.json" = "app/schemas/narrative-draft-v1.schema.json"
