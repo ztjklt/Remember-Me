@@ -15,7 +15,7 @@ struct RecordingDraft: Codable, Identifiable {
 @MainActor
 final class AppModel: ObservableObject {
     @Published var showConnection = false
-    @Published var pairing: Pairing? = PairingStore.load()
+    @Published var pairing: Pairing?
     @Published var pairingServer = ""
     @Published var pairingCode = ""
     @Published var pairingFingerprint = ""
@@ -25,6 +25,9 @@ final class AppModel: ObservableObject {
     @Published var questions: [QuestionRecord] = []
     @Published var modelVersion = 0
     @Published var draft: RecordingDraft?
+    @Published var localRecordings: [LocalRecording] = []
+    @Published var isLocalTranscribing = false
+    @Published var isPollingEpisode = false
     @Published var episodeID: String?
     @Published var processingStatus = ""
     @Published var transcriptDraft = ""
@@ -65,19 +68,46 @@ final class AppModel: ObservableObject {
     private var auxiliaryURL: URL?
     private var auxiliaryTimer: Timer?
     private var auxiliaryStartedAt: Date?
+    private let recordingStore: LocalRecordingStore
+    private let localSpeech: any LocalSpeechTranscriber
+    private let defaults: UserDefaults
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "pending-recording") {
-            draft = try? JSONDecoder().decode(RecordingDraft.self, from: data)
-            if let pending = draft, !FileManager.default.fileExists(atPath: pending.fileURL.path) {
-                self.draft = nil
+    var visibleLocalRecordings: [LocalRecording] { localRecordings.filter { $0.isVisible(to: pairing) } }
+    private var activeLocalRecording: LocalRecording? { localRecordings.first { $0.id == draft?.id } }
+
+    init(recordingStore: LocalRecordingStore = LocalRecordingStore(),
+         localSpeech: any LocalSpeechTranscriber = OnDeviceSpeechTranscriber(),
+         defaults: UserDefaults = .standard, pairing: Pairing? = PairingStore.load()) {
+        self.recordingStore = recordingStore
+        self.localSpeech = localSpeech
+        self.defaults = defaults
+        self.pairing = pairing
+        do {
+            let loaded = try recordingStore.load()
+            localRecordings = loaded.recordings
+            if loaded.unreadableCount > 0 {
+                errorMessage = "有 \(loaded.unreadableCount) 份录音信息无法读取，其余录音仍可查看。原音没有删除。"
             }
         }
-        episodeID = UserDefaults.standard.string(forKey: "pending-episode")
-        if let path = UserDefaults.standard.string(forKey: "pending-voice-sample"),
+        catch { errorMessage = "本机录音信息暂时无法读取，原音没有删除：\(error.localizedDescription)" }
+        if let data = defaults.data(forKey: "pending-recording") {
+            draft = try? JSONDecoder().decode(RecordingDraft.self, from: data)
+            if let pending = draft { draft = recordingStore.resolved(pending) }
+        }
+        episodeID = defaults.string(forKey: "pending-episode")
+        if let draft, !localRecordings.contains(where: { $0.id == draft.id }) {
+            // Import the previous single pending draft without discarding it.
+            _ = persistLocal(LocalRecording(draft: draft, owner: pairing.map(RecordingOwner.init),
+                                            episodeID: episodeID, status: episodeID == nil ? "saved" : "uploaded"))
+        }
+        if let record = activeLocalRecording, !record.isVisible(to: pairing) {
+            draft = nil; episodeID = nil
+            persistActiveDraft()
+        }
+        if let path = defaults.string(forKey: "pending-voice-sample"),
            FileManager.default.fileExists(atPath: path) {
             voiceSampleURL = URL(fileURLWithPath: path)
-            voiceSampleTranscript = UserDefaults.standard.string(forKey: "pending-voice-transcript") ?? ""
+            voiceSampleTranscript = defaults.string(forKey: "pending-voice-transcript") ?? ""
         }
     }
 
@@ -98,7 +128,7 @@ final class AppModel: ObservableObject {
     }
 
     func connect() async {
-        guard pairing == nil || (draft == nil && episodeID == nil && !isRecording) else {
+        guard !isBusy, !isPollingEpisode, !isRecording, !isLocalTranscribing, episodeID == nil else {
             errorMessage = "还有待处理的录音，请先在当前服务完成该任务后再更换连接。原音仍在手机里。"
             return
         }
@@ -113,6 +143,11 @@ final class AppModel: ObservableObject {
             let connected = Pairing(baseURL: server, fingerprint: fingerprint,
                                     token: reply.actor_token, actorID: reply.actor_id,
                                     subjectID: reply.subject_id, consentID: reply.recording_consent_id)
+            if let owner = activeLocalRecording?.owner,
+               owner.subjectID != connected.subjectID || owner.actorID != connected.actorID {
+                errorMessage = "这段录音属于原来的使用者。请先保留录音并退出录音页，再连接其他人的服务。"
+                return
+            }
             try PairingStore.save(connected)
             if pairing?.baseURL != connected.baseURL || pairing?.fingerprint != connected.fingerprint ||
                 pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
@@ -123,6 +158,10 @@ final class AppModel: ObservableObject {
                 stopPlayback()
             }
             pairing = connected
+            if var record = activeLocalRecording, record.owner != nil {
+                record.owner = RecordingOwner(connected)
+                _ = persistLocal(record)
+            }
             showConnection = false
             await refresh()
         } catch { errorMessage = error.localizedDescription }
@@ -130,6 +169,7 @@ final class AppModel: ObservableObject {
 
     func refresh() async {
         guard let pairing, let client else { return }
+        let owner = RecordingOwner(pairing)
         do {
             async let nextMemories = client.memories(pairing.subjectID)
             async let nextEpisodes = client.episodes(pairing.subjectID)
@@ -138,30 +178,43 @@ final class AppModel: ObservableObject {
             async let nextConsents = client.consents(subjectID: pairing.subjectID)
             async let nextVoiceProfile = client.voiceProfile(subjectID: pairing.subjectID)
             async let nextCalibrations = client.calibrations(subjectID: pairing.subjectID)
-            memories = try await nextMemories
-            episodes = try await nextEpisodes
+            let loadedMemories = try await nextMemories
+            let loadedEpisodes = try await nextEpisodes
             let snapshot = try await nextModel
+            let loadedQuestions = try await nextQuestions
+            let grants = try await nextConsents
+            let profile = try await nextVoiceProfile
+            let runs = try await nextCalibrations
+            guard self.pairing.map(RecordingOwner.init) == owner else { return }
+            memories = loadedMemories
+            episodes = loadedEpisodes
             domains = snapshot.domains
             modelVersion = snapshot.version
-            questions = try await nextQuestions
-            let grants = try await nextConsents
+            questions = loadedQuestions
             cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
             voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
-            let profile = try await nextVoiceProfile
             voiceProfileReady = profile.ready
-            calibrationRun = try await nextCalibrations.first
+            calibrationRun = runs.first
             if cloudConsentID != nil,
-               let answerID = UserDefaults.standard.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
-                twinAnswer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
+               let answerID = defaults.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
+                let answer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
+                guard self.pairing.map(RecordingOwner.init) == owner else { return }
+                twinAnswer = answer
             } else {
                 twinAnswer = nil
             }
             errorMessage = nil
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            if self.pairing.map(RecordingOwner.init) == owner { errorMessage = error.localizedDescription }
+        }
     }
 
     func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
-        guard !isRecording else { return }
+        guard !isRecording, !isBusy, !isPollingEpisode, !isLocalTranscribing else { return }
+        guard draft == nil else {
+            errorMessage = "已有录音保存在手机。请先保留这段，再开始新录音。"
+            return
+        }
         stopPlayback()
         errorMessage = nil
         transcriptDraft = ""
@@ -177,8 +230,7 @@ final class AppModel: ObservableObject {
             let audio = AVAudioSession.sharedInstance()
             try audio.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try audio.setActive(true)
-            var root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("Recordings", isDirectory: true)
+            var root = recordingStore.root
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
             var values = URLResourceValues()
             values.isExcludedFromBackup = true
@@ -197,6 +249,10 @@ final class AppModel: ObservableObject {
                                         durationMS: 0, questionID: questionID,
                                         calibrationID: calibrationID,
                                         consentConfirmedAt: Date())
+            if let draft {
+                _ = persistLocal(LocalRecording(draft: draft, owner: pairing.map(RecordingOwner.init)))
+                persistActiveDraft()
+            }
             self.isRecording = true
             self.isPaused = false
             self.recordedSeconds = 0
@@ -248,9 +304,107 @@ final class AppModel: ObservableObject {
                                     durationMS: Int(duration * 1000), questionID: draft.questionID,
                                     calibrationID: draft.calibrationID,
                                     consentConfirmedAt: draft.consentConfirmedAt)
-        if let data = try? JSONEncoder().encode(self.draft) {
-            UserDefaults.standard.set(data, forKey: "pending-recording")
+        if var record = activeLocalRecording, let finished = self.draft {
+            record.draft = finished
+            _ = persistLocal(record)
+        } else if let finished = self.draft {
+            _ = persistLocal(LocalRecording(draft: finished, owner: pairing.map(RecordingOwner.init)))
         }
+        persistActiveDraft()
+    }
+
+    @discardableResult
+    private func persistLocal(_ record: LocalRecording) -> Bool {
+        do {
+            try recordingStore.save(record)
+            localRecordings.removeAll { $0.id == record.id }
+            localRecordings.append(record)
+            localRecordings.sort { $0.draft.recordedAt > $1.draft.recordedAt }
+            return true
+        } catch {
+            errorMessage = "录音信息未能保存。原音没有删除，请留在此页重试：\(error.localizedDescription)"
+            return false
+        }
+    }
+
+    private func persistActiveDraft() {
+        if let draft, let data = try? JSONEncoder().encode(draft) {
+            defaults.set(data, forKey: "pending-recording")
+        } else { defaults.removeObject(forKey: "pending-recording") }
+        if let episodeID { defaults.set(episodeID, forKey: "pending-episode") }
+        else { defaults.removeObject(forKey: "pending-episode") }
+    }
+
+    @discardableResult
+    func prepareNewRecording() -> Bool {
+        guard !isRecording, !isBusy, !isPollingEpisode, !isLocalTranscribing else { return false }
+        if let draft {
+            var record = activeLocalRecording ?? LocalRecording(draft: draft, owner: pairing.map(RecordingOwner.init))
+            record.draft = draft
+            record.episodeID = episodeID
+            if !persistLocal(record) { return false }
+        }
+        stopPlayback()
+        draft = nil; episodeID = nil; transcriptDraft = ""; isTranscriptReviewReady = false
+        processingStatus = ""; recordedSeconds = 0; errorMessage = nil
+        persistActiveDraft()
+        return true
+    }
+
+    @discardableResult
+    func selectLocalRecording(_ id: String) -> Bool {
+        guard !isRecording, !isBusy, !isPollingEpisode, !isLocalTranscribing,
+              let record = visibleLocalRecordings.first(where: { $0.id == id }) else { return false }
+        if draft?.id != id && !prepareNewRecording() { return false }
+        draft = recordingStore.resolved(record.draft)
+        episodeID = record.episodeID
+        recordedSeconds = record.draft.durationMS / 1000
+        isTranscriptReviewReady = false
+        transcriptDraft = ""
+        processingStatus = record.status == "ready" ? "ready" : ""
+        persistActiveDraft()
+        return true
+    }
+
+    func playLocalRecording(_ id: String) {
+        guard !isRecording, !isQueryRecording, !isVoiceRecording,
+              let record = visibleLocalRecordings.first(where: { $0.id == id }) else { return }
+        if playbackID == id { toggleCurrentPlayback(); return }
+        do { try beginPlayback(AVAudioPlayer(contentsOf: recordingStore.resolved(record.draft).fileURL), identity: id) }
+        catch { errorMessage = "本机原音无法打开，记录仍保留：\(error.localizedDescription)" }
+    }
+
+    func transcribeLocalRecording(_ id: String) async {
+        guard !isRecording, !isBusy, !isPollingEpisode, !isLocalTranscribing,
+              var record = visibleLocalRecordings.first(where: { $0.id == id }) else { return }
+        isLocalTranscribing = true
+        errorMessage = nil
+        defer { isLocalTranscribing = false }
+        do {
+            let text = try await localSpeech.transcribe(recordingStore.resolved(record.draft).fileURL)
+            guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw LocalSpeechError.empty }
+            // Preserve the first machine output separately from later user edits.
+            if record.machineTranscript == nil { record.machineTranscript = text }
+            _ = persistLocal(record)
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    @discardableResult
+    func saveLocalReview(_ id: String, text: String) -> Bool {
+        guard !isBusy, !isLocalTranscribing, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              var record = visibleLocalRecordings.first(where: { $0.id == id }),
+              record.machineTranscript != nil, record.episodeID == nil else { return false }
+        record.reviewedTranscript = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        record.reviewDraft = text
+        record.reviewedAt = Date()
+        return persistLocal(record)
+    }
+
+    func saveLocalReviewDraft(_ id: String, text: String) {
+        guard var record = visibleLocalRecordings.first(where: { $0.id == id }),
+              record.machineTranscript != nil, record.episodeID == nil else { return }
+        record.reviewDraft = text
+        _ = persistLocal(record)
     }
 
     func stopPlayback() {
@@ -317,11 +471,14 @@ final class AppModel: ObservableObject {
 
     func saveTranscriptDraft() {
         guard let episodeID else { return }
-        UserDefaults.standard.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
+        defaults.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
     }
 
     func sendRecording() async {
-        guard let draft, let pairing, let client else { return }
+        guard !isBusy, !isPollingEpisode, !isLocalTranscribing, let draft, let pairing, let client,
+              var record = activeLocalRecording, record.isVisible(to: pairing) else { return }
+        record.owner = RecordingOwner(pairing)
+        guard persistLocal(record) else { return }
         isBusy = true
         errorMessage = nil
         defer { isBusy = false }
@@ -334,24 +491,37 @@ final class AppModel: ObservableObject {
                 await pollEpisode()
                 return
             }
+            processingStatus = "正在上传录音"
             let id = try await client.upload(draft, pairing: pairing)
             episodeID = id
-            UserDefaults.standard.set(id, forKey: "pending-episode")
+            record.episodeID = id; record.status = "uploaded"
+            _ = persistLocal(record)
+            persistActiveDraft()
             await pollEpisode()
         } catch { errorMessage = "上传失败，录音仍在手机里，可重试。\n\(error.localizedDescription)" }
     }
 
     func pollEpisode() async {
-        guard let episodeID, let client else { return }
+        guard !isPollingEpisode, let episodeID, let client, let pairing else { return }
+        let draftID = draft?.id
+        let owner = RecordingOwner(pairing)
+        isPollingEpisode = true
+        defer { isPollingEpisode = false }
         for _ in 0..<180 {
             do {
                 let status = try await client.status(episodeID)
+                guard self.episodeID == episodeID, draft?.id == draftID,
+                      self.pairing.map(RecordingOwner.init) == owner else { return }
                 processingStatus = status.status
+                if var record = activeLocalRecording, record.status != status.status {
+                    record.status = status.status
+                    _ = persistLocal(record)
+                }
                 if status.status == "ready" {
                     let calibrationID = draft?.calibrationID
-                    UserDefaults.standard.removeObject(forKey: "transcript-edit-\(episodeID)")
-                    UserDefaults.standard.removeObject(forKey: "pending-recording")
-                    UserDefaults.standard.removeObject(forKey: "pending-episode")
+                    defaults.removeObject(forKey: "transcript-edit-\(episodeID)")
+                    defaults.removeObject(forKey: "pending-recording")
+                    defaults.removeObject(forKey: "pending-episode")
                     draft = nil
                     self.episodeID = nil
                     isTranscriptReviewReady = false
@@ -368,13 +538,21 @@ final class AppModel: ObservableObject {
                     return
                 }
                 let review = try await client.transcriptReview(episodeID)
+                guard self.episodeID == episodeID, draft?.id == draftID,
+                      self.pairing.map(RecordingOwner.init) == owner else { return }
                 if review.state == "reviewing", let text = review.transcript {
-                    if !isTranscriptReviewReady { transcriptDraft = UserDefaults.standard.string(forKey: "transcript-edit-\(episodeID)") ?? text }
+                    if !isTranscriptReviewReady {
+                        transcriptDraft = defaults.string(forKey: "transcript-edit-\(episodeID)")
+                            ?? activeLocalRecording?.reviewDraft ?? activeLocalRecording?.reviewedTranscript ?? text
+                    }
                     isTranscriptReviewReady = true
                     processingStatus = "请核对转写文字"
                     return
                 }
             } catch {
+                if Task.isCancelled { return }
+                guard self.episodeID == episodeID, draft?.id == draftID,
+                      self.pairing.map(RecordingOwner.init) == owner else { return }
                 errorMessage = "连接中断，录音已保留。恢复网络后可继续查看。\n\(error.localizedDescription)"
                 return
             }
@@ -462,7 +640,7 @@ final class AppModel: ObservableObject {
             try await client.revokeConsent(cloudConsentID)
             self.cloudConsentID = nil
             twinAnswer = nil
-            UserDefaults.standard.removeObject(forKey: "last-twin-answer-\(pairing.subjectID)")
+            defaults.removeObject(forKey: "last-twin-answer-\(pairing.subjectID)")
         } catch { errorMessage = "Twin 授权未能撤销：\(error.localizedDescription)" }
     }
 
@@ -484,7 +662,7 @@ final class AppModel: ObservableObject {
             let result = try await client.askTwin(subjectID: pairing.subjectID, question: question,
                                                   cloudConsentID: cloudConsentID)
             twinAnswer = result
-            UserDefaults.standard.set(result.id, forKey: "last-twin-answer-\(pairing.subjectID)")
+            defaults.set(result.id, forKey: "last-twin-answer-\(pairing.subjectID)")
         } catch { errorMessage = "Twin 暂时没能回答：\(error.localizedDescription)" }
     }
 
@@ -558,8 +736,8 @@ final class AppModel: ObservableObject {
                 voiceSampleURL = url
                 let transcript = try? await client.transcribeQuery(subjectID: pairing.subjectID, audio: audio)
                 voiceSampleTranscript = transcript?.text ?? ""
-                UserDefaults.standard.set(url.path, forKey: "pending-voice-sample")
-                UserDefaults.standard.set(voiceSampleTranscript, forKey: "pending-voice-transcript")
+                defaults.set(url.path, forKey: "pending-voice-sample")
+                defaults.set(voiceSampleTranscript, forKey: "pending-voice-transcript")
                 if voiceSampleTranscript.isEmpty {
                     errorMessage = "样本已保留。请按你实际说的话填写文字，再确认提交。"
                 }
@@ -589,8 +767,8 @@ final class AppModel: ObservableObject {
             voiceProfileReady = profile.ready
             try? FileManager.default.removeItem(at: voiceSampleURL)
             self.voiceSampleURL = nil
-            UserDefaults.standard.removeObject(forKey: "pending-voice-sample")
-            UserDefaults.standard.removeObject(forKey: "pending-voice-transcript")
+            defaults.removeObject(forKey: "pending-voice-sample")
+            defaults.removeObject(forKey: "pending-voice-transcript")
         } catch { errorMessage = "声音样本未能提交，手机里的样本还在：\(error.localizedDescription)" }
     }
 
@@ -602,8 +780,8 @@ final class AppModel: ObservableObject {
             voiceProfileReady = false
             if let voiceSampleURL { try? FileManager.default.removeItem(at: voiceSampleURL) }
             voiceSampleURL = nil
-            UserDefaults.standard.removeObject(forKey: "pending-voice-sample")
-            UserDefaults.standard.removeObject(forKey: "pending-voice-transcript")
+            defaults.removeObject(forKey: "pending-voice-sample")
+            defaults.removeObject(forKey: "pending-voice-transcript")
         } catch { errorMessage = "声音授权未能撤销：\(error.localizedDescription)" }
     }
 

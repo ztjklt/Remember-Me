@@ -440,6 +440,8 @@ private struct PersonalDashboard: View {
                 Button { model.showConnection = true } label: { Label(model.pairing == nil ? "连接服务" : "管理服务连接", systemImage: "link") }.buttonStyle(.bordered)
                 Divider()
                 Text("Today's data").font(.title3.weight(.medium))
+                metric("今日本机录音", value: model.todayLocalRecordings.count, unit: "段", symbol: "mic")
+                metric("本机已核对文字", value: model.todayLocalRecordings.reduce(0) { $0 + ($1.reviewedTranscript?.count ?? 0) }, unit: "字", symbol: "checkmark.bubble")
                 metric("今日已上传录音", value: model.todayEpisodes.count, unit: "段", symbol: "mic")
                 metric("今日已转写文字", value: model.todayEpisodes.reduce(0) { $0 + ($1.transcript?.count ?? 0) }, unit: "字", symbol: "text.alignleft")
                 metric("今日记忆", value: model.todayMemories.count, unit: "条", symbol: "book.closed")
@@ -460,6 +462,9 @@ private struct PersonalDashboard: View {
 }
 
 extension AppModel {
+    var todayLocalRecordings: [LocalRecording] {
+        visibleLocalRecordings.filter { Calendar.current.isDateInToday($0.draft.recordedAt) }
+    }
     var todayEpisodes: [EpisodeRecord] { episodes.filter { isToday($0.recorded_at) } }
     var todayMemories: [MemoryRecord] { memories.filter { isToday($0.recorded_at) } }
     private func isToday(_ value: String) -> Bool {

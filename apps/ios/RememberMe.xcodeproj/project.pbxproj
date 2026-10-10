@@ -9,14 +9,25 @@
 /* Begin PBXBuildFile section */
 		25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA939DD4DAD788A194194175 /* AppModel.swift */; };
 		2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */; };
+		3E23EE228E0C8583AC86D91A /* LocalRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */; };
 		963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */; };
 		B0466C9C2E4FF25292D0B360 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F6922872B50B2440845465FA /* Assets.xcassets */; };
+		B15C8BCFF693494EA18C1CA2 /* OnDeviceSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31032462668E369C05586202 /* OnDeviceSpeech.swift */; };
 		BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */; };
 		DE409B589F1CA246B89C7726 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC9EAE511EDB13B710E96D0 /* Views.swift */; };
 		ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44F936F9AAC5B970D20CEF2 /* Network.swift */; };
+		F22620764FC29679C08394F9 /* LocalRecordings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */; };
+		F7F95DA0E16FC563E16C9471 /* LocalRecordingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 58D23FBA1AD54488281E12E5;
+			remoteInfo = RememberMe;
+		};
 		F1C6E2FCCFF6293A7FCAFC99 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
@@ -29,11 +40,16 @@
 /* Begin PBXFileReference section */
 		0DD6ABD0F11397F657B95172 /* RememberMe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RememberMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		15E87C6A763B9D344F407898 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordingTests.swift; sourceTree = "<group>"; };
+		31032462668E369C05586202 /* OnDeviceSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceSpeech.swift; sourceTree = "<group>"; };
 		4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParity.swift; sourceTree = "<group>"; };
 		5BC9EAE511EDB13B710E96D0 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParityUITests.swift; sourceTree = "<group>"; };
+		A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberMeApp.swift; sourceTree = "<group>"; };
+		CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordingViews.swift; sourceTree = "<group>"; };
+		CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordings.swift; sourceTree = "<group>"; };
 		D44F936F9AAC5B970D20CEF2 /* Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Network.swift; sourceTree = "<group>"; };
 		DA939DD4DAD788A194194175 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		F6922872B50B2440845465FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -44,6 +60,7 @@
 			isa = PBXGroup;
 			children = (
 				A527F2A08B55BADD6D04283C /* RememberMe */,
+				63860F068E60E5AEF543369A /* RememberMeTests */,
 				B7213A10661065465C8E56A1 /* RememberMeUITests */,
 				2C9F65D43AB78B97FE4FD98C /* Products */,
 			);
@@ -53,9 +70,18 @@
 			isa = PBXGroup;
 			children = (
 				0DD6ABD0F11397F657B95172 /* RememberMe.app */,
+				A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */,
 				8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		63860F068E60E5AEF543369A /* RememberMeTests */ = {
+			isa = PBXGroup;
+			children = (
+				267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */,
+			);
+			path = RememberMeTests;
 			sourceTree = "<group>";
 		};
 		A527F2A08B55BADD6D04283C /* RememberMe */ = {
@@ -65,7 +91,10 @@
 				DA939DD4DAD788A194194175 /* AppModel.swift */,
 				F6922872B50B2440845465FA /* Assets.xcassets */,
 				15E87C6A763B9D344F407898 /* Info.plist */,
+				CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */,
+				CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */,
 				D44F936F9AAC5B970D20CEF2 /* Network.swift */,
+				31032462668E369C05586202 /* OnDeviceSpeech.swift */,
 				B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */,
 				5BC9EAE511EDB13B710E96D0 /* Views.swift */,
 			);
@@ -83,6 +112,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		1678C54CD3A15EE6A8588244 /* RememberMeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB1EEB672EBA55FCC69AF3CC /* Build configuration list for PBXNativeTarget "RememberMeTests" */;
+			buildPhases = (
+				63404A3556A1E61717F6893F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				39FC425529531E0C82690716 /* PBXTargetDependency */,
+			);
+			name = RememberMeTests;
+			packageProductDependencies = (
+			);
+			productName = RememberMeTests;
+			productReference = A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		58D23FBA1AD54488281E12E5 /* RememberMe */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 782E55CD96C868B6E0467EC7 /* Build configuration list for PBXNativeTarget "RememberMe" */;
@@ -128,6 +175,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					1678C54CD3A15EE6A8588244 = {
+						DevelopmentTeam = BZ5FA6MS43;
+						ProvisioningStyle = Automatic;
+					};
 					58D23FBA1AD54488281E12E5 = {
 						DevelopmentTeam = BZ5FA6MS43;
 						ProvisioningStyle = Automatic;
@@ -154,6 +205,7 @@
 			projectRoot = "";
 			targets = (
 				58D23FBA1AD54488281E12E5 /* RememberMe */,
+				1678C54CD3A15EE6A8588244 /* RememberMeTests */,
 				E1EB39F04BC1AE96A01D14BE /* RememberMeUITests */,
 			);
 		};
@@ -171,13 +223,24 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		63404A3556A1E61717F6893F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3E23EE228E0C8583AC86D91A /* LocalRecordingTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		937261673F94C977419AD8EE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */,
 				25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */,
+				F7F95DA0E16FC563E16C9471 /* LocalRecordingViews.swift in Sources */,
+				F22620764FC29679C08394F9 /* LocalRecordings.swift in Sources */,
 				ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */,
+				B15C8BCFF693494EA18C1CA2 /* OnDeviceSpeech.swift in Sources */,
 				2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */,
 				DE409B589F1CA246B89C7726 /* Views.swift in Sources */,
 			);
@@ -194,6 +257,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		39FC425529531E0C82690716 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 58D23FBA1AD54488281E12E5 /* RememberMe */;
+			targetProxy = E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */;
+		};
 		E5C7B2C99FCA72177EA0EA37 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 58D23FBA1AD54488281E12E5 /* RememberMe */;
@@ -298,6 +366,40 @@
 				TEST_TARGET_NAME = RememberMe;
 			};
 			name = Debug;
+		};
+		471429DB51642A3363A090AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RememberMe.app/RememberMe";
+			};
+			name = Debug;
+		};
+		78C534433744AE5A91C0AFAC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RememberMe.app/RememberMe";
+			};
+			name = Release;
 		};
 		BBE3AD7AB1344C90456807A8 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -411,6 +513,15 @@
 			buildConfigurations = (
 				C6F8C84D9D113E94F697BE11 /* Debug */,
 				3567B7D97D3BD9E4B16CB7FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CB1EEB672EBA55FCC69AF3CC /* Build configuration list for PBXNativeTarget "RememberMeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				471429DB51642A3363A090AD /* Debug */,
+				78C534433744AE5A91C0AFAC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

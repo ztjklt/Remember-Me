@@ -5,6 +5,7 @@ final class AndroidParityUITests: XCTestCase {
     private func launch() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
+        app.launchArguments = ["--uitest-offline"]
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Portrait"].waitForExistence(timeout: 10))
         return app
@@ -58,5 +59,18 @@ final class AndroidParityUITests: XCTestCase {
         app.buttons["连接服务"].tap()
         XCTAssertTrue(app.secureTextFields["一次性配对码"].waitForExistence(timeout: 5))
         capture(app, "Connection")
+    }
+
+    func testLocalArchiveAndNewRecordingAreAvailableBeforePairing() {
+        let app = launch()
+        app.tabBars.buttons["Memories"].tap()
+        app.buttons["memories.archive"].tap()
+        let newRecording = app.buttons["archive.newRecording"]
+        XCTAssertTrue(newRecording.waitForExistence(timeout: 5))
+        newRecording.tap()
+        XCTAssertTrue(app.navigationBars["留下一段声音"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["开始录音"].exists)
+        app.buttons["关闭"].tap()
+        XCTAssertTrue(app.segmentedControls.buttons["录音"].waitForExistence(timeout: 5))
     }
 }

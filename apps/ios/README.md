@@ -2,6 +2,10 @@
 
 # iOS 本机语音 → Person Model
 
+## 2026-10-10 当前项目测试版
+
+当前 `RememberMe.xcodeproj` 已补齐五个 Android 风格入口、多段本机录音档案、离线回放、设备支持时的本机中文转写与独立核对文字保存。原有 Mac 服务、Memory、Twin、校准和个人声音流程保留。具体差异、14 项自动测试结果及真机检查步骤见 [本次验证记录](../../docs/verification/IOS_ANDROID_PARITY_SYNC_2026_10_10.md)。
+
 ## Twin 与个人声音
 
 现有 Mac 服务及迁移启动后，执行 `cd services/backend && uv sync --extra retrieval` 安装本机中文检索依赖；另开终端执行 `cd services/voice && uv sync && uv run uvicorn local_voice:app --host 127.0.0.1 --port 8300`。首次检索会下载 BGE 中文向量模型，首次点播会下载 Qwen3-TTS Base 权重；它们只留在 Mac 的模型缓存。AI Core 和 Voice 仍只监听本机，iPhone 只连接已配对的 HTTPS Backend。DeepSeek 密钥仍只在 AI Core 的本机环境中。

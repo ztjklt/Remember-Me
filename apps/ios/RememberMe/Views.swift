@@ -59,7 +59,7 @@ private struct AtmosphereBackground: View {
     }
 }
 
-private func statusLabel(_ state: String) -> String {
+func statusLabel(_ state: String) -> String {
     switch state {
     case "uploaded": return "原音已保存"
     case "transcribing": return "正在转成文字"
@@ -333,14 +333,41 @@ private struct EpisodeRow: View {
 private struct EpisodesView: View {
     var query = ""
     @EnvironmentObject private var model: AppModel
+    @State private var showRecorder = false
+    private var local: [LocalRecording] {
+        model.visibleLocalRecordings.filter {
+            query.isEmpty || ($0.reviewDraft ?? $0.reviewedTranscript ?? $0.machineTranscript ?? "本机录音")
+                .localizedCaseInsensitiveContains(query)
+        }
+    }
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                if model.episodes.isEmpty {
+                Button("再录一段") {
+                    if model.prepareNewRecording() { showRecorder = true }
+                }.buttonStyle(.bordered).disabled(model.isRecording || model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
+                    .accessibilityIdentifier("archive.newRecording")
+                if !local.isEmpty {
+                    Text("本机录音 · \(local.count) 段").font(.headline).padding(.top, 16)
+                    Text("未提交和已完成的原音都留在手机。每一段可以单独回听、核对和继续整理。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                    ForEach(local) { record in
+                        NavigationLink { LocalRecordingDetailView(recordingID: record.id) } label: {
+                            LocalRecordingRow(record: record)
+                        }.buttonStyle(.plain)
+                        Divider()
+                    }
+                }
+                if model.episodes.isEmpty && local.isEmpty {
                     MemoryGlyph(kind: .archive,size: 88)
                     Text("这里会保存你录下的原音和转写。即使没有抽出记忆，录音仍然在。")
                         .foregroundStyle(Ink.muted)
                         .journalCard()
+                }
+                if !model.episodes.isEmpty {
+                    Text("服务端录音").font(.headline).padding(.top, 16)
+                    Text("服务端列表需要连接；本机原音可以离线回听。")
+                        .font(.caption).foregroundStyle(Ink.muted)
                 }
                 ForEach(model.episodes.filter { query.isEmpty || ($0.transcript ?? "").localizedCaseInsensitiveContains(query) }) { episode in
                     NavigationLink { EpisodeDetailView(initial: episode) } label: {
@@ -355,6 +382,7 @@ private struct EpisodesView: View {
         .background(AtmosphereBackground().ignoresSafeArea())
         .navigationTitle("档案")
         .refreshable { await model.refresh() }
+        .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: nil, calibration: nil) }
     }
 }
 
@@ -533,6 +561,10 @@ struct RecorderView: View {
                     .accessibilityHidden(true)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: model.meterLevels)
                     if model.draft != nil && !model.isRecording { OriginalPlayer(episodeID: nil) }
+                    if let draft = model.draft, !model.isRecording, model.episodeID == nil {
+                        NavigationLink("查看本机录音与离线转写") { LocalRecordingDetailView(recordingID: draft.id) }
+                            .accessibilityIdentifier("recorder.localDetail")
+                    }
                     if model.isTranscriptReviewReady {
                         Text("先核对，再整理记忆").font(.title3.weight(.semibold))
                         Text("修改识别不准确的地方。确认后才会把文字发送给 DeepSeek 提取记忆。").foregroundStyle(Ink.muted)
@@ -571,10 +603,13 @@ struct RecorderView: View {
                             showOrganizeConsent = true
                         }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     } else if model.draft != nil {
-                        ActionButton(title: model.isBusy ? "正在处理…" : model.pairing == nil ? "连接服务后转写" : "提交并转成文字", icon: "text.bubble") {
+                        ActionButton(title: model.isBusy || model.isPollingEpisode ? "正在处理…" : model.pairing == nil ? "连接服务后转写" : "提交并转成文字", icon: "text.bubble") {
                             if model.pairing == nil { showPairing = true }
                             else { Task { await model.sendRecording() } }
-                        }.disabled(model.isBusy)
+                        }.disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
+                        Button("保留这段，再录一段") {
+                            if model.prepareNewRecording() { showConsent = true }
+                        }.buttonStyle(.bordered).disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
                     } else {
                         ActionButton(title: "开始录音", icon: "mic.fill") { showConsent = true }
                     }
@@ -587,8 +622,8 @@ struct RecorderView: View {
                             Button("关闭") { showPairing = false }
                         }
                     }
-                    .onChange(of: model.pairing?.subjectID) { _, id in
-                        if id != nil { showPairing = false }
+                    .onChange(of: model.pairing?.baseURL) { _, url in
+                        if url != nil { showPairing = false }
                     }
                 }
             }
