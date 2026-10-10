@@ -75,7 +75,7 @@ Interfaces: `AppearanceChoice(theme, scene, reduceMotion)` 是非敏感设备偏
 - [x] 独立复核映射、状态恢复与隐私边界；修复后再检查。
 - [x] 服务器仅更新已验证密码下限，保留旧发布目录、原音和数据库；不自动修改账号。
 - [x] 新版 APK 单独构建、记录哈希与截图，更新安装说明和当前状态；未通过项明确列出。
-- [ ] 通过后同步既有 Draft PR，不合并；旧 APK 和 19 张截图保持可追溯。
+- [x] 通过后同步既有 Draft PR，不合并；旧 APK 和 19 张截图保持可追溯。
 
 ## Execution ledger
 
@@ -84,3 +84,4 @@ Interfaces: `AppearanceChoice(theme, scene, reduceMotion)` 是非敏感设备偏
 - Ruling: 旧账号密码不自动重置 — 避免已发给队友的凭据失效；新建或明确重置时可使用 8 位。
 
 - 实测范围以 docs/agent-loop/ANDROID_GARDEN_DELIVERY_2026-10-10.md 为准；未把412dp、完整权限矩阵、真机或iOS填成通过。
+- 交付源码提交 `7b0d10f` 已推送到既有 Draft PR #89；`demo-android-0.8.0-20261010` 附件的 APK SHA-256 与本机最终实跑包一致。旧0.7.1未覆盖，原19图之外新增本版15图。
