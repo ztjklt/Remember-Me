@@ -2,9 +2,9 @@
 
 ## 1. 下载并安装
 
-[直接下载 Android 0.8.0 安装包](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.8.0-20261010/remember-me-0.8.0-internal.apk) · [下载页与文件校验](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.8.0-20261010)
+[直接下载 Android 0.8.1 安装包](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.8.1-20261011/remember-me-0.8.1-internal.apk) · [下载页与文件校验](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.8.1-20261011)
 
-适用于 Android 8.0 及以上，约 149 MB。安装时允许该下载工具安装应用；进入 App 后按提示允许麦克风。已有同签名内测版可直接更新，不必卸载。**iPhone 不能安装这个 APK，iOS 本次尚未交付。**
+适用于 Android 8.0 及以上，约 161 MB。安装时允许该下载工具安装应用；进入 App 后按提示允许麦克风。已有同签名内测版可直接更新，不必卸载。**iPhone 不能安装这个 APK，iOS 本次尚未交付。**
 
 服务地址已经配好。无需设置模型密钥、电脑转写、SSH 或固定 Wi-Fi；手机网络需能访问服务器。
 
@@ -61,6 +61,6 @@
 
 “我的 → 外观与阅读”可换浅／深色、自然场景及简化动效；“设备权限与提醒”打开系统权限；“数据与帮助”检查服务、清下载缓存。清缓存不删除本机录音。改密码联系管理员，注册和自助注销仍关闭。
 
-[0.8.0 本轮实测与待验证项](ANDROID_GARDEN_DELIVERY_2026-10-10.md) · [本版15张截图](screenshots/2026-10-10-garden-settings/README.md) · [旧19张截图](screenshots/2026-10-10/README.md)。旧版的完整邀请／再分享和三轮撤权有历史记录；本轮新增花田、设置、已确认故事及角色／撤权／200%字体验证。新版实体手机、iOS仍待验证。
+[0.8.1原稿花朵恢复与验收](ANDROID_GARDEN_RESTORE_2026-10-11.md) · [本版15张截图](screenshots/2026-10-11-garden-restore/README.md) · [0.8.0历史记录](ANDROID_GARDEN_DELIVERY_2026-10-10.md) · [旧19张截图](screenshots/2026-10-10/README.md)。本轮复验360/412 dp、200%字、花瓣与来源、普通角色及撤权。旧版完整邀请／再分享和三轮撤权有历史记录；新版实体手机、iOS仍待验证。
 
 管理员可用既有 `python -m app.account_admin reset flower08` / `reset friend08` 明确重置并撤销旧会话。停用时同步更新本说明；旧密码仍留在Git历史，但重置后不再有效。演示账号使用当前服务配额，以短段、人工操作测试，不运行批量脚本。

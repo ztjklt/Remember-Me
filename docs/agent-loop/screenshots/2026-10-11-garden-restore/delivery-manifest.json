@@ -1,0 +1,105 @@
+{
+  "version": "0.8.1-internal",
+  "version_code": 20261012,
+  "source_commit": "f5fa0aa1cbbda84d06f01155f7261b314b16e45a",
+  "apk_sha256": "e3c15f3d44380ce2869a78dff4ee5e68a8d65f2d7f123caff07c0ce2d7fe3dcb",
+  "apk_bytes": 161120250,
+  "package": "me.remember.app.internal",
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "android_unit_tests": {
+    "tests": 74,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "app_checks": [
+    "real-flow",
+    "large-font",
+    "412dp",
+    "startup"
+  ],
+  "direct_ecs_ip_https": true,
+  "business_adb_relay": false,
+  "new_asr": false,
+  "new_model_extraction": false,
+  "synthetic_existing_import": true,
+  "physical_phone": false,
+  "ios": false,
+  "screenshots": [
+    {
+      "file": "01-native-garden.png",
+      "capture_file": "01-native-garden.png",
+      "sha256": "8a937987975cdcac5732173cd1569282435a1b9b48f07fd36e9651d601952ecf"
+    },
+    {
+      "file": "02-flower-petals.png",
+      "capture_file": "02-flower-petals.png",
+      "sha256": "ad39140af29ad2f69f8d6f7dacafe8416535cfa2f7b8428b5bb7b54f829f1bba"
+    },
+    {
+      "file": "03-memory-evidence.png",
+      "capture_file": "03-memory-evidence.png",
+      "sha256": "204c2349a322a4c42fb6c92706f7fcba30d5c4fa5a480f8123b69e868ec91226"
+    },
+    {
+      "file": "04-source-player.png",
+      "capture_file": "04-source-player.png",
+      "sha256": "f21c0fa4909b47e9decb4066824f9abfaa1e956cc155b867b454f6d24ee55685"
+    },
+    {
+      "file": "05-settings-home.png",
+      "capture_file": "05-settings-home.png",
+      "sha256": "f15832d87cba9b2495f2e8c97d1a1ebca30c28a768a39e9065e0fac0abf1bf90"
+    },
+    {
+      "file": "06-dark-appearance.png",
+      "capture_file": "06-dark-appearance.png",
+      "sha256": "7a532ed71a4b6d647a78598d8f5161a5da33f126b0fafa2bc491a2eca3452b19"
+    },
+    {
+      "file": "07-device-permissions.png",
+      "capture_file": "07-device-permissions.png",
+      "sha256": "5d81c426ab516ec85dd107c1c7ccd1cb5a949fffb1790e57240cbe4857f7dffe"
+    },
+    {
+      "file": "08-data-help.png",
+      "capture_file": "08-data-help.png",
+      "sha256": "814a1e7646663361e9e41af7b9e8356203f838d3283ac9deaf9fe8049431225d"
+    },
+    {
+      "file": "09-reader-flower.png",
+      "capture_file": "09-reader-flower.png",
+      "sha256": "79254a051522731b28db87a0d7262be7b9530b677f1dcf9aa946a653fa7d2ebb"
+    },
+    {
+      "file": "10-revoked-garden.png",
+      "capture_file": "10-revoked-garden.png",
+      "sha256": "cdee2705fc3e59488252c44dcd2572ffbc29502a39d49b85fcdbd9a51fcd6a4a"
+    },
+    {
+      "file": "11-session-expired.png",
+      "capture_file": "11-session-expired.png",
+      "sha256": "5e0044aead2ef8d72c42836409727a45209e2410590b62957d81aab1b789c3f0"
+    },
+    {
+      "file": "12-large-font-memory.png",
+      "capture_file": "12-large-font-memory.png",
+      "sha256": "14ae0c138fc8bdf9a137a9119355d0b2f6c5ca4b6af9d6d62ca80ccb07cb586b"
+    },
+    {
+      "file": "13-garden-412dp.png",
+      "capture_file": "16-garden-412dp.png",
+      "sha256": "60984fc2331905ef12e5d20cd399a53bbe9659968df9a1ece308e3073584b058"
+    },
+    {
+      "file": "14-petals-412dp.png",
+      "capture_file": "17-petals-412dp.png",
+      "sha256": "c64fa59fd828d21f7e39e897d8f59b102bef6c52334ec96cbf84c5afb6547ee9"
+    },
+    {
+      "file": "15-memory-412dp.png",
+      "capture_file": "18-memory-412dp.png",
+      "sha256": "c22443d618321095bebfdb655c5c61db60b82f3727bbaf019f4c1dda759da833"
+    }
+  ]
+}
