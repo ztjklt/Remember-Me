@@ -84,6 +84,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
 
     fun report(message: String) { state.value = state.value.copy(error = message) }
+    fun checkConnection() { session?.let { loadServiceInfo(it.server) } }
     fun loadServiceInfo(server: String) {
         serviceInfoJob?.cancel()
         serviceInfoJob = viewModelScope.launch {
@@ -506,6 +507,11 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         playerJob?.cancel(); player?.let { runCatching { it.release() } }; player = null
         sources.listFiles()?.forEach { it.delete() }; state.value = state.value.copy(player = SourcePlayback())
     }
+    fun clearSourceCache() {
+        stopSource()
+        state.value = if(sources.listFiles()?.isNotEmpty() == true) state.value.copy(error = "部分下载缓存未能清理，请稍后重试。")
+            else state.value.copy(error = null, notice = "下载缓存已清理；本机原音、登录和云端记忆保留。")
+    }
     fun onForeground(value: Boolean) {
         foreground = value
         playbackGate.setForeground(value)
@@ -520,7 +526,17 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             try { gate.requireCurrent(s); block() }
             catch(error: Exception) {
                 if(error is CancellationException) throw error
-                if(gate.accepts(s)) state.value = state.value.copy(error = error.message?.take(500) ?: "操作未完成，原音已保留。")
+                if(gate.accepts(s)) {
+                    if(error is BackendHttpException && error.status == 401) {
+                        if(state.value.recording) {
+                            runCatching { val recording = audio.stop()
+                                saveCapture(s, activeCapture?.copy(recording = recording) ?: LocalCapture(recording,
+                                    "android-${File(recording.audioPath).nameWithoutExtension}", revision = recordTarget)) }
+                        }
+                        savedSession.clear(); clearIdentity()
+                        state.value = state.value.copy(error = "登录已失效，请重新登录。本机原音仍保留。")
+                    } else state.value = state.value.copy(error = error.message?.take(500) ?: "操作未完成，原音已保留。")
+                }
             } finally { if(gate.accepts(s)) state.value = state.value.copy(busy = false) }
         }
     }

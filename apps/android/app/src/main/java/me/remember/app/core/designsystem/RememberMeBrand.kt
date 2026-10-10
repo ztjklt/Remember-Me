@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 import me.remember.app.R
 
 enum class BrandTreatment { Auto, Material, Flat, Monochrome }
@@ -21,7 +23,7 @@ fun RememberMeBrand(
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
     treatment: BrandTreatment = BrandTreatment.Auto,
-    darkBackground: Boolean = isSystemInDarkTheme(),
+    darkBackground: Boolean = MaterialTheme.colorScheme.background.luminance() < .5f,
     materialPainter: Painter? = null,
     monochromeColor: Color = if(darkBackground) Color(0xFFEEF3E9) else Color(0xFF355C43),
     label: String? = null,

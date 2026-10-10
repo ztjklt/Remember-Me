@@ -5,6 +5,23 @@ from app.tokens import hash_actor_token
 
 BODY={'username':'tester_one','password':'a-long-test-password','display_name':'测试记录者'}
 
+def test_eight_character_password_register_login_and_admin_reset(client,session):
+    from app.account_admin import reset_password
+    body={**BODY,'password':'story008'}
+    registered=client.post('/api/v1/accounts/register',json=body)
+    assert registered.status_code==201
+    credentials={k:body[k] for k in ('username','password')}
+    login=client.post('/api/v1/accounts/login',json=credentials)
+    assert login.status_code==200
+    old={'Authorization':'Bearer '+login.json()['actor_token']}
+    reset_password(session,body['username'],'flower08');session.commit()
+    assert client.get('/api/v1/session',headers=old).status_code==401
+    assert client.post('/api/v1/accounts/login',json=credentials).status_code==401
+    assert client.post('/api/v1/accounts/login',json={**credentials,'password':'flower08'}).status_code==200
+
+def test_seven_character_password_is_rejected(client):
+    assert client.post('/api/v1/accounts/register',json={**BODY,'password':'short07'}).status_code==422
+
 def test_register_login_logout_and_space_isolation(client,session):
     created=client.post('/api/v1/accounts/register',json=BODY)
     assert created.status_code==201,created.text

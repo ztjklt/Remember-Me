@@ -43,7 +43,7 @@ def main():
     p.add_argument('action',choices=['create','reset']);p.add_argument('username');p.add_argument('--name')
     args=p.parse_args()
     if args.action=='create' and not args.name:p.error('create requires --name')
-    password=getpass.getpass('Password (10-128 characters): ')
+    password=getpass.getpass('Password (8-128 characters): ')
     if password!=getpass.getpass('Repeat password: '):raise SystemExit('Passwords differ; nothing changed')
     db=Database(get_settings().database_url)
     try:
