@@ -1,5 +1,6 @@
 from functools import lru_cache
 from typing import Literal
+from pydantic import Field, SecretStr
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -19,6 +20,9 @@ class Settings(BaseSettings):
 
     environment: Literal["development", "staging", "test"] = "development"
     log_level: str = "INFO"
+    enable_workbench: bool = False
+    allow_account_registration: bool | None = None
+    allowed_hosts: list[str] = ['127.0.0.1', 'localhost', '[::1]', 'testserver']
 
     # SQLite is the local development and test default. Deployment supplies a
     # PostgreSQL DSN and adds the driver (see ADR-0001 D3).
@@ -40,7 +44,23 @@ class Settings(BaseSettings):
 
     # Providers are not frozen, so both of these name an adapter rather than a
     # vendor (ADR-0001 D9). "fake" is a deterministic local implementation.
-    stt_backend: Literal["fake", "http"] = "fake"
+    stt_backend: Literal["fake", "http", "relay", "groq", "client", "paraformer"] = "fake"
+    paraformer_api_key: SecretStr = SecretStr("")
+    paraformer_base_url: str = ""
+    paraformer_state_dir: str = "./var/paraformer-asr"
+    paraformer_poll_interval_seconds: float = 2.0
+    paraformer_poll_timeout_seconds: float = 120.0
+    groq_api_key: SecretStr = SecretStr("")
+    groq_asr_model: Literal["whisper-large-v3"] = "whisper-large-v3"
+    groq_asr_state_dir: str = "./var/groq-asr"
+    # Complete relay endpoint, never inferred from another provider's URL/key.
+    relay_asr_url: str = ""
+    relay_asr_api_key: SecretStr = SecretStr("")
+    relay_asr_model: Literal["codestral-2508", "mistral-code-fim-latest"] = "codestral-2508"
+    relay_asr_format: Literal["audio_url", "input_audio"] = "audio_url"
+    relay_asr_audio_transport: Literal["original", "mp3_48k"] = "original"
+    relay_asr_max_tokens: int = Field(default=8192, ge=512, le=16384)
+    relay_asr_state_dir: str = "./var/cloud-asr"
     stt_url: str = "http://127.0.0.1:8200"
     stt_path: str = "/transcribe"
     # Transcription is slower than inference per byte of input, so this budget is

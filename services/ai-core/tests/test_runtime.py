@@ -35,7 +35,7 @@ class BlockingProvider:
 def test_slow_extraction_does_not_block_health_or_overload_rejection():
     provider = BlockingProvider()
     extractor = MemoryExtractor(provider=provider, model="test", model_version="v1")
-    app = create_app(Settings(environment="test", max_concurrent_requests=1), extractor=extractor)
+    app = create_app(Settings(_env_file=None, environment="test", max_concurrent_requests=1), extractor=extractor)
 
     async def scenario():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
@@ -56,9 +56,35 @@ def test_slow_extraction_does_not_block_health_or_overload_rejection():
     asyncio.run(scenario())
 
 
+def test_interactive_twin_waits_for_busy_background_slot_without_extra_model_call():
+    provider = BlockingProvider()
+    extractor = MemoryExtractor(provider=provider, model='test', model_version='v1')
+    class Twin:
+        calls = 0
+        def answer(self, payload):
+            from app.twin import TwinOutput
+            self.calls += 1
+            return TwinOutput(answer='unknown', response_type='UNKNOWN', evidence_ids=[], confidence=0, model_version='test')
+    twin = Twin()
+    app = create_app(Settings(_env_file=None, environment='test', max_concurrent_requests=1), extractor=extractor, twin_provider=twin)
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
+            first=asyncio.create_task(client.post('/process',json=payload()))
+            assert await asyncio.to_thread(provider.entered.wait,3)
+            second=asyncio.create_task(client.post('/twin',json={'question':'q','candidates':[]}))
+            await asyncio.sleep(.1)
+            waiting=not second.done()
+            provider.release.set()
+            assert (await first).status_code==200
+            result=await second
+            assert waiting and result.status_code==200
+            assert twin.calls==1
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize("streamed", [False, True])
 def test_request_body_limit_applies_before_json_validation(streamed):
-    app = create_app(Settings(environment="test", max_request_bytes=512))
+    app = create_app(Settings(_env_file=None, environment="test", max_request_bytes=512))
     data = json.dumps({**payload(), "transcript": "x" * 2048}).encode()
     with TestClient(app) as client:
         response = client.post(
@@ -71,7 +97,7 @@ def test_request_body_limit_applies_before_json_validation(streamed):
 
 def test_invalid_request_does_not_echo_transcript_or_unknown_field_names():
     data = {"transcript": "PRIVATE-TRANSCRIPT", "PRIVATE-KEY-NAME": "PRIVATE-VALUE"}
-    with TestClient(create_app(Settings(environment="test"))) as client:
+    with TestClient(create_app(Settings(_env_file=None, environment="test"))) as client:
         response = client.post("/process", json=data)
     assert response.status_code == 422
     assert "PRIVATE" not in response.text
@@ -81,7 +107,7 @@ def test_invalid_request_does_not_echo_transcript_or_unknown_field_names():
 def test_runtime_records_trace_duration_and_outcome_without_memory_text(caplog):
     data = {**payload(), "trace_id": "trace-test-123", "transcript": "PRIVATE-TRANSCRIPT喜欢咖啡。"}
     with caplog.at_level(logging.INFO, logger="remember_me.ai_core"):
-        with TestClient(create_app(Settings(environment="test"))) as client:
+        with TestClient(create_app(Settings(_env_file=None, environment="test"))) as client:
             assert client.post("/process", json=data).status_code == 200
     records = [record for record in caplog.records if record.name == "remember_me.ai_core"]
     assert records
@@ -103,7 +129,7 @@ def test_failed_extraction_releases_capacity_for_the_next_request(caplog):
             return FixtureProvider().generate(request)
 
     extractor = MemoryExtractor(provider=FailOnceProvider(), model="test", model_version="v1")
-    app = create_app(Settings(environment="test", max_concurrent_requests=1), extractor=extractor)
+    app = create_app(Settings(_env_file=None, environment="test", max_concurrent_requests=1), extractor=extractor)
     with caplog.at_level(logging.INFO, logger="remember_me.ai_core"), TestClient(app) as client:
         assert client.post("/process", json=payload()).status_code == 504
         assert client.post("/process", json=payload()).status_code == 200
@@ -112,7 +138,7 @@ def test_failed_extraction_releases_capacity_for_the_next_request(caplog):
 
 
 def test_body_limit_does_not_trust_a_forged_content_length():
-    app = create_app(Settings(environment="test", max_request_bytes=64))
+    app = create_app(Settings(_env_file=None, environment="test", max_request_bytes=64))
     data = json.dumps(payload()).encode()
 
     async def scenario():

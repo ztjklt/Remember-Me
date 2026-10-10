@@ -1,0 +1,31 @@
+[Unit]
+Description=Remember Me %i
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rememberme
+Group=rememberme
+WorkingDirectory=/opt/remember-me/current
+EnvironmentFile=/etc/remember-me/%i.env
+Environment=PYTHONUNBUFFERED=1
+Environment=HF_HOME=/var/lib/remember-me/model-cache
+Environment=TOKENIZERS_PARALLELISM=false
+Environment=OMP_NUM_THREADS=2
+ExecStart=/bin/bash /opt/remember-me/current/infra/aws/run-service.sh %i
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+UMask=0077
+StateDirectory=remember-me
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/remember-me
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

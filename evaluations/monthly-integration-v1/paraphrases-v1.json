@@ -1,0 +1,14 @@
+[
+  {"id":"p01","person":"bus_driver","role":"owner","question":"他本人后来核对过的首次独立出车年份是多少？"},
+  {"id":"p02","person":"bus_driver","role":"reader","question":"他喝茶更倾向清淡还是多放糖？"},
+  {"id":"p03","person":"bus_driver","role":"reader","question":"王建国的铁路经历是他本人的，还是他谈到家里人的？谁在转述？"},
+  {"id":"p04","person":"bus_driver","role":"reader","question":"他那封没寄出去的信放哪儿了？"},
+  {"id":"p05","person":"firefighter","role":"owner","question":"同事李晴说的是谁的经历？哪些是讲述者自己的爱好？请分别说明。"},
+  {"id":"p06","person":"firefighter","role":"reader","question":"她为什么选择消防员这个职业？只讲材料明确说的原因。"},
+  {"id":"p07","person":"firefighter","role":"reader","question":"她已经确定以后一直当消防员了吗？"},
+  {"id":"p08","person":"firefighter","role":"reader","question":"能不能确定她第一次独立值班是哪一天？"},
+  {"id":"p09","person":"life_review","role":"reader","question":"他想去海边这件事，目的地和出发日子分别定下来了吗？"},
+  {"id":"p10","person":"life_review","role":"owner","question":"他说过保留那本旧本子的原因是什么？"},
+  {"id":"p11","person":"life_review","role":"reader","question":"他为什么要留着那本旧本子？不知道就明确说不知道。"},
+  {"id":"p12","person":"life_review","role":"owner","question":"家里提到的两个同名人，是不是应该当成同一人？"}
+]

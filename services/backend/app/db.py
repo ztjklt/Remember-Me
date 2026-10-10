@@ -22,9 +22,25 @@ class Database:
         )
         if url.startswith("sqlite"):
             self._enable_sqlite_foreign_keys(self.engine)
+        elif self.engine.dialect.name == 'postgresql':
+            self._set_postgres_timezone(self.engine)
         self._session_factory = sessionmaker(
             bind=self.engine, expire_on_commit=False, future=True
         )
+
+    @staticmethod
+    def _set_postgres_timezone(engine: Engine) -> None:
+        # PostgreSQL renders timestamptz in the connection timezone, which may
+        # otherwise vary between servers and between initial/loaded ORM rows.
+        @event.listens_for(engine, 'connect')
+        def _set_utc(connection, _record) -> None:
+            previous = connection.autocommit
+            connection.autocommit = True
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SET TIME ZONE 'UTC'")
+            finally:
+                connection.autocommit = previous
 
     @staticmethod
     def _enable_sqlite_foreign_keys(engine: Engine) -> None:

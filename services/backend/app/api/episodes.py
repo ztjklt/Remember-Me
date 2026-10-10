@@ -24,12 +24,13 @@ contract's test asserts the job id never leaks.
 """
 
 import json
+import hashlib
 import logging
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Form, Request, Response, UploadFile, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -37,6 +38,7 @@ from sqlalchemy.orm import Session
 from ..contracts import EpisodeCreated, EpisodeResult, MemoryItem, ProcessingStatus
 from ..config import Settings
 from ..db import get_session
+from ..chinese_text import simplified_transcript
 from ..errors import (
     AudioInvalid,
     AudioTooLarge,
@@ -80,10 +82,12 @@ class TranscriptReview(BaseModel):
     state: Literal["transcribing", "reviewing", "submitted", "not_required"]
     transcript: str | None = None
     stt_model_version: str | None = None
+    supplement: str = ''
 
 
 class ConfirmTranscript(BaseModel):
     transcript: str = Field(min_length=1, max_length=100_000)
+    supplement: str = Field(default='', max_length=3000)
 
 # Read the upload in bounded pieces so a body larger than the limit is refused
 # while it is being read rather than after it is all in memory.
@@ -221,6 +225,37 @@ class CaptureEpisodeForm(BaseModel):
     metadata: str | None = Field(None, description="Arbitrary capture metadata, as JSON")
 
 
+class ClientTranscript(BaseModel):
+    """An owner's unverified client ASR report, never a server provider receipt."""
+    model_config = ConfigDict(extra='forbid', strict=True)
+    text: str = Field(min_length=1, max_length=100_000)
+    audio_sha256: str = Field(pattern=r'^[0-9a-f]{64}$')
+    provider: Literal['groq']
+    model: Literal['whisper-large-v3']
+    audio_export_confirmed: StrictBool
+
+    @field_validator('text')
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError('client ASR text is empty')
+        return value
+
+    @field_validator('audio_export_confirmed')
+    @classmethod
+    def exported_with_consent(cls, value):
+        if value is not True:
+            raise ValueError('client audio export must be explicitly confirmed')
+        return value
+
+    def fingerprint(self):
+        return hashlib.sha256(self.model_dump_json().encode('utf-8')).hexdigest()
+
+
+class ClientCaptureForm(CaptureEpisodeForm):
+    client_transcript: str = Field(min_length=1, max_length=650_000)
+
+
 @router.post("", response_model=EpisodeCreated, status_code=status.HTTP_201_CREATED)
 def create_episode(
     response: Response,
@@ -230,6 +265,39 @@ def create_episode(
     settings: Settings = Depends(_settings),
     session: Session = Depends(get_session),
 ) -> EpisodeCreated:
+    return _create_episode(response, form, actor, store, settings, session)
+
+
+@router.post('/client-transcribed', response_model=EpisodeCreated, status_code=status.HTTP_201_CREATED)
+def create_client_transcribed_episode(
+    response: Response,
+    form: Annotated[ClientCaptureForm, Form(media_type='multipart/form-data')],
+    actor: Actor = Depends(current_actor),
+    store: ObjectStore = Depends(_object_store),
+    settings: Settings = Depends(_settings),
+    session: Session = Depends(get_session),
+) -> EpisodeCreated:
+    try:
+        transcript = ClientTranscript.model_validate_json(form.client_transcript)
+    except ValidationError as error:
+        # Never echo a transcript, arbitrary client field or secret into errors.
+        raise RequestInvalid('客户端转写格式无效；需要原始机器稿、原音哈希、模型及外发确认。') from error
+    if form.source not in {CaptureSource.IMPORT, CaptureSource.ANDROID_MIC, CaptureSource.IOS_MIC}:
+        raise RequestInvalid('客户端转写只接受支持核对的录音或文件导入来源。')
+    return _create_episode(response, form, actor, store, settings, session, transcript)
+
+
+def _check_replay(existing, checksum, client_transcript):
+    expected = client_transcript.fingerprint() if client_transcript else None
+    receipt = (existing.capture_metadata or {}).get('client_asr_receipt')
+    # Before this extension the metadata key was arbitrary user data. Only a
+    # server-written provenance column identifies captures from the new route.
+    actual = receipt.get('fingerprint') if existing.stt_backend == 'client' and isinstance(receipt, dict) else None
+    if existing.audio_checksum != checksum or actual != expected:
+        raise IdempotencyConflict('该上传标识已用于不同的原音或机器转写；原记录不会被覆盖。')
+
+
+def _create_episode(response, form, actor, store, settings, session, client_transcript=None):
     """Store one recording and queue its processing.
 
     Replaying a capture returns the Episode the first request created, with 200
@@ -267,6 +335,8 @@ def create_episode(
 
     data = _read_upload(form.file, limit_bytes=settings.max_upload_bytes)
     checksum = checksum_of(data)
+    if client_transcript and client_transcript.audio_sha256 != checksum:
+        raise RequestInvalid('客户端转写对应的原音哈希与上传文件不一致。')
 
     episodes = EpisodeRepository(session)
     existing = episodes.find_by_idempotency(
@@ -275,21 +345,37 @@ def create_episode(
         idempotency_key=form.idempotency_key,
     )
     if existing is not None:
-        if existing.audio_checksum != checksum:
-            raise IdempotencyConflict(
-                f"idempotency_key {form.idempotency_key} was already used for different audio "
-                f"(episode {existing.episode_id})"
-            )
+        _check_replay(existing, checksum, client_transcript)
         response.status_code = status.HTTP_200_OK
         return EpisodeCreated(
             episode_id=existing.episode_id, upload_status="uploaded"
         )
 
+    # A prior RECORDING grant did not authorize exporting raw audio. Bind this
+    # capture to the displayed relay policy; never accept a client-made receipt.
+    capture_metadata = dict(capture_metadata or {})
+    capture_metadata.pop('cloud_asr_receipt', None)
+    capture_metadata.pop('client_asr_receipt', None)
+    capture_metadata.pop('asr_call', None)
+    capture_metadata.pop('transcript_normalization', None)
+    if settings.stt_backend == 'client' and client_transcript is None:
+        raise RequestInvalid('服务器采用客户端转写模式，请先在客户端转写，再上传原音和机器稿进行核对。')
+    from ..cloud_asr import CLOUD_BACKENDS
+    if client_transcript is None and settings.stt_backend in CLOUD_BACKENDS:
+        from ..cloud_asr import cloud_policy, configured
+        if not configured(settings):
+            raise RequestInvalid('云端转写连接配置未完成，请先保留本机原音，配置完成后再上传。')
+        policy = cloud_policy(settings)
+        if capture_metadata.get('cloud_asr_policy') != policy:
+            raise RequestInvalid('请刷新转写配置，并明确同意把本段原音发送到云端转写；尚未外发音频。')
+        capture_metadata['cloud_asr_receipt'] = {
+            'policy': policy, 'actor_id': actor.actor_id, 'confirmed_at': utcnow().isoformat()}
+
     calibration = None
     calibration_id = (capture_metadata or {}).get("calibration_id")
     if calibration_id is not None:
-        if not isinstance(calibration_id, str) or form.source != CaptureSource.IOS_MIC:
-            raise RequestInvalid("calibration_id requires an iOS recording")
+        if not isinstance(calibration_id, str) or form.source not in {CaptureSource.IOS_MIC, CaptureSource.IMPORT, CaptureSource.ANDROID_MIC}:
+            raise RequestInvalid("calibration_id requires a reviewed recording")
         calibration = session.scalar(select(CalibrationRun).where(
             CalibrationRun.calibration_id == calibration_id,
             CalibrationRun.subject_id == form.subject_id,
@@ -323,7 +409,26 @@ def create_episode(
         trace_id=trace_id_var.get() or "",
     )
     episodes.add(episode)
-    JobRepository(session).enqueue(episode.episode_id)
+    job = JobRepository(session).enqueue(episode.episode_id)
+    if client_transcript is not None:
+        from ..chinese_text import NORMALIZATION_VERSION
+        episode.stt_transcript = client_transcript.text
+        episode.transcript = simplified_transcript(client_transcript.text)
+        episode.stt_backend = 'client'
+        episode.stt_model_version = 'client-reported/groq/whisper-large-v3'
+        episode.capture_metadata = {**capture_metadata,
+            'transcript_normalization': NORMALIZATION_VERSION,
+            'client_asr_receipt': {
+                'actor_id': actor.actor_id, 'received_at': utcnow().isoformat(),
+                'verification': 'client_reported', 'audio_alignment_verified': False,
+                'provider': client_transcript.provider, 'model': client_transcript.model,
+                'audio_sha256': checksum, 'audio_export_confirmed': True,
+                'fingerprint': client_transcript.fingerprint(),
+            }}
+        # Existing review API releases EXTRACT only after explicit confirmation.
+        # Nothing can claim this job for ASR or extraction before that boundary.
+        episode.status = str(EpisodeStatus.TRANSCRIBING)
+        job.stage, job.state = str(JobStage.EXTRACT), str(JobState.WAITING)
 
     key = audio_object_key(form.subject_id, episode.episode_id)
     try:
@@ -358,11 +463,7 @@ def create_episode(
         )
         if existing is None:
             raise
-        if existing.audio_checksum != checksum:
-            raise IdempotencyConflict(
-                f"idempotency_key {form.idempotency_key} was already used for different audio "
-                f"(episode {existing.episode_id})"
-            ) from None
+        _check_replay(existing, checksum, client_transcript)
         logger.info(
             "upload.idempotent_race",
             extra={"extra_fields": {"episode_id": existing.episode_id}},
@@ -418,7 +519,7 @@ def read_transcript_review(
     response.headers["Cache-Control"] = "private, no-store"
     episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
     job = JobRepository(session).for_episode(episode_id)
-    if episode.source != str(CaptureSource.IOS_MIC):
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
         state = "not_required"
     elif job is not None and job.state == str(JobState.WAITING):
         state = "reviewing"
@@ -430,8 +531,10 @@ def read_transcript_review(
         state = "transcribing"
     return TranscriptReview(
         state=state,
-        transcript=episode.transcript if state == "reviewing" else None,
+        transcript=simplified_transcript(episode.transcript)
+            if state == "reviewing" and episode.transcript is not None else None,
         stt_model_version=episode.stt_model_version,
+        supplement=(episode.capture_metadata or {}).get('review_supplement',''),
     )
 
 
@@ -448,10 +551,10 @@ def confirm_transcript(
     text = payload.transcript.strip()
     if not text:
         raise RequestInvalid("The confirmed transcript cannot be blank")
-    if episode.source != str(CaptureSource.IOS_MIC):
-        raise RequestInvalid("Transcript review is available only for iOS capture")
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
+        raise RequestInvalid("Transcript review requires iOS or imported capture")
     if episode.transcript_reviewed_at is not None:
-        if episode.transcript == text:
+        if episode.transcript == text and (episode.capture_metadata or {}).get('review_supplement','') == payload.supplement.strip():
             return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
                                     trace_id=episode.trace_id or None)
         raise RequestInvalid("This Episode's transcript was already confirmed")
@@ -470,6 +573,7 @@ def confirm_transcript(
     if claimed.rowcount != 1:
         raise RequestInvalid("The transcript was already confirmed")
     episode.transcript = text
+    episode.capture_metadata = {**(episode.capture_metadata or {}), 'review_supplement':payload.supplement.strip()}
     episode.transcript_reviewed_at = now
     episode.transcript_reviewed_by = actor.actor_id
     episode.status = str(EpisodeStatus.EXTRACTING)
@@ -552,3 +656,27 @@ def retry_processing(episode_id: str, actor: Actor = Depends(current_actor),
     session.commit()
     return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
                             trace_id=episode.trace_id or None)
+
+
+@router.post('/{episode_id}/reextract-empty', response_model=ProcessingStatus, response_model_exclude_none=True)
+def reextract_empty(episode_id: str, request: Request, actor: Actor = Depends(current_actor),
+                    session: Session = Depends(get_session)) -> ProcessingStatus:
+    """Explicit recovery for a valid but empty extraction; never revive deletions."""
+    from ..models import MemoryItem as MemoryRow
+    from ..access import publication_lock
+    from ..retrieval import invalidate_answers
+    publication_lock(session, '')
+    episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    job = JobRepository(session).for_episode(episode_id)
+    any_memory = session.scalar(select(MemoryRow.memory_item_id).where(MemoryRow.episode_id == episode_id).limit(1))
+    if (episode.status != 'ready' or not episode.transcript_reviewed_at or not episode.transcript
+            or job is None or any_memory is not None):
+        raise RequestInvalid('仅可重新整理已核对且从未产生记忆的空结果；已删除内容不会恢复。')
+    job.stage, job.state, job.attempts = str(JobStage.EXTRACT), str(JobState.QUEUED), 0
+    job.available_at = job.updated_at = utcnow()
+    job.lease_owner = job.lease_expires_at = None
+    episode.status = str(EpisodeStatus.EXTRACTING)
+    episode.error_code = episode.error_message = None
+    invalidate_answers(session, request.app.state.object_store, episode.subject_id)
+    session.commit()
+    return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus.EXTRACTING, trace_id=episode.trace_id or None)

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..calibration_client import CalibrationUnavailable
+from ..access import publication_lock, altered_story_ids
 from ..db import get_session
 from ..errors import AppError
 from ..models import (Actor, CalibrationRun, ConsentScope, Episode, Evidence,
@@ -52,8 +53,21 @@ class CompleteCalibration(BaseModel):
 def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[dict] | None:
     snapshot = []
     for identifier in sorted(set(memory_ids)):
+        if identifier.startswith('episode:'):
+            episode = session.get(Episode, identifier[len('episode:'):])
+            if episode is None or episode.subject_id != subject_id or episode.status != 'ready':
+                return None
+            if altered_story_ids(session, {episode.episode_id}):
+                return None
+            memories = list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id == episode.episode_id)))
+            from ..language_support import is_owner_supplement
+            if any(m.deleted_at or m.review_state != 'active' or (m.source_type == 'CALIBRATION' and not is_owner_supplement(m)) for m in memories):
+                return None
+            snapshot.append({'memory_item_id': identifier, 'content': episode.transcript,
+                             'evidence_ids': []})
+            continue
         item = session.get(MemoryItem, identifier)
-        if item is None or item.deleted_at is not None:
+        if item is None or item.deleted_at is not None or item.review_state != 'active':
             return None
         episode = session.get(Episode, item.episode_id)
         if episode is None or episode.subject_id != subject_id:
@@ -215,7 +229,7 @@ def complete(subject_id: str, calibration_id: str, body: CompleteCalibration, re
                      or excerpt not in human_answer))):
             raise CalibrationFailed("模型校准证据无法核对。")
         seen.add(dimension)
-    session.expire_all()
+    publication_lock(session, subject_id)
     row = _run(session, subject_id, actor, calibration_id)
     ConsentRepository(session).require_active(body.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)

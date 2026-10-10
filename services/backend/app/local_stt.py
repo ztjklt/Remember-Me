@@ -1,4 +1,4 @@
-"""Loopback-only Whisper sidecar for the single-user Mac deployment.
+"""Loopback-only Whisper sidecar; raw ASR remains separate from display script.
 
 Run with `uv run uvicorn app.local_stt:app --host 127.0.0.1 --port 8200`.
 """
@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 app = FastAPI(title="Remember Me local STT")
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MODEL_PATH = Path(os.environ.get("WHISPER_MODEL_PATH", str(Path.home() / ".cache/remember-me/ggml-base.bin")))
+SIMPLIFIED_PROMPT = "以下是普通话的句子，使用简体中文。"
 
 
 def transcribe_audio(audio: bytes, model_path: Path = MODEL_PATH) -> dict[str, str]:
@@ -36,8 +37,8 @@ def transcribe_audio(audio: bytes, model_path: Path = MODEL_PATH) -> dict[str, s
             )
             subprocess.run(
                 ["whisper-cli", "-m", str(model_path), "-l", "zh", "-f", str(wav),
-                 "-otxt", "-of", str(output), "-np", "-nt"],
-                check=True, capture_output=True, timeout=240,
+                 "--prompt", SIMPLIFIED_PROMPT, "-otxt", "-of", str(output), "-np", "-nt"],
+                check=True, capture_output=True, timeout=max(60, min(1800, int(os.environ.get("WHISPER_TIMEOUT_SECONDS", "240")))),
             )
         except (subprocess.SubprocessError, OSError) as exc:
             raise RuntimeError("Audio conversion or Whisper failed") from exc
@@ -46,7 +47,7 @@ def transcribe_audio(audio: bytes, model_path: Path = MODEL_PATH) -> dict[str, s
         # stays meaningful when a local operator replaces the weights in place.
         with model_path.open("rb") as model_file:
             digest = hashlib.file_digest(model_file, "sha256").hexdigest()[:12]
-        return {"text": text, "model_version": f"whisper-{model_path.stem}-{digest}"}
+        return {"text": text, "model_version": f"whisper-{model_path.stem}-{digest}-zh-hans-p1"}
 
 
 @app.post("/transcribe")

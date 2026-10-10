@@ -353,6 +353,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "jsonschema" },
     { name = "opencc-python-reimplemented" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -361,7 +362,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "jsonschema" },
     { name = "pytest" },
 ]
 
@@ -369,6 +369,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "jsonschema", specifier = ">=4.23" },
     { name = "opencc-python-reimplemented", specifier = ">=0.1.7" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "pydantic-settings", specifier = ">=2.3" },
@@ -376,10 +377,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "jsonschema", specifier = ">=4.23" },
-    { name = "pytest", specifier = ">=8.2" },
-]
+dev = [{ name = "pytest", specifier = ">=8.2" }]
 
 [[package]]
 name = "rpds-py"

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Literal
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from .errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable
 
@@ -14,17 +15,32 @@ from .errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable
 class TwinEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
     evidence_id: str
-    excerpt: str = Field(min_length=1, max_length=4000)
+    excerpt: str = Field(min_length=1, max_length=24000)
     source_type: str
+    episode_id: str | None = Field(default=None, max_length=128)
+    recorded_at: datetime | None = None
+    span_start: int | None = Field(default=None, ge=0)
+    span_end: int | None = Field(default=None, ge=0)
+    temporal_context: str = Field(default='', max_length=1000)
+
+    @model_validator(mode='after')
+    def context_consistent(self):
+        if (self.span_start is None) != (self.span_end is None):
+            raise ValueError('Both character bounds are required')
+        if self.span_start is not None and (not self.episode_id or self.span_end-self.span_start != len(self.excerpt)):
+            raise ValueError('Character bounds must match an episode excerpt')
+        if self.recorded_at is not None and (not self.episode_id or self.recorded_at.tzinfo is None):
+            raise ValueError('Recording time requires an episode and timezone')
+        return self
 
 
 class TwinCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     memory_item_id: str
-    statement: str = Field(min_length=1, max_length=4000)
+    statement: str = Field(min_length=1, max_length=24000)
     domain: str | None = None
     unresolved: bool = False
-    traits: list[str] = Field(default_factory=list, max_length=8)
+    traits: list[str] = Field(default_factory=list, max_length=24000)
     graph_facts: list[str] = Field(default_factory=list, max_length=8)
     evidence: list[TwinEvidence]
 
@@ -32,7 +48,18 @@ class TwinCandidate(BaseModel):
 class TwinInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=1000)
-    candidates: list[TwinCandidate] = Field(max_length=8)
+    candidates: list[TwinCandidate] = Field(max_length=24000)
+
+    @model_validator(mode='after')
+    def material_budget(self):
+        # A source can support several memories; don't count the same original
+        # twice. Reject an oversized input instead of silently dropping sources.
+        excerpts = {e.excerpt for c in self.candidates for e in c.evidence}
+        if sum(map(len, excerpts)) > 24000:
+            raise ValueError('Effective original material exceeds 24000 characters')
+        if sum(map(len,{t for c in self.candidates for t in c.traits})) > 24000:
+            raise ValueError('Confirmed profile context exceeds 24000 characters')
+        return self
 
 
 class TwinOutput(BaseModel):
@@ -78,7 +105,7 @@ class DeepSeekTwinProvider:
             "model": self.model,
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": TWIN_SYSTEM},
-                         {"role": "user", "content": json.dumps(payload.model_dump(), ensure_ascii=False)}],
+                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True), ensure_ascii=False)}],
             "response_format": {"type": "json_object"},
             "max_tokens": 700,
             "temperature": 0,

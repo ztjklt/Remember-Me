@@ -2,12 +2,12 @@
 
 from uuid import uuid4
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, or_
 from sqlalchemy.orm import Session
 
 from ..models import (
     CaptureQuestion, Episode, Evidence, GraphFact, MemoryItem, ModelRevision,
-    PERSON_DOMAINS, PersonTrait, utcnow,
+    PERSON_DOMAINS, PersonTrait, MemoryRevision, utcnow,
 )
 
 DOMAIN_FOR_TYPE = {
@@ -44,7 +44,8 @@ class PersonModelRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def rebuild(self, subject_id: str, *, answered_question_id: str | None = None) -> int:
+    def rebuild(self, subject_id: str, *, answered_question_id: str | None = None,
+                include_episode_id: str | None = None) -> int:
         session = self.session
         if answered_question_id:
             question = session.get(CaptureQuestion, answered_question_id)
@@ -57,10 +58,20 @@ class PersonModelRepository:
         session.execute(delete(GraphFact).where(GraphFact.subject_id == subject_id))
         memories = list(session.execute(
             select(MemoryItem, Episode).join(Episode).where(
-                Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None)
+                Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None),
+                MemoryItem.review_state == 'active',
+                or_(Episode.status == 'ready', Episode.episode_id == include_episode_id)
             ).order_by(Episode.created_at, MemoryItem.ordinal)
         ).all())
         traits: list[PersonTrait] = []
+        changes = list(session.scalars(select(MemoryRevision).where(
+            MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed',
+            MemoryRevision.kind == 'change')))
+        episode_for_memory = {m.memory_item_id: ep.episode_id for m, ep in memories}
+        def temporal_pair(left_id, right_id):
+            return any((r.target_memory_id == left_id and r.episode_id == episode_for_memory.get(right_id))
+                       or (r.target_memory_id == right_id and r.episode_id == episode_for_memory.get(left_id))
+                       for r in changes)
         for memory, episode in memories:
             proposals = episode.model_proposals or {}
             # The AI Core proposal is the authority for the initial domain and
@@ -84,7 +95,8 @@ class PersonModelRepository:
                 model_version=memory.model_version, valid_from=memory.effective_at,
             )
             for old in traits:
-                if old.domain == domain and _contradicts(old.statement, trait.statement):
+                if (old.domain == domain and _contradicts(old.statement, trait.statement)
+                        and not temporal_pair(old.memory_item_ids[0], memory.memory_item_id)):
                     old.status = trait.status = "unresolved"
                     old.counter_evidence_ids = sorted(set(old.counter_evidence_ids + trait.evidence_ids))
                     trait.counter_evidence_ids = sorted(set(trait.counter_evidence_ids + old.evidence_ids))

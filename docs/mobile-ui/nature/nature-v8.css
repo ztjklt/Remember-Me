@@ -1,0 +1,19 @@
+/* A family of places: brighter scenery at entry points, stable paper under long text. */
+.phone[data-page]{--scene:url('meadow-v7.png');--scene-veil:linear-gradient(180deg,#f4f5eca3 0%,#f4f5ecad 50%,#f4f5ecd1 100%)}
+.phone[data-page=home],.phone[data-page=record]{--scene-veil:linear-gradient(180deg,#f4f5ec94 0%,#f4f5ec3d 46%,#f4f5ec80 100%)}
+.phone[data-page=archive],.phone[data-page=system]{--scene:url('lake-v8.png')}
+.phone[data-page=record],.phone[data-page=saved],.phone[data-page=review],.phone[data-page=memory]{--scene:url('forest-v8.png')}
+.phone[data-page=profile],.phone[data-page=conversation]{--scene:url('coast-v8.png')}
+.phone[data-page]:before{background:var(--scene-veil),var(--scene) center center/cover no-repeat}
+.dark .phone[data-page]{--scene-veil:linear-gradient(180deg,#14251ee0,#14251ed1 46%,#14251ef0)}
+.dark .phone[data-page]:before{background:var(--scene-veil),var(--scene) center center/cover no-repeat}
+.phone:not([data-page=home]):not([data-page=record]) .page{padding-top:28px}
+.phone:not([data-page=home]):not([data-page=record]) h1{font-family:Georgia,"Songti SC",SimSun,serif;font-weight:400}
+.phone[data-page=archive] #results,.phone[data-page=profile] .feature,.phone:not([data-page=home]) .notice,.details{background:var(--glass);border:1px solid var(--rim);border-radius:22px;padding:18px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.phone[data-page=archive] #results{margin-top:14px}.phone[data-page=archive] #results .entry:last-child{border-bottom:0;padding-bottom:0}.phone[data-page=archive] .tabs{background:var(--glass);border-radius:16px;padding:0 16px;border-bottom:0}
+.phone[data-page=profile] .feature{margin:14px 0}.details{margin-top:18px}.notice.error{border-left:3px solid var(--danger)}
+.phone[data-page=conversation] .page>h1{margin-top:30px;margin-bottom:24px}.phone[data-page=conversation] .page>.small{background:var(--glass);padding:16px;border-radius:18px}
+.scene-label{display:flex;align-items:center;gap:8px;font-size:calc(12px * var(--scale));letter-spacing:.08em;color:var(--ink);margin:4px 0 18px}.scene-label svg{width:16px;height:16px}
+.dark .scene-label{color:var(--ink)}
+@media(prefers-reduced-transparency:reduce){.phone[data-page=archive] #results,.phone[data-page=archive] .tabs,.phone[data-page=profile] .feature,.phone:not([data-page=home]) .notice,.phone[data-page=conversation] .page>.small,.details{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}}
+@media(prefers-contrast:more){.phone[data-page]:before{display:none}.phone[data-page=archive] #results,.phone[data-page=archive] .tabs,.phone[data-page=profile] .feature,.phone:not([data-page=home]) .notice,.phone[data-page=conversation] .page>.small,.details{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}}

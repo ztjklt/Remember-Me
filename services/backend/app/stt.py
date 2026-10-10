@@ -5,7 +5,7 @@ vendor: the worker asks for a transcript and gets one, and which service produce
 it is recorded on the Episode as `stt_backend` and `stt_model_version` rather than
 assumed.
 
-Two adapters ship. `http` is the deployment one and speaks a deliberately small
+The legacy `http` adapter speaks a deliberately small
 wire contract of this module's own, so a provider can be attached without any
 other part of the service changing:
 
@@ -14,6 +14,10 @@ other part of the service changing:
     <the raw audio bytes>
     ->
     200 {"text": "...", "model_version": "..."}   # model_version optional
+
+`relay` and `groq` are explicit cloud choices. Both require the current
+destination policy and recheck consent after waiting; neither uses local ASR or
+falls back to another provider. `groq` uses the official multipart speech API.
 
 A non-2xx answer keeps the same meaning it has at the AI Core boundary: 503 and
 504 are the provider's own transient conditions and return to the job's retry
@@ -33,7 +37,7 @@ The rule is shared with the AI Core boundary in app/providers.py, so the two
 cannot disagree about it.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import httpx
@@ -64,6 +68,7 @@ class Transcript:
     text: str
     backend: str
     model_version: str
+    metadata: dict = field(default_factory=dict)
 
 
 class SttProvider(Protocol):
@@ -173,7 +178,24 @@ class HttpSttProvider:
         )
 
 
+class ClientOnlySttProvider:
+    """Refuse old queued ASR jobs; the server never performs client ASR."""
+    def transcribe(self, audio: bytes, content_type: str) -> Transcript:
+        raise SttFailed('服务器已关闭转写，请在客户端完成识别并提交原音与机器稿。')
+
+
 def build_stt_provider(settings: Settings) -> SttProvider:
+    if settings.stt_backend == 'paraformer':
+        from .paraformer_asr import ParaformerSttProvider
+        return ParaformerSttProvider(settings)
+    if settings.stt_backend == 'client':
+        return ClientOnlySttProvider()
+    if settings.stt_backend == 'groq':
+        from .groq_asr import GroqSttProvider
+        return GroqSttProvider(settings)
+    if settings.stt_backend == 'relay':
+        from .relay_asr import RelaySttProvider
+        return RelaySttProvider(settings)
     if settings.stt_backend == FAKE_BACKEND:
         refuse_fake_unless_permitted(settings, "speech-to-text")
         return FakeSttProvider()

@@ -9,6 +9,7 @@ object versus a missing bucket, an ETag versus a checksum — are pinned here.
 """
 
 import hashlib
+import os
 
 import boto3
 import pytest
@@ -78,8 +79,11 @@ def test_the_local_store_creates_nested_directories(tmp_path):
     store.put(KEY, PAYLOAD, "audio/wav")
 
     assert (root / KEY).read_bytes() == PAYLOAD
-    assert ((root / KEY).stat().st_mode & 0o777) == 0o600
-    assert ((root / KEY).parent.stat().st_mode & 0o777) == 0o700
+    # Windows does not expose ACLs through POSIX mode bits. File round-trip
+    # remains tested on both systems; POSIX permission checks run on POSIX.
+    if os.name != 'nt':
+        assert ((root / KEY).stat().st_mode & 0o777) == 0o600
+        assert ((root / KEY).parent.stat().st_mode & 0o777) == 0o700
 
 
 def test_the_local_store_leaves_no_probe_behind(tmp_path):

@@ -1,14 +1,24 @@
 # Remember Me
 
+> **Android 0.8.1：** [恢复原稿写实蓝花、自然枝叶与花瓣入口](docs/agent-loop/ANDROID_GARDEN_RESTORE_2026-10-11.md)。[下载安装与简单8位演示账号](docs/agent-loop/ANDROID_QUICK_START_2026-10-10.md)。旧包和截图保留；iOS与新版真机未验收。
+
+> **首次试用先看：** [下载安装、公开演示账号、记录者与亲友操作说明](docs/agent-loop/ANDROID_QUICK_START_2026-10-10.md)。公开账号专用于虚构测试，所有试用者共用；原四组内测账号继续私下交接。
+
+> **Android 0.7.1 内测下载：** [下载与双角色操作说明](docs/agent-loop/ANDROID_TEAM_DELIVERY_2026-10-10.md)。2026-10-10 经所有者批准，App HTTPS 可从不同网络访问；注册仍关闭，使用管理员私下提供的普通账号。模型密钥只在 ECS。实体手机和本次 iOS 仍待验收。
+
+> **2026-10-10 团队交接入口：** [当前流程、采用范围与四人分工建议](docs/agent-loop/TEAM_HANDOFF_2026-10-10.md) · [19 张顺序截图](docs/agent-loop/screenshots/2026-10-10/README.md) · [构建/运行说明](docs/agent-loop/TEAM_RUNBOOK_2026-10-10.md) · [本次复验结果](docs/agent-loop/HANDOFF_VALIDATION_2026-10-10.md)。Android 模拟器可直接连接 ECS，完成原生录音、Paraformer 转写、文字核对、DeepSeek 整理、记忆/人物候选、来源问答、邀请与亲友补问。模型质量仍有已知问题；真机与本次 iOS 未验收。
+
+> **历史材料说明：** 10 月 8 日三人 30 段合成语料使用过 Groq 等路线，见[原始结果与边界](docs/agent-loop/GROQ_LIVE_RESULTS_2026-10-08.md)。这些不能冒称已全部重新跑过 Paraformer。旧启动说明用于解释历史，新队友以本次运行说明为准。
+
 > **2026-09-27 双端集成：** Android 的 #78／#79 和随后提交的 #81 界面与 iOS 的 #76／#77／#80 已接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。
 
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
 ## Current status
 
-The iOS voice-to-Person-Model slice was authorized in [Issue #75](https://github.com/ztjklt/Remember-Me/issues/75). The Product Owner subsequently authorized an iOS-first evidence Twin and separately consented local Voice loop in the [Twin proposal](docs/architecture/twin-voice-contract-proposal.md), followed by a locked-answer [calibration slice](docs/architecture/calibration-contract-proposal.md). This work uses the existing Phase 1 recording path; cloud deployment and multi-user accounts remain later work.
+The current integration branch includes ordinary accounts, owner-approved story sharing, transcript review, evidence-backed memories, profile candidates, reviewed story organization, Twin answers and locked-answer calibration. The ECS deployment uses Paraformer ASR and the Weixin DeepSeek adapter; credentials remain on the server. The default Android entry is the native shared-backend workbench. Use the internal build or an explicit service URL; the debug default remains local development.
 
-The latest Android portrait UI from #81 opens the locally working recording and archive flow from #79. The graph and agent pages label unconnected preview content. Its real memory-processing adapter is not connected in the default build; the Android APK contains no provider credentials. The iOS SwiftUI project lives in [apps/ios](apps/ios/README.md); its paired Mac stack uses local Whisper and DeepSeek V4 Flash behind Backend and AI Core adapters. Audio remains local; confirmed transcript text is sent to DeepSeek. Local Qwen remains an adapter option. Feature readiness is tracked through the [roadmap](docs/roadmap/ROADMAP.md); physical iPhone evidence is recorded separately from simulator builds and synthetic audio probes.
+Android's legacy local prototype remains available in source, but its Mock graph/agent pages are not evidence for the connected product. The iOS project lives in [apps/ios](apps/ios/README.md); this handoff includes the earlier UI adoption, not automatic integration of the latest PR #86 or a new iOS device acceptance. Historical phase labels below describe authorization, not current test coverage. Current results and limitations are in the dated team handoff above.
 
 | Phase | Status |
 | --- | --- |

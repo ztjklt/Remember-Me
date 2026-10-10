@@ -1,0 +1,38 @@
+[
+  {
+    "scene": "lake",
+    "width": 941,
+    "height": 1672,
+    "bytes": 2079179,
+    "sha256": "ff3c209efeef8aa402d0c2d3aa5c02e5ab1b8c53fd77cb782e622e6c69d85924",
+    "files": [
+      "docs/mobile-ui/nature/lake-v8.png",
+      "apps/android/app/src/main/res/drawable-nodpi/rm_lake_v8.png",
+      "apps/ios/RememberMe/Assets.xcassets/RmLake.imageset/lake-v8.png"
+    ]
+  },
+  {
+    "scene": "forest",
+    "width": 941,
+    "height": 1672,
+    "bytes": 2678613,
+    "sha256": "3750d087268590e165c7fe2c4b8a03aa9a9d3e0177235a199c92b5725daf2c34",
+    "files": [
+      "docs/mobile-ui/nature/forest-v8.png",
+      "apps/android/app/src/main/res/drawable-nodpi/rm_forest_v8.png",
+      "apps/ios/RememberMe/Assets.xcassets/RmForest.imageset/forest-v8.png"
+    ]
+  },
+  {
+    "scene": "coast",
+    "width": 941,
+    "height": 1672,
+    "bytes": 2047155,
+    "sha256": "d89151b7661a3ff982fc5dd8bffba9409542b317f932f02062661918de2554f6",
+    "files": [
+      "docs/mobile-ui/nature/coast-v8.png",
+      "apps/android/app/src/main/res/drawable-nodpi/rm_coast_v8.png",
+      "apps/ios/RememberMe/Assets.xcassets/RmCoast.imageset/coast-v8.png"
+    ]
+  }
+]

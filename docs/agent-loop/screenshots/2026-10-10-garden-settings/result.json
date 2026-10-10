@@ -1,0 +1,16 @@
+{
+  "version": "0.8.0-internal",
+  "exact_internal_apk": true,
+  "ecs_ip_https": true,
+  "flower_petal_evidence_playback": true,
+  "appearance_restart": true,
+  "cache_preserved_original": true,
+  "ordinary_owner_reader": true,
+  "revoke_removed_flower": true,
+  "expired_session_login": true,
+  "emulator": true,
+  "physical_phone": false,
+  "ios": false,
+  "synthetic_import": true,
+  "local_microphone_test_uploaded": false
+}
