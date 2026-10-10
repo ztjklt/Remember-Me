@@ -1,8 +1,8 @@
 # Remember Me Android
 
-2026-10-07 默认入口已改为连接共享后端的原生 Compose 工作台，沿用 #85 的植物品牌和自然背景。输入后端身份凭据后，服务端返回本人／授权读者空间。录音原音保存在本机，上传以 `ANDROID_MIC` 标记来源，实际转写必须核对后才能整理。故事、来源原音、搜索、问答、故事授权／撤销、新录音修订、问题请求和人物候选均通过同一后端读取与操作。
+2026-10-10：默认入口是原生 Compose 工作台，沿用 #85 的植物品牌和自然背景。普通账号登录后进入本人／授权读者空间，不需要填写 actor_id。原音保存在本机，上传以 `ANDROID_MIC` 标记来源，经 ECS Paraformer 转写后必须核对才能整理。故事、八个内容侧面、四个人物视图、候选审核、来源播放、问答、邀请、修订与问题请求通过共享后端处理。查看[团队运行说明](../../docs/agent-loop/TEAM_RUNBOOK_2026-10-10.md)与[19 张实跑截图](../../docs/agent-loop/screenshots/2026-10-10/README.md)。
 
-后端地址默认 `http://127.0.0.1:8877`；手机和模拟器均先执行 `adb reverse tcp:8877 tcp:8877`，连接 `run_workbench.py` 启动的共享后端。该工作台仅允许本机 Host，不能直接改用 `10.0.2.2`。身份凭据只在本次会话中保留。上传和云端文字处理需明确确认；每日提醒默认关闭，本人可主动开启不含私人内容、不访问后端的通用本机通知，退出或切换身份／空间取消。供应商凭证只配置在 Backend，不能放入 Android APK。完整路径、API、测试与未验证项见 [原生集成记录](../../docs/agent-loop/ANDROID_INTEGRATION.md)。原有本地原型和本机 ASR 代码保留，其权重仍需另行提供。
+`internal` 包直接连接 `https://39.108.183.47`，保留该 IP 的证书验证；不需要电脑 ASR 或 ADB reverse。网络仍限现有白名单，注册关闭。`debug` 默认 `http://127.0.0.1:8877`，仅本机开发时才需要 ADB reverse；连接 ECS 时按下面命令显式传入 URL。上传和云端模型处理需明确确认，每日提醒默认关闭。供应商密钥只在服务端。原有本地原型和本机 ASR 代码保留，当前共享后端主线不依赖手机 ASR 权重。
 
 ## 运行
 
@@ -11,7 +11,7 @@
 命令行：
 
 ```bash
-./gradlew testDebugUnitTest assembleDebug
+./gradlew testDebugUnitTest assembleDebug -PrememberServiceUrl=https://39.108.183.47
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n me.remember.app/.MainActivity
 ```
@@ -22,7 +22,7 @@ Capture requests `RECORD_AUDIO` at runtime after explaining that microphone audi
 
 ## 产品评审路径
 
-身份登录 → 选择本人空间 →「记述」本机录音 → 明确确认上传 →「故事」核对转写并同意文字整理 → 阅读真实记忆 →「提问」搜索／云端问答与来源原音 →「管理」授权、修订、请求与人物候选。服务失败保留原音和已核对文字，显示实际错误并提供重试。真机录音、原音播放与真实云端闭环尚未在本轮验证，不由 APK 构建通过推断。
+普通账号登录 →「今天」本机录音/试听 → 同意上传 →「档案」核对转写、同意整理、看故事/记忆/人物依据 →「对话」提问与来源原音 →「我的」邀请、批准、修订与补问。模拟器新录音、真实 ECS 处理和亲友操作已有分步截图；输入为注入模拟麦克风的虚构合成语音。真机、全部恢复行为及 iOS 仍需独立验证，不由构建成功推断。
 
 ## 工程结构
 

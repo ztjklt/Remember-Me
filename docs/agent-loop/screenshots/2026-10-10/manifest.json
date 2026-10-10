@@ -1,0 +1,138 @@
+{
+  "kind": "actual Android emulator screenshots; fictional speech; sequential account switching",
+  "images": [
+    {
+      "sequence": 1,
+      "file": "01-login.png",
+      "capture_file": "01-login.png",
+      "sha256": "995c192c0698291537f809fc46a9e41845616c1f898733595e26a71a8bbf0f26",
+      "bytes": 1838191
+    },
+    {
+      "sequence": 2,
+      "file": "02-recording.png",
+      "capture_file": "03-recording.png",
+      "sha256": "b1c191d8c0bd83e7d7f0e572acf8a6f68c3ace24832fb31d792a1ddffb2a87a0",
+      "bytes": 1499456
+    },
+    {
+      "sequence": 3,
+      "file": "03-paused.png",
+      "capture_file": "04-paused.png",
+      "sha256": "4468580971bc483c9b608c94725b31325a05c180f624d2d56a1c76b8ded3b0d4",
+      "bytes": 1505388
+    },
+    {
+      "sequence": 4,
+      "file": "04-local-playback.png",
+      "capture_file": "06-local-playback.png",
+      "sha256": "ca271fd9fab1a1e53cdf60730f3635e6003b827001421f573e23cbef5384e500",
+      "bytes": 1398754
+    },
+    {
+      "sequence": 5,
+      "file": "05-transcript-review.png",
+      "capture_file": "08-transcript-review.png",
+      "sha256": "ed27f5cdf0c4844ecdfb9ca08318ab236843e0233358c520fcb4f72b27c739c9",
+      "bytes": 546931
+    },
+    {
+      "sequence": 6,
+      "file": "06-story-detail.png",
+      "capture_file": "11-story-detail.png",
+      "sha256": "fcd8aa7a341bb5e33e80410a6a66f94f4ae80bcdafe99fbd7b23a8e49b6517ca",
+      "bytes": 567081
+    },
+    {
+      "sequence": 7,
+      "file": "07-cloud-playback.png",
+      "capture_file": "12-cloud-playback.png",
+      "sha256": "3a485280b9959430e6ca856d8d513124ebe655c9e0d1ddd213313a5ce323c2d1",
+      "bytes": 1377456
+    },
+    {
+      "sequence": 8,
+      "file": "08-answer.png",
+      "capture_file": "14-answer.png",
+      "sha256": "899da824a2c05bca5319be7bc2c682ece5954e5e08b7e4769a2764ed52b00fab",
+      "bytes": 1508557
+    },
+    {
+      "sequence": 9,
+      "file": "09-answer-source.png",
+      "capture_file": "15-answer-source.png",
+      "sha256": "6c0d3307c9ca7de56af60a93db5ac8d4fbc38da5b104f7943cb712d587bf07f4",
+      "bytes": 1360172
+    },
+    {
+      "sequence": 10,
+      "file": "10-eight-facets-top.png",
+      "capture_file": "17-eight-facets-top.png",
+      "sha256": "519dcb7f6df56a63b25fee12d4b45479ae2781c16249226f7f916a7b31e119a8",
+      "bytes": 1657821
+    },
+    {
+      "sequence": 11,
+      "file": "11-four-views.png",
+      "capture_file": "18-four-views.png",
+      "sha256": "0d4ad6c9abf5a651d73614de5e79fb0c7d4579ecdf1772217463036a26b06b67",
+      "bytes": 1378084
+    },
+    {
+      "sequence": 12,
+      "file": "12-understanding-evidence.png",
+      "capture_file": "21-understanding-evidence.png",
+      "sha256": "16ee889875d29fdf60b1493a8d097e212fe325432d219ea32d9d71e7e97a4126",
+      "bytes": 2298042
+    },
+    {
+      "sequence": 13,
+      "file": "13-share-preview.png",
+      "capture_file": "22-share-preview.png",
+      "sha256": "a3381113fb7390c5dff2f0bc692bc39a3bbe86baa9af335a0343ab977d00df00",
+      "bytes": 1866950
+    },
+    {
+      "sequence": 14,
+      "file": "14-owner-confirmation.png",
+      "capture_file": "25-owner-confirmation.png",
+      "sha256": "a30cda5bc370993a93b5b6c605f4c828bdb7b991bc09f9d2e572427324ac4481",
+      "bytes": 1021798
+    },
+    {
+      "sequence": 15,
+      "file": "15-reader-stories.png",
+      "capture_file": "26-reader-stories.png",
+      "sha256": "6f80a57769e9c42e9e691f9a8411e6d1c4d8cb5defcee29b269424a3d74307d4",
+      "bytes": 1071216
+    },
+    {
+      "sequence": 16,
+      "file": "16-reader-playing.png",
+      "capture_file": "28-reader-playing.png",
+      "sha256": "6005dafc100c9ed4d9c123f782dee4fab344d0b4226f6ca28a405db504e7b3fd",
+      "bytes": 1009444
+    },
+    {
+      "sequence": 17,
+      "file": "17-reader-unknown.png",
+      "capture_file": "29-reader-unknown.png",
+      "sha256": "f51ea336599706de43706ccf487a8d9b5cf9033ea764334ac9cfb1ceb015cae6",
+      "bytes": 1614664
+    },
+    {
+      "sequence": 18,
+      "file": "18-reader-request.png",
+      "capture_file": "30-reader-request.png",
+      "sha256": "44f8b743dbaa24d6fb58ebe1e326ceb3d14696bcea81f007c38dd733fff907dd",
+      "bytes": 1122168
+    },
+    {
+      "sequence": 19,
+      "file": "19-owner-request.png",
+      "capture_file": "31-owner-request.png",
+      "sha256": "1b2ee16a8102b4ab4dbeddcee065f8d4f7ecc379f500bad571b4a110182cb523",
+      "bytes": 1699826
+    }
+  ]
+}
