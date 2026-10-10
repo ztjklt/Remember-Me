@@ -23,6 +23,7 @@ data class NativeState(
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
     val serviceInfo: ServiceInfo = ServiceInfo(),
+    val connectionCheck: ConnectionCheck = ConnectionCheck(),
     val invitations: List<JSONObject> = emptyList(), val recipients: List<JSONObject> = emptyList(),
     val sharePreview: JSONObject? = null, val shareSelection: ShareSelection? = null,
     val issuedInvitation: JSONObject? = null,
@@ -86,10 +87,11 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     fun loadServiceInfo(server: String) {
         serviceInfoJob?.cancel()
         serviceInfoJob = viewModelScope.launch {
-            state.value = state.value.copy(serviceInfo = ServiceInfo())
+            state.value = state.value.copy(serviceInfo = ServiceInfo(), connectionCheck = ConnectionCheck(ConnectionPhase.CHECKING, "正在检查服务连接…"))
             val result = runCatching { withContext(Dispatchers.IO) { serviceInfoRequest(server) } }
             ensureActive()
-            result.onSuccess { state.value = state.value.copy(serviceInfo = it) }
+            result.onSuccess { state.value = state.value.copy(serviceInfo = it, connectionCheck = connectedService(it)) }
+                .onFailure { state.value = state.value.copy(connectionCheck = failedConnection(it)) }
         }
     }
     fun clearSharePreview() { state.value = state.value.copy(sharePreview = null, shareSelection = null) }

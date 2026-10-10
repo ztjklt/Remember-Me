@@ -13,8 +13,8 @@ fun cloudProcessingAllowed(row: JSONObject): Boolean = when(val value = row.opt(
     else -> false
 }
 
-data class ServiceInfo(val registrationAllowed: Boolean = false, val invitations: Boolean = false, val release: String = "") {
-    companion object { fun parse(data: JSONObject) = ServiceInfo(data.optBoolean("registration_allowed", false), data.optBoolean("sharing_invitations", false), data.text("release_id")) }
+data class ServiceInfo(val registrationAllowed: Boolean = false, val invitations: Boolean = false, val release: String = "", val apiVersion: String = "") {
+    companion object { fun parse(data: JSONObject) = ServiceInfo(data.optBoolean("registration_allowed", false), data.optBoolean("sharing_invitations", false), data.text("release_id"), data.text("api_version")) }
 }
 
 data class ShareSelection(val episodeIds: List<String> = emptyList(), val storyIds: List<String> = emptyList()) {

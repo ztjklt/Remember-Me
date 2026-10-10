@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.7.1 内测下载：** [下载与双角色操作说明](docs/agent-loop/ANDROID_TEAM_DELIVERY_2026-10-10.md)。2026-10-10 经所有者批准，App HTTPS 可从不同网络访问；注册仍关闭，使用管理员私下提供的普通账号。模型密钥只在 ECS。实体手机和本次 iOS 仍待验收。
+
 > **2026-10-10 团队交接入口：** [当前流程、采用范围与四人分工建议](docs/agent-loop/TEAM_HANDOFF_2026-10-10.md) · [19 张顺序截图](docs/agent-loop/screenshots/2026-10-10/README.md) · [构建/运行说明](docs/agent-loop/TEAM_RUNBOOK_2026-10-10.md) · [本次复验结果](docs/agent-loop/HANDOFF_VALIDATION_2026-10-10.md)。Android 模拟器可直接连接 ECS，完成原生录音、Paraformer 转写、文字核对、DeepSeek 整理、记忆/人物候选、来源问答、邀请与亲友补问。模型质量仍有已知问题；真机与本次 iOS 未验收。
 
 > **历史材料说明：** 10 月 8 日三人 30 段合成语料使用过 Groq 等路线，见[原始结果与边界](docs/agent-loop/GROQ_LIVE_RESULTS_2026-10-08.md)。这些不能冒称已全部重新跑过 Paraformer。旧启动说明用于解释历史，新队友以本次运行说明为准。

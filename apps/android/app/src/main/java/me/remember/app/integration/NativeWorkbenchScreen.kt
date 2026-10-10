@@ -69,6 +69,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
                     var connection by remember { mutableStateOf(false) }
                     Text("进入自己的空间", style = MaterialTheme.typography.headlineMedium)
                     Text("留住想记得的故事，也决定与谁分享。")
+                    if(state.connectionCheck.message.isNotBlank()) Text(state.connectionCheck.message, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { model.loadServiceInfo(server) }, enabled = !state.busy && state.connectionCheck.phase != ConnectionPhase.CHECKING) { Text("检查连接") }
                     OutlinedTextField(username, { username = it }, label = { Text("账号") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     OutlinedTextField(password, { password = it }, label = { Text("密码（至少10个字符）") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation())
                     if(registering) OutlinedTextField(name, { name = it }, label = { Text("怎么称呼你") }, modifier = Modifier.fillMaxWidth(), singleLine = true)

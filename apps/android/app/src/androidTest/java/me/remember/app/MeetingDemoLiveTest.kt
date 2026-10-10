@@ -142,7 +142,9 @@ class MeetingDemoLiveTest {
             return
         }
         if(phase=="record"){
-            InstrumentationRegistry.getInstrumentation().uiAutomation.grantRuntimePermission(ui.activity.packageName,Manifest.permission.RECORD_AUDIO)
+            if(ui.activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                InstrumentationRegistry.getInstrumentation().uiAutomation.grantRuntimePermission(ui.activity.packageName,Manifest.permission.RECORD_AUDIO)
+            }
             check("我同意本次麦克风录音");click("开始录音");idle()
             assertTrue(model.ui.value.recording)
             shot("03-recording")
