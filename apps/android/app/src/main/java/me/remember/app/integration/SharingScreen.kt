@@ -73,7 +73,7 @@ import org.json.JSONObject
             if(scope.isEmpty()) Text("旧邀请缺少范围记录，请取消后重新预览。") else Text(scopeLabel)
             val person = invitation.optJSONObject("recipient")
             if(person != null) Text("接收账号：${person.text("username")}（${person.text("display_name")}）")
-            Text(if(invitation.optBoolean("cloud_processing_allowed")) "包含完整原音、文字与云端问答" else "仅浏览和聆听，不允许云端问答")
+            Text(if(cloudProcessingAllowed(invitation)) "包含完整原音、文字与云端问答" else "仅浏览和聆听，不允许云端问答")
             val path = "/invitations/${segment(invitation.text("id"))}"
             if(invitation.text("status") == "claimed") {
                 Button(onClick = { confirm("接收账号：${person?.text("username")}（${person?.text("display_name")}）\n开放下列完整录音和文字：\n$scopeLabel\n确认这是你要分享的亲友与范围？") { model.mutation("$path/approve", "POST") } }, enabled = enabled && scope.isNotEmpty()) { Text("确认账号并批准") }

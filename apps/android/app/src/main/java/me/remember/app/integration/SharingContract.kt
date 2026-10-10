@@ -2,8 +2,16 @@ package me.remember.app.integration
 
 import org.json.JSONArray
 import org.json.JSONObject
+
 import java.net.HttpURLConnection
 import java.net.URI
+
+/** The shared service has legacy numeric booleans in grant rows. */
+fun cloudProcessingAllowed(row: JSONObject): Boolean = when(val value = row.opt("cloud_processing_allowed")) {
+    is Boolean -> value
+    is Number -> value.toDouble() == 1.0
+    else -> false
+}
 
 data class ServiceInfo(val registrationAllowed: Boolean = false, val invitations: Boolean = false, val release: String = "") {
     companion object { fun parse(data: JSONObject) = ServiceInfo(data.optBoolean("registration_allowed", false), data.optBoolean("sharing_invitations", false), data.text("release_id")) }

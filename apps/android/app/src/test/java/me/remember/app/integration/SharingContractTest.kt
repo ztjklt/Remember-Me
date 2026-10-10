@@ -5,6 +5,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SharingContractTest {
+    @Test fun grantCloudPermissionUnderstandsLegacyIntegerWithoutTruthiness() {
+        assertTrue(cloudProcessingAllowed(JSONObject().put("cloud_processing_allowed",1)))
+        assertTrue(cloudProcessingAllowed(JSONObject().put("cloud_processing_allowed",true)))
+        for(value in listOf<Any>(0,false,2,-1,"1","yes",JSONObject.NULL)) {
+            assertFalse(cloudProcessingAllowed(JSONObject().put("cloud_processing_allowed",value)))
+        }
+        assertFalse(cloudProcessingAllowed(JSONObject()))
+    }
     @Test fun legacyServerWithoutCapabilityEndpointKeepsCoreLoginAndClosedFeatures() {
         val info = loadServiceInfo { throw BackendHttpException(404, "Not Found") }
         assertFalse(info.registrationAllowed)

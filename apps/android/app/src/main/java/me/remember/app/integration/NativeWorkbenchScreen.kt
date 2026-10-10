@@ -211,6 +211,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
         NativeDialog("请听原音并核对文字", model::closeReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Text("请修正识别错误，保留原意。确认之后才开始记忆整理。")
+            Text("留意姓名、‘不/没’、‘可能/还没决定’以及谁在说谁；补充的新信息请写到下方补充框。", style = MaterialTheme.typography.bodySmall)
+            state.reviewWarnings.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
+            if(state.reviewParagraphPreview != null) {
+                Text("可以采用识别服务的分段，仅调整换行，仍需听音核对。", style = MaterialTheme.typography.bodySmall)
+                Action("采用分段排版", state.reviewText == state.reviewInitialText) { model.useParagraphPreview() }
+            }
             Action("播放原音", ready) { model.playSource(id) }
             if(state.player.episode == id) {
                 Text("${clock(state.player.position)} / ${clock(state.player.duration)}")
@@ -319,6 +325,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
 }
 
 @Composable private fun AskTab(state: NativeState, model: NativeWorkbenchModel) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var question by remember(state.actor, state.subject) { mutableStateOf("") }
     var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
     Text("从原话寻找答案", style = MaterialTheme.typography.headlineMedium)
@@ -326,7 +334,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel) {
     Action("搜索已有记忆", !state.busy && question.isNotBlank()) { model.search(question) }
     Text("搜索会访问后端已有记忆，不触发云端回答。", style = MaterialTheme.typography.bodySmall)
     Check("同意本次将问题和有权访问的核对文字发送给云端文字模型。", cloud, { cloud = it })
-    Action("提问", !state.busy && question.isNotBlank() && cloud) { model.ask(question, cloud) }
+    Action("提问", !state.busy && question.isNotBlank() && cloud) {
+        focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud)
+    }
     state.search.forEach { item -> Panel {
         Text(item.text("statement"))
         item.rows("evidence").forEach { evidence -> Evidence(evidence, state, model) }

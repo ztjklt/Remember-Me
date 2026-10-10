@@ -1,6 +1,8 @@
 package me.remember.app.integration
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,32 +37,57 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
 @Composable fun NarrativeScreen(state: NativeState, model: NativeWorkbenchModel, openSource: (String) -> Unit) {
     val data = state.narrative
     if(!data.has("views")) { Text("当前服务尚未提供故事组织，请更新服务后使用。"); return }
-    var selectedView by remember(state.subject) { mutableIntStateOf(0) }
-    var query by remember(state.subject) { mutableStateOf("") }
-    var editor by remember(state.subject) { mutableStateOf<JSONObject?>(null) }
-    var history by remember(state.subject) { mutableStateOf<JSONObject?>(null) }
+    var selectedView by remember(state.actor,state.subject) { mutableIntStateOf(0) }
+    var selectedFacet by remember(state.actor,state.subject) { mutableStateOf("") }
+    var query by remember(state.actor,state.subject) { mutableStateOf("") }
+    var editor by remember(state.actor,state.subject) { mutableStateOf<JSONObject?>(null) }
+    var history by remember(state.actor,state.subject) { mutableStateOf<JSONObject?>(null) }
     var relatedId by remember(state.actor,state.subject) { mutableStateOf<String?>(null) }
-    var feelingsOnly by remember(state.subject) { mutableStateOf(false) }
-    var auditQueue by remember(state.subject) { mutableStateOf(false) }
+    var auditQueue by remember(state.actor,state.subject) { mutableStateOf(false) }
     val ready = !state.busy && !state.recording
     Text("慢慢认识一个人", style = MaterialTheme.typography.headlineMedium)
     Text("沿着故事，听见经历，也看见变化。", style = MaterialTheme.typography.bodyLarge)
+    val records = data.rows("records")
+    Text("记忆的八个侧面", style = MaterialTheme.typography.titleLarge)
+    Text("同一段故事可以从不同侧面理解。条目数量不代表了解程度。",style=MaterialTheme.typography.bodyMedium)
+    data.rows("facets").chunked(2).forEach { pair ->
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+            pair.forEach { facet ->
+                val id=facet.text("id")
+                val counts=memoryFacetCounts(records,id,state.owner)
+                Surface(onClick={
+                    selectedFacet=if(selectedFacet==id) "" else id
+                    selectedView=narrativeViewFacets.indexOfFirst { id in it }.coerceAtLeast(0)
+                },modifier=Modifier.weight(1f),shape=RoundedCornerShape(20.dp),
+                    border=BorderStroke(1.dp,if(selectedFacet==id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                    color=if(selectedFacet==id) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer) {
+                    Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text(facet.text("title"),style=MaterialTheme.typography.titleMedium)
+                        Text("${counts.first} 项已核对",style=MaterialTheme.typography.bodyMedium)
+                        if(state.owner && counts.second>0) Text("${counts.second} 项待核对",style=MaterialTheme.typography.bodySmall)
+                        if(counts.first==0 && counts.second==0) Text("暂未留下相关材料",style=MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+            if(pair.size==1) Spacer(Modifier.weight(1f))
+        }
+    }
+    Text("从四个视角了解",style=MaterialTheme.typography.titleLarge)
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), maxItemsInEachRow = 2) {
-        data.rows("views").forEachIndexed { index, view -> FilterChip(selectedView == index, { selectedView = index; auditQueue = false }, label = { Text(view.text("title")) }, modifier = Modifier.fillMaxWidth(.47f)) }
+        data.rows("views").forEachIndexed { index, view -> FilterChip(selectedView == index, { selectedView = index; selectedFacet = "" }, label = { Text(view.text("title")) }, modifier = Modifier.fillMaxWidth(.47f)) }
     }
     OutlinedTextField(query, { query = it }, label = { Text("找故事、人名或一件旧物") }, modifier = Modifier.fillMaxWidth())
-    if(selectedView==0) FilterChip(feelingsOnly,{feelingsOnly=!feelingsOnly},label={Text("本人感受回看")})
-    val records = data.rows("records")
+    if(selectedView==0) FilterChip(selectedFacet=="FEELINGS",{selectedFacet=if(selectedFacet=="FEELINGS") "" else "FEELINGS"},label={Text("本人感受回看")})
     if(state.owner) {
         val availableEpisodes=data.rows("source_evidence").map{it.text("episode_id")}.distinct()
-        var episodes by remember(state.subject) { mutableStateOf(availableEpisodes.take(2).toSet()) }
-        var choosing by remember(state.subject) { mutableStateOf(false) }
-        var toolsExpanded by remember(state.subject) { mutableStateOf(false) }
+        var episodes by remember(state.actor,state.subject) { mutableStateOf(availableEpisodes.take(2).toSet()) }
+        var choosing by remember(state.actor,state.subject) { mutableStateOf(false) }
+        var toolsExpanded by remember(state.actor,state.subject) { mutableStateOf(false) }
         val pending = records.count { it.text("status") == "pending" || it.text("status") == "stale" }
         TextButton(onClick = { auditQueue = !auditQueue }) { Text(if(auditQueue) "返回已核对内容" else "待核对 $pending 项") }
         TextButton(onClick={toolsExpanded=!toolsExpanded}){Text(if(toolsExpanded) "收起整理工具" else "整理故事 / 留下寄语")}
         if(toolsExpanded) {
-        var consent by remember(state.subject) { mutableStateOf(false) }
+        var consent by remember(state.actor,state.subject) { mutableStateOf(false) }
         Row { Checkbox(consent, { consent = it }, enabled = ready); Text("将已核对的有效文字交由云端组织故事；不会自动确认或分享。", Modifier.weight(1f)) }
         TextButton(onClick={choosing=!choosing}) { Text("本次对照 ${episodes.size} 段录音 · 建议先选一到两段") }
         if(choosing) state.stories.filter{it.text("episode_id") in availableEpisodes}.forEach { story -> Row {
@@ -72,24 +99,28 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
         state.narrativeJobs.take(2).forEach { Text(when(it.text("status")) { "queued" -> "整理已排队"; "running" -> "正在整理，原音已经保留"; "complete" -> "整理完成，请核对建议"; else -> "整理未完成：${it.text("error")}" }, style = MaterialTheme.typography.bodySmall) }
         }
     }
-    val currentView = data.rows("views").getOrNull(selectedView)
-    val visibleIds = currentView?.let { strings(it,"records").toSet() } ?: emptySet()
-    val shown = records.filter { row -> (if(auditQueue) row.text("status") in setOf("pending","stale") else row.text("id") in visibleIds) && (selectedView!=0 || !feelingsOnly || "FEELINGS" in strings(row,"facets")) && (query.isBlank() || (row.text("title")+row.text("text")+row.text("place_text")+row.text("aliases")).contains(query)) }
+    Text(listOf("沿时间与情境重温经历，不替空白日期补故事。","从明确称呼和共同经历认识身边的人。","看看具体情境下的偏好、理由、愿望与例外。","找到说过的话和表达范例；整理文字不等于本人原话。")[selectedView],style=MaterialTheme.typography.bodyMedium)
+    Text(if(auditQueue) "正在查看待核对建议，尚未成为已确认的人物理解。" else "正在查看本人已核对且来源有效的内容。",style=MaterialTheme.typography.labelLarge)
+    if(selectedFacet.isNotBlank()) TextButton(onClick={selectedFacet=""}){Text("清除侧面筛选")}
+    val shown = selectNarrativeRecords(records,state.owner,auditQueue,selectedView,selectedFacet,query)
     if(shown.isEmpty()) Text(if(auditQueue) "暂时没有需要核对的建议。" else "这里尚无已核对的材料。原有录音与记忆仍可在档案中查看。")
     shown.forEach { row -> key(row.text("id")) {
         var expanded by remember { mutableStateOf(false) }
         Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(kinds[row.text("kind")].orEmpty()+" · "+statusName(row.text("status")), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(row.text("title"), style = MaterialTheme.typography.titleLarge)
+            Text(strings(row,"facets").mapNotNull{f->data.rows("facets").firstOrNull{it.text("id")==f}?.text("title")}.joinToString(" · "),style=MaterialTheme.typography.bodySmall)
+            if(row.text("kind")=="person" && strings(row,"aliases").isNotEmpty()) Text("材料中的称呼："+strings(row,"aliases").joinToString("、"))
             Text(row.text("text"), style = MaterialTheme.typography.bodyLarge)
+            Text("依据 ${row.rows("evidence").map{it.text("episode_id")}.distinct().size} 份材料 · 可逐条核对",style=MaterialTheme.typography.bodySmall)
             if(row.text("time_text").isNotBlank()) Text("发生时间：${row.text("time_text")}")
             if(row.text("place_text").isNotBlank()) Text("当时地点：${row.text("place_text")}")
             if(row.text("recipient_label").isNotBlank()) Text("想留给：${row.text("recipient_label")} · 仍按录音授权")
-            TextButton(onClick = { expanded = !expanded }) { Text(if(expanded) "收起依据" else "为什么这样整理 · 听原声") }
+            TextButton(onClick = { expanded = !expanded }) { Text(if(expanded) "收起依据" else "为什么这样整理 · 查看来源") }
             if(expanded) row.rows("evidence").forEach { source ->
                 Text("“${source.text("excerpt")}”", style = MaterialTheme.typography.bodyLarge)
                 Text(if(source.text("source_type") == "CALIBRATION") "本人书面补充 / 修订" else "核对文字 · 不代表音频逐字对齐", style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { openSource(source.text("episode_id")) }, enabled = ready) { Text("打开来源与完整原音") }
+                TextButton(onClick = { openSource(source.text("episode_id")) }, enabled = ready) { Text(if(source.text("source_type")=="CALIBRATION") "查看书面来源" else "打开来源与完整原音") }
             }
             val linked = relatedNarrativeStories(row,records)
             if(linked.isNotEmpty()) {
@@ -110,7 +141,7 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
     } }
-    if(selectedView == 2) data.rows("understandings").forEach { item ->
+    if(selectedView == 2 && selectedFacet.isBlank()) data.rows("understandings").filter { if(auditQueue) state.owner && it.text("status") in setOf("pending","stale","conflicted") else it.text("status")=="confirmed" }.forEach { item ->
         var show by remember(item.text("candidate_id")) { mutableStateOf(false) }
         Text(item.text("statement"), style = MaterialTheme.typography.titleMedium)
         Text("适用情境：${item.text("context")}")

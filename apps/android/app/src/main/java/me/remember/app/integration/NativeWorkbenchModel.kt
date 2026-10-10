@@ -31,6 +31,7 @@ data class NativeState(
     val vocabulary: String = "", val reviewSupplement: String = "",
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
+    val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback(), val dailyReminder: Boolean = false
 ) {
@@ -372,10 +373,18 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         operation(s) {
             val result = io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review") }
             check(result.text("state") == "reviewing") { "转写尚未完成或已经提交，请刷新后查看。" }
-            state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"))
+            val warnings = result.optJSONArray("review_warnings") ?: JSONArray()
+            state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"),
+                reviewInitialText = result.text("transcript"), reviewWarnings = (0 until warnings.length()).map { warnings.optString(it) },
+                reviewParagraphPreview = result.optString("paragraph_preview").takeIf { it.isNotBlank() && it != "null" })
         }
     }
-    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "") }
+    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null) }
+    fun useParagraphPreview() {
+        val current = state.value
+        if(current.reviewEpisode != null && current.reviewText == current.reviewInitialText && current.reviewParagraphPreview != null)
+            state.value = current.copy(reviewText = current.reviewParagraphPreview)
+    }
     fun editSupplement(text: String) { if(text.length <= 3000) state.value = state.value.copy(reviewSupplement = text) }
     fun saveVocabulary(text: String) { mutation("/vocabulary", "PUT", JSONObject().put("text", text)) }
     fun editReview(episode: String, text: String) {
@@ -405,7 +414,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     private fun cloudConsent(s: BackendSession): String {
         if(state.value.owner) return client.consent(s, state.value.subject, "CLOUD_TWIN")
-        return state.value.grants.firstOrNull { it.optBoolean("cloud_processing_allowed") }?.text("grant_id")
+        return state.value.grants.firstOrNull { cloudProcessingAllowed(it) }?.text("grant_id")
             ?: throw IllegalStateException("记录者尚未允许共享故事参与云端问答。")
     }
     fun ask(question: String, cloudConfirmed: Boolean) {
