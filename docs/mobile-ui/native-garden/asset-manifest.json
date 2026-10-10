@@ -1,0 +1,44 @@
+[
+  {
+    "bytes": 1982383,
+    "source": "assets/brand/forget-me-not/v19/forget-me-not-macro.png",
+    "sha256": "4eb9e3b8c00afb37b45bd70ce10d667e41ceffeb3ddd69fa8dce8530f1d3bc4f",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_flower_front.png"
+  },
+  {
+    "bytes": 1537590,
+    "source": "assets/brand/forget-me-not/v20/bloom-side.png",
+    "sha256": "4c2d226b0f066d64adbfc3c961edf686cee97a3ea817469efa288b9ec4a40381",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_flower_side.png"
+  },
+  {
+    "bytes": 1521654,
+    "source": "assets/brand/forget-me-not/v21/stem.png",
+    "sha256": "ba3ab261c1a9e716e5e120a68a78e7460282112e29818975b8e0fa7d1be6ccea",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_stem.png"
+  },
+  {
+    "bytes": 2164554,
+    "source": "docs/mobile-ui/nature/garden-v20/pond.png",
+    "sha256": "09467c7fbdd353d5d1d065f29954777912b672edbe9ae4add8cde84d1fb3c9d9",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_pond.png"
+  },
+  {
+    "bytes": 2201253,
+    "source": "docs/mobile-ui/nature/garden-v20/path.png",
+    "sha256": "e298866526cc67f6fadc6c661fdb45fa0c7f4eda8c196ce3f8ac98947c9e16f8",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_path.png"
+  },
+  {
+    "bytes": 2360052,
+    "source": "docs/mobile-ui/nature/garden-v20/woodland.png",
+    "sha256": "98002ec46ce64ea9d36ac473aa145f5d5e2c4dad7e14bc11ba213fbd6f51e471",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_woodland.png"
+  },
+  {
+    "bytes": 2184763,
+    "source": "docs/mobile-ui/nature/garden-v21/night.png",
+    "sha256": "4967d510562b6458f30396c64842f8bbc413b77d69808fb22a55e0edcbaf67e5",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_night.png"
+  }
+]

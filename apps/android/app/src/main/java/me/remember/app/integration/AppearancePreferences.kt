@@ -8,7 +8,7 @@ import me.remember.app.core.designsystem.NatureScene
 enum class ThemeChoice(val title: String) { SYSTEM("跟随系统"), LIGHT("浅色"), DARK("深色") }
 enum class SceneChoice(val title: String, val scene: NatureScene?) {
     AUTO("按页面自然场景", null), MEADOW("草地", NatureScene.Meadow), LAKE("湖畔", NatureScene.Lake),
-    FOREST("林间", NatureScene.Forest), COAST("海边", NatureScene.Coast)
+    FOREST("林间", NatureScene.Forest), COAST("海边", NatureScene.Coast), NIGHT("月下", NatureScene.Night)
 }
 data class AppearanceChoice(val theme: ThemeChoice = ThemeChoice.SYSTEM, val scene: SceneChoice = SceneChoice.AUTO,
     val reduceMotion: Boolean = false)

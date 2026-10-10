@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -41,6 +42,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var token by remember { mutableStateOf("") }
     var tab by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
     var archiveMode by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(1) }
+    var gardenStoryOpen by remember(state.actor, state.subject) { mutableStateOf(false) }
     val pages = rememberSaveableStateHolder()
     val identity = "${state.actor}:${state.subject}"
     var previousIdentity by remember { mutableStateOf<String?>(null) }
@@ -52,22 +54,28 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var detail by remember(state.actor, state.subject) { mutableStateOf<String?>(null) }
     var revision by remember(state.actor, state.subject) { mutableStateOf<RevisionTarget?>(null) }
     var confirm by remember(state.actor, state.subject) { mutableStateOf<Pair<String, () -> Unit>?>(null) }
-    val scene = appearance.scene.scene ?: when(tab) { 1 -> NatureScene.Forest; 2 -> NatureScene.Lake; 3 -> NatureScene.Coast; else -> NatureScene.Meadow }
+    val gardenVisible = state.actor.isNotBlank() && tab == 1 && archiveMode == 1 && !state.recording
+    val scene = appearance.scene.scene ?: if(gardenVisible) NatureScene.Meadow else when(tab) { 1 -> NatureScene.Forest; 2 -> NatureScene.Lake; 3 -> NatureScene.Coast; else -> NatureScene.Meadow }
+    val backdrop = if(gardenVisible) Modifier.reviewedGardenAtmosphere(scene) else Modifier.atmosphere(scene = scene)
     val ready = !state.busy && !state.recording
     val scrollPositions = List(4) { rememberScrollState() }
-    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
-        if(state.actor.isNotBlank() && !state.recording) NavigationBar(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
+    Scaffold(modifier = backdrop, containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
+        if(state.actor.isNotBlank() && !state.recording) NavigationBar(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), containerColor = if(gardenVisible) gardenGlass.copy(alpha = .94f) else MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
             listOf("今天", "档案", "对话", "我的").forEachIndexed { index, title ->
                 NavigationBarItem(selected = tab == index, onClick = { tab = index }, icon = {
                     Icon(listOf(Icons.Outlined.WbSunny, Icons.Outlined.FolderOpen, Icons.Outlined.ChatBubbleOutline, Icons.Outlined.PersonOutline)[index], title)
-                }, label = { Text(title) })
+                }, label = { Text(title) }, colors = if(gardenVisible) NavigationBarItemDefaults.colors(
+                    selectedIconColor = gardenInk, selectedTextColor = gardenInk,
+                    unselectedIconColor = gardenMuted, unselectedTextColor = gardenMuted,
+                    indicatorColor = gardenMuted.copy(alpha = .17f)) else NavigationBarItemDefaults.colors())
             }
         }
     }) { inset ->
-        Column(Modifier.fillMaxSize().atmosphere(scene = scene).padding(inset).padding(horizontal = 16.dp)) {
-            Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                RememberMeBrand(size = 42.dp)
-                Column { Text("勿忘我", style = MaterialTheme.typography.titleLarge); Text("让经历留下，让变化被理解", style = MaterialTheme.typography.bodySmall) }
+        Column(Modifier.fillMaxSize().padding(inset).padding(horizontal = 16.dp)) {
+            Row(Modifier.fillMaxWidth().padding(vertical = if(gardenVisible) 8.dp else 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                RememberMeBrand(size = if(gardenVisible) 28.dp else 42.dp, darkBackground = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f)
+                Column { Text("勿忘我", style = MaterialTheme.typography.titleLarge, color = if(gardenVisible) gardenInk else MaterialTheme.colorScheme.onBackground)
+                    if(!gardenVisible) Text("让经历留下，让变化被理解", style = MaterialTheme.typography.bodySmall) }
             }
             if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
@@ -108,8 +116,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 }
                 if(tab == 0) Text(if(state.owner) "${state.actorName}，慢慢说。" else "听听${state.space?.text("display_name").orEmpty()}留下的故事。", style = MaterialTheme.typography.headlineMedium)
                 var spacesExpanded by remember(state.actor) { mutableStateOf(false) }
-                Box {
-                    OutlinedButton(onClick = { spacesExpanded = true }, enabled = ready) {
+                if(!gardenVisible || !gardenStoryOpen) Box {
+                    OutlinedButton(onClick = { spacesExpanded = true }, enabled = ready, colors = if(gardenVisible)
+                        ButtonDefaults.outlinedButtonColors(containerColor = gardenGlass.copy(alpha = .7f), contentColor = gardenInk) else ButtonDefaults.outlinedButtonColors()) {
                         Text(state.space?.let { "${it.text("display_name")} · ${if(state.owner) "记录者" else "授权读者"}" } ?: "暂无授权空间")
                     }
                     DropdownMenu(spacesExpanded, { spacesExpanded = false }) {
@@ -117,7 +126,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                             onClick = { spacesExpanded = false; model.selectSpace(space) }) }
                     }
                 }
-                if(state.notice.isNotBlank()) Text(state.notice, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 8.dp))
+                if(state.notice.isNotBlank()) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = if(gardenVisible) gardenMuted else MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
                 if(state.player.episode.isNotBlank()) Panel {
                     Text("来源完整原音 · 不提供未经验证的片段时间", style = MaterialTheme.typography.bodySmall)
                     Text("${clock(state.player.position)} / ${clock(state.player.duration)}")
@@ -151,13 +160,13 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                             }
                             1 -> pages.SaveableStateProvider("archive:$identity") {
                                 if(archiveMode != 1) Text("每段记忆，都有来处。", style = MaterialTheme.typography.headlineMedium)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("录音", "记忆", "人物").forEachIndexed { index, title -> FilterChip(archiveMode == index, { archiveMode = index }, label = { Text(title) }) } }
-                                if(state.stories.isEmpty()) Text("暂无可见故事。")
+                                if(!gardenVisible || !gardenStoryOpen) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("录音", "记忆", "人物").forEachIndexed { index, title -> FilterChip(archiveMode == index, { archiveMode = index }, label = { Text(title) }, colors = if(gardenVisible) FilterChipDefaults.filterChipColors(containerColor = gardenGlass.copy(alpha = .55f), labelColor = gardenMuted, selectedContainerColor = gardenGlass.copy(alpha = .94f), selectedLabelColor = gardenInk) else FilterChipDefaults.filterChipColors()) } }
+                                if(state.stories.isEmpty()) Text("暂无可见故事。", color = if(gardenVisible) gardenMuted else MaterialTheme.colorScheme.onBackground)
                                 if(archiveMode == 0) state.stories.forEach { story -> StoryCard(story, state.owner, ready,
                                     { detail = story.text("episode_id") }, { model.review(story.text("episode_id")) }, { model.retry(story.text("episode_id"), story.optBoolean("can_reextract_empty")) }) }
-                                if(archiveMode == 1) MemoryGardenScreen(state, model, appearance.reduceMotion, scrollPositions[1],
+                                if(archiveMode == 1) MemoryGardenScreen(state, model, appearance, updateAppearance, scrollPositions[1],
                                     { detail = it }, { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } },
-                                    { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } })
+                                    { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } }, onStoryOpenChanged = { gardenStoryOpen = it })
                                 if(archiveMode == 2) NarrativeScreen(state, model) { detail = it }
                             }
                             2 -> AskTab(state, model)
