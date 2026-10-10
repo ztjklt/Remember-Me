@@ -30,7 +30,40 @@ targets:
         CFBundleDisplayName: Remember Me
         UIRequiresFullScreen: true
         NSMicrophoneUsageDescription: 录下你的原话，保存为你自己的记忆。
+        NSSpeechRecognitionUsageDescription: 在设备支持时，仅在这台 iPhone 上把已保存录音转成文字；不支持时保留原音，不使用云端识别。
         NSLocalNetworkUsageDescription: 连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。
         CFBundleURLTypes:
           - CFBundleURLName: rememberme-pairing
             CFBundleURLSchemes: [rememberme]
+  RememberMeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: RememberMeTests
+    dependencies:
+      - target: RememberMe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+  RememberMeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: RememberMeUITests
+    dependencies:
+      - target: RememberMe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: RememberMe
+schemes:
+  RememberMe:
+    build:
+      targets:
+        RememberMe: all
+    test:
+      targets:
+        - RememberMeTests
+        - RememberMeUITests

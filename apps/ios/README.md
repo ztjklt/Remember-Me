@@ -1,4 +1,10 @@
+> **2026-10-08 Android 原型复刻：** 五个入口改为 Portrait / Graphs / Memories / Agents / Me，复用队友 #81 的画像卡片与关系图布局。已有 iOS 录音、证据问答、五维校准和独立声音授权保留；可先保存本地录音，再连接服务。范围与本地验证见 [复刻记录](../../docs/verification/IOS_ANDROID_PARITY_2026_10_08.md)。
+
 # iOS 本机语音 → Person Model
+
+## 2026-10-10 当前项目测试版
+
+当前 `RememberMe.xcodeproj` 已补齐五个 Android 风格入口、多段本机录音档案、离线回放、设备支持时的本机中文转写与独立核对文字保存。原有 Mac 服务、Memory、Twin、校准和个人声音流程保留。具体差异、14 项自动测试结果及真机检查步骤见 [本次验证记录](../../docs/verification/IOS_ANDROID_PARITY_SYNC_2026_10_10.md)。
 
 ## Twin 与个人声音
 

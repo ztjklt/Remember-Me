@@ -35,6 +35,8 @@
 	<string>连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>录下你的原话，保存为你自己的记忆。</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>在设备支持时，仅在这台 iPhone 上把已保存录音转成文字；不支持时保留原音，不使用云端识别。</string>
 	<key>UIRequiresFullScreen</key>
 	<true/>
 </dict>
