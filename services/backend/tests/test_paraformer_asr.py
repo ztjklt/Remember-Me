@@ -113,6 +113,35 @@ def test_bailian_resolved_file_url_still_matches_exact_uploaded_object(tmp_path,
     assert wired(tmp_path,monkeypatch,Remote('resolved')).transcribe(b'ORIGINAL','audio/mp4').text=='我沒有去過北京。'
 
 
+@pytest.mark.parametrize('code_location', ['task', 'subtask'])
+def test_no_valid_speech_explains_upload_and_does_not_resubmit(tmp_path, monkeypatch, code_location):
+    remote = Remote()
+    def handle(req):
+        if req.url.path.endswith('/tasks/task-1'):
+            remote.requests.append(req)
+            output = {'task_id': 'task-1', 'task_status': 'FAILED'}
+            detail = {'code': 'SUCCESS_WITH_NO_VALID_FRAGMENT',
+                      'message': 'untrusted detail Signature=private unit-secret'}
+            if code_location == 'task':
+                output.update(detail)
+            else:
+                output['results'] = [{'subtask_status': 'FAILED', **detail}]
+            return httpx.Response(200, json={'output': output})
+        return remote(req)
+    provider = wired(tmp_path, monkeypatch, handle)
+    for _ in range(2):
+        with pytest.raises(SttFailed) as caught:
+            provider.transcribe(b'ORIGINAL', 'audio/mp4')
+        assert '音频已上传' in str(caught.value)
+        assert '未检测到有效语音' in str(caught.value)
+        assert '原音保留' in str(caught.value)
+        assert not caught.value.retryable
+    assert sum(r.url.path.endswith('/transcription') for r in remote.requests) == 1
+    audit = (tmp_path / 'calls.jsonl').read_text()
+    assert 'SUCCESS_WITH_NO_VALID_FRAGMENT' in audit
+    assert 'Signature=private' not in audit and 'unit-secret' not in audit
+
+
 def test_resolved_file_url_cannot_substitute_another_audio(tmp_path,monkeypatch):
     with pytest.raises(SttFailed): wired(tmp_path,monkeypatch,Remote('wrong_file')).transcribe(b'ORIGINAL','audio/mp4')
 

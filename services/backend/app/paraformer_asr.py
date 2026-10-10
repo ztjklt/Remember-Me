@@ -178,6 +178,17 @@ class ParaformerSttProvider:
                         raise SttFailed('百炼返回的任务编号不一致。')
                     if status == 'SUCCEEDED': break
                     if status not in {'PENDING', 'RUNNING'}:
+                        no_speech_code = 'SUCCESS_WITH_NO_VALID_FRAGMENT'
+                        results = output.get('results', [])
+                        if (output.get('code') == no_speech_code or
+                                isinstance(results, list) and any(
+                                    isinstance(item, dict) and item.get('code') == no_speech_code
+                                    for item in results)):
+                            # Keep only a known code, never upstream messages or signed URLs.
+                            record['provider_error_code'] = no_speech_code
+                            raise SttFailed('音频已上传并保存在服务器；百炼未检测到有效语音，原音保留。'
+                                            '请先试听原音；若能清楚听见讲话，请联系管理员核查。'
+                                            '不要反复上传同一段录音。')
                         raise SttFailed('百炼转写任务未成功，原音保留。')
                     if time.monotonic() >= deadline:
                         raise SttTimeout('百炼任务仍在处理，将从原任务检查点重试。')
