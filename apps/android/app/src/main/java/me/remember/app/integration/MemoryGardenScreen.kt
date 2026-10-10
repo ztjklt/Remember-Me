@@ -80,7 +80,6 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                     FilterChip(!listMode, { listMode = false }, label = { Text("花田") }, leadingIcon = { Icon(Icons.Outlined.LocalFlorist, null) }, colors = chips)
                     FilterChip(listMode, { listMode = true }, label = { Text("列表") }, leadingIcon = { Icon(Icons.Outlined.ViewList, null) }, colors = chips)
                     TextButton(onClick = { searchOpen = !searchOpen }) { Text(if(searchOpen) "收起查找" else "查找", color = gardenInk) }
-                    TextButton(onClick = openPeople) { Text("了解这个人", color = gardenInk) }
                 }
                 if(searchOpen || query.isNotBlank()) OutlinedTextField(query, { query = it }, label = { Text("找故事、人物或一句话") },
                     leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
@@ -88,16 +87,6 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                         unfocusedContainerColor = gardenGlass.copy(alpha = .65f), focusedTextColor = gardenInk,
                         unfocusedTextColor = gardenInk, focusedLabelColor = gardenMuted, unfocusedLabelColor = gardenMuted,
                         focusedBorderColor = gardenMuted, unfocusedBorderColor = gardenMuted.copy(alpha = .45f)))
-                if(state.narrative.rows("facets").isNotEmpty()) {
-                    var filters by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
-                    TextButton(onClick = { filters = !filters }) { Text(if(filters) "收起内容侧面" else "按记忆侧面筛选", color = gardenMuted, fontSize = 12.sp) }
-                    if(filters) {
-                        state.narrative.rows("facets").chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            pair.forEach { f -> FilterChip(facet == f.text("id"), { facet = if(facet == f.text("id")) "" else f.text("id") }, label = { Text(f.text("title")) }) }
-                        } }
-                        if(facet.isNotBlank()) Text("尚未归组的记录没有侧面标签，可以清除筛选后查看。", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
                 val visible = clusters.filter { (facet.isBlank() || facet in it.facets) && (query.isBlank() ||
                     (it.title + " " + it.petals.joinToString(" ") { p -> p.content }).contains(query, true)) }
                 if(visible.isEmpty()) {
@@ -117,6 +106,17 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                     else row.forEachIndexed { index, c -> ReviewedGardenFlower(c, Modifier.weight(1f).padding(top = if(index == 1) 30.dp else 0.dp), side = index == 1,
                         returnIntoView = returnTo == c.id, onReturned = { returnTo = null }) { choose(c.id) } }
                 } }
+                TextButton(onClick = openPeople) { Text("了解故事里的人", color = gardenInk) }
+                if(state.narrative.rows("facets").isNotEmpty()) {
+                    var filters by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
+                    TextButton(onClick = { filters = !filters }) { Text(if(filters) "收起内容侧面" else "按记忆侧面筛选", color = gardenMuted, fontSize = 12.sp) }
+                    if(filters) {
+                        state.narrative.rows("facets").chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            pair.forEach { f -> FilterChip(facet == f.text("id"), { facet = if(facet == f.text("id")) "" else f.text("id") }, label = { Text(f.text("title")) }) }
+                        } }
+                        if(facet.isNotBlank()) Text("尚未归组的记录没有侧面标签，可以清除筛选后查看。", color = gardenMuted, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
                 if(state.owner) {
                     val pending = state.stories.count { it.text("status") != "ready" || it.optBoolean("waiting_for_review") }
                     TextButton(onClick = openPending) { Text("待处理录音 $pending 段 · 查看核对与失败原因", color = gardenMuted, fontSize = 12.sp) }

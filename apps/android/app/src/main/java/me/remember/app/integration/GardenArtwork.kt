@@ -65,7 +65,7 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
     val stem = ImageBitmap.imageResource(R.drawable.rm_garden_stem)
     val naturalColor = remember { ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(.76f) }) }
     Canvas(modifier) {
-        val width = if(flowerOnly) min(size.width, size.height) * .98f else if(large) size.width * .97f else min(size.width * .97f, size.height * .67f)
+        val width = if(flowerOnly) min(size.width, size.height) * .98f else if(large) size.width * .97f else min(size.width * .97f, size.height * .80f)
         val center = Offset(size.width / 2, if(flowerOnly) size.height / 2 else width / 2 + 4.dp.toPx())
         if(!flowerOnly) {
             val from = center + if(side) Offset(width * .283f, width * .425f) else Offset(-width * .16f, width * .23f)
@@ -97,7 +97,7 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
         if(returnIntoView) { delay(250); caption.bringIntoView(); onReturned() }
     }
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.fillMaxWidth().height(255.dp).clickable(role = Role.Button, onClick = select)
+        Box(Modifier.fillMaxWidth().height(185.dp).clickable(role = Role.Button, onClick = select)
             .semantics { contentDescription = "打开故事：${cluster.title}" }, contentAlignment = Alignment.Center) {
             ReviewedGardenPlant(Modifier.fillMaxSize(), side)
         }
