@@ -73,6 +73,22 @@ def source_basis(session, subject_id, *, include_profiles=True):
 
     Caller uses a short snapshot/publication transaction. No provider calls here.
     """
+    return _source_basis(session, subject_id, include_profiles=include_profiles,
+                         include_authorization=True)
+
+
+def profile_source_basis(session, subject_id):
+    """Persistent validity of owner-reviewed material, independent of grants.
+
+    This is NOT an authorization or publication check. Each operation still
+    checks access; model workers compare the full source_basis before publish.
+    Old mixed material/permission hashes deliberately remain stale for review.
+    """
+    return _source_basis(session, subject_id, include_profiles=False,
+                         include_authorization=False)
+
+
+def _source_basis(session, subject_id, *, include_profiles, include_authorization):
     import hashlib
     import json
     from .models import MemoryItem, Evidence, PersonTrait, GraphFact, ModelRevision, MemoryRevision, ProfileCandidate
@@ -83,10 +99,13 @@ def source_basis(session, subject_id, *, include_profiles=True):
         select(Evidence).join(Episode).where(Episode.subject_id == subject_id),
         select(PersonTrait).where(PersonTrait.subject_id == subject_id),
         select(GraphFact).where(GraphFact.subject_id == subject_id),
-        select(ModelRevision).where(ModelRevision.subject_id == subject_id),
-        select(Consent).where(Consent.subject_id == subject_id),
-        select(StoryGrant).join(Episode).where(Episode.subject_id == subject_id),
-        select(MemoryRevision).where(MemoryRevision.subject_id == subject_id)]
+        select(ModelRevision).where(ModelRevision.subject_id == subject_id)]
+    if include_authorization:
+        queries.extend([select(Consent).where(Consent.subject_id == subject_id),
+            select(StoryGrant).join(Episode).where(Episode.subject_id == subject_id)])
+    else:
+        parts.append('profile-material-v2')
+    queries.append(select(MemoryRevision).where(MemoryRevision.subject_id == subject_id))
     if include_profiles:
         queries.append(select(ProfileCandidate).where(ProfileCandidate.subject_id == subject_id))
         from .models import NarrativeRecord, NarrativePreference

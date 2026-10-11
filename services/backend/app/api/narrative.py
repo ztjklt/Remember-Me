@@ -7,7 +7,7 @@ from pydantic import Field
 from sqlalchemy import select
 from ..db import get_session
 from ..security import current_actor
-from ..access import require_owner, publication_lock, source_basis, is_owner, Hidden
+from ..access import require_owner, publication_lock, profile_source_basis, is_owner, Hidden
 from ..errors import RequestInvalid
 from ..retrieval import invalidate_answers
 from ..models import (NarrativeRecord,NarrativeHistory,NarrativePreference,NarrativeQuestionDecision,
@@ -148,7 +148,7 @@ def overview(subject_id:str,actor=Depends(current_actor),session=Depends(get_ses
     rows=visible_records(session,subject_id,actor.actor_id,sources=sources)
     active=[r for r in rows if r['status']=='confirmed']
     from ..profiles import approved_traits,candidate_view
-    basis=source_basis(session,subject_id,include_profiles=False)
+    basis=profile_source_basis(session,subject_id)
     understanding=[]
     # Reader sees reviewed story observations, never the owner's private profile cache.
     candidates=session.scalars(select(ProfileCandidate).where(ProfileCandidate.subject_id==subject_id)) if owner else []

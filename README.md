@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.9.2：** [安装与双角色体验](docs/agent-loop/ANDROID_092_QUICK_START.md) · [人物理解、真实问答与 ECS 修复](docs/agent-loop/PROFILE_VALIDITY_FIX_2026-10-11.md) · [模拟器验收与截图](docs/agent-loop/PROFILE_ANDROID_ACCEPTANCE_2026-10-11.md)。修复新增问答同意导致人物理解失效，以及 Android 15 页面重建白边；ECS 已更新，数据库与权限范围不变。
+
 > **Android 0.9.1：** [下载安装与两种身份使用说明](docs/agent-loop/ANDROID_091_QUICK_START.md) · [藤蔓花径、固定视角与横向故事阅读](docs/mobile-ui/GARDEN_NAVIGATION_2026-10-11.md) · [实跑截图](docs/agent-loop/screenshots/garden-navigation-20261011/README.md) · [Agent 实现及尚未解决的问题](docs/agent-loop/AGENT_CAPABILITIES_2026-10-11.md)。移除双指缩放，修复多空间默认选错；同签名覆盖升级，本轮未更换 ECS 程序。
 
 > **Android 0.9.0：** [下载安装、陈守义十段样例与两人使用说明](docs/agent-loop/ANDROID_090_QUICK_START.md) · [连续花田、人物内容及验收边界](docs/agent-loop/IMMERSIVE_GARDEN_ACCEPTANCE_2026-10-11.md) · [本轮模拟器截图](docs/agent-loop/screenshots/immersive-garden-20261011/README.md)。同签名覆盖升级；新材料已进入ECS，本轮未更换服务端代码。

@@ -6,7 +6,7 @@ from typing import Literal
 from sqlalchemy import select
 from ..db import get_session
 from ..security import current_actor
-from ..access import require_owner, require_cloud, source_basis, publication_lock, Hidden
+from ..access import require_owner, require_cloud, source_basis, profile_source_basis, publication_lock, Hidden
 from ..models import ProfileCandidate, ProfileRefresh, ProfileUpdate, Evidence, utcnow
 from ..profiles import candidate_view
 from ..retrieval import invalidate_answers
@@ -67,7 +67,7 @@ def updates(subject_id:str,actor=Depends(current_actor),session=Depends(get_sess
 @router.post('/updates',status_code=201)
 def propose_update(subject_id:str,body:UpdateInput,actor=Depends(current_actor),session=Depends(get_session)):
     publication_lock(session,subject_id);require_owner(session,subject_id,actor.actor_id)
-    basis=source_basis(session,subject_id,include_profiles=False)
+    basis=profile_source_basis(session,subject_id)
     update_inputs(session,subject_id,actor.actor_id,body.candidate_id,body.target_candidate_id,basis)
     # Material resolution can create stable source IDs; capture after its flush.
     full_basis=source_basis(session,subject_id)
@@ -91,7 +91,7 @@ def decide_update(subject_id,update_id,status,request,actor,session):
     if status=='confirmed':
         if row.base_source_version!=source_basis(session,subject_id):
             raise ProfileChanged('资料、权限或人物理解已变化，请重新核对更新。')
-        basis=source_basis(session,subject_id,include_profiles=False)
+        basis=profile_source_basis(session,subject_id)
         candidate,target=update_inputs(session,subject_id,actor.actor_id,row.candidate_id,row.target_candidate_id,basis)
         apply_update(session,row,candidate,target,basis,actor.actor_id)
         invalidate_answers(session,request.app.state.object_store,subject_id)
@@ -111,7 +111,7 @@ def reject_update(subject_id:str,update_id:str,request:Request,actor=Depends(cur
 @router.get('')
 def candidates(subject_id:str, actor=Depends(current_actor),session=Depends(get_session)):
     require_owner(session,subject_id,actor.actor_id)
-    basis=source_basis(session,subject_id,include_profiles=False)
+    basis=profile_source_basis(session,subject_id)
     rows=session.scalars(select(ProfileCandidate).where(ProfileCandidate.subject_id==subject_id).order_by(ProfileCandidate.created_at.desc()))
     jobs=list(session.scalars(select(ProfileRefresh).where(ProfileRefresh.subject_id==subject_id).order_by(ProfileRefresh.created_at.desc()).limit(5)))
     items=[]
@@ -151,7 +151,7 @@ def decide(subject_id,candidate_id,status,request,actor,session):
     if row is None or row.subject_id!=subject_id: raise Hidden('人物候选不存在。')
     if row.status in {'superseded','conflicted','applied'}:
         raise ProfileChanged('这条理解属于更新历史，不能直接恢复；请重新归纳和确认。')
-    if row.source_basis!=source_basis(session,subject_id,include_profiles=False):
+    if row.source_basis!=profile_source_basis(session,subject_id):
         raise SourceChanged('依据已变化，请重新归纳；旧候选未被确认。')
     if status=='confirmed':
         if row.status=='rejected': raise ProfileChanged('已拒绝的候选需重新归纳。')
@@ -159,7 +159,7 @@ def decide(subject_id,candidate_id,status,request,actor,session):
     row.status=status
     invalidate_answers(session,request.app.state.object_store,subject_id)
     session.commit()
-    return candidate_view(row,source_basis(session,subject_id,include_profiles=False))
+    return candidate_view(row,profile_source_basis(session,subject_id))
 
 @router.post('/{candidate_id}/confirm')
 def confirm(subject_id:str,candidate_id:str,request:Request,actor=Depends(current_actor),session=Depends(get_session)):

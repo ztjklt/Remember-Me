@@ -83,7 +83,14 @@ class ImmersiveGardenLiveTest {
         ui.onNodeWithContentDescription("停止播放").performClick()
         click("列表");shot("06b-list")
         click("查找");ui.onNodeWithText("找故事、人物或一句话").performTextInput("王建国")
-        click("查找相关内容");idle();assertTrue(model.ui.value.search.isNotEmpty());shot("06c-search")
+        // Periodic permission refresh briefly changes this button's caption.
+        // Keep its identity stable across that refresh, without bypassing it.
+        val searchAction=(hasText("查找相关内容") or hasText("查找中…")) and hasClickAction()
+        ui.onNode(searchAction).performScrollTo()
+        ui.waitUntil(30_000){ui.onAllNodes(searchAction and isEnabled()).fetchSemanticsNodes().isNotEmpty()}
+        ui.onNode(searchAction).performClick()
+        ui.waitUntil(30_000){model.ui.value.searchQuery=="王建国" && !model.ui.value.busy}
+        idle();assertTrue(model.ui.value.search.isNotEmpty());shot("06c-search")
         ui.onNodeWithText("找故事、人物或一句话").performTextClearance()
         click("人物");shot("07-person")
         personViewTitles.forEachIndexed { i,title ->
@@ -99,6 +106,22 @@ class ImmersiveGardenLiveTest {
                 ui.onNodeWithTag("person-story-pager").performTouchInput { swipeUp() }
                 ui.onNodeWithTag("person-views").assertIsDisplayed();shot("08-view-$i-next")
             }
+        }
+        if(model.ui.value.owner) {
+            // Live confirmed understanding from the backend, not a fixture card.
+            val understanding=model.ui.value.narrative.rows("understandings")
+                .first{it.text("status")=="confirmed" && it.text("statement").contains("喝茶")}
+            click("在意选择")
+            val total=ui.onNodeWithTag("person-page-index").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text]
+                .joinToString(""){it.text}.split(" / ").last().toInt()
+            for(page in 0 until total) {
+                if(ui.onAllNodesWithText(understanding.text("statement")).fetchSemanticsNodes().isNotEmpty() &&
+                    ui.onAllNodesWithText(understanding.text("statement")).onFirst().isDisplayed()) break
+                ui.onNodeWithContentDescription("下一段").performClick();ui.waitForIdle()
+            }
+            ui.onNodeWithText(understanding.text("statement")).assertIsDisplayed()
+            shot("08b-confirmed-understanding")
+            click("支持、例外与依据");shot("08c-understanding-evidence")
         }
         click("记忆侧面");shot("09-sides")
         val findContent=ui.onNodeWithContentDescription("查找内容")

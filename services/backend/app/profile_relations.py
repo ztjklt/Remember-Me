@@ -2,7 +2,7 @@
 import re
 from uuid import uuid4
 from sqlalchemy import select
-from .access import publication_lock, require_owner, require_cloud, source_basis, visible_episodes
+from .access import publication_lock, require_owner, require_cloud, source_basis, profile_source_basis, visible_episodes
 from .materials import effective_materials
 from .models import ProfileCandidate, ProfileRefresh, ProfileUpdate, utcnow
 from .profile_updates import valid_snapshot
@@ -15,7 +15,7 @@ def run_relations_job(database,client,job_id,subject,actor,consent):
         sources={e['evidence_id']:e for c in effective_materials(session,subject,
             visible_episodes(session,subject,actor,cloud=True)) for e in c['evidence']
             if e['source_type'] in {'SUBJECT','CALIBRATION'}}
-        basis=source_basis(session,subject,include_profiles=False)
+        basis=profile_source_basis(session,subject)
         rows=list(session.scalars(select(ProfileCandidate).where(ProfileCandidate.subject_id==subject,
             ProfileCandidate.status.in_(['pending','confirmed'])).order_by(ProfileCandidate.created_at)))
         candidates=[];targets=[]

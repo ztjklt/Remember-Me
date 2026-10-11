@@ -1,0 +1,340 @@
+{
+  "version": "0.9.2-internal",
+  "version_code": 20261016,
+  "baseline": "302ff4e90479318e11c345ee3e9a20e298b8cf6f",
+  "source_commit": "See demo-android-0.9.2-20261011 tag and release provenance.json",
+  "apk_sha256": "ceb40714e156ce84ec207a0888ff5bec71e5386356f1edab177c0c3f583b7396",
+  "apk_bytes": 163301982,
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "source_files_fingerprint": "8d1e8dda455af04d819edeb41622e43413d20c863bbfefff69232dcf09fed611",
+  "unit_tests": {
+    "tests": 79,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "owner100": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 77.921
+    },
+    "reader100": {
+      "real_ecs": true,
+      "episodes": 8,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 47.661
+    },
+    "owner200": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 2,
+      "physical_phone": false,
+      "elapsed_seconds": 62.046
+    }
+  },
+  "system_bar_recreation": {
+    "1.0": {
+      "elapsed_seconds": 14.811,
+      "recreations": 3,
+      "snapshots": [
+        {
+          "name": "before",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-1",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-2",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-3",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        }
+      ]
+    },
+    "2.0": {
+      "elapsed_seconds": 14.771,
+      "recreations": 3,
+      "snapshots": [
+        {
+          "name": "before",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-1",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-2",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        },
+        {
+          "name": "after-3",
+          "compose_y": 0,
+          "compose_height": 2400,
+          "window_height": 2400
+        }
+      ]
+    }
+  },
+  "screenshots": [
+    {
+      "file": "01-owner100-01-today.png",
+      "title": "记录者首页与右上角空间",
+      "case": "owner100",
+      "sha256": "58b8fe114b7d7ff028a8fa498522a08bbca9368fafd54732acde349905298c48"
+    },
+    {
+      "file": "02-owner100-03-garden.png",
+      "title": "真实故事的藤蔓花径",
+      "case": "owner100",
+      "sha256": "ba56d7a4b43f05c34c7697d6cc4babc51e5ec9361e9280470c33ac83df04ae31"
+    },
+    {
+      "file": "03-owner100-04-flower.png",
+      "title": "花朵与记忆花瓣",
+      "case": "owner100",
+      "sha256": "9ce72dc4e510d11d3b8dcc9f839a82b0ca9704ecbbeb4d2e8ab499951d59f74f"
+    },
+    {
+      "file": "04-owner100-05-memory-source.png",
+      "title": "记忆与来源",
+      "case": "owner100",
+      "sha256": "974e87ea5f81acaae41f5773ee75944ea0b730b64b65705e931dc1aa8d37e711"
+    },
+    {
+      "file": "05-owner100-06-playback.png",
+      "title": "完整原音实际播放后暂停",
+      "case": "owner100",
+      "sha256": "1574f59b860690ab256c327e6d27aa485a979d52dec3f63e7c7d310b34647b03"
+    },
+    {
+      "file": "06-owner100-08b-confirmed-understanding.png",
+      "title": "当前有效的喝茶口味理解",
+      "case": "owner100",
+      "sha256": "814d13250eba818e87ecc17f487a0f46520be12bbd25aea4bc0f386b57f341f0"
+    },
+    {
+      "file": "07-owner100-08c-understanding-evidence.png",
+      "title": "展开适用情境与原文依据",
+      "case": "owner100",
+      "sha256": "18872106d3948a3632a425d6098a9f4ec79da23651e167ca8e11332f70b73ecf"
+    },
+    {
+      "file": "08-owner100-09-sides.png",
+      "title": "八个侧面的内容入口",
+      "case": "owner100",
+      "sha256": "94218589273a88ef266d3af72be3a8a64ad88e47c1810ef00b39ff2610f29108"
+    },
+    {
+      "file": "09-reader100-03-garden.png",
+      "title": "亲友访问获授权花田",
+      "case": "reader100",
+      "sha256": "006462dc3cd34022d38c09bf955fb7d6d075a0797c72d5a2f69d104d17c86c17"
+    },
+    {
+      "file": "10-reader100-11-reader-restored-garden.png",
+      "title": "重建客户端模型后恢复花田",
+      "case": "reader100",
+      "sha256": "649df9d50b870cac43a40563cc08f4d780d98d6a515a24517102fc450192d534"
+    },
+    {
+      "file": "11-owner200-08b-confirmed-understanding.png",
+      "title": "200%字号下的人物理解",
+      "case": "owner200",
+      "sha256": "df2dcbb9ef8d02c931e3fb711fe07e00a16b52b703117dfc7a7b6ce47f730e0c"
+    },
+    {
+      "file": "12-bars100-after-3.png",
+      "title": "100%字号连续重建三次后的花田",
+      "case": "bars100",
+      "sha256": "e05682b59edf571a1c74f2339275db0d2b8987d5fe397fb04aab36b3f9597a3e"
+    },
+    {
+      "file": "13-bars200-after-3.png",
+      "title": "200%字号连续重建三次后的花田",
+      "case": "bars200",
+      "sha256": "7bef8598ac14f63db88c0c36198467fb4f2f60a87e35cb2e892e3ca19ff0419c"
+    }
+  ],
+  "backend_tests": {
+    "sqlite": {
+      "tests": 480,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 6
+    },
+    "sqlite-boundary": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres": {
+      "tests": 99,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres-boundary": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "test_count_note": "Backend groups overlap; tests includes skipped. Do not add counts together.",
+  "deployment": {
+    "previous": "/opt/remember-me/releases/garden-password8-c0e7a0f6",
+    "current": "/opt/remember-me/releases/paired-profile-material-20261011",
+    "patch_files": [
+      "services/backend/app/access.py",
+      "services/backend/app/api/narrative.py",
+      "services/backend/app/api/profiles.py",
+      "services/backend/app/profile_relations.py",
+      "services/backend/app/profiles.py"
+    ],
+    "backup": "/var/lib/remember-me/backups/paired-20261011T044227Z",
+    "services": [
+      "active",
+      "active",
+      "active",
+      "active"
+    ],
+    "ready": {
+      "status": "ready",
+      "components": {
+        "database": "ok",
+        "object_store": "ok"
+      }
+    },
+    "database_migration": "unchanged:0016_share_invitations",
+    "configuration_changed": false,
+    "cutover_utc": "2026-10-11T04:48:42Z"
+  },
+  "server_patch": [
+    {
+      "path": "services/backend/app/access.py",
+      "before_lf_sha256": "598551450c932bf252e9fa59f33f378a2d931acd007e05f77c6375fa5c999abe",
+      "after_lf_sha256": "81f1ce81e985f6f77cce16ff90a4e4d0d88ee60a9fbd32901275a8a112dc9ff6"
+    },
+    {
+      "path": "services/backend/app/profiles.py",
+      "before_lf_sha256": "673cb1e7df67822c9db1fd1df359494adadff4680e052b55774f07105584af5a",
+      "after_lf_sha256": "517b03825dadfcbb65b6899269408de031c9b6282c5504eca1494ddfda1eff61"
+    },
+    {
+      "path": "services/backend/app/api/profiles.py",
+      "before_lf_sha256": "9aaa35a1dc4d8a4b0cd4c2e193e2712c660f15448df21f0405c98531af664ef9",
+      "after_lf_sha256": "3b3f36c1ae58aee4ef50088f45d7c6dff1f503ef716e6aefe80d5df69b759a21"
+    },
+    {
+      "path": "services/backend/app/api/narrative.py",
+      "before_lf_sha256": "d31d9b8d29b910a849157e86b42a3b28f85e0fa1d36e7b3163564052cf2d262b",
+      "after_lf_sha256": "7925d77ba23d3f15ecfba10d459dfc49580cddc18e6ee8e43af39ee8ef3143ab"
+    },
+    {
+      "path": "services/backend/app/profile_relations.py",
+      "before_lf_sha256": "a6e0709dcba5cd2bac0fe871b9ad94cc9f69bcf4a0760c6241d75511c1d18dec",
+      "after_lf_sha256": "fcf9a253492fe764ffbe0cd0eef9291401730a057b4b902e079858bfcfc0b4db"
+    }
+  ],
+  "read_only_access_check": {
+    "checked_at": "2026-10-11T04:58:52.079812+00:00",
+    "roles": {
+      "owner": {
+        "spaces": [
+          {
+            "display_name": "陈守义 · 虚构人物",
+            "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+            "role": "owner"
+          }
+        ],
+        "visible_recordings": 10,
+        "confirmed_stories": 10,
+        "confirmed_understandings": 2,
+        "records_by_kind": {
+          "story": 10,
+          "person": 5,
+          "style": 2,
+          "observation": 7,
+          "letter": 1
+        }
+      },
+      "reader": {
+        "spaces": [
+          {
+            "display_name": "陈守义样例 · 亲友",
+            "subject_id": "subject_6570be9df82540c7b2beaaeefa3fd8e6",
+            "role": "owner"
+          },
+          {
+            "display_name": "陈守义 · 虚构人物",
+            "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+            "role": "reader"
+          }
+        ],
+        "visible_recordings": 8,
+        "confirmed_stories": 8,
+        "confirmed_understandings": 0,
+        "records_by_kind": {
+          "person": 4,
+          "story": 8,
+          "observation": 5,
+          "letter": 1,
+          "style": 1
+        }
+      }
+    },
+    "reader_private_profile_status": 404,
+    "reader_private_audio_status": 404,
+    "reader_private_narrative_excluded": true
+  },
+  "real_models": {
+    "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+    "model": "Deepseek-v4-flash",
+    "profile_prompt": "profile-proposals-evidence-v4",
+    "proposed": 3,
+    "technical_confirmed": 2,
+    "technical_rejected": 1,
+    "qa": {
+      "tea_preference": "ORIGINAL with exact evidence",
+      "old_cup": "UNKNOWN; answer quality issue remains"
+    },
+    "asr_tts_rerun": false
+  },
+  "profile_candidates": {
+    "current_valid_confirmed": 2,
+    "stale": 5,
+    "rejected": 2,
+    "permission_only_cycles_passed": 3
+  },
+  "physical_android": "pending",
+  "ios_build": "pending",
+  "full_manual_listening": "pending",
+  "prior_60_question_set": "not rerun"
+}

@@ -5,7 +5,7 @@ import json
 import re
 import httpx
 from sqlalchemy import select
-from .access import source_basis, publication_lock, require_owner, require_cloud, visible_episodes
+from .access import source_basis, profile_source_basis, publication_lock, require_owner, require_cloud, visible_episodes
 from .models import ProfileCandidate, ProfileRefresh, Episode, utcnow
 from .materials import effective_materials
 from .repositories.person_model import PERSON_DOMAINS
@@ -43,7 +43,7 @@ def candidate_view(row, basis):
 
 
 def approved_traits(session, subject_id):
-    basis = source_basis(session, subject_id, include_profiles=False)
+    basis = profile_source_basis(session, subject_id)
     return list(session.scalars(select(ProfileCandidate).where(ProfileCandidate.subject_id==subject_id,
         ProfileCandidate.status=='confirmed', ProfileCandidate.source_basis==basis)))
 
@@ -89,7 +89,8 @@ def run_profile_once(database, client):
             # even when the model cites different excerpts from the two copies.
             episode_texts = {eid: re.sub(r'[\W_]+','',session.get(Episode,eid).transcript or '').casefold()
                 for eid in {m['episode_id'] for m in materials.values()}}
-            basis = source_basis(session,subject,include_profiles=False)
+            basis = profile_source_basis(session,subject)
+            publication_basis = source_basis(session,subject)
             session.commit()
         result = client.propose([{k:v for k,v in m.items() if k!='source_type'} for m in materials.values()]) if materials else {
             'candidates':[], 'model_version':'no-evidence','prompt_version':'no-evidence'}
@@ -117,7 +118,7 @@ def run_profile_once(database, client):
         with database.session() as session:
             publication_lock(session,subject)
             require_owner(session,subject,actor); require_cloud(session,subject,actor,consent)
-            if basis != source_basis(session,subject,include_profiles=False):
+            if publication_basis != source_basis(session,subject):
                 raise ValueError('SOURCE_CHANGED：资料或授权已变化，请明确重试')
             for item,count in validated:
                 identity = hashlib.sha256(json.dumps([subject,basis,item],sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:40]

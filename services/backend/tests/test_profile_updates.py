@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from app.models import ProfileCandidate, Episode, MemoryItem
-from app.access import source_basis
+from app.access import profile_source_basis
 from app.materials import effective_materials
 from app.profiles import approved_traits
 from test_agent_workbench import setup_pair
@@ -15,7 +15,7 @@ def prepare(app, client, session):
     owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
     source = effective_materials(session, owner.subject_id, {ep})[0]['evidence'][0]
     session.commit()
-    basis = source_basis(session, owner.subject_id, include_profiles=False)
+    basis = profile_source_basis(session,owner.subject_id)
     for id in ['target','next','other']:
         session.add(ProfileCandidate(candidate_id=id,subject_id=owner.subject_id,domain='PREFERENCES',kind='habit',
             statement='原来的理解' if id=='target' else '新理解'+id, context='测试情境',evidence_ids=[source['evidence_id']],
@@ -91,7 +91,7 @@ def test_additional_recording_requires_explicit_target_revalidation(app,client,s
     # SUPPORT update may revalidate the target only if its saved sources survive.
     session.get(Episode,ep).transcript+='。新的无关材料';session.commit()
     effective_materials(session,owner.subject_id,{ep});session.commit()
-    row=session.get(ProfileCandidate,'next');row.source_basis=source_basis(session,owner.subject_id,include_profiles=False);session.commit()
+    row=session.get(ProfileCandidate,'next');row.source_basis=profile_source_basis(session,owner.subject_id);session.commit()
     assert not approved_traits(session,owner.subject_id)
     r=proposal(client,root,oh);assert r.status_code==201,r.text
     confirmed=client.post(root+'/updates/'+r.json()['update_id']+'/confirm',headers=oh)
