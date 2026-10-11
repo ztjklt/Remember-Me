@@ -1,5 +1,14 @@
 package me.remember.app.integration
 
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +46,7 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable fun NarrativeScreen(state: NativeState, model: NativeWorkbenchModel, openSource: (String) -> Unit) {
+@Composable fun NarrativeScreen(state: NativeState, model: NativeWorkbenchModel, modifier: Modifier = Modifier, openSource: (String) -> Unit) {
     val data = state.narrative
     if(!data.has("views")) { Text("当前服务尚未提供故事组织，请更新服务后使用。"); return }
     val records = data.rows("records")
@@ -51,76 +60,75 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
     var relatedId by remember(state.actor,state.subject) { mutableStateOf<String?>(null) }
     var auditQueue by remember(state.actor,state.subject) { mutableStateOf(false) }
     val ready = !state.busy && !state.recording
-    Text("了解这个人", style = MaterialTheme.typography.headlineMedium)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf("了解这个人", "记忆侧面").forEachIndexed { index, title ->
-            FilterChip(section == index, { section=index; selectedFacet=""; auditQueue=false }, label={Text(title)}, modifier=Modifier.weight(1f))
-        }
-    }
-    if(section == 0) {
-        personViewTitles.chunked(2).forEachIndexed { row, pair ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                pair.forEachIndexed { col,title -> val index=row*2+col
-                    FilterChip(selectedView==index, { selectedView=index; selectedFacet="" }, label={Text(title)}, modifier=Modifier.weight(1f))
-                }
-            }
-        }
-        if(selectedView==0) FilterChip(selectedFacet=="FEELINGS",{selectedFacet=if(selectedFacet=="FEELINGS") "" else "FEELINGS"},label={Text("感受回看")})
-    } else if(selectedFacet.isBlank()) {
-        memorySideTitles.forEach { (id,title) ->
-            val samples=selectNarrativeRecords(records,false,false,-1,id,query)
-            if(samples.isEmpty()) {
-                Row(Modifier.fillMaxWidth().padding(horizontal=16.dp,vertical=8.dp),horizontalArrangement=Arrangement.SpaceBetween) {
-                    Text(title,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("还没聊到",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-            Surface(onClick={if(samples.isNotEmpty()) selectedFacet=id}, shape=RoundedCornerShape(20.dp),
-                color=if(samples.isEmpty()) MaterialTheme.colorScheme.surface.copy(alpha=.4f) else MaterialTheme.colorScheme.surfaceContainer) {
-                Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Text(title,style=MaterialTheme.typography.titleMedium)
-                    Text(samples.firstOrNull()?.text("text") ?: "还没聊到",maxLines=2,overflow=TextOverflow.Ellipsis,
-                        color=MaterialTheme.colorScheme.onSurfaceVariant,style=MaterialTheme.typography.bodyMedium)
-                    if(samples.isNotEmpty()) Text("${samples.size} 段内容  ›",style=MaterialTheme.typography.labelMedium)
-                }
-            }
-            }
-        }
-    } else {
-        TextButton(onClick={selectedFacet=""}) { Text("‹ 全部记忆侧面") }
-        Text(memorySideTitles[selectedFacet].orEmpty(),style=MaterialTheme.typography.titleLarge)
-    }
     var finding by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
-    TextButton(onClick={finding=!finding}) { Text(if(finding) "收起查找" else "查找内容") }
-    if(finding) OutlinedTextField(query,{query=it},label={Text("人名、故事或一句话")},modifier=Modifier.fillMaxWidth())
-    if(state.owner) {
-        val availableEpisodes=data.rows("source_evidence").map{it.text("episode_id")}.distinct()
-        var episodes by remember(state.actor,state.subject) { mutableStateOf(availableEpisodes.take(2).toSet()) }
-        var choosing by remember(state.actor,state.subject) { mutableStateOf(false) }
-        var toolsExpanded by remember(state.actor,state.subject) { mutableStateOf(false) }
-        val pending = records.count { it.text("status") == "pending" || it.text("status") == "stale" }
-        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { auditQueue = !auditQueue }) { Text(if(auditQueue) "返回已核对内容" else "待核对 $pending 项") }
-            TextButton(onClick={toolsExpanded=!toolsExpanded}){Text(if(toolsExpanded) "收起工具" else "整理与寄语")}
+    var toolsOpen by remember(state.actor,state.subject) { mutableStateOf(false) }
+    val dark=MaterialTheme.colorScheme.background.luminance()<.5f
+    val ink=if(dark) Color(0xFFE9EDDE) else Color(0xFF29483B)
+    val paper=if(dark) Color(0xFF263C32) else Color(0xFFF5F3E8)
+    val accent=if(dark) Color(0xFFC6D9BB) else Color(0xFF365C48)
+    val chips=FilterChipDefaults.filterChipColors(containerColor=paper.copy(alpha=.88f),labelColor=ink,
+        selectedContainerColor=accent,selectedLabelColor=paper)
+    val largeText=LocalDensity.current.fontScale>=1.5f
+    Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().then(if(largeText) Modifier.horizontalScroll(rememberScrollState()) else Modifier).testTag("person-sections"),verticalAlignment=Alignment.CenterVertically) {
+            listOf("了解这个人", "记忆侧面").forEachIndexed { index,title ->
+                FilterChip(section==index,{section=index;selectedFacet="";auditQueue=false},label={Text(title,maxLines=1)},
+                    modifier=(if(largeText) Modifier else Modifier.weight(1f)).padding(end=6.dp),colors=chips)
+            }
+            IconButton(onClick={finding=!finding}) { Icon(Icons.Outlined.Search,"查找内容",tint=ink) }
+            if(state.owner) IconButton(onClick={toolsOpen=true}) { Icon(Icons.Outlined.Tune,"整理与核对",tint=ink) }
         }
-        if(toolsExpanded) {
-        var consent by remember(state.actor,state.subject) { mutableStateOf(false) }
-        Row { Checkbox(consent, { consent = it }, enabled = ready); Text("将已核对的有效文字交由云端组织故事；不会自动确认或分享。", Modifier.weight(1f)) }
-        TextButton(onClick={choosing=!choosing}) { Text("本次对照 ${episodes.size} 段录音 · 建议先选一到两段") }
-        if(choosing) state.stories.filter{it.text("episode_id") in availableEpisodes}.forEach { story -> Row {
-            Checkbox(story.text("episode_id") in episodes,{episodes=if(it)episodes+story.text("episode_id") else episodes-story.text("episode_id")})
-            Text(story.text("recorded_at")+" · "+story.text("transcript").take(40),Modifier.weight(1f))
-        } }
-        Button(onClick = { model.organizeNarrative(consent,episodes.toList()) }, enabled = ready && consent && episodes.isNotEmpty()) { Text("整理选定讲述") }
-        TextButton(onClick = { editor = JSONObject().put("kind","story").put("title","").put("text","").put("facets",JSONArray().put("EXPERIENCE")).put("evidence_ids",JSONArray()) }, enabled = ready) { Text("从原文组织一段故事 / 留下寄语") }
-        state.narrativeJobs.take(2).forEach { Text(when(it.text("status")) { "queued" -> "整理已排队"; "running" -> "正在整理，原音已经保留"; "complete" -> "整理完成，请核对建议"; else -> "整理未完成：${it.text("error")}" }, style = MaterialTheme.typography.bodySmall) }
+        if(section==0) {
+            if(largeText) Row(Modifier.horizontalScroll(rememberScrollState()).testTag("person-views"),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                personViewTitles.forEachIndexed { index,title -> FilterChip(selectedView==index,{selectedView=index;selectedFacet=""},label={Text(title)},colors=chips) }
+            } else {
+                Column(Modifier.testTag("person-views")) {
+                    personViewTitles.chunked(2).forEachIndexed { row,pair -> Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        pair.forEachIndexed { col,title -> val index=row*2+col
+                            FilterChip(selectedView==index,{selectedView=index;selectedFacet=""},label={Text(title)},modifier=Modifier.weight(1f),colors=chips)
+                        }
+                    } }
+                }
+            }
+        } else if(selectedFacet.isNotBlank()) Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            TextButton(onClick={selectedFacet=""}) { Text("‹ 全部侧面",color=accent) }
+            Text(memorySideTitles[selectedFacet].orEmpty(),style=MaterialTheme.typography.titleMedium,color=ink)
         }
-    }
-    if(auditQueue) Text("待核对",style=MaterialTheme.typography.labelLarge)
-    if(selectedFacet.isNotBlank()) TextButton(onClick={selectedFacet=""}){Text("清除侧面筛选")}
-    val shown = if(section==1 && selectedFacet.isBlank() && query.isBlank() && !auditQueue) emptyList() else selectNarrativeRecords(records,state.owner,auditQueue,if(section==1) -1 else selectedView,selectedFacet,query)
-    if(shown.isEmpty() && (section==0 || selectedFacet.isNotBlank() || query.isNotBlank() || auditQueue)) Text(if(auditQueue) "没有待核对的建议" else if(query.isNotBlank()) "没有找到匹配内容" else "还没聊到这里")
-    shown.forEach { row -> key(row.text("id")) {
+        if(finding) OutlinedTextField(query,{query=it},label={Text("人名、故事或一句话")},singleLine=true,modifier=Modifier.fillMaxWidth(),
+            trailingIcon={IconButton(onClick={query="";finding=false}){Icon(Icons.Outlined.Close,"关闭查找")}})
+        if(auditQueue) Row(verticalAlignment=Alignment.CenterVertically) {
+            Text("待核对",color=ink);TextButton(onClick={auditQueue=false}) { Text("返回已核对内容") }
+        }
+        val overview=section==1 && selectedFacet.isBlank() && query.isBlank() && !auditQueue
+        val shown=if(overview) emptyList() else selectNarrativeRecords(records,state.owner,auditQueue,if(section==1) -1 else selectedView,selectedFacet,query)
+        val understandings=if(section==0 && selectedView==2 && selectedFacet.isBlank()) data.rows("understandings").filter {
+            (if(auditQueue) state.owner && it.text("status") in setOf("pending","stale","conflicted") else it.text("status")=="confirmed") &&
+                (query.isBlank() || (it.text("statement")+it.text("context")).contains(query,true))
+        } else emptyList()
+        if(overview) Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+            memorySideTitles.forEach { (id,title) ->
+                val samples=selectNarrativeRecords(records,false,false,-1,id,"")
+                Surface(onClick={selectedFacet=id},shape=RoundedCornerShape(22.dp),color=paper.copy(alpha=.96f),contentColor=ink,
+                    border=BorderStroke(1.dp,accent.copy(alpha=.15f)),modifier=Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                            Text(title,style=MaterialTheme.typography.titleMedium)
+                            Icon(Icons.Outlined.ChevronRight,null,Modifier.size(20.dp),tint=accent)
+                        }
+                        Text(samples.firstOrNull()?.text("text") ?: "还没聊到",maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                        if(samples.isNotEmpty()) Text("${samples.size} 段内容",style=MaterialTheme.typography.labelMedium,color=accent)
+                    }
+                }
+            }
+        } else {
+            if(section==0 && selectedView==0 && query.isBlank()) Row(verticalAlignment=Alignment.CenterVertically) {
+                TextButton(onClick={selectedFacet=if(selectedFacet=="FEELINGS") "" else "FEELINGS"}) { Text(if(selectedFacet=="FEELINGS") "返回全部足迹" else "感受回看",color=accent) }
+            }
+            val ids=shown.map{it.text("id")}+understandings.map{"understanding:"+it.text("candidate_id")}
+            key(section,selectedView,selectedFacet,query,auditQueue,ids) {
+                NarrativePages(ids,paper,ink,Modifier.weight(1f)) { index ->
+                    if(index<shown.size) {
+                        val row=shown[index]
         var expanded by remember { mutableStateOf(false) }
         Column(Modifier.fillMaxWidth().padding(vertical = 12.dp).testTag("narrative-result-${row.text("id")}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(kinds[row.text("kind")].orEmpty()+" · "+statusName(row.text("status")), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -156,8 +164,9 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
-    } }
-    if(section == 0 && selectedView == 2 && selectedFacet.isBlank()) data.rows("understandings").filter { if(auditQueue) state.owner && it.text("status") in setOf("pending","stale","conflicted") else it.text("status")=="confirmed" }.forEach { item ->
+
+                    } else {
+                        val item=understandings[index-shown.size]
         var show by remember(item.text("candidate_id")) { mutableStateOf(false) }
         Text(item.text("statement"), style = MaterialTheme.typography.titleMedium)
         Text("适用情境：${item.text("context")}")
@@ -166,11 +175,42 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
         if(show) {
             listOf("支持" to item.rows("evidence"),"例外 / 反例" to item.rows("counter_evidence")).forEach { (label,refs) -> refs.forEach { e -> Text(label+"："+e.text("excerpt")); TextButton(onClick={openSource(e.text("episode_id"))}) { Text("查看这条依据") } } }
         }
+
+                    }
+                }
+            }
+        }
     }
-    if(section == 0 && selectedView == 3 && state.owner) {
-        val pref=data.optJSONObject("style")?:JSONObject()
-        Row { Switch(pref.optBoolean("enabled"), { model.mutation("/narrative/style","PUT",JSONObject().put("enabled",it).put("revision",pref.optInt("revision"))) }, enabled=ready)
-            Text("使用已确认的表达风格",Modifier.weight(1f)) }
+    if(toolsOpen) NativeDialog("整理与核对",{toolsOpen=false}) {
+    if(state.owner) {
+        val availableEpisodes=data.rows("source_evidence").map{it.text("episode_id")}.distinct()
+        var episodes by remember(state.actor,state.subject) { mutableStateOf(availableEpisodes.take(2).toSet()) }
+        var choosing by remember(state.actor,state.subject) { mutableStateOf(false) }
+
+        val pending = records.count { it.text("status") == "pending" || it.text("status") == "stale" }
+        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = { auditQueue = !auditQueue; toolsOpen=false }) { Text(if(auditQueue) "返回已核对内容" else "待核对 $pending 项") }
+
+        }
+
+        var consent by remember(state.actor,state.subject) { mutableStateOf(false) }
+        Row { Checkbox(consent, { consent = it }, enabled = ready); Text("将已核对的有效文字交由云端组织故事；不会自动确认或分享。", Modifier.weight(1f)) }
+        TextButton(onClick={choosing=!choosing}) { Text("本次对照 ${episodes.size} 段录音 · 建议先选一到两段") }
+        if(choosing) state.stories.filter{it.text("episode_id") in availableEpisodes}.forEach { story -> Row {
+            Checkbox(story.text("episode_id") in episodes,{episodes=if(it)episodes+story.text("episode_id") else episodes-story.text("episode_id")})
+            Text(story.text("recorded_at")+" · "+story.text("transcript").take(40),Modifier.weight(1f))
+        } }
+        Button(onClick = { model.organizeNarrative(consent,episodes.toList()) }, enabled = ready && consent && episodes.isNotEmpty()) { Text("整理选定讲述") }
+        TextButton(onClick = { editor = JSONObject().put("kind","story").put("title","").put("text","").put("facets",JSONArray().put("EXPERIENCE")).put("evidence_ids",JSONArray()) }, enabled = ready) { Text("从原文组织一段故事 / 留下寄语") }
+        state.narrativeJobs.take(2).forEach { Text(when(it.text("status")) { "queued" -> "整理已排队"; "running" -> "正在整理，原音已经保留"; "complete" -> "整理完成，请核对建议"; else -> "整理未完成：${it.text("error")}" }, style = MaterialTheme.typography.bodySmall) }
+    }
+
+        if(selectedView==3) {
+            val pref=data.optJSONObject("style")?:JSONObject()
+            Row { Switch(pref.optBoolean("enabled"), { model.mutation("/narrative/style","PUT",JSONObject().put("enabled",it).put("revision",pref.optInt("revision"))) }, enabled=ready)
+                Text("使用已确认的表达风格",Modifier.weight(1f)) }
+        }
+        TextButton(onClick={toolsOpen=false}) { Text("返回人物") }
     }
     relatedId?.let { id ->
         // Look up live state on each render. A cached JSONObject could outlive a
@@ -231,6 +271,31 @@ private fun statusName(value:String)=mapOf("confirmed" to "本人已核对","pen
                 sources.forEach { e -> Row { Checkbox(e.text("evidence_id") in refs,{refs=if(it)refs+e.text("evidence_id") else refs-e.text("evidence_id")});Text(e.text("excerpt"),Modifier.weight(1f)) } }
                 Button(onClick={save(JSONObject().put("kind",kind).put("title",title).put("text",text).put("time_text",time).put("place_text",place).put("recipient_label",recipient).put("same_event",same).put("aliases",JSONArray(aliases.split('、').filter{it.isNotBlank()})).put("facets",JSONArray(selectedFacets.toList())).put("evidence_ids",JSONArray(refs.toList())))},enabled=title.isNotBlank()&&text.isNotBlank()&&refs.isNotEmpty()&&selectedFacets.isNotEmpty(),modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)){Text("保存为待核对内容")}
             }
+        }
+    }
+}
+
+/** The view selectors stay outside this bounded pager; only the current card scrolls. */
+@Composable private fun NarrativePages(ids:List<String>,paper:Color,ink:Color,modifier:Modifier,content:@Composable (Int)->Unit) {
+    if(ids.isEmpty()) {
+        Surface(modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),color=paper,contentColor=ink) {
+            Box(Modifier.padding(24.dp),contentAlignment=Alignment.Center) { Text("还没聊到这里") }
+        }
+        return
+    }
+    val pager=rememberPagerState(pageCount={ids.size})
+    val scope=rememberCoroutineScope()
+    Column(modifier) {
+        HorizontalPager(pager,modifier=Modifier.weight(1f).fillMaxWidth().testTag("person-story-pager"),
+            key={ids[it]},pageSpacing=12.dp) { index ->
+            Surface(Modifier.fillMaxSize(),shape=RoundedCornerShape(24.dp),color=paper.copy(alpha=.97f),contentColor=ink) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp).testTag("narrative-page-body"),verticalArrangement=Arrangement.spacedBy(10.dp)) { content(index) }
+            }
+        }
+        Row(Modifier.fillMaxWidth().heightIn(min=48.dp),horizontalArrangement=Arrangement.Center,verticalAlignment=Alignment.CenterVertically) {
+            IconButton(onClick={scope.launch{pager.animateScrollToPage(pager.currentPage-1)}},enabled=pager.currentPage>0) { Icon(Icons.Outlined.ChevronLeft,"上一段",tint=ink) }
+            Text("${pager.currentPage+1} / ${ids.size}",Modifier.testTag("person-page-index"),style=MaterialTheme.typography.labelLarge,color=ink)
+            IconButton(onClick={scope.launch{pager.animateScrollToPage(pager.currentPage+1)}},enabled=pager.currentPage<ids.lastIndex) { Icon(Icons.Outlined.ChevronRight,"下一段",tint=ink) }
         }
     }
 }

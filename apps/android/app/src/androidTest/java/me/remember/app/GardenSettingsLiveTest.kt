@@ -42,19 +42,18 @@ class GardenSettingsLiveTest {
         ui.waitUntil(60_000){model.ui.value.actor==person.getString("actor_id")||model.ui.value.error!=null};idle()
     }
     private fun digest(file:File)=MessageDigest.getInstance("SHA-256").digest(file.readBytes()).toList()
-    @Test fun gardenRetainsCameraAfterLeavingStory(){
+    @Test fun gardenRetainsStoryWithoutZoomControls(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
         idle();login(cfg.getJSONObject("owner"));tab("档案");click("花田")
         val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick()
-        click("归位");click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         click("返回花田")
         ui.waitUntil(5000){ui.onNodeWithTag("garden-cluster-${c.id}").isDisplayed()}
         ui.onNodeWithTag("garden-cluster-${c.id}").performClick()
-        ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         assertFalse(androidx.core.view.WindowCompat.getInsetsController(ui.activity.window,ui.activity.window.decorView).isAppearanceLightStatusBars)
-        tab("今天");tab("档案");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
-        click("归位")
+        tab("今天");tab("档案");ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         val before = ui.onNodeWithTag("reviewed-garden-plant-stage").fetchSemanticsNode().boundsInRoot.top
         ui.onNodeWithTag("reviewed-garden-plant-stage").performTouchInput { swipe(center,center.copy(y=center.y-150f)) }
         val after = ui.onNodeWithTag("reviewed-garden-plant-stage").fetchSemanticsNode().boundsInRoot.top
@@ -64,8 +63,7 @@ class GardenSettingsLiveTest {
             down(0,a);down(1,b)
             moveTo(0,a.copy(x=a.x-40f));moveTo(1,b.copy(x=b.x+40f));up(0);up(1)
         }
-        ui.onNodeWithTag("garden-zoom-level").assert(!hasText("100%"))
-        click("归位")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         ui.onNodeWithTag("garden-change-scene").performScrollTo().performClick();shot("19-scene-preview")
         ui.onNodeWithTag("garden-scene-NIGHT").performScrollTo().performClick()
         assertEquals(SceneChoice.NIGHT,AppearancePreferences(ui.activity).choices.value.scene)
@@ -75,7 +73,7 @@ class GardenSettingsLiveTest {
         ui.onNodeWithTag("garden-scene-MEADOW").performScrollTo().performClick()
         click("返回花田")
         File(out,"navigation-result.json").writeText(JSONObject().put("version",BuildConfig.VERSION_NAME)
-            .put("camera_survives_return_and_tabs",true).put("single_finger_page_scroll_at_100",true)
+            .put("story_survives_return_and_tabs",true).put("single_finger_page_scroll",true).put("zoom_controls_absent",true)
             .put("scene_preview_and_selection",true).put("emulator",true).toString(2))
     }
     @Test fun realFlowersPlaybackSettingsIdentityAndRevocation(){
@@ -86,8 +84,7 @@ class GardenSettingsLiveTest {
         val clusterId=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{ep in it.episodeIds}.id
         tab("档案");click("花田");shot("01-native-garden")
         ui.onNodeWithTag("garden-cluster-$clusterId").performScrollTo().performClick();shot("02-flower-petals")
-        click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
-        click("归位");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("100%")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         val projected=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{ep in it.episodeIds}
         click(projected.petals.first().title);shot("03-memory-evidence")
         ui.onNodeWithTag("garden-source-play").performClick()
@@ -169,13 +166,11 @@ class GardenSettingsLiveTest {
         idle();login(cfg.getJSONObject("owner"));tab("档案");click("花田");shot("16-garden-412dp")
         val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick();shot("17-petals-412dp")
-        click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
-        ui.onNodeWithTag("reviewed-garden-plant-stage").performTouchInput { swipe(center,center.copy(x=center.x+60f)) }
-        click("归位");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("100%")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
         click(c.petals.first().title);shot("18-memory-412dp");click("返回花朵");click("返回花田")
         ui.waitUntil(5000){ui.onNodeWithTag("garden-cluster-${c.id}").isDisplayed()}
         ui.onNodeWithTag("garden-cluster-${c.id}").assertIsDisplayed()
-        File(out,"412dp-result.json").writeText(JSONObject().put("screen_width_dp",width).put("zoom_and_pan",true)
+        File(out,"412dp-result.json").writeText(JSONObject().put("screen_width_dp",width).put("zoom_controls_absent",true)
             .put("open_memory",true).put("return_to_garden",true).put("emulator",true).toString(2))
     }
     @Test fun confirmActualSourcesThenReadOrganizedFlower(){

@@ -5,7 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
@@ -24,10 +23,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
@@ -137,7 +133,7 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
 
 /** Labels sit on the photographed petals; decoration never invents missing memories. */
 @Composable internal fun ReviewedGardenPetals(petals: List<GardenPetal>, scene: NatureScene,
-    camera: GardenCamera, updateCamera: (GardenCamera) -> Unit, form: Int = 0, reduceMotion: Boolean = false, select: (GardenPetal) -> Unit) {
+    form: Int = 0, reduceMotion: Boolean = false, select: (GardenPetal) -> Unit) {
     if(LocalDensity.current.fontScale >= 1.5f) {
         ReviewedGardenPlant(Modifier.fillMaxWidth().height(230.dp),form=form)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -156,51 +152,10 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
             lifting=null
         }
     }
-    val key = petals.joinToString { it.id }
-    val latestCamera by rememberUpdatedState(camera)
-    val latestUpdate by rememberUpdatedState(updateCamera)
-    var viewport by remember { mutableStateOf(IntSize.Zero) }
-    fun move(pan: Offset, factor: Float, anchor: Offset? = null, from: GardenCamera = latestCamera): GardenCamera {
-        val next = moveGardenCamera(from, viewport.width.toFloat(), viewport.height.toFloat(),
-            pan.x, pan.y, factor, anchor?.x ?: viewport.width / 2f, anchor?.y ?: viewport.height / 2f)
-        latestUpdate(next)
-        return next
-    }
-    BoxWithConstraints(Modifier.fillMaxWidth().height(420.dp).onSizeChanged { viewport = it }.clipToBounds().testTag("reviewed-garden-plant-stage")) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(420.dp).clipToBounds().testTag("reviewed-garden-plant-stage")) {
         val width = maxWidth
-        Box(Modifier.fillMaxSize().pointerInput(key) {
-            // At 100%, one finger belongs to the page scroll. Only a pinch or an already
-            // enlarged flower takes the gesture; taps continue to reach the petal buttons.
-            awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false)
-                var captured = false
-                // Several pointer events can arrive before recomposition. Accumulate within
-                // this gesture instead of resetting to the last rendered camera on finger-up.
-                var gestureCamera = latestCamera
-                var totalZoom = 1f
-                var totalPan = Offset.Zero
-                do {
-                    // Observe before the petal's clickable consumes the second finger down.
-                    // A consumed down isn't a drag; preserve normal taps and page scrolling
-                    // until this camera actually crosses the transform slop.
-                    val event = awaitPointerEvent(PointerEventPass.Initial)
-                    if(event.changes.any { it.isConsumed && it.position != it.previousPosition }) break
-                    val factor = event.calculateZoom()
-                    val pan = event.calculatePan()
-                    totalZoom *= factor; totalPan += pan
-                    val canTransform = event.changes.count { it.pressed } >= 2 || gestureCamera.zoom > 1f
-                    if(!captured && canTransform) {
-                        val zoomMotion = abs(1 - totalZoom) * event.calculateCentroidSize(useCurrent = false)
-                        captured = zoomMotion > viewConfiguration.touchSlop || totalPan.getDistance() > viewConfiguration.touchSlop
-                    }
-                    if(captured) {
-                        gestureCamera = move(pan, factor, event.calculateCentroid(useCurrent = false), gestureCamera)
-                        event.changes.forEach { it.consume() }
-                    }
-                } while(event.changes.any { it.pressed })
-            }
-        }) {
-            Box(Modifier.fillMaxSize().graphicsLayer { scaleX = camera.zoom; scaleY = camera.zoom; translationX = camera.x; translationY = camera.y }) {
+        Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize()) {
                 Image(painterResource(gardenLandscape(scene)), null, Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithCache { val edge = Brush.verticalGradient(0f to Color.Transparent, .2f to Color.White,
                         .8f to Color.White, 1f to Color.Transparent)
@@ -209,7 +164,7 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
                         onDrawWithContent { drawContent(); drawRect(edge, blendMode = BlendMode.DstIn)
                             drawRect(sides, blendMode = BlendMode.DstIn) } },
                     contentScale = ContentScale.Crop, alpha = .40f)
-                // The bloom, stalk, labels and background share this single camera transform.
+                // A fixed frame keeps taps and vertical reading predictable.
                 ReviewedGardenPlant(Modifier.fillMaxWidth().height(420.dp), large = true, form=form)
                 val photo = width * .97f
                 val anchors = when(form) {
@@ -254,16 +209,6 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
                     }
                 }
             }
-        }
-    }
-    Surface(shape = RoundedCornerShape(24.dp), color = gardenGlass.copy(alpha = .85f), contentColor = gardenInk) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if(camera.zoom > 1f) "拖动花朵" else "双指放大", fontSize = 11.sp)
-            TextButton(onClick = { move(Offset.Zero, .8f) }, enabled = camera.zoom > 1f) { Text("−", color = gardenInk) }
-            Text("${(camera.zoom * 100).roundToInt()}%", fontSize = 12.sp, modifier = Modifier.testTag("garden-zoom-level"))
-            TextButton(onClick = { move(Offset.Zero, 1.25f) }, enabled = camera.zoom < 3f) { Text("＋", color = gardenInk) }
-            TextButton(onClick = { latestUpdate(GardenCamera()) }) { Text("归位", color = gardenInk, fontSize = 12.sp) }
         }
     }
 }

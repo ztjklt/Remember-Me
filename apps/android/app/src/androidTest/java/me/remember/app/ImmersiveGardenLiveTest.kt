@@ -29,21 +29,25 @@ class ImmersiveGardenLiveTest {
     }
     private fun shot(name:String){ui.waitForIdle();Thread.sleep(700)
         val scale=ui.activity.resources.configuration.fontScale
-        val dir=File(ui.activity.getExternalFilesDir(null),"immersive-$scale").apply{mkdirs()}
+        val dir=File(ui.activity.getExternalFilesDir(null),"navigation-$scale").apply{mkdirs()}
         val b=auto.takeScreenshot();File(dir,"$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()
     }
     @Test fun actualSourceGardenPersonAndLibrary(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(auto.executeShellCommand("cat /data/local/tmp/remember-internal-login.json")).bufferedReader().use{it.readText()})
         idle()
+        if(model.ui.value.spaceChoiceRequired) { click("退出账号");ui.waitUntil(15000){model.ui.value.actor.isBlank()} }
         if(model.ui.value.actor.isNotBlank()){click("我的");click("账号与空间");click("退出登录 / 换个账号");click("确认");ui.waitUntil(15000){model.ui.value.actor.isBlank()}}
         ui.onNodeWithText("账号").performScrollTo().performTextInput(cfg.getString("username"))
         ui.onNodeWithText("密码（至少8个字符）").performScrollTo().performTextInput(cfg.getString("password"));click("登录")
         ui.waitUntil(60_000){model.ui.value.actor.isNotBlank()||model.ui.value.error!=null};idle()
+        if(model.ui.value.spaceChoiceRequired) {
+            shot("00-choose-space")
+            ui.onNodeWithTag("choose-space-${cfg.getString("subject")}").performClick();idle()
+        }
         if(cfg.optString("subject").isNotBlank() && model.ui.value.subject!=cfg.getString("subject")) {
-            val current=model.ui.value.space!!
-            click(current.text("display_name")+" · "+if(model.ui.value.owner) "记录者" else "授权读者")
+            ui.onNodeWithTag("space-chooser").performClick()
             val target=model.ui.value.spaces.first{it.text("subject_id")==cfg.getString("subject")}
-            click(target.text("display_name")+" · "+target.text("role"));idle()
+            ui.onNodeWithTag("space-${target.text("subject_id")}").performClick();idle()
         }
         assertEquals("paraformer-v2",model.ui.value.asrCapabilities?.optString("stt_model"))
         assertTrue(model.ui.value.stories.any{it.optString("episode_id")==cfg.getString("episode")})
@@ -62,6 +66,8 @@ class ImmersiveGardenLiveTest {
         click("档案");click("花田");idle();shot("03-garden")
         val cluster=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${cluster.id}").performScrollTo().performClick();shot("04-flower")
+        ui.onNodeWithTag("garden-zoom-level").assertDoesNotExist()
+        ui.onNodeWithText("双指放大").assertDoesNotExist()
         val petal=cluster.petals.first();click(petal.title);ui.mainClock.advanceTimeBy(800);ui.waitUntil(10000){ui.onAllNodesWithTag("garden-source-play").fetchSemanticsNodes().isNotEmpty()};shot("05-memory-source")
         idle()
         ui.onNodeWithTag("garden-source-play").assertIsEnabled().performClick()
@@ -80,11 +86,32 @@ class ImmersiveGardenLiveTest {
         click("查找相关内容");idle();assertTrue(model.ui.value.search.isNotEmpty());shot("06c-search")
         ui.onNodeWithText("找故事、人物或一句话").performTextClearance()
         click("人物");shot("07-person")
-        personViewTitles.forEachIndexed { i,title -> click(title);shot("08-view-$i") }
+        personViewTitles.forEachIndexed { i,title ->
+            click(title);shot("08-view-$i")
+            ui.onNodeWithTag("person-views").assertIsDisplayed()
+            val pages=ui.onNodeWithTag("person-page-index").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }.split(" / ")
+            if(pages.last().toInt()>1) {
+                ui.onNodeWithTag("person-story-pager").performTouchInput { swipeLeft() }
+                ui.waitForIdle();ui.onNodeWithTag("person-page-index").assertTextEquals("2 / ${pages.last()}")
+                ui.onNodeWithTag("person-views").assertIsDisplayed()
+                // Pager may keep its neighbor composed. Inject inside the visible
+                // viewport instead of matching both pages' scroll containers.
+                ui.onNodeWithTag("person-story-pager").performTouchInput { swipeUp() }
+                ui.onNodeWithTag("person-views").assertIsDisplayed();shot("08-view-$i-next")
+            }
+        }
         click("记忆侧面");shot("09-sides")
-        click("查找内容");ui.onNodeWithText("人名、故事或一句话").performScrollTo().performTextInput("陈岚")
+        val findContent=ui.onNodeWithContentDescription("查找内容")
+        if(!findContent.isDisplayed()) findContent.performScrollTo()
+        findContent.performClick();ui.onNodeWithText("人名、故事或一句话").performTextInput("陈岚")
+        ui.activityRule.scenario.onActivity { (it.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager).hideSoftInputFromWindow(it.window.decorView.windowToken,0) }
         val person=model.ui.value.narrative.rows("records").first{it.text("kind")=="person"&&it.text("title")=="陈岚"&&it.text("status")=="confirmed"}
-        ui.onNodeWithTag("narrative-result-${person.text("id")}").performScrollTo().assertIsDisplayed()
+        repeat(30) {
+            if(ui.onAllNodesWithTag("narrative-result-${person.text("id")}").fetchSemanticsNodes().isEmpty()) {
+                ui.onNodeWithContentDescription("下一段").performClick();ui.waitForIdle()
+            }
+        }
+        ui.onNodeWithTag("narrative-result-${person.text("id")}").assertIsDisplayed()
         shot("09b-side-search")
         click("全部录音");shot("10-library")
         if(model.ui.value.owner) {
@@ -95,7 +122,21 @@ class ImmersiveGardenLiveTest {
             ui.onNodeWithText("取消关联，记录新故事").assertDoesNotExist()
             ui.onNodeWithContentDescription("关闭录音").performClick()
         }
-        File(ui.activity.getExternalFilesDir(null),"immersive-result.json").writeText(JSONObject()
+        if(!model.ui.value.owner) {
+            val subject=model.ui.value.subject
+            // Recreate alone retains the ViewModel. Clear it first so this checks
+            // saved session + per-account space restoration through a fresh model.
+            ui.activityRule.scenario.onActivity { it.viewModelStore.clear() }
+            ui.activityRule.scenario.recreate()
+            ui.waitUntil(60_000){model.ui.value.actor.isNotBlank()};idle()
+            assertEquals(subject,model.ui.value.subject)
+            assertFalse(model.ui.value.spaceChoiceRequired)
+            assertFalse(model.ui.value.owner)
+            click("今天");click("进入花田")
+            ui.onNodeWithTag("garden-cluster-${cluster.id}").performScrollTo().assertIsDisplayed()
+            shot("11-reader-restored-garden")
+        }
+        File(ui.activity.getExternalFilesDir(null),"navigation-result.json").writeText(JSONObject()
             .put("real_ecs",true).put("episodes",model.ui.value.stories.size).put("playback",true)
             .put("font_scale",ui.activity.resources.configuration.fontScale).put("physical_phone",false).toString(2))
     }

@@ -1,5 +1,7 @@
 # 勿忘我0.9.0：十段故事与两人体验
 
+> 已有 [0.9.1 新版安装与使用说明](ANDROID_091_QUICK_START.md)：空间选择、藤蔓花径和人物横向阅读已更新。下文保留 0.9.0 的历史步骤；新版整理入口改为人物页“整理与核对”图标。
+
 [下载APK](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.9.0-20261011/remember-me-0.9.0-internal.apk) · [版本、哈希、音频材料包](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.9.0-20261011)
 
 Android8.0及以上。同签名旧内测版可覆盖更新，保留本机录音。服务已配置，Wi-Fi和流量均可连接，不需要电脑、SSH、转写接力或模型密钥。iPhone不能安装APK。测试证书有效至2027-01-07，需在到期前更新证书与客户端配置。

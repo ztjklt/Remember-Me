@@ -88,9 +88,12 @@ class MeetingDemoLiveTest {
             switchAccount(reader)
             val target=model.ui.value.spaces.first{it.text("subject_id")==ownerSubject}
             if(model.ui.value.subject!=ownerSubject){
-                val current=checkNotNull(model.ui.value.space)
-                click(current.text("display_name")+" · "+if(model.ui.value.owner)"记录者" else "授权读者")
-                click(target.text("display_name")+" · "+target.text("role"));idle()
+                if(model.ui.value.spaceChoiceRequired) ui.onNodeWithTag("choose-space-$ownerSubject").performClick()
+                else {
+                    ui.onNodeWithTag("space-chooser").performClick()
+                    ui.onNodeWithTag("space-$ownerSubject").performClick()
+                }
+                idle()
             }
             assertFalse(model.ui.value.owner)
             assertTrue(model.ui.value.stories.any{it.text("episode_id")==ep})

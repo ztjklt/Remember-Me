@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.9.1：** [下载安装与两种身份使用说明](docs/agent-loop/ANDROID_091_QUICK_START.md) · [藤蔓花径、固定视角与横向故事阅读](docs/mobile-ui/GARDEN_NAVIGATION_2026-10-11.md) · [实跑截图](docs/agent-loop/screenshots/garden-navigation-20261011/README.md) · [Agent 实现及尚未解决的问题](docs/agent-loop/AGENT_CAPABILITIES_2026-10-11.md)。移除双指缩放，修复多空间默认选错；同签名覆盖升级，本轮未更换 ECS 程序。
+
 > **Android 0.9.0：** [下载安装、陈守义十段样例与两人使用说明](docs/agent-loop/ANDROID_090_QUICK_START.md) · [连续花田、人物内容及验收边界](docs/agent-loop/IMMERSIVE_GARDEN_ACCEPTANCE_2026-10-11.md) · [本轮模拟器截图](docs/agent-loop/screenshots/immersive-garden-20261011/README.md)。同签名覆盖升级；新材料已进入ECS，本轮未更换服务端代码。
 
 > **Android 0.8.2：** [花田浏览、背景预览与记忆阅读打磨](docs/agent-loop/ANDROID_GARDEN_POLISH_2026-10-11.md) · [19张本轮截图](docs/agent-loop/screenshots/2026-10-11-garden-polish/README.md)。同签名覆盖升级；本次未重新部署ECS。

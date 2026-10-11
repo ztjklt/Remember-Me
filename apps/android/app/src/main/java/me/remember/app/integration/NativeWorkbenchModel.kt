@@ -17,7 +17,7 @@ import java.security.MessageDigest
 
 data class NativeState(
     val actor: String = "", val actorName: String = "", val spaces: List<JSONObject> = emptyList(),
-    val space: JSONObject? = null, val stories: List<JSONObject> = emptyList(), val grants: List<JSONObject> = emptyList(),
+    val space: JSONObject? = null, val spaceChoiceRequired: Boolean = false, val stories: List<JSONObject> = emptyList(), val grants: List<JSONObject> = emptyList(),
     val revisions: List<JSONObject> = emptyList(), val requests: List<JSONObject> = emptyList(),
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
@@ -44,7 +44,8 @@ data class SourcePlayback(val episode: String = "", val playing: Boolean = false
     val position: Long = 0, val duration: Long = 0)
 
 internal fun NativeState.forSpaceFallback(spaces: List<JSONObject>, selected: JSONObject?) =
-    NativeState(actor = actor, actorName = actorName, spaces = spaces, space = selected, busy = busy, notice = "可访问空间已更新。")
+    NativeState(actor = actor, actorName = actorName, spaces = spaces, space = selected,
+        spaceChoiceRequired = selected == null && spaces.size > 1, busy = busy, notice = "可访问空间已更新。")
 
 /** Account sessions use Keystore; local originals are scoped to the authenticated identity. */
 class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureService) : ViewModel() {
@@ -53,6 +54,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private val client = BackendClient(gate)
     private val reminders = LocalDailyReminder(context)
     private val savedSession = SavedSession(context)
+    private val spacePreferences = context.getSharedPreferences("remember-spaces", Context.MODE_PRIVATE)
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
     val ui = state.asStateFlow()
@@ -132,7 +134,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             val result = io { client.json(next, "/api/v1/workbench/spaces") }
             if(remember) savedSession.save(next.server, next.token) else savedSession.clear()
             state.value = state.value.copy(actor = result.text("actor_id"), actorName = result.text("display_name"), spaces = result.rows())
-            state.value = state.value.copy(space = result.rows().firstOrNull())
+            val saved = spacePreferences.getString("${next.server}:${result.text("actor_id")}", null)
+            val chosen = initialSpace(result.rows(), saved)
+            state.value = state.value.copy(space = chosen, spaceChoiceRequired = chosen == null && result.rows().size > 1)
             refreshNow(next)
             polling?.cancel()
             polling = viewModelScope.launch {
@@ -145,6 +149,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     fun selectSpace(space: JSONObject) {
         if(state.value.busy || state.value.recording) return
+        if(state.value.spaces.none { it.text("subject_id") == space.text("subject_id") }) return
+        session?.let { spacePreferences.edit().putString("${it.server}:${state.value.actor}", space.text("subject_id")).apply() }
         stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
@@ -226,11 +232,13 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     } }
     private suspend fun refreshNow(s: BackendSession) {
         val spaces = io { client.json(s, "/api/v1/workbench/spaces").rows() }
-        val selected = spaces.firstOrNull { it.text("subject_id") == state.value.subject } ?: spaces.firstOrNull()
-        if(selected?.text("subject_id") != state.value.subject) {
+        val selected = spaces.firstOrNull { it.text("subject_id") == state.value.subject }
+            ?: if(state.value.spaceChoiceRequired) initialSpace(spaces, null) else spaces.firstOrNull()
+        if(selected?.text("subject_id").orEmpty() != state.value.subject) {
             stopSource(); audio.stopPlayback()
             state.value = state.value.forSpaceFallback(spaces, selected)
-        } else state.value = state.value.copy(spaces = spaces, space = selected)
+        } else state.value = state.value.copy(spaces = spaces, space = selected,
+            spaceChoiceRequired = selected == null && spaces.size > 1)
         if(state.value.subject.isBlank()) return
         val path = root()
         val stories = io { client.json(s, "$path/stories") }

@@ -4,6 +4,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SpaceFallbackTest {
+    @Test fun emptyOrSingleSpaceDoesNotTrapUserInChoiceDialog() {
+        val waiting=NativeState(actor="reader",spaceChoiceRequired=true)
+        assertFalse(waiting.forSpaceFallback(emptyList(),null).spaceChoiceRequired)
+        val only=JSONObject().put("subject_id","only").put("role","reader")
+        assertFalse(waiting.forSpaceFallback(listOf(only),initialSpace(listOf(only),null)).spaceChoiceRequired)
+        assertEquals("only",waiting.forSpaceFallback(listOf(only),initialSpace(listOf(only),null)).subject)
+    }
     @Test fun accessFallbackKeepsOperationGuardAndDropsOldContent() {
         val old=NativeState(actor="reader",actorName="亲友",busy=true,stories=listOf(JSONObject().put("private","old")),
             sharePreview=JSONObject(),player=SourcePlayback(episode="old",playing=true))

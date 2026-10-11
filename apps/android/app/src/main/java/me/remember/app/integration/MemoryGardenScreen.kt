@@ -22,7 +22,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
@@ -50,13 +49,6 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
     var listMode by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
     var searchOpen by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
     var showScenes by rememberSaveable { mutableStateOf(false) }
-    var cameras by rememberSaveable(state.actor, state.subject, stateSaver = mapSaver(
-        save = { values: Map<String, GardenCamera> -> values.mapValues { (_, c) -> floatArrayOf(c.zoom, c.x, c.y) } },
-        restore = { values -> values.mapValues { (_, value) -> (value as FloatArray).let { GardenCamera(it[0], it[1], it[2]) } } }
-    )) { mutableStateOf(emptyMap<String, GardenCamera>()) }
-    LaunchedEffect(clusters.map { it.id }) {
-        cameras = cameras.filterKeys { key -> clusters.any { key.startsWith("${it.id}/") } }
-    }
     val scene = appearance.scene.scene ?: NatureScene.Meadow
     var page by rememberSaveable(state.actor, state.subject, selected) { mutableIntStateOf(0) }
     var rootPosition by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
@@ -155,9 +147,8 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                 Text(if(current.petals.isEmpty()) "尚未提取到记忆。原音仍在，可以查看来源或在录音页重试整理。" else "一片花瓣，一段值得停留的瞬间。", fontSize = 14.sp, color = gardenMuted)
                 val pages = current.petals.chunked(5)
                 val shown = pages.getOrElse(page) { pages.firstOrNull().orEmpty() }
-                val cameraKey = "${current.id}/${shown.joinToString { it.id }}"
-                if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene, cameras[cameraKey] ?: GardenCamera(),
-                    { cameras = cameras + (cameraKey to it) },form=gardenBloom(current.id),reduceMotion=appearance.reduceMotion) { selectedPetal = it.id }
+                if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene,
+                    form=gardenBloom(current.id),reduceMotion=appearance.reduceMotion) { selectedPetal = it.id }
                 if(pages.size > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { page-- }, enabled = page > 0) { Text("上一组") }
                     Text("${page + 1} / ${pages.size} 组", Modifier.padding(top = 12.dp))

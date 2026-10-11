@@ -20,11 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,10 +68,17 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     val gardenVisible = state.actor.isNotBlank() && tab == 1 && archiveMode == 1 && !state.recording
     val view = LocalView.current
     val darkBars = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f
+    val barColor = if(gardenVisible) gardenGlass else MaterialTheme.colorScheme.background
     SideEffect {
         val activity = generateSequence(view.context) { (it as? ContextWrapper)?.baseContext }
             .filterIsInstance<Activity>().firstOrNull()
-        activity?.window?.let { window -> WindowCompat.getInsetsController(window, view).apply {
+        activity?.window?.let { window ->
+            // Reapply after activity/session restoration; some window recreations
+            // restore opaque system bars independently of their icon appearance.
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            @Suppress("DEPRECATION")
+            run { window.statusBarColor = barColor.toArgb(); window.navigationBarColor = barColor.toArgb() }
+            WindowCompat.getInsetsController(window, view).apply {
             isAppearanceLightStatusBars = !darkBars
             isAppearanceLightNavigationBars = !darkBars
         } }
@@ -91,9 +101,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }) { inset ->
         Column(Modifier.fillMaxSize().padding(inset).padding(horizontal = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical = if(gardenVisible) 8.dp else 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                RememberMeBrand(size = if(gardenVisible) 28.dp else 42.dp, darkBackground = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f)
-                Column { Text("勿忘我", style = MaterialTheme.typography.titleLarge, color = if(gardenVisible) gardenInk else MaterialTheme.colorScheme.onBackground)
-                    if(!gardenVisible) Text("让经历留下，让变化被理解", style = MaterialTheme.typography.bodySmall) }
+                RememberMeBrand(size = 30.dp, darkBackground = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f)
+                Text("勿忘我", style = MaterialTheme.typography.titleMedium, color = if(gardenVisible) gardenInk else MaterialTheme.colorScheme.onBackground)
+                Spacer(Modifier.weight(1f))
+                if(state.actor.isNotBlank()) SpaceChooser(state, model, gardenVisible, ready, Modifier.weight(2.4f))
             }
             if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
@@ -129,21 +140,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 }
             } else {
                 if(state.subject.isBlank()) {
-                    Text("还没有可进入的空间。可以请记录者授权故事。")
+                    Text(if(state.spaceChoiceRequired) "请选择要进入的空间。" else "还没有可进入的空间。可以请记录者授权故事。")
                     TextButton(onClick = model::logout, enabled = !state.busy) { Text("退出身份") }
                 }
                 if(tab == 0) Text(if(state.owner) "把这一刻留下来" else "听听${state.space?.text("display_name").orEmpty()}留下的故事。", style = MaterialTheme.typography.headlineMedium)
-                var spacesExpanded by remember(state.actor) { mutableStateOf(false) }
-                if(!gardenVisible || !gardenStoryOpen) Box {
-                    OutlinedButton(onClick = { spacesExpanded = true }, enabled = ready, colors = if(gardenVisible)
-                        ButtonDefaults.outlinedButtonColors(containerColor = gardenGlass.copy(alpha = .7f), contentColor = gardenInk) else ButtonDefaults.outlinedButtonColors()) {
-                        Text(state.space?.let { "${it.text("display_name")} · ${if(state.owner) "记录者" else "授权读者"}" } ?: "暂无授权空间")
-                    }
-                    DropdownMenu(spacesExpanded, { spacesExpanded = false }) {
-                        state.spaces.forEach { space -> DropdownMenuItem(text = { Text(space.text("display_name") + " · " + space.text("role")) },
-                            onClick = { spacesExpanded = false; model.selectSpace(space) }) }
-                    }
-                }
                 if(state.notice.isNotBlank() && (tab!=1 || archiveMode==0)) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
                 if(state.player.episode.isNotBlank()) GardenMiniPlayer(state.player,
                     {if(state.player.playing) model.pauseSource() else model.resumeSource()},model::seekSource,model::stopSource)
@@ -155,7 +155,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                         TextButton(onClick = model.audio::stopPlayback) { Text("停止本机播放") } }
                 }
                 if(state.subject.isNotBlank()) {
-                    Column(Modifier.weight(1f).clipToBounds().verticalScroll(scrollPositions[tab]).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f).clipToBounds().then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when(tab) {
                             0 -> {
                                 if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
@@ -165,7 +165,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                     if(state.stories.isEmpty()) Text("这里暂时没有可见故事。")
                                     state.stories.take(3).forEach { story -> StoryCard(story, false, ready,
                                         { detail = story.text("episode_id") }, {}, {}) }
-                                    Action("浏览全部故事", ready) { tab = 1 }
+                                    Action("进入花田", ready) { tab = 1; archiveMode = 1 }
                                     Action("提出一个问题", ready) { tab = 2 }
                                 }
                             }
@@ -186,7 +186,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 if(archiveMode == 1) MemoryGardenScreen(state, model, appearance, updateAppearance, scrollPositions[1],
                                     { detail = it }, { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } },
                                     { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } }, ask={askDraft=it;tab=2}, onStoryOpenChanged = { gardenStoryOpen = it })
-                                if(archiveMode == 2) NarrativeScreen(state, model) { detail = it }
+                                if(archiveMode == 2) NarrativeScreen(state, model, Modifier.weight(1f)) { detail = it }
                             }
                             2 -> AskTab(state, model,askDraft)
                             3 -> pages.SaveableStateProvider("settings:$identity") {
@@ -195,12 +195,20 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                     { scope.launch { scrollPositions[3].scrollTo(0) } }) { message, action -> confirm = message to action }
                             }
                         }
-                        Spacer(Modifier.height(28.dp))
+                        if(tab!=1 || archiveMode!=2) Spacer(Modifier.height(28.dp))
                     }
                 }
             }
         }
     }
+    if(state.spaceChoiceRequired) AlertDialog(onDismissRequest={}, title={Text("想进入谁的空间？")},
+        containerColor=if(MaterialTheme.colorScheme.background.luminance()<.5f) androidx.compose.ui.graphics.Color(0xFF263C32) else androidx.compose.ui.graphics.Color(0xFFF5F3E8),
+        text={Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            state.spaces.forEach { space -> OutlinedButton(onClick={model.selectSpace(space)},enabled=ready,
+                modifier=Modifier.fillMaxWidth().testTag("choose-space-${space.text("subject_id")}")) {
+                Column { Text(space.text("display_name"));Text(if(space.text("role")=="owner") "我的空间 · 记录与管理" else "亲友空间 · 获授权阅读",style=MaterialTheme.typography.bodySmall) }
+            } }
+        }},confirmButton={TextButton(onClick=model::logout,enabled=ready){Text("退出账号")}})
     if(recordingPage && state.owner) StoryRecordingFlow(state,model,revision,{revision=it},
         {revision=null;recordingPage=false},{recordingPage=false;tab=1;archiveMode=0})
     detail?.let { id ->
@@ -467,7 +475,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
 @Composable private fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     Row(Modifier.fillMaxWidth()) { Checkbox(checked, onCheckedChange = onChange, enabled = enabled); Text(label, Modifier.weight(1f).padding(top = 12.dp)) }
 }
-@Composable private fun NativeDialog(title: String, close: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+@Composable internal fun NativeDialog(title: String, close: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(12.dp), shape = MaterialTheme.shapes.large) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -480,3 +488,28 @@ internal fun storyTitle(story: JSONObject): String = story.rows("memories").firs
     ?: story.text("transcript").take(34).ifBlank { "一段新的记述" }
 private fun kindName(kind: String) = when(kind) { "correction" -> "纠正"; "change" -> "情况变化"; else -> "补充" }
 internal fun clock(ms: Long): String = "%02d:%02d".format(ms / 60_000, ms / 1000 % 60)
+
+@Composable private fun SpaceChooser(state: NativeState, model: NativeWorkbenchModel, garden: Boolean, ready: Boolean, modifier: Modifier) {
+    var expanded by remember(state.actor) { mutableStateOf(false) }
+    val ink = if(garden) gardenInk else MaterialTheme.colorScheme.onSurface
+    Box(modifier) {
+        Surface(onClick={expanded=true}, enabled=ready, shape=RoundedCornerShape(20.dp),
+            color=if(garden) gardenGlass.copy(alpha=.92f) else MaterialTheme.colorScheme.surface.copy(alpha=.92f),
+            contentColor=ink, modifier=Modifier.fillMaxWidth().testTag("space-chooser")) {
+            Row(Modifier.padding(horizontal=12.dp,vertical=7.dp),verticalAlignment=Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(state.space?.text("display_name") ?: "选择空间",style=MaterialTheme.typography.labelLarge,maxLines=1,overflow=TextOverflow.Ellipsis)
+                    Text(if(state.owner) "我来记录" else "亲友阅读",style=MaterialTheme.typography.labelSmall,maxLines=1)
+                }
+                Icon(Icons.Outlined.ExpandMore,"切换人物空间",Modifier.size(20.dp))
+            }
+        }
+        DropdownMenu(expanded,{expanded=false}) {
+            Text("正在使用：${state.actorName}",Modifier.padding(16.dp),style=MaterialTheme.typography.labelMedium)
+            state.spaces.forEach { space -> DropdownMenuItem(
+                text={Column { Text(space.text("display_name")); Text(if(space.text("role")=="owner") "我的空间 · 记录与管理" else "亲友空间 · 获授权阅读",style=MaterialTheme.typography.bodySmall) }},
+                modifier=Modifier.testTag("space-${space.text("subject_id")}"),
+                onClick={expanded=false;model.selectSpace(space)}) }
+        }
+    }
+}

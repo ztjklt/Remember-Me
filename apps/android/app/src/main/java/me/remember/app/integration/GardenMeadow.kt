@@ -1,6 +1,7 @@
 package me.remember.app.integration
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import me.remember.app.R
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -40,17 +44,13 @@ internal fun gardenBloom(id:String):Int = (id.hashCode().toLong().let { abs(it) 
     val stride=if(big) 420.dp else 215.dp
     BoxWithConstraints(Modifier.fillMaxWidth().height(stride*ordered.size+100.dp)) {
         val width=maxWidth
+        // A botanical browsing path, not a claim of a factual relationship between stories.
+        repeat((ordered.size+1)/2) { segment ->
+            Image(painterResource(R.drawable.rm_garden_vine), null,
+                Modifier.offset(y=stride*(segment*2)+62.dp).fillMaxWidth().height(stride*2+80.dp),
+                contentScale=ContentScale.FillBounds,alpha=.88f)
+        }
         Canvas(Modifier.fillMaxSize()) {
-            val path=Path().apply {
-                moveTo(size.width*.51f,0f)
-                var y=0f
-                while(y<size.height) {
-                    cubicTo(size.width*.08f,y+stride.toPx()*.4f,size.width*.95f,y+stride.toPx()*.8f,size.width*.5f,y+stride.toPx())
-                    y+=stride.toPx()
-                }
-            }
-            drawPath(path,Color(0xFFA8AD7B).copy(alpha=.12f),style=Stroke(34.dp.toPx()))
-            drawPath(path,Color(0xFFC6C49B).copy(alpha=.12f),style=Stroke(12.dp.toPx()))
             // Grass at the near edge is scenery, with no story semantics or hit targets.
             repeat(36) { n ->
                 val x=size.width*n/35f; val h=(18+(n*17%43)).dp.toPx()
