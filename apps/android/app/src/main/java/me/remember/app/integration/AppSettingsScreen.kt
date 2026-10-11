@@ -74,7 +74,7 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("明暗", style = MaterialTheme.typography.titleMedium)
             ThemeChoice.entries.forEach { value -> ChoiceRow(value.title, appearance.theme == value) { updateAppearance(appearance.copy(theme = value)) } }
             Text("自然背景", style = MaterialTheme.typography.titleMedium)
-            SceneChoice.entries.forEach { value -> ChoiceRow(value.title, appearance.scene == value) { updateAppearance(appearance.copy(scene = value)) } }
+            GardenSceneOptions(appearance.scene) { updateAppearance(appearance.copy(scene = it)) }
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) { Text("简化花田动效"); Text("减少花朵与阅读页的过渡。", style = MaterialTheme.typography.bodySmall) }
                 Switch(appearance.reduceMotion, { updateAppearance(appearance.copy(reduceMotion = it)) })

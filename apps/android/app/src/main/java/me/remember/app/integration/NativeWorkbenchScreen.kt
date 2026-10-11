@@ -2,6 +2,10 @@ package me.remember.app.integration
 
 import android.Manifest
 import android.os.Build
+import android.app.Activity
+import android.content.ContextWrapper
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.platform.LocalView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -55,6 +59,16 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var revision by remember(state.actor, state.subject) { mutableStateOf<RevisionTarget?>(null) }
     var confirm by remember(state.actor, state.subject) { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     val gardenVisible = state.actor.isNotBlank() && tab == 1 && archiveMode == 1 && !state.recording
+    val view = LocalView.current
+    val darkBars = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f
+    SideEffect {
+        val activity = generateSequence(view.context) { (it as? ContextWrapper)?.baseContext }
+            .filterIsInstance<Activity>().firstOrNull()
+        activity?.window?.let { window -> WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !darkBars
+            isAppearanceLightNavigationBars = !darkBars
+        } }
+    }
     val scene = appearance.scene.scene ?: if(gardenVisible) NatureScene.Meadow else when(tab) { 1 -> NatureScene.Forest; 2 -> NatureScene.Lake; 3 -> NatureScene.Coast; else -> NatureScene.Meadow }
     val backdrop = if(gardenVisible) Modifier.reviewedGardenAtmosphere(scene) else Modifier.atmosphere(scene = scene)
     val ready = !state.busy && !state.recording
@@ -127,7 +141,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     }
                 }
                 if(state.notice.isNotBlank()) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = if(gardenVisible) gardenMuted else MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
-                if(state.player.episode.isNotBlank()) Panel {
+                if(state.player.episode.isNotBlank() && gardenVisible) GardenMiniPlayer(state.player,
+                    { if(state.player.playing) model.pauseSource() else model.resumeSource() }, model::seekSource, model::stopSource)
+                else if(state.player.episode.isNotBlank()) Panel {
                     Text("来源完整原音 · 不提供未经验证的片段时间", style = MaterialTheme.typography.bodySmall)
                     Text("${clock(state.player.position)} / ${clock(state.player.duration)}")
                     if(!state.player.preparing) {

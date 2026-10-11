@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
@@ -46,6 +47,14 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
     var facet by rememberSaveable(state.actor, state.subject) { mutableStateOf("") }
     var listMode by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
     var searchOpen by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
+    var showScenes by rememberSaveable { mutableStateOf(false) }
+    var cameras by rememberSaveable(state.actor, state.subject, stateSaver = mapSaver(
+        save = { values: Map<String, GardenCamera> -> values.mapValues { (_, c) -> floatArrayOf(c.zoom, c.x, c.y) } },
+        restore = { values -> values.mapValues { (_, value) -> (value as FloatArray).let { GardenCamera(it[0], it[1], it[2]) } } }
+    )) { mutableStateOf(emptyMap<String, GardenCamera>()) }
+    LaunchedEffect(clusters.map { it.id }) {
+        cameras = cameras.filterKeys { key -> clusters.any { key.startsWith("${it.id}/") } }
+    }
     val scene = appearance.scene.scene ?: NatureScene.Meadow
     var page by rememberSaveable(state.actor, state.subject, selected) { mutableIntStateOf(0) }
     var rootPosition by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
@@ -129,7 +138,9 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                 Text(if(current.petals.isEmpty()) "尚未提取到记忆。原音仍在，可以查看来源或在录音页重试整理。" else "一片花瓣，一段值得停留的瞬间。", fontSize = 14.sp, color = gardenMuted)
                 val pages = current.petals.chunked(5)
                 val shown = pages.getOrElse(page) { pages.firstOrNull().orEmpty() }
-                if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene) { selectedPetal = it.id }
+                val cameraKey = "${current.id}/${shown.joinToString { it.id }}"
+                if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene, cameras[cameraKey] ?: GardenCamera(),
+                    { cameras = cameras + (cameraKey to it) }) { selectedPetal = it.id }
                 if(pages.size > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { page-- }, enabled = page > 0) { Text("上一组") }
                     Text("${page + 1} / ${pages.size} 组", Modifier.padding(top = 12.dp))
@@ -143,14 +154,12 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                 } }
                 current.episodeIds.forEach { id -> TextButton(onClick = { openSource(id) }) { Text("查看来源 · ${state.stories.firstOrNull { it.text("episode_id") == id }?.let { recordingDate(it.text("recorded_at")) }.orEmpty()}", color = gardenMuted) } }
             }
-            TextButton(onClick = {
-                val places = listOf(SceneChoice.MEADOW, SceneChoice.LAKE, SceneChoice.FOREST, SceneChoice.COAST, SceneChoice.NIGHT)
-                val next = places[(places.indexOf(appearance.scene).coerceAtLeast(0) + 1) % places.size]
-                updateAppearance(appearance.copy(scene = next))
-            }) { Text("换一处花园 · ${if(appearance.scene == SceneChoice.AUTO) "草地" else appearance.scene.title}", color = gardenMuted, fontSize = 12.sp) }
+            TextButton(onClick = { showScenes = true }, modifier = Modifier.testTag("garden-change-scene")) {
+                Text("换一处花园 · ${if(appearance.scene == SceneChoice.AUTO) "草地" else appearance.scene.title}", color = gardenMuted, fontSize = 12.sp) }
         }
     }
     if(petal != null) GardenPetalReader(petal, state, model) { selectedPetal = null }
+    if(showScenes) GardenScenePicker(appearance.scene, { updateAppearance(appearance.copy(scene = it)) }, { showScenes = false })
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -163,38 +172,6 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
             Column(Modifier.weight(1f)) { Text(cluster.title, style = MaterialTheme.typography.titleMedium)
                 Text("${cluster.petals.size} 个内容入口 · ${if(cluster.organized) "已组织故事" else "尚未归组"}", style = MaterialTheme.typography.bodySmall) }
             Icon(Icons.Outlined.ChevronRight, null)
-        }
-    }
-}
-
-@Composable private fun GardenPetalReader(petal: GardenPetal, state: NativeState, model: NativeWorkbenchModel, close: () -> Unit) {
-    Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth().fillMaxHeight(.93f).padding(12.dp), shape = RoundedCornerShape(24.dp), color = if(MaterialTheme.colorScheme.background.luminance() < .5f) Color(0xFF243B32) else Color(0xFFE9EDDA), contentColor = MaterialTheme.colorScheme.onSurface) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("一片记忆", style = MaterialTheme.typography.titleLarge)
-                    TextButton(onClick = close) { Text("返回花朵") }
-                }
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(petal.content, style = MaterialTheme.typography.bodyLarge)
-                    Text(petal.sourceLabel, style = MaterialTheme.typography.bodySmall)
-                    HorizontalDivider()
-                    Text("它的来处", style = MaterialTheme.typography.titleMedium)
-                    petal.evidence.forEach { e -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(e.excerpt, style = MaterialTheme.typography.bodyLarge)
-                        Text("${if(e.sourceType == "CALIBRATION") "本人书面补充 / 修订依据" else "核对文字依据"} · ${recordingDate(state.stories.firstOrNull { it.text("episode_id") == e.episodeId }?.text("recorded_at").orEmpty())}", style = MaterialTheme.typography.bodySmall)
-                    } }
-                }
-                if(state.player.episode in petal.episodeIds) {
-                    Text("${state.player.position / 1000} / ${state.player.duration / 1000} 秒 · 完整原音", style = MaterialTheme.typography.bodySmall)
-                    Slider(state.player.position.toFloat(), { model.seekSource(it.toLong()) }, enabled = !state.player.preparing,
-                        valueRange = 0f..state.player.duration.coerceAtLeast(1).toFloat())
-                    TextButton(onClick = { if(state.player.playing) model.pauseSource() else model.resumeSource() }, enabled = !state.player.preparing) { Text(if(state.player.playing) "暂停" else "继续播放") }
-                }
-                petal.episodeIds.forEach { id -> Button(onClick = { model.playSource(id) }, enabled = !state.busy && !state.recording,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Icon(Icons.Outlined.PlayArrow, null); Spacer(Modifier.width(8.dp)); Text("听完整原音 · ${recordingDate(state.stories.firstOrNull { it.text("episode_id") == id }?.text("recorded_at").orEmpty())}", maxLines = 2) } }
-                Text(if(petal.evidence.any { it.sourceType == "CALIBRATION" }) "书面补充不在原音中；这里播放来源故事的完整原音。" else "没有可靠时间对齐时，播放整段原音。", style = MaterialTheme.typography.bodySmall)
-            }
         }
     }
 }

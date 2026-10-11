@@ -2,12 +2,14 @@ package me.remember.app
 
 import android.graphics.Bitmap
 import android.os.ParcelFileDescriptor
+import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import me.remember.app.integration.*
+import me.remember.app.core.designsystem.RememberMeTheme
 import org.json.JSONObject
 import org.json.JSONArray
 import org.junit.Assert.*
@@ -22,7 +24,7 @@ class GardenSettingsLiveTest {
     @get:Rule val ui=createAndroidComposeRule<MainActivity>()
     private val model get()=ViewModelProvider(ui.activity)[NativeWorkbenchModel::class.java]
     private val automation get()=InstrumentationRegistry.getInstrumentation().uiAutomation
-    private val out get()=File(ui.activity.getExternalFilesDir(null),"garden-restore").apply { mkdirs() }
+    private val out get()=File(ui.activity.getExternalFilesDir(null),"garden-polish").apply { mkdirs() }
     private fun idle(){ui.waitUntil(90_000){!model.ui.value.busy};assertNull(model.ui.value.error)}
     private fun click(text:String){
         val match=hasText(text) and isEnabled()
@@ -40,6 +42,42 @@ class GardenSettingsLiveTest {
         ui.waitUntil(60_000){model.ui.value.actor==person.getString("actor_id")||model.ui.value.error!=null};idle()
     }
     private fun digest(file:File)=MessageDigest.getInstance("SHA-256").digest(file.readBytes()).toList()
+    @Test fun gardenRetainsCameraAfterLeavingStory(){
+        val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
+        idle();login(cfg.getJSONObject("owner"));tab("档案");click("记忆")
+        val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
+        ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick()
+        click("归位");click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
+        click("返回花田")
+        ui.waitUntil(5000){ui.onNodeWithTag("garden-cluster-${c.id}").isDisplayed()}
+        ui.onNodeWithTag("garden-cluster-${c.id}").performClick()
+        ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
+        assertFalse(androidx.core.view.WindowCompat.getInsetsController(ui.activity.window,ui.activity.window.decorView).isAppearanceLightStatusBars)
+        tab("今天");tab("档案");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
+        click("归位")
+        val before = ui.onNodeWithTag("reviewed-garden-plant-stage").fetchSemanticsNode().boundsInRoot.top
+        ui.onNodeWithTag("reviewed-garden-plant-stage").performTouchInput { swipe(center,center.copy(y=center.y-150f)) }
+        val after = ui.onNodeWithTag("reviewed-garden-plant-stage").fetchSemanticsNode().boundsInRoot.top
+        assertTrue("At 100%, a swipe over the flower must scroll the page",after < before - 20f)
+        ui.onNodeWithTag("reviewed-garden-plant-stage").performScrollTo().performTouchInput {
+            val a=center.copy(x=center.x-40f);val b=center.copy(x=center.x+40f)
+            down(0,a);down(1,b)
+            moveTo(0,a.copy(x=a.x-40f));moveTo(1,b.copy(x=b.x+40f));up(0);up(1)
+        }
+        ui.onNodeWithTag("garden-zoom-level").assert(!hasText("100%"))
+        click("归位")
+        ui.onNodeWithTag("garden-change-scene").performScrollTo().performClick();shot("19-scene-preview")
+        ui.onNodeWithTag("garden-scene-NIGHT").performScrollTo().performClick()
+        assertEquals(SceneChoice.NIGHT,AppearancePreferences(ui.activity).choices.value.scene)
+        click("返回花田");shot("20-moon-garden")
+        ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick();shot("21-moon-flower")
+        ui.onNodeWithTag("garden-change-scene").performScrollTo().performClick()
+        ui.onNodeWithTag("garden-scene-MEADOW").performScrollTo().performClick()
+        click("返回花田")
+        File(out,"navigation-result.json").writeText(JSONObject().put("version",BuildConfig.VERSION_NAME)
+            .put("camera_survives_return_and_tabs",true).put("single_finger_page_scroll_at_100",true)
+            .put("scene_preview_and_selection",true).put("emulator",true).toString(2))
+    }
     @Test fun realFlowersPlaybackSettingsIdentityAndRevocation(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
         require(!BuildConfig.DEBUG);require(BuildConfig.SERVICE_URL=="https://39.108.183.47")
@@ -52,7 +90,7 @@ class GardenSettingsLiveTest {
         click("归位");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("100%")
         val projected=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{ep in it.episodeIds}
         click(projected.petals.first().title);shot("03-memory-evidence")
-        click("听完整原音 · ${recordingDate(model.ui.value.stories.first{it.text("episode_id")==ep}.text("recorded_at"))}")
+        ui.onNodeWithTag("garden-source-play").performClick()
         ui.waitUntil(35_000){model.ui.value.player.playing && model.ui.value.player.position>1000 || model.ui.value.error!=null};assertNull(model.ui.value.error)
         click("暂停");assertFalse(model.ui.value.player.playing);ui.runOnIdle{model.seekSource(2000)};shot("04-source-player")
         click("返回花朵");click("返回花田")
@@ -101,10 +139,28 @@ class GardenSettingsLiveTest {
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick()
         val p=c.petals.first()
         click(p.title);shot("12-large-font-memory")
-        ui.onNodeWithText("听完整原音 · ${recordingDate(model.ui.value.stories.first{it.text("episode_id")==ep}.text("recorded_at"))}").assertIsDisplayed()
+        ui.onNodeWithTag("garden-source-play").assertIsDisplayed()
         click("返回花朵");click("返回花田");ui.onNodeWithTag("garden-cluster-${c.id}").assertExists()
         File(out,"large-font-result.json").writeText(JSONObject().put("font_scale",ui.activity.resources.configuration.fontScale)
             .put("open_memory",true).put("source_button_visible",true).put("return_to_garden",true).put("emulator",true).toString(2))
+    }
+    @Test fun largeFontMultiSourceReaderLayout(){
+        assumeTrue("Run with font_scale=2",ui.activity.resources.configuration.fontScale>=1.9f)
+        // Explicit isolated layout fixture: eight sources, no backend writes or fabricated cloud outcome.
+        val evidence=(1..8).map { GardenEvidence("layout-e$it", "布局测试文字：这是第 $it 段讲述的依据，保留完整句子及其限定。", "layout-$it", "SELF_REPORT") }
+        val petal=GardenPetal("layout-memory","多来源布局测试","布局测试：同一段记忆涉及八段来源。长文与依据应能滚动阅读，不能被八个播放按钮挤出屏幕。", "布局测试资料 · 非模型结果",evidence)
+        val state=NativeState(stories=(1..8).map { JSONObject().put("episode_id","layout-$it").put("recorded_at","2026-10-${it.toString().padStart(2,'0')}T12:00:00Z") })
+        var chosen="";var closed=false
+        ui.activity.setContent { RememberMeTheme { GardenMemoryReaderContent(petal,state,{chosen=it},{},{},{},{closed=true}) } }
+        ui.onNodeWithTag("garden-source-play").assertIsDisplayed()
+        assertTrue(ui.onNodeWithTag("garden-reader-document").fetchSemanticsNode().boundsInRoot.height>100f)
+        ui.onNodeWithTag("garden-source-selector").performClick()
+        ui.onNodeWithTag("garden-source-option-7").performScrollTo().performClick()
+        ui.onNodeWithTag("garden-source-play").performClick();assertEquals("layout-8",chosen)
+        shot("22-multi-source-large-font");click("返回花朵");assertTrue(closed)
+        File(out,"multi-source-layout-result.json").writeText(JSONObject().put("fixture_only",true).put("model_call",false)
+            .put("font_scale",ui.activity.resources.configuration.fontScale).put("sources",8)
+            .put("source_selection",true).put("play_control_visible",true).put("document_scrollable",true).toString(2))
     }
     @Test fun reviewedFlowerAt412Dp(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})

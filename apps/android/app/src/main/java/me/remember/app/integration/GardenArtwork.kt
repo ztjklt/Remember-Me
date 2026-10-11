@@ -5,7 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
@@ -48,6 +48,7 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
     NatureScene.Forest -> R.drawable.rm_garden_woodland
     NatureScene.Coast -> R.drawable.rm_coast_v8
     NatureScene.Night -> R.drawable.rm_garden_night
+    NatureScene.Path -> R.drawable.rm_garden_path
 }
 
 /** Reuse the approved photograph with a green veil, never the near-white workbench veil. */
@@ -114,7 +115,8 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
 }
 
 /** Labels sit on the photographed petals; decoration never invents missing memories. */
-@Composable internal fun ReviewedGardenPetals(petals: List<GardenPetal>, scene: NatureScene, select: (GardenPetal) -> Unit) {
+@Composable internal fun ReviewedGardenPetals(petals: List<GardenPetal>, scene: NatureScene,
+    camera: GardenCamera, updateCamera: (GardenCamera) -> Unit, select: (GardenPetal) -> Unit) {
     if(LocalDensity.current.fontScale >= 1.5f) {
         ReviewedGardenPlant(Modifier.fillMaxWidth().height(230.dp))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -126,21 +128,43 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
         return
     }
     val key = petals.joinToString { it.id }
-    var zoom by rememberSaveable(key) { mutableFloatStateOf(1f) }
-    var x by rememberSaveable(key) { mutableFloatStateOf(0f) }
-    var y by rememberSaveable(key) { mutableFloatStateOf(0f) }
+    val latestCamera by rememberUpdatedState(camera)
+    val latestUpdate by rememberUpdatedState(updateCamera)
     var viewport by remember { mutableStateOf(IntSize.Zero) }
     fun move(pan: Offset, factor: Float, anchor: Offset? = null) {
-        val next = moveGardenCamera(GardenCamera(zoom, x, y), viewport.width.toFloat(), viewport.height.toFloat(),
+        val next = moveGardenCamera(latestCamera, viewport.width.toFloat(), viewport.height.toFloat(),
             pan.x, pan.y, factor, anchor?.x ?: viewport.width / 2f, anchor?.y ?: viewport.height / 2f)
-        zoom = next.zoom; x = next.x; y = next.y
+        latestUpdate(next)
     }
     BoxWithConstraints(Modifier.fillMaxWidth().height(420.dp).onSizeChanged { viewport = it }.clipToBounds().testTag("reviewed-garden-plant-stage")) {
         val width = maxWidth
         Box(Modifier.fillMaxSize().pointerInput(key) {
-            detectTransformGestures { centroid, pan, factor, _ -> move(pan, factor, centroid) }
+            // At 100%, one finger belongs to the page scroll. Only a pinch or an already
+            // enlarged flower takes the gesture; taps continue to reach the petal buttons.
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
+                var captured = false
+                var totalZoom = 1f
+                var totalPan = Offset.Zero
+                do {
+                    val event = awaitPointerEvent()
+                    if(event.changes.any { it.isConsumed }) break
+                    val factor = event.calculateZoom()
+                    val pan = event.calculatePan()
+                    totalZoom *= factor; totalPan += pan
+                    val canTransform = event.changes.count { it.pressed } >= 2 || latestCamera.zoom > 1f
+                    if(!captured && canTransform) {
+                        val zoomMotion = abs(1 - totalZoom) * event.calculateCentroidSize(useCurrent = false)
+                        captured = zoomMotion > viewConfiguration.touchSlop || totalPan.getDistance() > viewConfiguration.touchSlop
+                    }
+                    if(captured) {
+                        move(pan, factor, event.calculateCentroid(useCurrent = false))
+                        event.changes.forEach { it.consume() }
+                    }
+                } while(event.changes.any { it.pressed })
+            }
         }) {
-            Box(Modifier.fillMaxSize().graphicsLayer { scaleX = zoom; scaleY = zoom; translationX = x; translationY = y }) {
+            Box(Modifier.fillMaxSize().graphicsLayer { scaleX = camera.zoom; scaleY = camera.zoom; translationX = camera.x; translationY = camera.y }) {
                 Image(painterResource(gardenLandscape(scene)), null, Modifier.fillMaxSize().graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                     .drawWithCache { val edge = Brush.verticalGradient(0f to Color.Transparent, .2f to Color.White,
                         .8f to Color.White, 1f to Color.Transparent)
@@ -173,11 +197,11 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
     Surface(shape = RoundedCornerShape(24.dp), color = gardenGlass.copy(alpha = .85f), contentColor = gardenInk) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("拖动 · 双指缩放", fontSize = 11.sp)
-            TextButton(onClick = { move(Offset.Zero, .8f) }, enabled = zoom > 1f) { Text("−", color = gardenInk) }
-            Text("${(zoom * 100).roundToInt()}%", fontSize = 12.sp, modifier = Modifier.testTag("garden-zoom-level"))
-            TextButton(onClick = { move(Offset.Zero, 1.25f) }, enabled = zoom < 3f) { Text("＋", color = gardenInk) }
-            TextButton(onClick = { zoom = 1f; x = 0f; y = 0f }) { Text("归位", color = gardenInk, fontSize = 12.sp) }
+            Text(if(camera.zoom > 1f) "拖动花朵" else "双指放大", fontSize = 11.sp)
+            TextButton(onClick = { move(Offset.Zero, .8f) }, enabled = camera.zoom > 1f) { Text("−", color = gardenInk) }
+            Text("${(camera.zoom * 100).roundToInt()}%", fontSize = 12.sp, modifier = Modifier.testTag("garden-zoom-level"))
+            TextButton(onClick = { move(Offset.Zero, 1.25f) }, enabled = camera.zoom < 3f) { Text("＋", color = gardenInk) }
+            TextButton(onClick = { latestUpdate(GardenCamera()) }) { Text("归位", color = gardenInk, fontSize = 12.sp) }
         }
     }
 }

@@ -18,6 +18,7 @@ enum class NatureScene(val drawable: Int) {
     Forest(R.drawable.rm_forest_v8),
     Coast(R.drawable.rm_coast_v8),
     Night(R.drawable.rm_garden_night),
+    Path(R.drawable.rm_garden_path),
 }
 
 /** One static, bundled landscape per context. Reading surfaces use a stronger veil. */
