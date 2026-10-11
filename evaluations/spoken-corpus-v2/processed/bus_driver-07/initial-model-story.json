@@ -1,0 +1,172 @@
+{
+  "episode_id": "ep_e8a618af734d42b7",
+  "status": "ready",
+  "recorded_at": "2026-09-20T08:00:00+00:00",
+  "duration_ms": 50720,
+  "transcript": "这一段先留给我自己，暂时别给家里人听。\n\n我给妹妹陈梅写过一封信，想跟她道个歉，写好了却一直没寄。\n\n信还放在书桌下层蓝色的信封，有些话写在纸上还能停下来。\n\n想想真要拿给她，我又不知道该怎么开口。\n\n那次为什么闹得不愉快，今天不想细讲，她现在是不是还生我的气，我也不知道。\n\n不能说我写了这封信，两个人就算和好了，先这样放着吧，等我愿意讲的时候再说。",
+  "machine_transcript": "这一段先留给我自己，暂时别给家里人听。我给妹妹陈梅写过一封信，想跟她道个歉，写好了却一直没寄信，还放在书桌下层蓝色的信封，有些话写在纸上还能停下来。想想真要拿给他，我又不知道该怎么开口。那次为什么闹得不愉快，晴天不想细讲，他现在是不是还生我的气，我也不知道。不能说我写了这封信，两个人就算和好了，先这样放着吧，等我愿意讲的时候再说。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_a69df8a83b2b4e7a",
+      "content": "讲述者希望这一段暂时不要给家里人听。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_479a1716d4734847",
+          "excerpt": "这一段先留给我自己，暂时别给家里人听。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_6cab9e6b34484693",
+      "content": "讲述者给妹妹陈梅写过一封信，想向她道歉，但写好后一直没寄出。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_cb01324ff21b475e",
+          "excerpt": "我给妹妹陈梅写过一封信，想跟她道个歉，写好了却一直没寄。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_1fbd1ed3cd604088",
+      "content": "那封信放在书桌下层的蓝色信封里。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_428b18744926492c",
+          "excerpt": "信还放在书桌下层蓝色的信封，有些话写在纸上还能停下来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_9280f0c9603f4bf8",
+      "content": "讲述者觉得有些话写在纸上还能停下来。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_f689914e82764daf",
+          "excerpt": "信还放在书桌下层蓝色的信封，有些话写在纸上还能停下来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_a2750c1ee39e4c76",
+      "content": "讲述者想到真要拿信给妹妹，又不知道该怎么开口。",
+      "memory_type": "EMOTION",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_bf18504711c348b5",
+          "excerpt": "想想真要拿给她，我又不知道该怎么开口。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_61a1554bfc1f4dba",
+      "content": "讲述者不想细讲那次为什么闹得不愉快。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_ce5d8ad5a88541ba",
+          "excerpt": "那次为什么闹得不愉快，今天不想细讲，她现在是不是还生我的气，我也不知道。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_37d22c1c8b6e4968",
+      "content": "讲述者不知道妹妹现在是不是还生自己的气。",
+      "memory_type": "EMOTION",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_3fcb269a72874547",
+          "excerpt": "那次为什么闹得不愉快，今天不想细讲，她现在是不是还生我的气，我也不知道。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_5959cc20783843d6",
+      "content": "讲述者认为不能说自己写了这封信，两个人就算和好了。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_f7214c9268bb4bd3",
+          "excerpt": "不能说我写了这封信，两个人就算和好了，先这样放着吧，等我愿意讲的时候再说。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_88433a5a215842b1",
+      "content": "讲述者打算先把信放着，等自己愿意讲的时候再说。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "DECISION_PATTERNS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_7230bcad85624329",
+          "excerpt": "不能说我写了这封信，两个人就算和好了，先这样放着吧，等我愿意讲的时候再说。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_e8a618af734d42b7"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

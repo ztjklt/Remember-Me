@@ -1,5 +1,7 @@
 # 安装与真实操作：Android 本机联调版
 
+> 历史文档：以下是早期 PC/Groq 联调路线。当前 Android 内测版直接连接 ECS，使用服务端 Paraformer；请按[最新安装与双角色体验说明](ANDROID_QUICK_START_2026-10-10.md)操作，不再配置电脑接力。
+
 此版本使用真实 Groq ASR 和微信 DeepSeek，APK 不含服务商密钥。当前交付是 **PC 后端 + Android 安装包 / 网页**，不是脱离 PC 的公网成品。Windows 上未编译 iOS，也未声称实体手机已经验证。
 
 ## 已配置的开发电脑

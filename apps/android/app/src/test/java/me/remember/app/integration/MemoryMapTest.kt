@@ -29,4 +29,12 @@ class MemoryMapTest {
             row("person","pending","RELATIONSHIPS").put("kind","person"))
         assertEquals(listOf("person","story"),selectNarrativeRecords(samples,true,true,1,"","").map{it.getString("id")})
     }
+    @Test fun allSidesDoesNotSilentlyExcludeAnotherView() {
+        assertEquals(listOf("approved"),selectNarrativeRecords(rows,false,false,-1,"","").map{it.getString("id")})
+    }
+    @Test fun exactSearchIncludesEvidenceButNeverStaleSource() {
+        val cited=row("cited","confirmed","EXPERIENCE").put("evidence",JSONArray().put(JSONObject().put("excerpt","这个杯子不是陈岚送的")))
+        val revoked=row("hidden","confirmed","EXPERIENCE",false).put("evidence",cited.getJSONArray("evidence"))
+        assertEquals(listOf("cited"),selectNarrativeRecords(listOf(cited,revoked),false,false,0,"","陈岚").map{it.getString("id")})
+    }
 }

@@ -30,10 +30,11 @@ data class NativeState(
     val portrait: JSONObject = JSONObject(),
     val narrative: JSONObject = JSONObject(), val narrativeJobs: List<JSONObject> = emptyList(),
     val vocabulary: String = "", val reviewSupplement: String = "",
-    val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(),
+    val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(), val searchQuery:String = "",
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
+    val savedCaptureId: String = "",
     val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback(), val dailyReminder: Boolean = false
 ) {
     val owner get() = space?.text("role") == "owner"
@@ -298,7 +299,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 "android-${File(recording.audioPath).nameWithoutExtension}", revision = recordTarget))
             activeCapture = null
             recordTarget = null
-            state.value = state.value.copy(notice = "原音已保存到本机。请明确同意录音上传后继续。")
+            // Publish only after both the audio and the scoped capture ledger are saved.
+            state.value = state.value.copy(savedCaptureId = recording.audioPath, notice = "原音已保存到本机。请明确同意录音上传后继续。")
             after?.invoke()
         }
     }
@@ -434,8 +436,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     fun search(query: String) {
         val s = session ?: return; val path = subjectRoot()
         operation(s) {
+            state.value = state.value.copy(search=emptyList(),searchQuery="")
             val result = io { client.json(s, "$path/memory-search?q=${segment(query)}") }
-            state.value = state.value.copy(search = result.rows())
+            state.value = state.value.copy(search = result.rows(),searchQuery=query.trim())
         }
     }
     fun refreshCandidates(cloudConfirmed: Boolean) {

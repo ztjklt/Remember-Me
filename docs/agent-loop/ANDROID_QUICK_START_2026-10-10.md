@@ -1,5 +1,7 @@
 # 勿忘我：下载安装与两人体验说明
 
+> **最新0.9.0请看[十段样例、下载、8位账号与操作说明](ANDROID_090_QUICK_START.md)。** 以下保留0.8.2历史界面步骤；0.9.0首页改为“讲一段”，录音库在“全部录音”，不再需要首页录音勾选框。
+
 ## 1. 下载并安装
 
 [直接下载 Android 0.8.2 安装包](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.8.2-20261011/remember-me-0.8.2-internal.apk) · [下载页与文件校验](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.8.2-20261011)

@@ -189,7 +189,7 @@ class MeetingDemoLiveTest {
         ui.waitUntil(30_000){model.ui.value.player.playing&&model.ui.value.player.position>1000}
         report("source-playback",JSONObject().put("position_ms",model.ui.value.player.position).put("duration_ms",model.ui.value.player.duration))
         shot("12-cloud-playback");click("停止播放")
-        click("记忆");shot("13-memories")
+        click("花田");shot("13-memories")
         tab("对话")
         ui.onNodeWithText("想了解什么？").performTextReplacement(cfg.getString("question"))
         check("同意本次将问题和有权访问");click("提问");idle()

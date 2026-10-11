@@ -1,0 +1,104 @@
+{
+  "episode_id": "ep_f043b29ec18c48cf",
+  "status": "ready",
+  "recorded_at": "2026-09-16T08:00:00+00:00",
+  "duration_ms": 56160,
+  "transcript": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n昨天又说，到那天我才想起还有他帮忙，这件事不能漏了。\n\n后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n我觉得我们聊得来，也有这些工作上的话题在里头，不过他家更早的事我就不知道了。",
+  "machine_transcript": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。昨天又说，到那天我才想起还有她帮忙，这件事不能漏了。后来闲聊，他说她父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。我觉得我们聊得来，也有这些工作上的话题在里头，不过他家更早的事我就不知道了。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_248be7b386574e28",
+      "content": "今天讲的是车队的王建国，不是以前隔壁那个王老师。",
+      "memory_type": "PERSON",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_c3f0eece4a284e18",
+          "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_a1ec8ff171054076",
+      "content": "我第一次独立出车前，王建国过来帮我整理出车记录，车是我自己开的，他帮的是前面的准备，第一次跑的是12路。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_9bf748bf5cc24b90",
+          "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_9cb588a9183443e4",
+      "content": "昨天又说起，到那天我才想起还有王建国帮忙，觉得这件事不能漏了。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_c2870c7df0584495",
+          "excerpt": "昨天又说，到那天我才想起还有他帮忙，这件事不能漏了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_89498fab19be41da",
+      "content": "后来闲聊时，王建国说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。",
+      "memory_type": "PERSON",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_bd5fa74999d04490",
+          "excerpt": "后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_9f40b753229d41eb",
+      "content": "我觉得我和王建国聊得来，也有工作上的话题在里头，不过他家更早的事我不知道。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_56daaccbcbdd4933",
+          "excerpt": "我觉得我们聊得来，也有这些工作上的话题在里头，不过他家更早的事我就不知道了。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-11T02:52:21.971298+00:00",
+  "endpoint": "https://api.xiaomimimo.com/v1/chat/completions",
+  "request_model": "mimo-v2.5-tts-voiceclone",
+  "prompt_version": "spoken-garden-v2-20261011",
+  "text_sha256": "bc0e5e069f69603e6aa75523ea27a6ad13ee824db78c92c09ce54611253beb4e",
+  "attempt": 1,
+  "http_status": 200,
+  "elapsed_seconds": 14.878,
+  "response_model": "mimo-v2.5-tts-voiceclone",
+  "finish_reason": "stop",
+  "usage": {
+    "completion_tokens": 347,
+    "prompt_tokens": 263,
+    "total_tokens": 610,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 9
+    }
+  },
+  "duration_seconds": 55.2,
+  "sample_rate": 24000,
+  "channels": 1,
+  "validation": "valid_wav_not_yet_listened",
+  "audio_sha256": "9bef15530a9040ca06ee0027ba379cf9894333dc754bef900c26632e609fbc1b",
+  "synthetic": true,
+  "manual_listening": "pending",
+  "voice_sha256": "952eb88de52b2d0b0c44aac650e6a069012cdba5f4d3d1c2ecfc2f0e5f876cc6",
+  "authored_script": "scripts/bus_driver-03.txt",
+  "simulated_day": 6
+}

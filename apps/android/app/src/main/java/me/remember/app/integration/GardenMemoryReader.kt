@@ -98,7 +98,9 @@ import androidx.compose.ui.window.DialogProperties
                         Text("${gardenClock(state.player.duration)} · 完整原音", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                val loading = state.busy || active && state.player.preparing
+                // Keep pause available while unrelated server refreshes run.
+                // Starting a new download still waits for the current request.
+                val loading = (!active && state.busy) || (active && state.player.preparing)
                 val playing = active && state.player.playing
                 Button(onClick = { if(!active) play(source) else if(playing) pause() else resume() },
                     enabled = !loading && !state.recording, shape = RoundedCornerShape(18.dp),

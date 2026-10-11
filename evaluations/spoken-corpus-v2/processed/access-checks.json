@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "reply initially private",
+    "private audio rejected",
+    "revoke audio, narrative, search round 1 passed",
+    "revoke audio, narrative, search round 2 passed",
+    "revoke audio, narrative, search round 3 passed"
+  ],
+  "private_episode": "ep_e8a618af734d42b7",
+  "shared_episodes": [
+    "ep_a331afcab3ad4dc8",
+    "ep_d71b512711fa4c58",
+    "ep_facb2f3eebb340ab",
+    "ep_303547a2ffee457d",
+    "ep_f043b29ec18c48cf",
+    "ep_ed240efd5e804a3f",
+    "ep_82de72274ae44a0b",
+    "ep_55d7960102d74610"
+  ],
+  "not_shared": [
+    "ep_03ab92c8acdb4e9e",
+    "ep_e8a618af734d42b7"
+  ],
+  "new_reply_explicitly_shared": true
+}

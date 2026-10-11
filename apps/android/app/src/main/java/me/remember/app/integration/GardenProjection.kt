@@ -72,5 +72,5 @@ fun projectGarden(stories: List<JSONObject>, narrative: JSONObject): List<Garden
             "${recordingDate(story.text("recorded_at"))}的讲述", false, story.text("recorded_at"),
             listOf(story.text("episode_id")), emptyList(), petals)
     }
-    return (organized + ungrouped).sortedWith(compareByDescending<GardenCluster> { it.recordedAt }.thenBy { it.id })
+    return (organized + ungrouped).sortedWith(compareByDescending<GardenCluster> { it.organized }.thenByDescending { it.recordedAt }.thenBy { it.id })
 }

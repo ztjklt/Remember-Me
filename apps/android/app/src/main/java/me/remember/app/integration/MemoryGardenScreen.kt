@@ -3,6 +3,8 @@ package me.remember.app.integration
 import android.animation.ValueAnimator
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -39,7 +41,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearance: AppearanceChoice, updateAppearance: (AppearanceChoice) -> Unit,
     scroll: ScrollState, openSource: (String) -> Unit, openPeople: () -> Unit, openPending: () -> Unit,
-    onStoryOpenChanged: (Boolean) -> Unit = {}) {
+    ask: (String) -> Unit = {}, onStoryOpenChanged: (Boolean) -> Unit = {}) {
     val clusters = remember(state.stories, state.narrative) { projectGarden(state.stories, state.narrative) }
     var selected by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
     var selectedPetal by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
@@ -65,7 +67,7 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
     fun returnGarden() { returnTo = selected; selected = null }
     val cluster = clusters.firstOrNull { it.id == selected }
     val petal = cluster?.petals?.firstOrNull { it.id == selectedPetal }
-    val motion = if(appearance.reduceMotion || !ValueAnimator.areAnimatorsEnabled() || (selected != null && cluster == null)) 0 else 220
+    val motion = if(appearance.reduceMotion || !ValueAnimator.areAnimatorsEnabled() || (selected != null && cluster == null)) 0 else 620
     LaunchedEffect(clusters.map { it.id }, cluster?.petals?.map { it.id }) {
         if(selected != null && cluster == null) { selected = null; selectedPetal = null }
         if(selectedPetal != null && petal == null) selectedPetal = null
@@ -73,12 +75,11 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
     }
     BackHandler(selected != null && petal == null) { returnGarden() }
     if(cluster == null) {
-        Text("A GARDEN OF MOMENTS", fontSize = 10.sp, letterSpacing = 2.sp, color = gardenMuted,
-            modifier = Modifier.padding(top = 12.dp))
-        Text("日子慢慢过去，\n有些话，留下来。", fontFamily = FontFamily.Serif, fontSize = 28.sp, lineHeight = 40.sp, color = gardenInk)
-        Text("一朵花，一段还能听得见的回忆。", fontSize = 14.sp, color = gardenMuted)
+        Text("沿着花径，重温往事。",fontFamily=FontFamily.Serif,fontSize=24.sp,lineHeight=34.sp,color=gardenInk,
+            modifier=Modifier.padding(top=8.dp))
+
     }
-    AnimatedContent(cluster, transitionSpec = { fadeIn(tween(motion)) togetherWith fadeOut(tween(motion)) },
+    AnimatedContent(cluster, transitionSpec = { (fadeIn(tween(motion)) + scaleIn(tween(motion),initialScale=if(targetState!=null) .78f else 1.08f)) togetherWith (fadeOut(tween(motion)) + scaleOut(tween(motion),targetScale=if(targetState!=null) 1.08f else .78f)) },
         label = "garden-story", contentKey = { it?.id }) { current ->
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if(current == null) {
@@ -97,7 +98,14 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                         unfocusedTextColor = gardenInk, focusedLabelColor = gardenMuted, unfocusedLabelColor = gardenMuted,
                         focusedBorderColor = gardenMuted, unfocusedBorderColor = gardenMuted.copy(alpha = .45f)))
                 val visible = clusters.filter { (facet.isBlank() || facet in it.facets) && (query.isBlank() ||
-                    (it.title + " " + it.petals.joinToString(" ") { p -> p.content }).contains(query, true)) }
+                    (it.title + " " + it.petals.joinToString(" ") { p -> p.content + " " + p.evidence.joinToString(" ") { e -> e.excerpt } }).contains(query.trim(), true)) }
+                if(searchOpen && query.isNotBlank()) {
+                    TextButton(onClick={model.search(query.trim())},enabled=!state.busy) {
+                        Text(if(state.busy) "查找中…" else "查找相关内容",color=gardenInk)
+                    }
+                    TextButton(onClick={ask(query.trim())},enabled=!state.busy) { Text("问一问",color=gardenInk) }
+                    if(visible.isNotEmpty()) Text("精准匹配",color=gardenMuted,style=MaterialTheme.typography.labelLarge)
+                }
                 if(visible.isEmpty()) {
                     Surface(shape = RoundedCornerShape(24.dp), color = gardenGlass.copy(alpha = .88f), contentColor = gardenInk) {
                         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -109,38 +117,47 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                     }
                 }
                 if(listMode) visible.forEach { c -> GardenListItem(c, returnTo == c.id, { returnTo = null }) { choose(c.id) } }
-                else visible.chunked(2).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if(row.size == 1) ReviewedGardenFlower(row.single(), Modifier.fillMaxWidth().padding(horizontal = 40.dp),
-                        returnIntoView = returnTo == row.single().id, onReturned = { returnTo = null }) { choose(row.single().id) }
-                    else row.forEachIndexed { index, c -> ReviewedGardenFlower(c, Modifier.weight(1f).padding(top = if(index == 1) 30.dp else 0.dp), side = index == 1,
-                        returnIntoView = returnTo == c.id, onReturned = { returnTo = null }) { choose(c.id) } }
-                } }
+                else GardenMeadow(visible,"${state.actor}:${state.subject}",returnTo,{returnTo=null}) { choose(it) }
+                if(searchOpen && query.isNotBlank() && state.searchQuery==query.trim()) {
+                    Text("相关内容",color=gardenInk,style=MaterialTheme.typography.titleMedium)
+                    if(state.search.isEmpty()) Text("暂未找到更多相关内容",color=gardenMuted)
+                    state.search.forEach { hit ->
+                        val sources=hit.rows("evidence").filter { e -> state.stories.any { story -> story.text("episode_id")==e.text("episode_id") && story.optBoolean("reviewed") && !story.optBoolean("unavailable") && story.text("status")=="ready" } }
+                        if(sources.isNotEmpty()) Surface(shape=RoundedCornerShape(20.dp),color=gardenGlass.copy(alpha=.94f),contentColor=gardenInk) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                                Text(hit.text("statement"))
+                                sources.forEach { evidence ->
+                                    Text("“${evidence.text("excerpt")}”",style=MaterialTheme.typography.bodyMedium)
+                                    TextButton(onClick={openSource(evidence.text("episode_id"))}) { Text("打开来源",color=gardenMuted) }
+                                }
+                            }
+                        }
+                    }
+                }
                 TextButton(onClick = openPeople) { Text("了解故事里的人", color = gardenInk) }
                 if(state.narrative.rows("facets").isNotEmpty()) {
                     var filters by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
                     TextButton(onClick = { filters = !filters }) { Text(if(filters) "收起内容侧面" else "按记忆侧面筛选", color = gardenMuted, fontSize = 12.sp) }
                     if(filters) {
                         state.narrative.rows("facets").chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            pair.forEach { f -> FilterChip(facet == f.text("id"), { facet = if(facet == f.text("id")) "" else f.text("id") }, label = { Text(f.text("title")) }) }
+                            pair.forEach { f -> FilterChip(facet == f.text("id"), { facet = if(facet == f.text("id")) "" else f.text("id") }, label = { Text(memorySideTitles[f.text("id")] ?: f.text("title")) }) }
                         } }
-                        if(facet.isNotBlank()) Text("尚未归组的记录没有侧面标签，可以清除筛选后查看。", color = gardenMuted, style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 if(state.owner) {
                     val pending = state.stories.count { it.text("status") != "ready" || it.optBoolean("waiting_for_review") }
-                    TextButton(onClick = openPending) { Text("待处理录音 $pending 段 · 查看核对与失败原因", color = gardenMuted, fontSize = 12.sp) }
+                    TextButton(onClick = openPending) { Text("待整理 · $pending 段", color = gardenMuted, fontSize = 12.sp) }
                 }
-                Text("花朵代表可查阅的内容，不表示人格准确度。", color = gardenMuted, fontSize = 11.sp)
             } else {
                 TextButton(onClick = { returnGarden() }) { Icon(Icons.Outlined.ArrowBack, null, tint = gardenInk); Spacer(Modifier.width(8.dp)); Text("返回花田", color = gardenInk) }
                 Text(current.title, fontFamily = FontFamily.Serif, fontSize = 24.sp, lineHeight = 33.sp, color = gardenInk)
-                Text(if(current.organized) "本人核对的故事 · ${current.episodeIds.size} 段来源" else "尚未归组的记录 · 已完成记忆整理", fontSize = 12.sp, color = gardenMuted)
+                Text(if(current.organized) "已核对 · ${current.episodeIds.size} 段来源" else "系统整理", fontSize = 12.sp, color = gardenMuted)
                 Text(if(current.petals.isEmpty()) "尚未提取到记忆。原音仍在，可以查看来源或在录音页重试整理。" else "一片花瓣，一段值得停留的瞬间。", fontSize = 14.sp, color = gardenMuted)
                 val pages = current.petals.chunked(5)
                 val shown = pages.getOrElse(page) { pages.firstOrNull().orEmpty() }
                 val cameraKey = "${current.id}/${shown.joinToString { it.id }}"
                 if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene, cameras[cameraKey] ?: GardenCamera(),
-                    { cameras = cameras + (cameraKey to it) }) { selectedPetal = it.id }
+                    { cameras = cameras + (cameraKey to it) },form=gardenBloom(current.id),reduceMotion=appearance.reduceMotion) { selectedPetal = it.id }
                 if(pages.size > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { page-- }, enabled = page > 0) { Text("上一组") }
                     Text("${page + 1} / ${pages.size} 组", Modifier.padding(top = 12.dp))

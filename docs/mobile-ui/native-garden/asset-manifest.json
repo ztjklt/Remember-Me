@@ -40,5 +40,11 @@
     "source": "docs/mobile-ui/nature/garden-v21/night.png",
     "sha256": "4967d510562b6458f30396c64842f8bbc413b77d69808fb22a55e0edcbaf67e5",
     "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_night.png"
+  },
+  {
+    "source": "assets/brand/forget-me-not/v20/bloom-cupped.png",
+    "android": "apps/android/app/src/main/res/drawable-nodpi/rm_garden_flower_cupped.png",
+    "bytes": 1726455,
+    "sha256": "91cf72fbcbc8c7754a0fcd11c1549a535fd76b86f22f3ad543137d872679e5f5"
   }
 ]

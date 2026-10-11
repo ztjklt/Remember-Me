@@ -1,0 +1,254 @@
+[
+  {
+    "candidate": {
+      "candidate_id": "pc_6c6eaeb2b065a594c7bee92a91c22e5f9bc22d5f",
+      "domain": "VALUES_BELIEFS",
+      "kind": "trait",
+      "statement": "讲述者看重“平安回家比多跑一趟重要”，这一观念与家里有人等候的日常记忆有关。",
+      "context": "讲述者多次提到这句话，并解释是因为想到收车回家时厨房小灯还亮着、有人惦记自己回家，并非因为有事故要讲。",
+      "evidence_ids": [
+        "ev_9d540971a2cb4c0d",
+        "ev_b0b9ccb798ea44a0",
+        "ev_735212b22d994af5",
+        "ev_7ca26040d5dc4bd0",
+        "ev_485241868c56488b",
+        "ev_c4a65f3f9e2946b0",
+        "ev_80a3cc0922af42cb"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "pending",
+      "stored_status": "pending",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "多次材料支持的候选",
+      "created_at": "2026-10-11T03:10:59.848629+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_9d540971a2cb4c0d",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "excerpt": "后来我常跟陈岚说，平安回家比多跑一趟重要。",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_b0b9ccb798ea44a0",
+          "episode_id": "ep_82de72274ae44a0b",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_735212b22d994af5",
+          "episode_id": "ep_55d7960102d74610",
+          "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "episode_id": "ep_55d7960102d74610",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_485241868c56488b",
+          "episode_id": "ep_55d7960102d74610",
+          "excerpt": "一天的活忙完了，有个人惦记着我回家，心里会松下来。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "episode_id": "ep_55d7960102d74610",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_80a3cc0922af42cb",
+          "episode_id": "ep_55d7960102d74610",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "action": "confirm",
+    "reason": "核对明确自述及其适用情境；不按重复段数计算独立支持",
+    "result": {
+      "candidate_id": "pc_6c6eaeb2b065a594c7bee92a91c22e5f9bc22d5f",
+      "domain": "VALUES_BELIEFS",
+      "kind": "trait",
+      "statement": "讲述者看重“平安回家比多跑一趟重要”，这一观念与家里有人等候的日常记忆有关。",
+      "context": "讲述者多次提到这句话，并解释是因为想到收车回家时厨房小灯还亮着、有人惦记自己回家，并非因为有事故要讲。",
+      "evidence_ids": [
+        "ev_9d540971a2cb4c0d",
+        "ev_b0b9ccb798ea44a0",
+        "ev_735212b22d994af5",
+        "ev_7ca26040d5dc4bd0",
+        "ev_485241868c56488b",
+        "ev_c4a65f3f9e2946b0",
+        "ev_80a3cc0922af42cb"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "confirmed",
+      "stored_status": "confirmed",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "多次材料支持的候选",
+      "created_at": "2026-10-11T03:10:59.848629+00:00"
+    }
+  },
+  {
+    "candidate": {
+      "candidate_id": "pc_82c9b17244995d8b142ec738b6975ec524450f7b",
+      "domain": "DECISION_PATTERNS",
+      "kind": "habit",
+      "statement": "讲述者保留旧物（如缺口搪瓷杯、装旧车票的小盒子、未寄出的信）的习惯，倾向于不急于丢弃或处理它们。",
+      "context": "讲述者多次提到留着旧杯子、搬家时优先带上装旧车票的小盒子、以及写好却一直没寄出的道歉信仍放在书桌下层，体现出对旧物和未完成之事的保留倾向。",
+      "evidence_ids": [
+        "ev_554298c7655c4701",
+        "ev_860856ff282447cc",
+        "ev_a9292ffe955a475c",
+        "ev_cb01324ff21b475e",
+        "ev_428b18744926492c",
+        "ev_f7214c9268bb4bd3"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "pending",
+      "stored_status": "pending",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "多次材料支持的候选",
+      "created_at": "2026-10-11T03:10:59.845778+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_554298c7655c4701",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "excerpt": "今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_860856ff282447cc",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "excerpt": "所以这个旧杯子我换了新的以后也没急着扔。",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_a9292ffe955a475c",
+          "episode_id": "ep_303547a2ffee457d",
+          "excerpt": "搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_cb01324ff21b475e",
+          "episode_id": "ep_e8a618af734d42b7",
+          "excerpt": "我给妹妹陈梅写过一封信，想跟她道个歉，写好了却一直没寄。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_428b18744926492c",
+          "episode_id": "ep_e8a618af734d42b7",
+          "excerpt": "信还放在书桌下层蓝色的信封，有些话写在纸上还能停下来。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_f7214c9268bb4bd3",
+          "episode_id": "ep_e8a618af734d42b7",
+          "excerpt": "不能说我写了这封信，两个人就算和好了，先这样放着吧，等我愿意讲的时候再说。",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "action": "reject",
+    "reason": "未寄出的信不应被泛化为保留旧物的稳定习惯",
+    "result": {
+      "candidate_id": "pc_82c9b17244995d8b142ec738b6975ec524450f7b",
+      "domain": "DECISION_PATTERNS",
+      "kind": "habit",
+      "statement": "讲述者保留旧物（如缺口搪瓷杯、装旧车票的小盒子、未寄出的信）的习惯，倾向于不急于丢弃或处理它们。",
+      "context": "讲述者多次提到留着旧杯子、搬家时优先带上装旧车票的小盒子、以及写好却一直没寄出的道歉信仍放在书桌下层，体现出对旧物和未完成之事的保留倾向。",
+      "evidence_ids": [
+        "ev_554298c7655c4701",
+        "ev_860856ff282447cc",
+        "ev_a9292ffe955a475c",
+        "ev_cb01324ff21b475e",
+        "ev_428b18744926492c",
+        "ev_f7214c9268bb4bd3"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "rejected",
+      "stored_status": "rejected",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "多次材料支持的候选",
+      "created_at": "2026-10-11T03:10:59.845778+00:00"
+    }
+  },
+  {
+    "candidate": {
+      "candidate_id": "pc_40eb88a44fdd5974fcbfb91848765ae931c8a48b",
+      "domain": "PREFERENCES",
+      "kind": "trait",
+      "statement": "讲述者偏好喝淡茶，觉得太甜反而喝不惯，并明确这是自己的口味。",
+      "context": "讲述者在谈及自己喝茶习惯时，直接说明口味偏好，并强调这不是别人规定的。",
+      "evidence_ids": [
+        "ev_23a1435afe794db8",
+        "ev_92116f4f6dde42c4"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 1,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "pending",
+      "stored_status": "pending",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "情境化观察",
+      "created_at": "2026-10-11T03:10:59.842161+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_92116f4f6dde42c4",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "action": "confirm",
+    "reason": "核对明确自述及其适用情境；不按重复段数计算独立支持",
+    "result": {
+      "candidate_id": "pc_40eb88a44fdd5974fcbfb91848765ae931c8a48b",
+      "domain": "PREFERENCES",
+      "kind": "trait",
+      "statement": "讲述者偏好喝淡茶，觉得太甜反而喝不惯，并明确这是自己的口味。",
+      "context": "讲述者在谈及自己喝茶习惯时，直接说明口味偏好，并强调这不是别人规定的。",
+      "evidence_ids": [
+        "ev_23a1435afe794db8",
+        "ev_92116f4f6dde42c4"
+      ],
+      "counter_evidence_ids": [],
+      "independent_episodes": 1,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "profile-proposals-evidence-v4",
+      "status": "confirmed",
+      "stored_status": "confirmed",
+      "source_version": "aa2072f215fa9087167e6e71c020de6976f81921e1f4500394075b4c621e878f",
+      "scope": "owner",
+      "label": "情境化观察",
+      "created_at": "2026-10-11T03:10:59.842161+00:00"
+    }
+  }
+]

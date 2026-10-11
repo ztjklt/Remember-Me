@@ -2,11 +2,17 @@ package me.remember.app.integration
 
 import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 internal fun recordingDate(value: String): String = runCatching {
-    OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm"))
+    val date=OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault())
+    val today=LocalDate.now()
+    when(date.toLocalDate()) {
+        today -> "今天 " + date.format(DateTimeFormatter.ofPattern("HH:mm"))
+        today.minusDays(1) -> "昨天 " + date.format(DateTimeFormatter.ofPattern("HH:mm"))
+        else -> date.format(DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm"))
+    }
 }.getOrDefault(value.take(16).replace('T', ' '))
 
 internal fun processingLabel(value: String) = when(value) {

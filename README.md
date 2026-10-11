@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.9.0：** [下载安装、陈守义十段样例与两人使用说明](docs/agent-loop/ANDROID_090_QUICK_START.md) · [连续花田、人物内容及验收边界](docs/agent-loop/IMMERSIVE_GARDEN_ACCEPTANCE_2026-10-11.md) · [本轮模拟器截图](docs/agent-loop/screenshots/immersive-garden-20261011/README.md)。同签名覆盖升级；新材料已进入ECS，本轮未更换服务端代码。
+
 > **Android 0.8.2：** [花田浏览、背景预览与记忆阅读打磨](docs/agent-loop/ANDROID_GARDEN_POLISH_2026-10-11.md) · [19张本轮截图](docs/agent-loop/screenshots/2026-10-11-garden-polish/README.md)。同签名覆盖升级；本次未重新部署ECS。
 
 > **Android 0.8.1：** [恢复原稿写实蓝花、自然枝叶与花瓣入口](docs/agent-loop/ANDROID_GARDEN_RESTORE_2026-10-11.md)。[下载安装与简单8位演示账号](docs/agent-loop/ANDROID_QUICK_START_2026-10-10.md)。旧包和截图保留；iOS与新版真机未验收。

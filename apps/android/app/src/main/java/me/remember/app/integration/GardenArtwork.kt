@@ -19,8 +19,11 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.ContentScale
@@ -53,24 +56,41 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
 }
 
 /** Reuse the approved photograph with a green veil, never the near-white workbench veil. */
-@Composable internal fun Modifier.reviewedGardenAtmosphere(scene: NatureScene): Modifier =
-    paint(painterResource(gardenLandscape(scene)), sizeToIntrinsics = false, contentScale = ContentScale.Crop)
+@Composable internal fun Modifier.reviewedGardenAtmosphere(scene: NatureScene): Modifier {
+    val landscape=ImageBitmap.imageResource(gardenLandscape(scene))
+    return paint(painterResource(gardenLandscape(scene)), sizeToIntrinsics = false, contentScale = ContentScale.Crop)
         .drawWithCache {
             val veil = Brush.verticalGradient(listOf(Color(0xFF163F40).copy(alpha = .56f),
                 Color(0xFF284636).copy(alpha = .33f), Color(0xFF173529).copy(alpha = .65f)))
-            onDrawBehind { drawRect(veil) }
+            onDrawBehind {
+                // A fixed foreground plane across the entire screen, feathered
+                // into the horizon. No tiled rectangles behind individual flowers.
+                if(scene==NatureScene.Meadow) {
+                    val top=(size.height*.32f).toInt()
+                    val fade=size.height*.16f
+                    val sourceTop=(landscape.height*.66f).toInt()
+                    drawContext.canvas.saveLayer(Rect(Offset.Zero,size),Paint())
+                    drawImage(landscape,srcOffset=IntOffset(0,sourceTop),srcSize=IntSize(landscape.width,landscape.height-sourceTop),
+                        dstOffset=IntOffset(0,top),dstSize=IntSize(size.width.toInt(),size.height.toInt()-top),alpha=.85f)
+                    drawRect(Brush.verticalGradient(listOf(Color.Transparent,Color.White),
+                        startY=top.toFloat(),endY=top+fade),blendMode=BlendMode.DstIn)
+                    drawContext.canvas.restore()
+                }
+                drawRect(veil)
+            }
         }
+}
 
 /** Exact v19/v20 alpha photograph and v21 stalk. No circles or replacement petal outlines. */
-@Composable internal fun ReviewedGardenPlant(modifier: Modifier, side: Boolean = false, flowerOnly: Boolean = false, large: Boolean = false) {
-    val flower = ImageBitmap.imageResource(if(side) R.drawable.rm_garden_flower_side else R.drawable.rm_garden_flower_front)
+@Composable internal fun ReviewedGardenPlant(modifier: Modifier, side: Boolean = false, flowerOnly: Boolean = false, large: Boolean = false, form: Int = if(side) 1 else 0) {
+    val flower = ImageBitmap.imageResource(when(form) { 1 -> R.drawable.rm_garden_flower_side; 2 -> R.drawable.rm_garden_flower_cupped; else -> R.drawable.rm_garden_flower_front })
     val stem = ImageBitmap.imageResource(R.drawable.rm_garden_stem)
     val naturalColor = remember { ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(.76f) }) }
     Canvas(modifier) {
         val width = if(flowerOnly) min(size.width, size.height) * .98f else if(large) size.width * .97f else min(size.width * .97f, size.height * .80f)
         val center = Offset(size.width / 2, if(flowerOnly) size.height / 2 else width / 2 + 4.dp.toPx())
         if(!flowerOnly) {
-            val from = center + if(side) Offset(width * .283f, width * .425f) else Offset(-width * .16f, width * .23f)
+            val from = center + if(form == 1) Offset(width * .283f, width * .425f) else Offset(-width * .16f, width * .23f)
             val to = Offset(size.width * .52f, size.height + 18.dp.toPx())
             // The same tip/base similarity transform as botanical-v21.js. Leaves retain their proportions.
             val ux = -5f; val uy = 1450f; val vx = to.x - from.x; val vy = to.y - from.y
@@ -117,9 +137,9 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
 
 /** Labels sit on the photographed petals; decoration never invents missing memories. */
 @Composable internal fun ReviewedGardenPetals(petals: List<GardenPetal>, scene: NatureScene,
-    camera: GardenCamera, updateCamera: (GardenCamera) -> Unit, select: (GardenPetal) -> Unit) {
+    camera: GardenCamera, updateCamera: (GardenCamera) -> Unit, form: Int = 0, reduceMotion: Boolean = false, select: (GardenPetal) -> Unit) {
     if(LocalDensity.current.fontScale >= 1.5f) {
-        ReviewedGardenPlant(Modifier.fillMaxWidth().height(230.dp))
+        ReviewedGardenPlant(Modifier.fillMaxWidth().height(230.dp),form=form)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             petals.forEach { p -> Surface(onClick = { select(p) }, modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp), color = gardenGlass.copy(alpha = .94f), contentColor = gardenInk) {
@@ -127,6 +147,14 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
             } }
         }
         return
+    }
+    var lifting by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(lifting) {
+        lifting?.let { id ->
+            if(!reduceMotion && android.animation.ValueAnimator.areAnimatorsEnabled()) delay(260)
+            petals.firstOrNull { it.id==id }?.let(select)
+            lifting=null
+        }
     }
     val key = petals.joinToString { it.id }
     val latestCamera by rememberUpdatedState(camera)
@@ -182,14 +210,40 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
                             drawRect(sides, blendMode = BlendMode.DstIn) } },
                     contentScale = ContentScale.Crop, alpha = .40f)
                 // The bloom, stalk, labels and background share this single camera transform.
-                ReviewedGardenPlant(Modifier.fillMaxWidth().height(420.dp), large = true)
+                ReviewedGardenPlant(Modifier.fillMaxWidth().height(420.dp), large = true, form=form)
                 val photo = width * .97f
-                val anchors = listOf(.47f to .22f, .77f to .43f, .72f to .75f, .30f to .75f, .22f to .43f)
+                val anchors = when(form) {
+                    1 -> listOf(.56f to .24f,.80f to .39f,.63f to .67f,.30f to .72f,.28f to .43f)
+                    2 -> listOf(.48f to .24f,.80f to .45f,.74f to .77f,.41f to .76f,.23f to .46f)
+                    else -> listOf(.47f to .22f,.77f to .43f,.72f to .75f,.30f to .75f,.22f to .43f)
+                }
                 val colors = listOf(Color(0xFF99CFC0), Color(0xFF91B8D9), Color(0xFFCDB090), Color(0xFFB9ADD0), Color(0xFFD7C799))
+                // Lift only the selected sector of the same source photograph, retaining
+                // the exact veining, colour and flower orientation used by this story.
+                val selectedIndex = petals.indexOfFirst { it.id == lifting }
+                val raised by androidx.compose.animation.core.animateFloatAsState(if(selectedIndex>=0) 1f else 0f,
+                    animationSpec=androidx.compose.animation.core.tween(if(reduceMotion) 0 else 180),label="photo-petal-lift")
+                if(selectedIndex>=0) {
+                    val bitmap=ImageBitmap.imageResource(when(form){1->R.drawable.rm_garden_flower_side;2->R.drawable.rm_garden_flower_cupped;else->R.drawable.rm_garden_flower_front})
+                    Canvas(Modifier.fillMaxWidth().height(420.dp)) {
+                        val w=size.width*.97f;val left=(size.width-w)/2;val top=4.dp.toPx()
+                        val center=Offset(size.width/2,w/2+top)
+                        val target=anchors[selectedIndex%5];val angle=atan2(target.second-.5f,target.first-.5f)
+                        val mask=Path().apply { moveTo(center.x,center.y)
+                            for(step in 0..18){val a=angle-.60f+step/18f*1.2f;lineTo(center.x+cos(a)*w,center.y+sin(a)*w)};close() }
+                        val shift=8.dp.toPx()*raised
+                        withTransform({translate(cos(angle)*shift,sin(angle)*shift)}) {
+                            clipPath(mask) { drawImage(bitmap,srcSize=IntSize(bitmap.width,bitmap.height),
+                                dstOffset=IntOffset(left.roundToInt(),top.roundToInt()),dstSize=IntSize(w.roundToInt(),w.roundToInt())) }
+                        }
+                    }
+                }
                 petals.forEachIndexed { index, p ->
                     val anchor = anchors[index % 5]
-                    Surface(onClick = { select(p) }, modifier = Modifier.offset(x = photo * anchor.first - 59.dp,
-                        y = photo * anchor.second - 22.dp).width(118.dp).heightIn(min = 48.dp),
+                    val lift by androidx.compose.animation.core.animateFloatAsState(if(lifting==p.id) 1f else 0f,
+                        animationSpec=androidx.compose.animation.core.tween(if(reduceMotion) 0 else 180),label="petal-lift")
+                    Surface(onClick = { lifting=p.id }, modifier = Modifier.offset(x = photo * anchor.first - 59.dp,
+                        y = photo * anchor.second - 22.dp - 10.dp*lift).graphicsLayer{scaleX=1+lift*.04f;scaleY=1+lift*.04f}.width(118.dp).heightIn(min = 48.dp),
                         shape = RoundedCornerShape(19.dp), color = gardenGlass.copy(alpha = .93f), contentColor = gardenInk,
                         border = BorderStroke(1.dp, gardenMuted.copy(alpha = .24f)), shadowElevation = 3.dp) {
                         Row(Modifier.padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically,

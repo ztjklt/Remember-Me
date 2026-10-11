@@ -1,0 +1,48 @@
+{
+  "work": {
+    "job_id": "nj_1e39213f79ec43e99764",
+    "status": "failed",
+    "error": "人物归纳未完成；已保存资料保留，请检查服务后重试。",
+    "created_at": "2026-10-11T03:03:21.532604+00:00"
+  },
+  "family": {
+    "job_id": "nj_d832bfe74a844630b520",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:03:30.823371+00:00"
+  },
+  "private": {
+    "job_id": "nj_66368773592141c69c83",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:03:40.135188+00:00"
+  },
+  "preferences": {
+    "job_id": "nj_151e1b21a2554bc5a5e8",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:03:46.400676+00:00"
+  },
+  "message": {
+    "job_id": "nj_d8119e895ddd4b5ca70c",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:03:52.653326+00:00"
+  },
+  "profile": {
+    "job_id": "pf_4621cf40c00f48229df1",
+    "status": "queued"
+  },
+  "work_narrow": {
+    "job_id": "nj_0f7c5bc5a51c4224b0a0",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:05:46.192726+00:00"
+  },
+  "colleague": {
+    "job_id": "nj_a2534c4d48e34deeab90",
+    "status": "complete",
+    "error": null,
+    "created_at": "2026-10-11T03:05:52.505922+00:00"
+  }
+}

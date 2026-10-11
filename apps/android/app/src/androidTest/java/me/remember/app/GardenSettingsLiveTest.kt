@@ -44,7 +44,7 @@ class GardenSettingsLiveTest {
     private fun digest(file:File)=MessageDigest.getInstance("SHA-256").digest(file.readBytes()).toList()
     @Test fun gardenRetainsCameraAfterLeavingStory(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
-        idle();login(cfg.getJSONObject("owner"));tab("档案");click("记忆")
+        idle();login(cfg.getJSONObject("owner"));tab("档案");click("花田")
         val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick()
         click("归位");click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
@@ -84,7 +84,7 @@ class GardenSettingsLiveTest {
         idle();login(cfg.getJSONObject("owner"));assertTrue(model.ui.value.owner)
         val ep=cfg.getString("episode");val subject=model.ui.value.subject
         val clusterId=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{ep in it.episodeIds}.id
-        tab("档案");click("记忆");shot("01-native-garden")
+        tab("档案");click("花田");shot("01-native-garden")
         ui.onNodeWithTag("garden-cluster-$clusterId").performScrollTo().performClick();shot("02-flower-petals")
         click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
         click("归位");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("100%")
@@ -117,7 +117,7 @@ class GardenSettingsLiveTest {
         click("清理下载缓存");click("确认");assertTrue(original.isFile);assertEquals(before,digest(original));assertTrue(File(ui.activity.cacheDir,"native-source-audio").listFiles().orEmpty().isEmpty());shot("08-data-help")
         click("返回我的");logout();login(cfg.getJSONObject("reader"))
         val target=model.ui.value.spaces.first{it.text("subject_id")==subject};ui.runOnIdle{model.selectSpace(target)};idle();assertFalse(model.ui.value.owner)
-        tab("档案");click("记忆");ui.onNodeWithTag("garden-cluster-$clusterId").performScrollTo().performClick();shot("09-reader-flower")
+        tab("档案");click("花田");ui.onNodeWithTag("garden-cluster-$clusterId").performScrollTo().performClick();shot("09-reader-flower")
         // Revoke only this dedicated synthetic test grant through the owner's real API.
         val ownerGate=SessionGate();val ownerSession=ownerGate.connect(BuildConfig.SERVICE_URL,cfg.getJSONObject("owner").getString("token"))
         BackendClient(ownerGate).json(ownerSession,"/api/v1/workbench/subjects/$subject/grants/${cfg.getString("grant")}","DELETE")
@@ -134,7 +134,7 @@ class GardenSettingsLiveTest {
     @Test fun largeFontMemoryReadAndReturn(){
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
         assumeTrue("Run explicitly with system font_scale=2, restore afterward",ui.activity.resources.configuration.fontScale>=1.9f)
-        idle();login(cfg.getJSONObject("owner"));tab("档案");click("记忆")
+        idle();login(cfg.getJSONObject("owner"));tab("档案");click("花田")
         val ep=cfg.getString("episode");val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{ep in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick()
         val p=c.petals.first()
@@ -166,7 +166,7 @@ class GardenSettingsLiveTest {
         val cfg=JSONObject(ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand("cat /data/local/tmp/remember-garden-settings.json")).bufferedReader().use{it.readText()})
         val width=ui.activity.resources.configuration.screenWidthDp
         assumeTrue("Run explicitly at 412 dp",width in 410..414)
-        idle();login(cfg.getJSONObject("owner"));tab("档案");click("记忆");shot("16-garden-412dp")
+        idle();login(cfg.getJSONObject("owner"));tab("档案");click("花田");shot("16-garden-412dp")
         val c=projectGarden(model.ui.value.stories,model.ui.value.narrative).first{cfg.getString("episode") in it.episodeIds}
         ui.onNodeWithTag("garden-cluster-${c.id}").performScrollTo().performClick();shot("17-petals-412dp")
         click("＋");ui.onNodeWithTag("garden-zoom-level").assertTextEquals("125%")
@@ -194,10 +194,10 @@ class GardenSettingsLiveTest {
         click("为什么这样整理 · 查看来源");shot("13-organized-source-review")
         click("核对无误，确认整理");idle()
         assertEquals("confirmed",model.ui.value.narrative.rows("records").first{it.text("id")==record.text("id")}.text("status"))
-        click("记忆");ui.onNodeWithTag("garden-cluster-record:${record.text("id")}").performScrollTo().performClick();shot("14-confirmed-story-flower")
+        click("花田");ui.onNodeWithTag("garden-cluster-record:${record.text("id")}").performScrollTo().performClick();shot("14-confirmed-story-flower")
         logout();login(cfg.getJSONObject("reader"))
         ui.runOnIdle{model.selectSpace(model.ui.value.spaces.first{it.text("subject_id")==subject})};idle()
-        tab("档案");click("记忆");ui.onNodeWithTag("garden-cluster-record:${record.text("id")}").performScrollTo().performClick();shot("15-reader-organized-story")
+        tab("档案");click("花田");ui.onNodeWithTag("garden-cluster-record:${record.text("id")}").performScrollTo().performClick();shot("15-reader-organized-story")
         File(out,"organized-result.json").writeText(JSONObject().put("api_draft_setup",true).put("draft_text_from_actual_sources",true)
             .put("app_confirmation_clicked",true).put("confirmed_flower_clicked",true).put("reader_organized_flower_clicked",true)
             .put("new_narrative_model_call",false).put("emulator",true).toString(2))
