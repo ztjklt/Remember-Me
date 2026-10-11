@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.8.2：** [花田浏览、背景预览与记忆阅读打磨](docs/agent-loop/ANDROID_GARDEN_POLISH_2026-10-11.md) · [19张本轮截图](docs/agent-loop/screenshots/2026-10-11-garden-polish/README.md)。同签名覆盖升级；本次未重新部署ECS。
+
 > **Android 0.8.1：** [恢复原稿写实蓝花、自然枝叶与花瓣入口](docs/agent-loop/ANDROID_GARDEN_RESTORE_2026-10-11.md)。[下载安装与简单8位演示账号](docs/agent-loop/ANDROID_QUICK_START_2026-10-10.md)。旧包和截图保留；iOS与新版真机未验收。
 
 > **首次试用先看：** [下载安装、公开演示账号、记录者与亲友操作说明](docs/agent-loop/ANDROID_QUICK_START_2026-10-10.md)。公开账号专用于虚构测试，所有试用者共用；原四组内测账号继续私下交接。

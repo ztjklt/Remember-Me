@@ -2,7 +2,7 @@
 
 ## 1. 下载并安装
 
-[直接下载 Android 0.8.1 安装包](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.8.1-20261011/remember-me-0.8.1-internal.apk) · [下载页与文件校验](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.8.1-20261011)
+[直接下载 Android 0.8.2 安装包](https://github.com/ztjklt/Remember-Me/releases/download/demo-android-0.8.2-20261011/remember-me-0.8.2-internal.apk) · [下载页与文件校验](https://github.com/ztjklt/Remember-Me/releases/tag/demo-android-0.8.2-20261011)
 
 适用于 Android 8.0 及以上，约 161 MB。安装时允许该下载工具安装应用；进入 App 后按提示允许麦克风。已有同签名内测版可直接更新，不必卸载。**iPhone 不能安装这个 APK，iOS 本次尚未交付。**
 
@@ -64,3 +64,9 @@
 [0.8.1原稿花朵恢复与验收](ANDROID_GARDEN_RESTORE_2026-10-11.md) · [本版15张截图](screenshots/2026-10-11-garden-restore/README.md) · [0.8.0历史记录](ANDROID_GARDEN_DELIVERY_2026-10-10.md) · [旧19张截图](screenshots/2026-10-10/README.md)。本轮复验360/412 dp、200%字、花瓣与来源、普通角色及撤权。旧版完整邀请／再分享和三轮撤权有历史记录；新版实体手机、iOS仍待验证。
 
 管理员可用既有 `python -m app.account_admin reset flower08` / `reset friend08` 明确重置并撤销旧会话。停用时同步更新本说明；旧密码仍留在Git历史，但重置后不再有效。演示账号使用当前服务配额，以短段、人工操作测试，不运行批量脚本。
+
+## 0.8.2花田使用补充
+
+放大花朵后返回或切换标签，会保留同一故事的缩放位置。100%时单指上下浏览，双指可以放大；放大后可拖动或点击“归位”。“换一处花园”可先看缩略图再选背景，设置里的自然背景使用同一套选择。
+
+点击花瓣看完整记忆及依据；多来源使用“选择原音”切换，再点击“听完整原音”。顶部始终可以返回花朵。背景选择不会修改记忆或授权。
