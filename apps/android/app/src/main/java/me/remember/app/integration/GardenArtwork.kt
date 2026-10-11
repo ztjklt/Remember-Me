@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -131,10 +132,11 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
     val latestCamera by rememberUpdatedState(camera)
     val latestUpdate by rememberUpdatedState(updateCamera)
     var viewport by remember { mutableStateOf(IntSize.Zero) }
-    fun move(pan: Offset, factor: Float, anchor: Offset? = null) {
-        val next = moveGardenCamera(latestCamera, viewport.width.toFloat(), viewport.height.toFloat(),
+    fun move(pan: Offset, factor: Float, anchor: Offset? = null, from: GardenCamera = latestCamera): GardenCamera {
+        val next = moveGardenCamera(from, viewport.width.toFloat(), viewport.height.toFloat(),
             pan.x, pan.y, factor, anchor?.x ?: viewport.width / 2f, anchor?.y ?: viewport.height / 2f)
         latestUpdate(next)
+        return next
     }
     BoxWithConstraints(Modifier.fillMaxWidth().height(420.dp).onSizeChanged { viewport = it }.clipToBounds().testTag("reviewed-garden-plant-stage")) {
         val width = maxWidth
@@ -144,21 +146,27 @@ internal fun gardenLandscape(scene: NatureScene): Int = when(scene) {
             awaitEachGesture {
                 awaitFirstDown(requireUnconsumed = false)
                 var captured = false
+                // Several pointer events can arrive before recomposition. Accumulate within
+                // this gesture instead of resetting to the last rendered camera on finger-up.
+                var gestureCamera = latestCamera
                 var totalZoom = 1f
                 var totalPan = Offset.Zero
                 do {
-                    val event = awaitPointerEvent()
-                    if(event.changes.any { it.isConsumed }) break
+                    // Observe before the petal's clickable consumes the second finger down.
+                    // A consumed down isn't a drag; preserve normal taps and page scrolling
+                    // until this camera actually crosses the transform slop.
+                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                    if(event.changes.any { it.isConsumed && it.position != it.previousPosition }) break
                     val factor = event.calculateZoom()
                     val pan = event.calculatePan()
                     totalZoom *= factor; totalPan += pan
-                    val canTransform = event.changes.count { it.pressed } >= 2 || latestCamera.zoom > 1f
+                    val canTransform = event.changes.count { it.pressed } >= 2 || gestureCamera.zoom > 1f
                     if(!captured && canTransform) {
                         val zoomMotion = abs(1 - totalZoom) * event.calculateCentroidSize(useCurrent = false)
                         captured = zoomMotion > viewConfiguration.touchSlop || totalPan.getDistance() > viewConfiguration.touchSlop
                     }
                     if(captured) {
-                        move(pan, factor, event.calculateCentroid(useCurrent = false))
+                        gestureCamera = move(pan, factor, event.calculateCentroid(useCurrent = false), gestureCamera)
                         event.changes.forEach { it.consume() }
                     }
                 } while(event.changes.any { it.pressed })
