@@ -5,6 +5,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -50,7 +51,14 @@ private val type = Typography(
     titleMedium=text(17,26,FontWeight.SemiBold), bodyLarge=text(17,26),bodyMedium=text(17,26),
     bodySmall=text(14,20),labelLarge=text(17,24,FontWeight.Medium),labelMedium=text(14,20,FontWeight.Medium),labelSmall=text(14,20)
 )
-@Composable fun RememberMeTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme=if(darkTheme) dark else light, typography=type,
-        shapes=Shapes(small=RoundedCornerShape(8.dp),medium=RoundedCornerShape(14.dp),large=RoundedCornerShape(16.dp)),content={ CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground) { content() } })
+val LocalSimpleMode = staticCompositionLocalOf { false }
+private val simpleType = type.copy(
+    headlineLarge=text(26,36,FontWeight.SemiBold), headlineMedium=text(24,34,FontWeight.SemiBold),
+    headlineSmall=text(24,34,FontWeight.SemiBold), titleLarge=text(22,32,FontWeight.SemiBold),
+    titleMedium=text(20,30,FontWeight.SemiBold), bodyLarge=text(20,30), bodyMedium=text(20,30),
+    bodySmall=text(17,26), labelLarge=text(20,28,FontWeight.Medium), labelMedium=text(17,26,FontWeight.Medium), labelSmall=text(17,26)
+)
+@Composable fun RememberMeTheme(darkTheme: Boolean = isSystemInDarkTheme(), simpleMode: Boolean = false, content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme=if(darkTheme) dark else light, typography=if(simpleMode) simpleType else type,
+        shapes=Shapes(small=RoundedCornerShape(8.dp),medium=RoundedCornerShape(14.dp),large=RoundedCornerShape(16.dp)),content={ CompositionLocalProvider(LocalSimpleMode provides simpleMode, LocalContentColor provides MaterialTheme.colorScheme.onBackground) { content() } })
 }

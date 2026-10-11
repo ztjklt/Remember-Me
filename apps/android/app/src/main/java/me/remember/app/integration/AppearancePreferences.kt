@@ -11,20 +11,20 @@ enum class SceneChoice(val title: String, val scene: NatureScene?) {
     FOREST("林间", NatureScene.Forest), COAST("海边", NatureScene.Coast), NIGHT("月下", NatureScene.Night), PATH("花径", NatureScene.Path)
 }
 data class AppearanceChoice(val theme: ThemeChoice = ThemeChoice.SYSTEM, val scene: SceneChoice = SceneChoice.AUTO,
-    val reduceMotion: Boolean = false)
+    val reduceMotion: Boolean = false, val simpleMode: Boolean = false)
 
-fun parseAppearance(theme: String?, scene: String?, reduceMotion: Boolean) = AppearanceChoice(
+fun parseAppearance(theme: String?, scene: String?, reduceMotion: Boolean, simpleMode: Boolean = false) = AppearanceChoice(
     ThemeChoice.entries.firstOrNull { it.name == theme } ?: ThemeChoice.SYSTEM,
-    SceneChoice.entries.firstOrNull { it.name == scene } ?: SceneChoice.AUTO, reduceMotion)
+    SceneChoice.entries.firstOrNull { it.name == scene } ?: SceneChoice.AUTO, reduceMotion, simpleMode)
 
 /** Device decoration only. No actor, text, credentials or model settings are stored here. */
 class AppearancePreferences(context: Context) {
     private val prefs = context.getSharedPreferences("remember-appearance", Context.MODE_PRIVATE)
-    private val state = MutableStateFlow(parseAppearance(prefs.getString("theme", null), prefs.getString("scene", null), prefs.getBoolean("reduce_motion", false)))
+    private val state = MutableStateFlow(parseAppearance(prefs.getString("theme", null), prefs.getString("scene", null), prefs.getBoolean("reduce_motion", false), prefs.getBoolean("simple_mode", false)))
     val choices = state.asStateFlow()
     fun update(value: AppearanceChoice) {
         check(prefs.edit().putString("theme", value.theme.name).putString("scene", value.scene.name)
-            .putBoolean("reduce_motion", value.reduceMotion).commit()) { "外观设置未保存，请稍后重试。" }
+            .putBoolean("reduce_motion", value.reduceMotion).putBoolean("simple_mode", value.simpleMode).commit()) { "外观设置未保存，请稍后重试。" }
         state.value = value
     }
 }

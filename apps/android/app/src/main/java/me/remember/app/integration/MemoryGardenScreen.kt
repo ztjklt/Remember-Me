@@ -59,7 +59,8 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
     fun returnGarden() { returnTo = selected; selected = null }
     val cluster = clusters.firstOrNull { it.id == selected }
     val petal = cluster?.petals?.firstOrNull { it.id == selectedPetal }
-    val motion = if(appearance.reduceMotion || !ValueAnimator.areAnimatorsEnabled() || (selected != null && cluster == null)) 0 else 620
+    val reduceMotion = appearance.reduceMotion || appearance.simpleMode
+    val motion = if(reduceMotion || !ValueAnimator.areAnimatorsEnabled() || (selected != null && cluster == null)) 0 else 620
     LaunchedEffect(clusters.map { it.id }, cluster?.petals?.map { it.id }) {
         if(selected != null && cluster == null) { selected = null; selectedPetal = null }
         if(selectedPetal != null && petal == null) selectedPetal = null
@@ -148,7 +149,7 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                 val pages = current.petals.chunked(5)
                 val shown = pages.getOrElse(page) { pages.firstOrNull().orEmpty() }
                 if(shown.isNotEmpty()) ReviewedGardenPetals(shown, scene,
-                    form=gardenBloom(current.id),reduceMotion=appearance.reduceMotion) { selectedPetal = it.id }
+                    form=gardenBloom(current.id),reduceMotion=reduceMotion) { selectedPetal = it.id }
                 if(pages.size > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { page-- }, enabled = page > 0) { Text("上一组") }
                     Text("${page + 1} / ${pages.size} 组", Modifier.padding(top = 12.dp))

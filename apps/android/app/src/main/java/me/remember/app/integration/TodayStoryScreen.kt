@@ -2,6 +2,7 @@ package me.remember.app.integration
 
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,8 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import me.remember.app.core.designsystem.LocalSimpleMode
 
 @Composable internal fun TodayStoryScreen(state: NativeState, model: NativeWorkbenchModel,
     record: () -> Unit, library: () -> Unit, review: (String) -> Unit) {
@@ -52,6 +52,7 @@ import androidx.compose.ui.window.DialogProperties
 /** A separate recorder: the controls stay reachable independently of content size. */
 @Composable internal fun StoryRecordingFlow(state: NativeState, model: NativeWorkbenchModel,
     revision: RevisionTarget?, setRevision: (RevisionTarget?) -> Unit, close: () -> Unit, saved: () -> Unit) {
+    val simple = LocalSimpleMode.current
     var confirmClose by remember { mutableStateOf(false) }
     val initialSaved by rememberSaveable(state.actor,state.subject) { mutableStateOf(state.savedCaptureId) }
     LaunchedEffect(state.savedCaptureId) {
@@ -62,18 +63,22 @@ import androidx.compose.ui.window.DialogProperties
     }
     fun leave() { if(state.recording) confirmClose=true else {setRevision(null);close()} }
     fun finish() { model.finish() }
-    Dialog(onDismissRequest={leave()},properties=DialogProperties(usePlatformDefaultWidth=false)) {
+    BackHandler { leave() }
+    // A full activity page avoids a floating dialog's display-height/content-
+    // origin mismatch on Android 15. Recording controls use the activity insets.
+    Box(Modifier.fillMaxSize()) {
         Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxSize().safeDrawingPadding().padding(20.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
-                    IconButton(onClick={leave()}) { Icon(Icons.Outlined.Close,"关闭录音") }
+                    if(simple) TextButton(onClick={leave()},modifier=Modifier.heightIn(min=60.dp)) {Icon(Icons.Outlined.ArrowBack,null);Text("返回")}
+                    else IconButton(onClick={leave()}) { Icon(Icons.Outlined.Close,"关闭录音") }
                     Text("留下一段声音",style=MaterialTheme.typography.titleLarge)
                 }
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                     verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally) {
                     Icon(Icons.Outlined.Mic, null, Modifier.size(72.dp), tint=MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(24.dp))
-                    Text(clock(state.elapsed),style=MaterialTheme.typography.displayMedium)
+                    Text(clock(state.elapsed),style=if(simple) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.displayMedium)
                     Text(if(state.recording) if(state.paused) "已暂停" else "正在录音" else "慢慢说，我在听",style=MaterialTheme.typography.titleMedium)
                     state.error?.let{Text(it,color=MaterialTheme.colorScheme.error)}
                     revision?.let { target ->
@@ -89,10 +94,11 @@ import androidx.compose.ui.window.DialogProperties
                     }
                 }
                 if(state.recording) {
-                    OutlinedButton(onClick=model::pauseOrResumeRecording,enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) { Text(if(state.paused) "继续录音" else "暂停") }
-                    Button(onClick={finish()},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) { Text("完成并保存") }
+                    OutlinedButton(onClick=model::pauseOrResumeRecording,enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text(if(state.paused) "继续录音" else "暂停") }
+                    Spacer(Modifier.height(12.dp))
+                    Button(onClick={finish()},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text("完成并保存") }
                 } else Button(onClick={permission.launch(Manifest.permission.RECORD_AUDIO)},
-                    enabled=!state.busy && (revision?.kind!="change" || revision.time.isNotBlank()),modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) { Text("开始录音") }
+                    enabled=!state.busy && (revision?.kind!="change" || revision.time.isNotBlank()),modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text("开始录音") }
             }
         }
         if(confirmClose) AlertDialog(onDismissRequest={confirmClose=false},title={Text("保存这段声音？")},

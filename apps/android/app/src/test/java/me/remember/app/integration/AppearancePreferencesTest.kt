@@ -14,4 +14,13 @@ class AppearancePreferencesTest {
         assertEquals(SceneChoice.LAKE, parsed.scene)
         assertTrue(parsed.reduceMotion)
     }
+    @Test fun simpleModeIsOptInAndIndependentOfThemeAndMotion() {
+        assertFalse(parseAppearance(null, null, false).simpleMode)
+        val simple = parseAppearance("DARK", "FOREST", false, true)
+        assertTrue(simple.simpleMode)
+        assertEquals(ThemeChoice.DARK, simple.theme)
+        assertEquals(SceneChoice.FOREST, simple.scene)
+        assertFalse(simple.reduceMotion)
+        assertEquals(simple.copy(simpleMode = false), parseAppearance("DARK", "FOREST", false))
+    }
 }

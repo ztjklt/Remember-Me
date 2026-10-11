@@ -11,6 +11,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -45,6 +47,17 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
                 RememberMeBrand(size = 56.dp)
                 Column { Text(state.actorName, style = MaterialTheme.typography.headlineMedium)
                     Text(if(state.owner) "留下故事的人" else "被邀请的亲友", style = MaterialTheme.typography.bodyMedium) }
+            }
+            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                Row(Modifier.fillMaxWidth().toggleable(value = appearance.simpleMode, role = Role.Switch,
+                    onValueChange = { updateAppearance(appearance.copy(simpleMode = it)) }).padding(16.dp).heightIn(min = 60.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("简明模式", style = MaterialTheme.typography.titleMedium)
+                        Text(if(appearance.simpleMode) "已开启 · 点此恢复完整模式" else "更清楚的文字，更直接的操作", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Switch(appearance.simpleMode, onCheckedChange = null)
+                }
             }
             SettingsEntry("账号与空间", "当前身份、换号与退出", Icons.Outlined.AccountCircle) { section = "account" }
             SettingsEntry("外观与阅读", "${appearance.theme.title} · ${appearance.scene.title}", Icons.Outlined.Palette) { section = "appearance" }

@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val choice by appearance.choices.collectAsStateWithLifecycle()
             val dark = when(choice.theme) { ThemeChoice.SYSTEM -> isSystemInDarkTheme(); ThemeChoice.LIGHT -> false; ThemeChoice.DARK -> true }
-            RememberMeTheme(darkTheme = dark) { NativeWorkbenchScreen(model, choice) { next ->
+            RememberMeTheme(darkTheme = dark, simpleMode = choice.simpleMode) { NativeWorkbenchScreen(model, choice) { next ->
                 runCatching { appearance.update(next) }.onFailure { model.report(it.message ?: "外观设置未保存。") }
             } }
         }

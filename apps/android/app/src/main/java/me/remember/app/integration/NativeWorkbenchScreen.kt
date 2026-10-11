@@ -7,6 +7,10 @@ import android.content.ContextWrapper
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.platform.LocalView
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.remember.app.core.designsystem.NatureScene
 import me.remember.app.core.designsystem.RememberMeBrand
 import me.remember.app.core.designsystem.atmosphere
+import me.remember.app.core.designsystem.LocalSimpleMode
 import org.json.JSONObject
 
 @Composable
@@ -49,7 +54,14 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     LaunchedEffect(server, state.actor) { if(state.actor.isBlank()) model.loadServiceInfo(server) }
     var token by remember { mutableStateOf("") }
     var tab by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
-    var archiveMode by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(1) }
+    var archiveMode by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(if(appearance.simpleMode) 3 else 1) }
+    var lastSimpleMode by rememberSaveable { mutableStateOf(appearance.simpleMode) }
+    LaunchedEffect(appearance.simpleMode) {
+        if(lastSimpleMode != appearance.simpleMode) {
+            archiveMode = if(appearance.simpleMode) 3 else 1
+            lastSimpleMode = appearance.simpleMode
+        }
+    }
     var gardenStoryOpen by remember(state.actor, state.subject) { mutableStateOf(false) }
     val pages = rememberSaveableStateHolder()
     val identity = "${state.actor}:${state.subject}"
@@ -84,12 +96,23 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         } }
     }
     val scene = appearance.scene.scene ?: if(gardenVisible) NatureScene.Meadow else when(tab) { 1 -> NatureScene.Forest; 2 -> NatureScene.Lake; 3 -> NatureScene.Coast; else -> NatureScene.Meadow }
-    val backdrop = if(gardenVisible) Modifier.reviewedGardenAtmosphere(scene) else Modifier.atmosphere(scene = scene)
+    val backdrop = if(gardenVisible) Modifier.reviewedGardenAtmosphere(scene)
+        else if(appearance.simpleMode) Modifier.background(MaterialTheme.colorScheme.background) else Modifier.atmosphere(scene = scene)
     val ready = !state.busy && !state.recording
     val scrollPositions = List(4) { rememberScrollState() }
+    // Register before child handlers so flower/petal and settings Back keep priority.
+    BackHandler(appearance.simpleMode && tab != 0) {
+        if(tab == 1 && archiveMode != 3) { archiveMode = 3; scope.launch { scrollPositions[1].scrollTo(0) } }
+        else tab = 0
+    }
+    if(recordingPage && state.owner) {
+        StoryRecordingFlow(state,model,revision,{revision=it},
+            {revision=null;recordingPage=false},{recordingPage=false;tab=1;archiveMode=0})
+        return
+    }
     Scaffold(modifier = backdrop, containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
         if(state.actor.isNotBlank() && !state.recording) NavigationBar(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), containerColor = if(gardenVisible) gardenGlass.copy(alpha = .94f) else MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
-            listOf("今天", "档案", "对话", "我的").forEachIndexed { index, title ->
+            (if(appearance.simpleMode) listOf("今天", "故事", "问答", "我的") else listOf("今天", "档案", "对话", "我的")).forEachIndexed { index, title ->
                 NavigationBarItem(selected = tab == index, onClick = { focus.clearFocus(); tab = index }, icon = {
                     Icon(listOf(Icons.Outlined.WbSunny, Icons.Outlined.FolderOpen, Icons.Outlined.ChatBubbleOutline, Icons.Outlined.PersonOutline)[index], title)
                 }, label = { Text(title) }, colors = if(gardenVisible) NavigationBarItemDefaults.colors(
@@ -102,7 +125,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         Column(Modifier.fillMaxSize().padding(inset).padding(horizontal = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical = if(gardenVisible) 8.dp else 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 RememberMeBrand(size = 30.dp, darkBackground = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f)
-                Text("勿忘我", style = MaterialTheme.typography.titleMedium, color = if(gardenVisible) gardenInk else MaterialTheme.colorScheme.onBackground)
+                if(!appearance.simpleMode) Text("勿忘我", style = MaterialTheme.typography.titleMedium, color = if(gardenVisible) gardenInk else MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.weight(1f))
                 if(state.actor.isNotBlank()) SpaceChooser(state, model, gardenVisible, ready, Modifier.weight(2.4f))
             }
@@ -143,9 +166,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     Text(if(state.spaceChoiceRequired) "请选择要进入的空间。" else "还没有可进入的空间。可以请记录者授权故事。")
                     TextButton(onClick = model::logout, enabled = !state.busy) { Text("退出身份") }
                 }
-                if(tab == 0) Text(if(state.owner) "把这一刻留下来" else "听听${state.space?.text("display_name").orEmpty()}留下的故事。", style = MaterialTheme.typography.headlineMedium)
+                if(tab == 0 && !appearance.simpleMode) Text(if(state.owner) "把这一刻留下来" else "听听${state.space?.text("display_name").orEmpty()}留下的故事。", style = MaterialTheme.typography.headlineMedium)
                 if(state.notice.isNotBlank() && (tab!=1 || archiveMode==0)) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
-                if(state.player.episode.isNotBlank()) GardenMiniPlayer(state.player,
+                if(appearance.simpleMode) SimpleSourcePlayer(state, model)
+                else if(state.player.episode.isNotBlank()) GardenMiniPlayer(state.player,
                     {if(state.player.playing) model.pauseSource() else model.resumeSource()},model::seekSource,model::stopSource)
                 if(localPlayer.audioPath != null) Panel {
                     Text("本机原音 ${clock(localPlayer.positionMillis)} / ${clock(localPlayer.durationMillis)}")
@@ -158,7 +182,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     Column(Modifier.weight(1f).clipToBounds().then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when(tab) {
                             0 -> {
-                                if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
+                                if(appearance.simpleMode) SimpleHome(state, {revision=null;recordingPage=true},
+                                    {tab=1;archiveMode=3}, {tab=1;archiveMode=0}, {tab=2})
+                                else if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
                                     {tab=1;archiveMode=0},{model.review(it)})
                                 else {
                                     Text("从真实故事和声音，了解这个人。")
@@ -170,7 +196,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 }
                             }
                             1 -> pages.SaveableStateProvider("archive:$identity") {
-                                if(!gardenVisible || !gardenStoryOpen) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
+                                if(appearance.simpleMode && archiveMode!=3 && (!gardenVisible || !gardenStoryOpen)) TextButton(onClick={archiveMode=3;scope.launch { scrollPositions[1].scrollTo(0) }}, modifier=Modifier.heightIn(min=60.dp)) {
+                                    Icon(Icons.Outlined.ArrowBack,null); Spacer(Modifier.width(8.dp)); Text("返回故事列表")
+                                }
+                                if(!appearance.simpleMode && (!gardenVisible || !gardenStoryOpen)) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                                     listOf(1 to "花田", 2 to "人物").forEach { (index,title) -> FilterChip(archiveMode==index,{focus.clearFocus();archiveMode=index;scope.launch { scrollPositions[1].scrollTo(0) }},label={Text(title)},
                                         colors=if(gardenVisible) FilterChipDefaults.filterChipColors(labelColor=gardenInk,selectedLabelColor=gardenGlass,selectedContainerColor=gardenInk) else FilterChipDefaults.filterChipColors()) }
                                     Spacer(Modifier.weight(1f))
@@ -178,11 +207,16 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 }
                                 if(archiveMode==0) {
                                     Text("我的录音",style=MaterialTheme.typography.headlineMedium)
+                                    if(appearance.simpleMode && state.owner) Text("声音已经保存，可以先听，也可以稍后整理。",style=MaterialTheme.typography.bodyLarge)
                                     if(state.owner) CaptureTab(state,model,revision,{revision=it})
                                     state.stories.forEach { story -> StoryCard(story,state.owner,ready,
                                         {detail=story.text("episode_id")},{model.review(story.text("episode_id"))},
                                         {model.retry(story.text("episode_id"),story.optBoolean("can_reextract_empty"))}) }
                                 }
+                                if(archiveMode == 3) SimpleStories(state, model, {detail=it},
+                                    {archiveMode=1;scope.launch {scrollPositions[1].scrollTo(0)}},
+                                    {archiveMode=2;scope.launch {scrollPositions[1].scrollTo(0)}},
+                                    {archiveMode=0;scope.launch {scrollPositions[1].scrollTo(0)}})
                                 if(archiveMode == 1) MemoryGardenScreen(state, model, appearance, updateAppearance, scrollPositions[1],
                                     { detail = it }, { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } },
                                     { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } }, ask={askDraft=it;tab=2}, onStoryOpenChanged = { gardenStoryOpen = it })
@@ -209,8 +243,6 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 Column { Text(space.text("display_name"));Text(if(space.text("role")=="owner") "我的空间 · 记录与管理" else "亲友空间 · 获授权阅读",style=MaterialTheme.typography.bodySmall) }
             } }
         }},confirmButton={TextButton(onClick=model::logout,enabled=ready){Text("退出账号")}})
-    if(recordingPage && state.owner) StoryRecordingFlow(state,model,revision,{revision=it},
-        {revision=null;recordingPage=false},{recordingPage=false;tab=1;archiveMode=0})
     detail?.let { id ->
         state.stories.firstOrNull { it.text("episode_id") == id }?.let { story ->
             NativeDialog("故事与来源", { detail = null }) {
@@ -248,10 +280,15 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }
     state.reviewEpisode?.let { id ->
         var cloud by remember(id) { mutableStateOf(false) }
-        NativeDialog("请听原音并核对文字", model::closeReview) {
+        val leaveReview: () -> Unit = {
+            if(appearance.simpleMode && (state.reviewText != state.reviewInitialText || state.reviewSupplement.isNotBlank()))
+                confirm = "这次修改还没有提交。退出会放弃刚改的文字，原音与机器稿仍然保留。" to model::closeReview
+            else model.closeReview()
+        }
+        NativeDialog("请听原音并核对文字", leaveReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Text("请修正识别错误，保留原意。确认之后才开始记忆整理。")
-            Text("留意姓名、‘不/没’、‘可能/还没决定’以及谁在说谁；补充的新信息请写到下方补充框。", style = MaterialTheme.typography.bodySmall)
+            Text(if(appearance.simpleMode) "先听声音，再检查文字。没检查完，可以稍后再来。" else "请修正识别错误，保留原意。确认之后才开始记忆整理。")
+            if(!appearance.simpleMode) Text("留意姓名、‘不/没’、‘可能/还没决定’以及谁在说谁；补充的新信息请写到下方补充框。", style = MaterialTheme.typography.bodySmall)
             state.reviewWarnings.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
             if(state.reviewParagraphPreview != null) {
                 Text("可以采用识别服务的分段，仅调整换行，仍需听音核对。", style = MaterialTheme.typography.bodySmall)
@@ -272,6 +309,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             if(state.vocabulary.isNotBlank()) Action("带入我的用词") { model.editSupplement(listOf(state.reviewSupplement, state.vocabulary).filter { it.isNotBlank() }.joinToString("\n")) }
             Check("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。", cloud, { cloud = it })
             Action("确认文字并整理", ready && cloud && state.reviewText.isNotBlank()) { model.confirmReview(state.reviewText, cloud) }
+            if(appearance.simpleMode) TextButton(onClick=leaveReview,modifier=Modifier.heightIn(min=60.dp)) {Text("稍后再核对")}
         }
     }
     confirm?.let { (message, action) -> AlertDialog(onDismissRequest = { confirm = null }, title = { Text("确认操作") }, text = { Text(message) },
@@ -470,15 +508,22 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .95f))) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content) }
 }
 @Composable private fun Action(label: String, enabled: Boolean = true, action: () -> Unit) {
-    OutlinedButton(onClick = action, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) }
+    OutlinedButton(onClick = action, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = if(LocalSimpleMode.current) 60.dp else 48.dp)) { Text(label) }
 }
 @Composable private fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
-    Row(Modifier.fillMaxWidth()) { Checkbox(checked, onCheckedChange = onChange, enabled = enabled); Text(label, Modifier.weight(1f).padding(top = 12.dp)) }
+    Row(Modifier.fillMaxWidth().heightIn(min=if(LocalSimpleMode.current) 60.dp else 48.dp)
+        .toggleable(value=checked,enabled=enabled,role=Role.Checkbox,onValueChange=onChange),verticalAlignment=Alignment.CenterVertically) {
+        Checkbox(checked, onCheckedChange = null, enabled = enabled); Text(label, Modifier.weight(1f).padding(vertical=12.dp))
+    }
 }
 @Composable internal fun NativeDialog(title: String, close: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(12.dp), shape = MaterialTheme.shapes.large) {
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if(LocalSimpleMode.current) Column(Modifier.fillMaxSize().padding(16.dp)) {
+                Text(title,style=MaterialTheme.typography.titleLarge)
+                OutlinedButton(onClick=close,modifier=Modifier.fillMaxWidth().heightIn(min=60.dp)) {Text("关闭")}
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
+            } else Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title, style = MaterialTheme.typography.titleLarge); TextButton(onClick = close) { Text("关闭") }; content()
             }
         }

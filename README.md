@@ -1,5 +1,7 @@
 # Remember Me
 
+> **Android 0.9.3：** [下载并开启简明模式](docs/agent-loop/ANDROID_093_QUICK_START.md) · [范围、实跑结果与截图](docs/agent-loop/SIMPLE_MODE_2026-10-11.md)。记录者可直接讲述、听故事和继续整理，亲友直达原音；保留完整模式和花田。客户端更新，ECS 沿用现有版本；真人长辈试用仍待进行。
+
 > **Android 0.9.2：** [安装与双角色体验](docs/agent-loop/ANDROID_092_QUICK_START.md) · [人物理解、真实问答与 ECS 修复](docs/agent-loop/PROFILE_VALIDITY_FIX_2026-10-11.md) · [模拟器验收与截图](docs/agent-loop/PROFILE_ANDROID_ACCEPTANCE_2026-10-11.md)。修复新增问答同意导致人物理解失效，以及 Android 15 页面重建白边；ECS 已更新，数据库与权限范围不变。
 
 > **Android 0.9.1：** [下载安装与两种身份使用说明](docs/agent-loop/ANDROID_091_QUICK_START.md) · [藤蔓花径、固定视角与横向故事阅读](docs/mobile-ui/GARDEN_NAVIGATION_2026-10-11.md) · [实跑截图](docs/agent-loop/screenshots/garden-navigation-20261011/README.md) · [Agent 实现及尚未解决的问题](docs/agent-loop/AGENT_CAPABILITIES_2026-10-11.md)。移除双指缩放，修复多空间默认选错；同签名覆盖升级，本轮未更换 ECS 程序。
