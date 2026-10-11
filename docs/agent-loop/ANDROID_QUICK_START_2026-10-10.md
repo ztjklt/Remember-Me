@@ -61,7 +61,7 @@
 
 “我的 → 外观与阅读”可换浅／深色、自然场景及简化动效；“设备权限与提醒”打开系统权限；“数据与帮助”检查服务、清下载缓存。清缓存不删除本机录音。改密码联系管理员，注册和自助注销仍关闭。
 
-[0.8.1原稿花朵恢复与验收](ANDROID_GARDEN_RESTORE_2026-10-11.md) · [本版15张截图](screenshots/2026-10-11-garden-restore/README.md) · [0.8.0历史记录](ANDROID_GARDEN_DELIVERY_2026-10-10.md) · [旧19张截图](screenshots/2026-10-10/README.md)。本轮复验360/412 dp、200%字、花瓣与来源、普通角色及撤权。旧版完整邀请／再分享和三轮撤权有历史记录；新版实体手机、iOS仍待验证。
+[0.8.2改进与验收](ANDROID_GARDEN_POLISH_2026-10-11.md) · [本版19张截图](screenshots/2026-10-11-garden-polish/README.md) · [0.8.1原稿恢复](ANDROID_GARDEN_RESTORE_2026-10-11.md) · [0.8.0历史记录](ANDROID_GARDEN_DELIVERY_2026-10-10.md) · [旧19张截图](screenshots/2026-10-10/README.md)。本轮复验360/412 dp、200%字、花瓣与来源、普通角色及撤权；八来源另为布局测试。旧版完整邀请／再分享和三轮撤权有历史记录；新版实体手机、iOS仍待验证。
 
 管理员可用既有 `python -m app.account_admin reset flower08` / `reset friend08` 明确重置并撤销旧会话。停用时同步更新本说明；旧密码仍留在Git历史，但重置后不再有效。演示账号使用当前服务配额，以短段、人工操作测试，不运行批量脚本。
 
