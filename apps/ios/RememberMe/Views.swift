@@ -178,7 +178,7 @@ struct RootView: View {
         .tint(Ink.coral)
         .sheet(isPresented: $model.showConnection) {
             NavigationStack {
-                PairingView().toolbar {
+                ServiceConnectionView().toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("关闭") { model.showConnection = false }
                     }
@@ -298,7 +298,7 @@ struct ProfileView: View {
                 }
             }
             Section("外观") { LabeledContent("颜色与字号", value: "跟随系统") }
-            Section("连接") { Text(model.pairing == nil ? "尚未配对" : "已配对本机服务") }
+            Section("连接") { Text(model.pairing == nil ? "尚未连接" : model.pairing?.isCloud == true ? "已连接云端服务" : "已配对本机服务") }
         }
         .scrollContentBackground(.hidden).background(AtmosphereBackground()).navigationTitle("我的")
     }
@@ -583,7 +583,7 @@ struct RecorderView: View {
                             Text(error).font(.body)
                         }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
                     }
-                    Text("原音先留在手机。提交后传给配对的 Mac 转写；网络中断时可以重试，无需重录。")
+                    Text(model.recordingTransferNotice)
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }.padding(20)
             }
@@ -603,10 +603,7 @@ struct RecorderView: View {
                             showOrganizeConsent = true
                         }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     } else if model.draft != nil {
-                        ActionButton(title: model.isBusy || model.isPollingEpisode ? "正在处理…" : model.pairing == nil ? "连接服务后转写" : "提交并转成文字", icon: "text.bubble") {
-                            if model.pairing == nil { showPairing = true }
-                            else { Task { await model.sendRecording() } }
-                        }.disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
+                        RecordingUploadButton()
                         Button("保留这段，再录一段") {
                             if model.prepareNewRecording() { showConsent = true }
                         }.buttonStyle(.bordered).disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
@@ -617,7 +614,7 @@ struct RecorderView: View {
             }
             .sheet(isPresented: $showPairing) {
                 NavigationStack {
-                    PairingView().toolbar {
+                    ServiceConnectionView().toolbar {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button("关闭") { showPairing = false }
                         }
@@ -636,7 +633,7 @@ struct RecorderView: View {
                 Button("同意并开始录音") { Task { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) } }
                 Button("取消", role: .cancel) { }
             } message: {
-                Text("原音先留在手机。提交后传给配对的 Mac 转写，确认文字后才交给 DeepSeek 整理。")
+                Text(model.recordingTransferNotice)
             }
             .confirmationDialog("要结束这段录音吗？", isPresented: $showClose, titleVisibility: .visible) {
                 Button("完成并保存") { model.finishRecording(); dismiss() }
@@ -646,7 +643,7 @@ struct RecorderView: View {
                 Button("同意并整理") { Task { await model.submitTranscript() } }
                 Button("暂不整理，只保留文字", role: .cancel) { model.saveTranscriptDraft() }
             } message: {
-                Text("配对的 Mac 会把你核对后的文字发送给 DeepSeek 提取记忆。原始录音不随本次操作发送给该服务。")
+                Text(model.organizeNotice)
             }
         }
     }
@@ -757,6 +754,8 @@ private struct MemoriesView: View {
 struct TwinView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showCalibrationRecorder = false
+    @State private var showQueryConsent = false
+    @State private var queryPolicy: String?
     private let dimensionNames = ["DECISION": "做决定", "REASONING": "考虑理由",
                                   "VALUE_PRIORITY": "价值优先", "EMOTIONAL_REACTION": "情绪反应",
                                   "EXPRESSION": "表达方式"]
@@ -775,7 +774,7 @@ struct TwinView: View {
                 else if model.cloudConsentID == nil {
                     VStack(alignment: .leading, spacing: 12) {
                         Eyebrow(text: "先决定资料如何使用")
-                        Text("提问时，问题和少量相关记忆文字会发送给 DeepSeek；若你使用校准，核对后的本人回答文字和锁定的 Twin 回答也会发送去比较。原始录音和声音样本不会发送。")
+                        Text("提问时，问题和相关记忆文字会发送给服务配置的语言模型；校准时也会发送核对后的本人回答文字和锁定的 Twin 回答。语音提问的原音转写会另行询问，声音样本不会发送给语言模型。")
                             .font(.subheadline).foregroundStyle(Ink.text)
                         ActionButton(title: "同意使用云端 Twin", icon: "checkmark.shield") {
                             Task { await model.enableCloudTwin() }
@@ -793,13 +792,19 @@ struct TwinView: View {
                         Button {
                             Task {
                                 if model.isQueryRecording { await model.finishAuxiliaryRecording() }
-                                else { await model.startQueryRecording() }
+                                else if model.pairing?.isCloud == true {
+                                    if let policy = await model.prepareCloudASR() { queryPolicy = policy; showQueryConsent = true }
+                                } else { await model.startQueryRecording() }
                             }
                         } label: {
                             Label(model.isQueryRecording ? "结束并识别问题" : "说出问题",
                                   systemImage: model.isQueryRecording ? "stop.circle" : "mic")
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.bordered).disabled(model.isBusy)
+                        .confirmationDialog("使用云端转写提问？", isPresented: $showQueryConsent, titleVisibility: .visible) {
+                            Button("同意并录下问题") { Task { await model.startQueryRecording(cloudASRPolicy: queryPolicy) } }
+                            Button("取消", role: .cancel) { }
+                        } message: { Text(model.cloudCapabilities?.uploadNotice ?? "") }
                         ActionButton(title: model.isBusy ? "正在查找证据…" : "提问", icon: "sparkle.magnifyingglass") {
                             Task { await model.askTwin() }
                         }
@@ -932,7 +937,10 @@ private struct VoiceSetupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Eyebrow(text: "只在本机的个人声音")
-            if model.voiceProfileReady {
+            if model.pairing?.isCloud == true {
+                Text("当前云端接入暂未启用个人声音生成。普通录音、原音播放、文字问答和校准仍可使用。")
+                    .font(.subheadline).foregroundStyle(Ink.muted)
+            } else if model.voiceProfileReady {
                 Text("你的声音样本已就绪。生成只发生在配对的 Mac 上。")
                     .font(.subheadline).foregroundStyle(Ink.text)
                 Button("撤销声音授权并删除样本", role: .destructive) {
@@ -957,6 +965,10 @@ private struct VoiceSetupView: View {
                         .font(.subheadline).foregroundStyle(Ink.coral)
                 }
                 if model.voiceSampleURL != nil {
+                    Button(model.playbackID == "voice-sample" && model.isPlaying ? "暂停样本" : "试听声音样本") {
+                        if model.playbackID == "voice-sample" { model.toggleCurrentPlayback() }
+                        else { model.playVoiceSample() }
+                    }.buttonStyle(.bordered)
                     Text("请对照录音核对实际说出的文字；普通记忆录音不会被用作声音样本。")
                         .font(.subheadline).foregroundStyle(Ink.muted)
                     TextEditor(text: $model.voiceSampleTranscript)

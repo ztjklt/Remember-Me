@@ -43,7 +43,7 @@ struct LocalRecordingDetailView: View {
                         Slider(value: Binding(get: { model.playbackPosition }, set: model.seekPlayback),
                                in: 0...max(1, model.playbackDuration)).accessibilityLabel("原音播放位置")
                     }
-                    Text("中文本机转写只在设备支持且你允许语音识别时进行；不可用时原音仍保留。连接 Mac 转写是另一个由你选择的操作。")
+                    Text("中文本机转写只在设备支持且你允许语音识别时进行；不可用时原音仍保留。上传到记忆服务转写是另一个由你选择的操作。")
                         .font(.subheadline).foregroundStyle(Ink.muted)
                     if record.machineTranscript == nil {
                         ActionButton(title: model.isLocalTranscribing ? "正在本机转写…" : "在 iPhone 上转成文字", icon: "text.bubble") {

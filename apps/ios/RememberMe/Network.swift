@@ -9,6 +9,10 @@ struct Pairing: Codable {
     let actorID: String
     let subjectID: String
     let consentID: String
+    var connectionKind: String? = nil
+    var displayName: String? = nil
+    var spaceName: String? = nil
+    var isCloud: Bool { connectionKind == "ecs" }
 }
 
 struct PairingReply: Decodable {
@@ -163,17 +167,23 @@ enum APIError: LocalizedError {
     case invalidURL, invalidCertificate, server(Int, String), invalidResponse
     var errorDescription: String? {
         switch self {
-        case .invalidURL: "本机服务地址无效，请检查 HTTPS 地址。"
+        case .invalidURL: "服务地址无效，请检查 HTTPS 地址。"
         case .invalidCertificate: "服务器证书与配对时提供的指纹不一致。"
-        case let .server(code, message): "本机服务返回 \(code)：\(message)"
-        case .invalidResponse: "本机服务返回了无法识别的数据。"
+        case let .server(code, message): "服务返回 \(code)：\(message)"
+        case .invalidResponse: "服务返回了无法识别的数据。"
         }
     }
 }
 
-final class CertificatePin: NSObject, URLSessionDelegate {
+final class CertificatePin: NSObject, URLSessionDelegate, URLSessionTaskDelegate {
     private let expected: String
     init(_ fingerprint: String) { expected = fingerprint.lowercased().filter { $0.isHexDigit } }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        completionHandler(nil)
+    }
 
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
                     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -185,6 +195,13 @@ final class CertificatePin: NSObject, URLSessionDelegate {
         let digest = SHA256.hash(data: SecCertificateCopyData(certificate) as Data)
         let actual = digest.map { String(format: "%02x", $0) }.joined()
         if actual == expected {
+            // Trust the pinned certificate as an anchor, while still validating
+            // its hostname, validity period, and SSL policy.
+            SecTrustSetAnchorCertificates(trust, [certificate] as CFArray)
+            SecTrustSetAnchorCertificatesOnly(trust, true)
+            guard SecTrustEvaluateWithError(trust, nil) else {
+                completionHandler(.cancelAuthenticationChallenge, nil); return
+            }
             completionHandler(.useCredential, URLCredential(trust: trust))
         } else {
             completionHandler(.cancelAuthenticationChallenge, nil)
@@ -197,16 +214,19 @@ final class APIClient: @unchecked Sendable {
     private let session: URLSession
     private let token: String?
 
-    init(baseURL: String, fingerprint: String, token: String? = nil) throws {
+    init(baseURL: String, fingerprint: String, token: String? = nil, session: URLSession? = nil) throws {
         guard let url = URL(string: baseURL), url.scheme == "https", url.host != nil,
               fingerprint.filter({ $0.isHexDigit }).count == 64 else { throw APIError.invalidURL }
         self.baseURL = url
         self.token = token
-        self.session = URLSession(configuration: .default, delegate: CertificatePin(fingerprint), delegateQueue: nil)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        self.session = session ?? URLSession(configuration: configuration, delegate: CertificatePin(fingerprint), delegateQueue: nil)
     }
 
     private func request(_ path: String, method: String = "GET", body: Data? = nil,
-                         contentType: String? = nil, timeout: TimeInterval = 300) async throws -> Data {
+                         contentType: String? = nil, timeout: TimeInterval = 300, headers: [String: String] = [:]) async throws -> Data {
         guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError.invalidURL }
         var request = URLRequest(url: url)
         request.httpMethod = method
@@ -214,13 +234,33 @@ final class APIClient: @unchecked Sendable {
         request.timeoutInterval = timeout
         if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         if let contentType { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
+        request.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
-            let raw = String(data: data, encoding: .utf8) ?? "未知错误"
-            throw APIError.server(http.statusCode, raw.prefix(300).description)
+            let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let error = decoded?["error"] as? [String: Any]
+            let message = error?["message"] as? String ?? decoded?["detail"] as? String ?? "请求未完成，请稍后重试。"
+            throw APIError.server(http.statusCode, String(message.prefix(300)))
         }
         return data
+    }
+
+    func serviceInfo() async throws -> CloudServiceInfo {
+        try JSONDecoder().decode(CloudServiceInfo.self, from: await request("/api/v1/service-info", timeout: 15))
+    }
+    func login(username: String, password: String) async throws -> CloudLoginReply {
+        let body = try JSONSerialization.data(withJSONObject: ["username": username, "password": password])
+        return try JSONDecoder().decode(CloudLoginReply.self, from: await request(
+            "/api/v1/accounts/login", method: "POST", body: body, contentType: "application/json", timeout: 30))
+    }
+    func logout() async throws { _ = try await request("/api/v1/accounts/logout", method: "POST", timeout: 15) }
+    func spaces() async throws -> CloudSpacesReply {
+        try JSONDecoder().decode(CloudSpacesReply.self, from: await request("/api/v1/workbench/spaces", timeout: 15))
+    }
+    func capabilities() async throws -> BackendCapabilities {
+        try JSONDecoder().decode(BackendCapabilities.self, from: await request("/api/v1/workbench/capabilities", timeout: 15))
     }
 
     func claim(code: String) async throws -> PairingReply {
@@ -297,10 +337,10 @@ final class APIClient: @unchecked Sendable {
         try JSONDecoder().decode(TwinAnswerRecord.self, from: await request(
             "/api/v1/subjects/\(subjectID)/twin/answers/\(answerID)"))
     }
-    func transcribeQuery(subjectID: String, audio: Data) async throws -> QueryTranscript {
+    func transcribeQuery(subjectID: String, audio: Data, cloudASRPolicy: String? = nil) async throws -> QueryTranscript {
         try JSONDecoder().decode(QueryTranscript.self, from: await request(
             "/api/v1/subjects/\(subjectID)/twin/transcribe-query", method: "POST",
-            body: audio, contentType: "audio/mp4"))
+            body: audio, contentType: "audio/mp4", headers: cloudASRPolicy.map { ["X-Cloud-ASR-Policy": $0] } ?? [:]))
     }
     func voiceProfile(subjectID: String) async throws -> VoiceProfileRecord {
         try JSONDecoder().decode(VoiceProfileRecord.self, from: await request(
@@ -349,7 +389,7 @@ final class APIClient: @unchecked Sendable {
             method: "POST", body: body, contentType: "application/json"))
     }
 
-    func upload(_ draft: RecordingDraft, pairing: Pairing) async throws -> String {
+    func upload(_ draft: RecordingDraft, pairing: Pairing, cloudASRPolicy: String? = nil) async throws -> String {
         let audio = try Data(contentsOf: draft.fileURL)
         let boundary = "RememberMe-\(UUID().uuidString)"
         var body = Data()
@@ -364,6 +404,7 @@ final class APIClient: @unchecked Sendable {
         field("recording_consent_id", pairing.consentID)
         field("duration_ms", String(draft.durationMS))
         var metadata: [String: String] = ["consent_confirmed_at": ISO8601DateFormatter().string(from: draft.consentConfirmedAt)]
+        if let cloudASRPolicy { metadata["cloud_asr_policy"] = cloudASRPolicy }
         if let questionID = draft.questionID { metadata["question_id"] = questionID }
         if let calibrationID = draft.calibrationID { metadata["calibration_id"] = calibrationID }
         let metadataData = try JSONSerialization.data(withJSONObject: metadata)
@@ -379,7 +420,7 @@ final class APIClient: @unchecked Sendable {
 
 enum PairingStore {
     private static let account = "local-pairing"
-    static func save(_ pairing: Pairing) throws {
+    static func save(_ pairing: Pairing, account: String = "local-pairing") throws {
         let data = try JSONEncoder().encode(pairing)
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                     kSecAttrService as String: "me.remember.personal",
@@ -390,7 +431,12 @@ enum PairingStore {
         item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw APIError.invalidResponse }
     }
-    static func load() -> Pairing? {
+    static func clear() {
+        SecItemDelete([kSecClass as String: kSecClassGenericPassword,
+                       kSecAttrService as String: "me.remember.personal",
+                       kSecAttrAccount as String: account] as CFDictionary)
+    }
+    static func load(account: String = "local-pairing") -> Pairing? {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                     kSecAttrService as String: "me.remember.personal",
                                     kSecAttrAccount as String: account,

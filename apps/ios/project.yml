@@ -27,7 +27,9 @@ targets:
     info:
       path: RememberMe/Info.plist
       properties:
-        CFBundleDisplayName: Remember Me
+        CFBundleDisplayName: Remember Me ECS
+        CFBundleShortVersionString: "1.1.0"
+        CFBundleVersion: "2026101101"
         UIRequiresFullScreen: true
         NSMicrophoneUsageDescription: 录下你的原话，保存为你自己的记忆。
         NSSpeechRecognitionUsageDescription: 在设备支持时，仅在这台 iPhone 上把已保存录音转成文字；不支持时保留原音，不使用云端识别。

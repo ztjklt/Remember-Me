@@ -57,6 +57,8 @@ final class AndroidParityUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Today's data"].waitForExistence(timeout: 5))
         capture(app, "Me")
         app.buttons["连接服务"].tap()
+        XCTAssertTrue(app.secureTextFields["ecs.password"].waitForExistence(timeout: 5))
+        app.segmentedControls.buttons["Mac 配对"].tap()
         XCTAssertTrue(app.secureTextFields["一次性配对码"].waitForExistence(timeout: 5))
         capture(app, "Connection")
     }

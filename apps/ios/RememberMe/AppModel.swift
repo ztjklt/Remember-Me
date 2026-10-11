@@ -19,6 +19,20 @@ final class AppModel: ObservableObject {
     @Published var pairingServer = ""
     @Published var pairingCode = ""
     @Published var pairingFingerprint = ""
+    @Published var cloudSpaces: [CloudSpace] = []
+    @Published var cloudCapabilities: BackendCapabilities?
+    @Published var connectionStatus = "尚未检查连接"
+    private var pendingCloudLogin: CloudLoginReply?
+    private var auxiliaryCloudPolicy: String?
+    var connectionChangeBlocked: Bool { isBusy || isPollingEpisode || isRecording || isLocalTranscribing || isQueryRecording || isVoiceRecording }
+    var hasSavedMacConnection: Bool { PairingStore.load(account: "last-mac-pairing") != nil }
+    var otherServiceRecordingCount: Int { localRecordings.count - visibleLocalRecordings.count }
+    var recordingTransferNotice: String {
+        pairing?.isCloud == true ? "原音先留在手机。上传前会单独说明云端转写用途；识别后由你核对，确认文字后才整理记忆。" : "原音先留在手机。提交后传给配对的 Mac 转写；网络中断时可以重试，无需重录。"
+    }
+    var organizeNotice: String {
+        pairing?.isCloud == true ? "ECS 会把你核对后的文字发送给已配置的模型整理记忆。原音不会随本次文字整理发送给语言模型。" : "配对的 Mac 会把你核对后的文字发送给 DeepSeek 提取记忆。原始录音不随本次操作发送给该服务。"
+    }
     @Published var memories: [MemoryRecord] = []
     @Published var episodes: [EpisodeRecord] = []
     @Published var domains: [DomainRecord] = []
@@ -105,6 +119,7 @@ final class AppModel: ObservableObject {
             persistActiveDraft()
         }
         if let path = defaults.string(forKey: "pending-voice-sample"),
+           pairing?.isCloud != true,
            FileManager.default.fileExists(atPath: path) {
             voiceSampleURL = URL(fileURLWithPath: path)
             voiceSampleTranscript = defaults.string(forKey: "pending-voice-transcript") ?? ""
@@ -128,7 +143,7 @@ final class AppModel: ObservableObject {
     }
 
     func connect() async {
-        guard !isBusy, !isPollingEpisode, !isRecording, !isLocalTranscribing, episodeID == nil else {
+        guard !connectionChangeBlocked else {
             errorMessage = "还有待处理的录音，请先在当前服务完成该任务后再更换连接。原音仍在手机里。"
             return
         }
@@ -143,25 +158,8 @@ final class AppModel: ObservableObject {
             let connected = Pairing(baseURL: server, fingerprint: fingerprint,
                                     token: reply.actor_token, actorID: reply.actor_id,
                                     subjectID: reply.subject_id, consentID: reply.recording_consent_id)
-            if let owner = activeLocalRecording?.owner,
-               owner.subjectID != connected.subjectID || owner.actorID != connected.actorID {
-                errorMessage = "这段录音属于原来的使用者。请先保留录音并退出录音页，再连接其他人的服务。"
-                return
-            }
-            try PairingStore.save(connected)
-            if pairing?.baseURL != connected.baseURL || pairing?.fingerprint != connected.fingerprint ||
-                pairing?.subjectID != connected.subjectID || pairing?.actorID != connected.actorID {
-                memories = []; episodes = []; domains = []; questions = []
-                modelVersion = 0; twinAnswer = nil; calibrationRun = nil
-                cloudConsentID = nil; voiceConsentID = nil; voiceProfileReady = false
-                memorySearchResults = []; memorySearchQuery = ""; queryDraft = ""
-                stopPlayback()
-            }
-            pairing = connected
-            if var record = activeLocalRecording, record.owner != nil {
-                record.owner = RecordingOwner(connected)
-                _ = persistLocal(record)
-            }
+            guard applyConnection(connected) else { return }
+            pendingCloudLogin = nil; cloudSpaces = []
             showConnection = false
             await refresh()
         } catch { errorMessage = error.localizedDescription }
@@ -171,42 +169,180 @@ final class AppModel: ObservableObject {
         guard let pairing, let client else { return }
         let owner = RecordingOwner(pairing)
         do {
+            if pairing.isCloud {
+                let spaces = try await client.spaces()
+                guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner else { return }
+                guard spaces.actor_id == pairing.actorID,
+                      spaces.items.contains(where: { $0.id == pairing.subjectID && $0.role == "owner" }) else {
+                    clearRemoteData()
+                    throw APIError.server(403, "当前账号已不能访问该本人空间，请重新登录或选择空间。")
+                }
+                cloudSpaces = spaces.items
+                let caps = try await client.capabilities()
+                guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner else { return }
+                cloudCapabilities = caps
+            }
+            let grants = try await client.consents(subjectID: pairing.subjectID)
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner else { return }
+            cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
+            voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
+            // A fresh account is usable before a RECORDING grant. Do not create
+            // one at login merely to make the older read endpoints succeed.
+            guard grants.contains(where: { $0.scope == "RECORDING" && $0.status == "granted" }) else {
+                memories = []; episodes = []; domains = []; questions = []
+                modelVersion = 0; twinAnswer = nil; calibrationRun = nil; voiceProfileReady = false
+                errorMessage = nil; return
+            }
             async let nextMemories = client.memories(pairing.subjectID)
             async let nextEpisodes = client.episodes(pairing.subjectID)
             async let nextModel = client.model(pairing.subjectID)
             async let nextQuestions = client.questions(pairing.subjectID)
-            async let nextConsents = client.consents(subjectID: pairing.subjectID)
-            async let nextVoiceProfile = client.voiceProfile(subjectID: pairing.subjectID)
-            async let nextCalibrations = client.calibrations(subjectID: pairing.subjectID)
             let loadedMemories = try await nextMemories
             let loadedEpisodes = try await nextEpisodes
             let snapshot = try await nextModel
             let loadedQuestions = try await nextQuestions
-            let grants = try await nextConsents
-            let profile = try await nextVoiceProfile
-            let runs = try await nextCalibrations
-            guard self.pairing.map(RecordingOwner.init) == owner else { return }
-            memories = loadedMemories
-            episodes = loadedEpisodes
-            domains = snapshot.domains
-            modelVersion = snapshot.version
-            questions = loadedQuestions
-            cloudConsentID = grants.last(where: { $0.scope == "CLOUD_TWIN" && $0.status == "granted" })?.id
-            voiceConsentID = grants.last(where: { $0.scope == "VOICE" && $0.status == "granted" })?.id
-            voiceProfileReady = profile.ready
-            calibrationRun = runs.first
+            // Voice service is optional and must not hide otherwise usable memories.
+            let profile = pairing.isCloud ? nil : try? await client.voiceProfile(subjectID: pairing.subjectID)
+            let runs = try? await client.calibrations(subjectID: pairing.subjectID)
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner else { return }
+            memories = loadedMemories; episodes = loadedEpisodes
+            domains = snapshot.domains; modelVersion = snapshot.version; questions = loadedQuestions
+            voiceProfileReady = profile?.ready ?? false
+            calibrationRun = runs?.first
             if cloudConsentID != nil,
-               let answerID = defaults.string(forKey: "last-twin-answer-\(pairing.subjectID)") {
+               let answerID = defaults.string(forKey: answerStorageKey(pairing)) {
                 let answer = try? await client.twinAnswer(subjectID: pairing.subjectID, answerID: answerID)
-                guard self.pairing.map(RecordingOwner.init) == owner else { return }
+                guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner else { return }
                 twinAnswer = answer
-            } else {
-                twinAnswer = nil
-            }
+            } else { twinAnswer = nil }
             errorMessage = nil
         } catch {
-            if self.pairing.map(RecordingOwner.init) == owner { errorMessage = error.localizedDescription }
+            if self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == owner {
+                clearRemoteData()
+                errorMessage = error.localizedDescription
+            }
         }
+    }
+
+    private func answerStorageKey(_ pairing: Pairing) -> String {
+        "last-twin-answer-\(pairing.baseURL)-\(pairing.actorID)-\(pairing.subjectID)"
+    }
+    private func clearRemoteData() {
+        memories = []; episodes = []; domains = []; questions = []; modelVersion = 0
+        twinAnswer = nil; calibrationRun = nil; cloudConsentID = nil
+        voiceConsentID = nil; voiceProfileReady = false
+        memorySearchResults = []; memorySearchQuery = ""; queryDraft = ""
+        stopPlayback()
+    }
+    @discardableResult
+    func applyConnection(_ connected: Pairing?, persist: Bool = true) -> Bool {
+        guard !isRecording, !isPollingEpisode, !isLocalTranscribing, !isQueryRecording, !isVoiceRecording else { return false }
+        // Archive the active draft in its original scope before changing identity.
+        guard prepareConnectionDraft() else { return false }
+        do {
+            if persist {
+                if let old = pairing, !old.isCloud { try PairingStore.save(old, account: "last-mac-pairing") }
+                if let connected { try PairingStore.save(connected) } else { PairingStore.clear() }
+            }
+            clearRemoteData()
+            voiceSampleURL = nil; voiceSampleTranscript = ""
+            cloudCapabilities = nil
+            pairing = connected
+            return true
+        } catch { errorMessage = "连接未保存，原录音仍在：\(error.localizedDescription)"; return false }
+    }
+    private func prepareConnectionDraft() -> Bool {
+        if let draft {
+            var record = activeLocalRecording ?? LocalRecording(draft: draft, owner: pairing.map(RecordingOwner.init))
+            record.draft = draft; record.episodeID = episodeID
+            guard persistLocal(record) else { return false }
+        }
+        draft = nil; episodeID = nil; transcriptDraft = ""; isTranscriptReviewReady = false
+        processingStatus = ""; recordedSeconds = 0
+        persistActiveDraft()
+        return true
+    }
+    func checkECSConnection() async {
+        guard !isBusy else { return }
+        isBusy = true; defer { isBusy = false }
+        connectionStatus = "正在检查连接…"
+        do {
+            let api = try APIClient(baseURL: ECSConfiguration.baseURL, fingerprint: ECSConfiguration.fingerprint)
+            let info = try await api.serviceInfo()
+            guard info.api_version == "0.7.0" else { throw APIError.server(409, "服务版本不匹配，请更新 App。") }
+            connectionStatus = "云端服务可连接 · API \(info.api_version)"
+        } catch { connectionStatus = "连接未完成：\(error.localizedDescription)" }
+    }
+    func loginECS(username: String, password: String) async {
+        guard !connectionChangeBlocked else { return }
+        isBusy = true; errorMessage = nil
+        defer { isBusy = false }
+        do {
+            let api = try APIClient(baseURL: ECSConfiguration.baseURL, fingerprint: ECSConfiguration.fingerprint)
+            let info = try await api.serviceInfo()
+            guard info.api_version == "0.7.0" else { throw APIError.server(409, "服务版本不匹配，请更新 App。") }
+            let login = try await api.login(username: username.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+            let authenticated = try APIClient(baseURL: ECSConfiguration.baseURL, fingerprint: ECSConfiguration.fingerprint, token: login.actor_token)
+            let spaces = try await authenticated.spaces()
+            guard spaces.actor_id == login.actor_id else { throw APIError.invalidResponse }
+            pendingCloudLogin = login; cloudSpaces = spaces.items
+            connectionStatus = "已验证账号，请选择本人空间"
+            let owned = spaces.items.filter { $0.role == "owner" }
+            if owned.count == 1 { try await finishCloudSelection(owned[0], login: login) }
+            else if owned.isEmpty { errorMessage = "这个账号没有本人空间。亲友空间的 iOS 接入稍后提供。" }
+        } catch { errorMessage = "登录未完成：\(error.localizedDescription)" }
+    }
+    func selectCloudSpace(_ id: String) async {
+        guard !connectionChangeBlocked, let space = cloudSpaces.first(where: { $0.id == id && $0.role == "owner" }) else { return }
+        let login = pendingCloudLogin ?? pairing.flatMap { $0.isCloud ? CloudLoginReply(actor_token: $0.token, actor_id: $0.actorID, display_name: $0.displayName ?? "") : nil }
+        guard let login else { return }
+        isBusy = true; defer { isBusy = false }
+        do { try await finishCloudSelection(space, login: login) }
+        catch { errorMessage = "空间未能连接：\(error.localizedDescription)" }
+    }
+    private func finishCloudSelection(_ space: CloudSpace, login: CloudLoginReply) async throws {
+        let api = try APIClient(baseURL: ECSConfiguration.baseURL, fingerprint: ECSConfiguration.fingerprint, token: login.actor_token)
+        let current = try await api.spaces()
+        guard current.actor_id == login.actor_id,
+              current.items.contains(where: { $0.id == space.id && $0.role == "owner" }) else { throw APIError.invalidResponse }
+        let grants = try await api.consents(subjectID: space.id)
+        let consent = grants.last(where: { $0.scope == "RECORDING" && $0.status == "granted" })?.id ?? ""
+        let connected = Pairing(baseURL: ECSConfiguration.baseURL, fingerprint: ECSConfiguration.fingerprint,
+            token: login.actor_token, actorID: login.actor_id, subjectID: space.id, consentID: consent,
+            connectionKind: "ecs", displayName: login.display_name, spaceName: space.display_name)
+        guard applyConnection(connected) else { return }
+        pendingCloudLogin = nil; connectionStatus = "已连接云端本人空间"
+        showConnection = false
+        await refresh()
+    }
+    func disconnectCloud() async {
+        guard !connectionChangeBlocked, pairing?.isCloud == true else { return }
+        let oldClient = client
+        guard applyConnection(nil) else { return }
+        cloudSpaces = []; pendingCloudLogin = nil; connectionStatus = "已退出云端账号"
+        do { try await oldClient?.logout() }
+        catch { errorMessage = "本机已退出；服务端会话撤销未完成，将按到期时间失效。" }
+    }
+    func restoreMacConnection() async {
+        guard !connectionChangeBlocked, let old = PairingStore.load(account: "last-mac-pairing"), applyConnection(old) else { return }
+        pendingCloudLogin = nil; cloudSpaces = []; showConnection = false
+        await refresh()
+    }
+    func prepareCloudASR() async -> String? {
+        guard !isBusy, let pairing, let client, pairing.isCloud else { return nil }
+        isBusy = true; defer { isBusy = false }
+        do {
+            let caps = try await client.capabilities()
+            guard self.pairing?.token == pairing.token else { return nil }
+            guard caps.stt_configured else { throw APIError.server(503, "转写服务尚未就绪，原音仍保留在手机。") }
+            guard caps.stt_processing != "client" else { throw APIError.server(409, "当前服务要求客户端机器稿，此版暂不支持该上传方式。原音仍保留。") }
+            cloudCapabilities = caps
+            if caps.stt_processing == "cloud" {
+                guard let policy = caps.cloud_asr_policy, !policy.isEmpty else { throw APIError.invalidResponse }
+                return policy
+            }
+            return ""
+        } catch { errorMessage = "转写配置未能读取：\(error.localizedDescription)"; return nil }
     }
 
     func startRecording(questionID: String? = nil, calibrationID: String? = nil) async {
@@ -267,7 +403,7 @@ final class AppModel: ObservableObject {
                     if self.isPaused { return }
                     if let recorder = self.recorder {
                         recorder.updateMeters()
-                        let level = max(0.16, min(1, (recorder.averagePower(forChannel: 0) + 60) / 60))
+                        let level = max(0, min(1, (recorder.averagePower(forChannel: 0) + 60) / 60))
                         self.meterLevels.removeFirst()
                         self.meterLevels.append(CGFloat(level))
                     }
@@ -474,7 +610,7 @@ final class AppModel: ObservableObject {
         defaults.set(transcriptDraft, forKey: "transcript-edit-\(episodeID)")
     }
 
-    func sendRecording() async {
+    func sendRecording(cloudASRPolicy: String? = nil) async {
         guard !isBusy, !isPollingEpisode, !isLocalTranscribing, let draft, let pairing, let client,
               var record = activeLocalRecording, record.isVisible(to: pairing) else { return }
         record.owner = RecordingOwner(pairing)
@@ -491,8 +627,24 @@ final class AppModel: ObservableObject {
                 await pollEpisode()
                 return
             }
+            if pairing.isCloud {
+                let caps = try await client.capabilities()
+                guard caps.stt_configured, caps.stt_processing != "client",
+                      caps.stt_processing != "cloud" || caps.cloud_asr_policy == cloudASRPolicy && cloudASRPolicy != nil else {
+                    throw APIError.server(409, "转写用途或配置已变化，请重新确认本段上传。原音仍保留。")
+                }
+            }
+            let grants = try await client.consents(subjectID: pairing.subjectID)
+            let recordingConsent: String
+            if let existing = grants.last(where: { $0.scope == "RECORDING" && $0.status == "granted" }) {
+                recordingConsent = existing.id
+            } else { recordingConsent = try await client.grantConsent(subjectID: pairing.subjectID, scope: "RECORDING").id }
+            var uploadPairing = pairing
+            uploadPairing = Pairing(baseURL: pairing.baseURL, fingerprint: pairing.fingerprint, token: pairing.token,
+                actorID: pairing.actorID, subjectID: pairing.subjectID, consentID: recordingConsent,
+                connectionKind: pairing.connectionKind, displayName: pairing.displayName, spaceName: pairing.spaceName)
             processingStatus = "正在上传录音"
-            let id = try await client.upload(draft, pairing: pairing)
+            let id = try await client.upload(draft, pairing: uploadPairing, cloudASRPolicy: cloudASRPolicy)
             episodeID = id
             record.episodeID = id; record.status = "uploaded"
             _ = persistLocal(record)
@@ -630,30 +782,46 @@ final class AppModel: ObservableObject {
     func enableCloudTwin() async {
         guard let pairing, let client else { return }
         do {
-            cloudConsentID = try await client.grantConsent(subjectID: pairing.subjectID, scope: "CLOUD_TWIN").id
-        } catch { errorMessage = "Twin 授权未完成：\(error.localizedDescription)" }
+            let consent = try await client.grantConsent(subjectID: pairing.subjectID, scope: "CLOUD_TWIN")
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing) else { return }
+            cloudConsentID = consent.id
+        } catch {
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing) else { return }
+            errorMessage = "Twin 授权未完成：\(error.localizedDescription)"
+        }
     }
 
     func revokeCloudTwin() async {
         guard let cloudConsentID, let pairing, let client else { return }
         do {
             try await client.revokeConsent(cloudConsentID)
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing) else { return }
             self.cloudConsentID = nil
             twinAnswer = nil
-            defaults.removeObject(forKey: "last-twin-answer-\(pairing.subjectID)")
-        } catch { errorMessage = "Twin 授权未能撤销：\(error.localizedDescription)" }
+            defaults.removeObject(forKey: answerStorageKey(pairing))
+        } catch {
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing) else { return }
+            errorMessage = "Twin 授权未能撤销：\(error.localizedDescription)"
+        }
     }
 
     func searchMemories() async {
         guard let pairing, let client else { return }
         let query = memorySearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { memorySearchResults = []; return }
-        do { memorySearchResults = try await client.searchMemories(subjectID: pairing.subjectID, query: query) }
-        catch { errorMessage = "记忆检索暂时不可用：\(error.localizedDescription)" }
+        do {
+            let results = try await client.searchMemories(subjectID: pairing.subjectID, query: query)
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing), memorySearchQuery.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
+            memorySearchResults = results
+        } catch {
+            guard self.pairing?.token == pairing.token, self.pairing.map(RecordingOwner.init) == RecordingOwner(pairing) else { return }
+            errorMessage = "记忆检索暂时不可用：\(error.localizedDescription)"
+        }
     }
 
     func askTwin() async {
-        guard let pairing, let client, let cloudConsentID else { return }
+        guard !isBusy, let pairing, let client, let cloudConsentID else { return }
+        guard !memories.isEmpty else { errorMessage = "请先录音、核对文字并整理至少一段记忆，再向 Twin 提问。"; return }
         let question = queryDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty else { return }
         isBusy = true
@@ -661,14 +829,20 @@ final class AppModel: ObservableObject {
         do {
             let result = try await client.askTwin(subjectID: pairing.subjectID, question: question,
                                                   cloudConsentID: cloudConsentID)
+            guard self.pairing?.token == pairing.token, self.pairing?.subjectID == pairing.subjectID else { return }
             twinAnswer = result
-            defaults.set(result.id, forKey: "last-twin-answer-\(pairing.subjectID)")
+            defaults.set(result.id, forKey: answerStorageKey(pairing))
         } catch { errorMessage = "Twin 暂时没能回答：\(error.localizedDescription)" }
     }
 
-    private func beginAuxiliaryRecording(voice: Bool) async {
+    private func beginAuxiliaryRecording(voice: Bool, cloudASRPolicy: String? = nil) async {
         stopPlayback()
         errorMessage = nil
+        guard !isBusy, let pairing else { errorMessage = "请先连接记忆服务。"; return }
+        guard !voice || !pairing.isCloud else { errorMessage = "此云端版本尚未接入个人声音生成，普通录音和 Twin 文字仍可使用。"; return }
+        if pairing.isCloud && cloudCapabilities?.stt_processing == "cloud" && cloudASRPolicy == nil {
+            errorMessage = "请先确认提问原音的云端转写用途。"; return
+        }
         guard !isRecording && auxiliaryRecorder == nil else {
             errorMessage = "请先结束正在进行的录音。"
             return
@@ -699,6 +873,7 @@ final class AppModel: ObservableObject {
             let recorder = try AVAudioRecorder(url: url, settings: settings)
             guard recorder.record() else { throw APIError.invalidResponse }
             auxiliaryRecorder = recorder
+            auxiliaryCloudPolicy = cloudASRPolicy
             auxiliaryURL = url
             isVoiceRecording = voice
             isQueryRecording = !voice
@@ -714,11 +889,13 @@ final class AppModel: ObservableObject {
         } catch { errorMessage = "录音无法开始：\(error.localizedDescription)" }
     }
 
-    func startQueryRecording() async { await beginAuxiliaryRecording(voice: false) }
+    func startQueryRecording(cloudASRPolicy: String? = nil) async { await beginAuxiliaryRecording(voice: false, cloudASRPolicy: cloudASRPolicy) }
     func startVoiceSample() async { await beginAuxiliaryRecording(voice: true) }
 
     func finishAuxiliaryRecording() async {
-        guard let recorder = auxiliaryRecorder, let url = auxiliaryURL, let pairing, let client else { return }
+        guard let recorder = auxiliaryRecorder, let url = auxiliaryURL else { return }
+        let policy = auxiliaryCloudPolicy
+        auxiliaryCloudPolicy = nil
         let wasVoice = isVoiceRecording
         recorder.stop()
         auxiliaryTimer?.invalidate()
@@ -728,7 +905,16 @@ final class AppModel: ObservableObject {
         auxiliaryURL = nil
         isVoiceRecording = false
         isQueryRecording = false
+        guard let pairing, let client else { errorMessage = "录音已停止，请重新连接服务。"; return }
+        isBusy = true
+        defer { isBusy = false }
         do {
+            if pairing.isCloud {
+                let caps = try await client.capabilities()
+                guard caps.stt_processing != "cloud" || caps.cloud_asr_policy == policy && policy != nil else {
+                    throw APIError.server(409, "转写用途已变化，请重新确认后再提问。")
+                }
+            }
             let audio = try Data(contentsOf: url)
             if wasVoice {
                 if let old = voiceSampleURL { try? FileManager.default.removeItem(at: old) }
@@ -743,9 +929,32 @@ final class AppModel: ObservableObject {
                 }
             } else {
                 defer { try? FileManager.default.removeItem(at: url) }
-                queryDraft = try await client.transcribeQuery(subjectID: pairing.subjectID, audio: audio).text
+                queryDraft = try await client.transcribeQuery(subjectID: pairing.subjectID, audio: audio, cloudASRPolicy: policy).text
             }
         } catch { errorMessage = "识别暂时失败，仍可手动输入问题：\(error.localizedDescription)" }
+    }
+
+    func stopAuxiliaryForBackground() {
+        guard let recorder = auxiliaryRecorder else { return }
+        let wasVoice = isVoiceRecording
+        recorder.stop(); auxiliaryTimer?.invalidate(); auxiliaryTimer = nil
+        auxiliaryRecorder = nil; auxiliaryStartedAt = nil
+        isVoiceRecording = false; isQueryRecording = false
+        if let url = auxiliaryURL, wasVoice {
+            if let old = voiceSampleURL, old != url { try? FileManager.default.removeItem(at: old) }
+            voiceSampleURL = url; voiceSampleTranscript = ""
+            defaults.set(url.path, forKey: "pending-voice-sample")
+            defaults.removeObject(forKey: "pending-voice-transcript")
+        } else if let url = auxiliaryURL {
+            defaults.set(url.path, forKey: "pending-query-recording")
+        }
+        auxiliaryURL = nil; auxiliaryCloudPolicy = nil
+        errorMessage = "录音已停止并保留在手机。回到前台后请试听；提问可重新录制或输入文字。"
+    }
+    func playVoiceSample() {
+        guard !isRecording, !isQueryRecording, !isVoiceRecording, let voiceSampleURL else { return }
+        do { try beginPlayback(AVAudioPlayer(contentsOf: voiceSampleURL), identity: "voice-sample") }
+        catch { errorMessage = "样本无法播放：\(error.localizedDescription)" }
     }
 
     func enrollVoice() async {

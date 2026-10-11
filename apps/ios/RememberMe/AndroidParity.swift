@@ -432,7 +432,7 @@ private struct PersonalDashboard: View {
                     Image(systemName: "person.crop.circle.fill").font(.largeTitle).foregroundStyle(Ink.coral)
                     VStack(alignment: .leading, spacing: 5) {
                         Text("我的记忆空间").font(.headline)
-                        Text(model.pairing == nil ? "原音先留在手机" : "已连接私人记忆服务").font(.subheadline).foregroundStyle(Ink.muted)
+                        Text(model.pairing == nil ? "原音先留在手机" : model.pairing?.isCloud == true ? "已连接云端 · " + (model.pairing?.spaceName ?? "本人空间") : "已连接私人记忆服务").font(.subheadline).foregroundStyle(Ink.muted)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
                     .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
