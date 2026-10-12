@@ -15,7 +15,8 @@ from ..errors import AppError
 from ..models import (Actor, Consent, ConsentScope, Episode, Evidence,
                       ModelRevision, PersonTrait, TwinAnswer, utcnow)
 from ..repositories.consents import ConsentRepository
-from ..retrieval import EmbeddingUnavailable, retrieve
+from ..retrieval import EmbeddingUnavailable
+from ..evidence_rag import prepare, publish_and_select, search_items
 from ..security import current_actor
 from ..twin_client import TwinUnavailable
 from ..stt import SttProvider
@@ -115,21 +116,22 @@ def search_memories(subject_id: str, q: str, request: Request,
     actor_id = actor.actor_id
     publication_lock(session, subject_id)
     ids = visible_episodes(session, subject_id, actor.actor_id)
-    basis = source_basis(session, subject_id)
     reader = not is_owner(session, subject_id, actor_id)
+    if reader: ids -= altered_story_ids(session, ids)
+    candidates = effective_materials(session, subject_id, ids, enforce_budget=False)
+    basis = source_basis(session, subject_id)
     session.commit()
     if not q.strip() or len(q) > 1000:
         return {"items": []}
     try:
-        items = retrieve(session, subject_id, q.strip(), request.app.state.embedding_encoder,
-                         episode_ids=ids, reader=reader)
-        session.commit()
+        plan = prepare(session, subject_id, q.strip(), candidates, request.app.state.embedding_encoder)
     except EmbeddingUnavailable as exc:
         raise TwinFailed(str(exc)) from exc
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新搜索。')
     visible_episodes(session, subject_id, actor_id)
+    items = search_items(publish_and_select(session, plan, candidates))
     session.commit()
     return {"items": items}
 
@@ -144,7 +146,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     reader = not is_owner(session, subject_id, actor_id)
     if reader:
         ids -= altered_story_ids(session, ids)
-    candidates = effective_materials(session, subject_id, ids)
+    candidates = effective_materials(session, subject_id, ids, enforce_budget=False)
+    related_groups = []
     from ..narrative import visible_records,contextual_sources
     from ..models import NarrativePreference
     from ..profiles import approved_traits
@@ -154,19 +157,19 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     for trait in (approved_traits(session, subject_id) if not reader else []):
         # Conditions and counterexamples need the same permission check as support.
         if not set(trait.evidence_ids+trait.counter_evidence_ids)<=sources.keys(): continue
+        related_groups.append(set(trait.evidence_ids+trait.counter_evidence_ids))
         for candidate in candidates:
             if set(trait.evidence_ids).intersection(e['evidence_id'] for e in candidate['evidence']):
                 candidate['traits'].append(f'本人确认的系统归纳：{trait.statement}；情境：{trait.context}；不得扩展为所有场景的人格。')
     for record in organized:
         if record['kind'] not in {'story','person','observation'}: continue
+        related_groups.append(set(record['evidence_ids']))
         for candidate in candidates:
             if set(record['evidence_ids']).intersection(e['evidence_id'] for e in candidate['evidence']):
                 candidate['traits'].append('本人审核的故事整理（非原话，以证据为准）：'+record['text'])
     pref=session.get(NarrativePreference,subject_id)
     examples=[{'id':r['id'],'text':r['text']} for r in organized if r['kind']=='style'] if pref and pref.style_enabled else []
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
-    if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
-        raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
     from ..twin_context import contextual_evidence
     twin_sources = contextual_evidence(session, sources)
     basis = source_basis(session, subject_id)
@@ -176,7 +179,16 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     question = payload.question.strip()
     if not question:
         raise TwinNotFound("Question is empty")
-    candidate_ids = {row["memory_item_id"] for row in candidates}
+    try:
+        plan = prepare(session, subject_id, question, candidates, request.app.state.embedding_encoder)
+    except EmbeddingUnavailable as exc:
+        raise TwinFailed(str(exc)) from exc
+    publication_lock(session, subject_id)
+    if basis != source_basis(session, subject_id):
+        raise SourceChanged('资料或授权已变化，请重新提问。')
+    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    candidates = publish_and_select(session, plan, candidates, related_groups=related_groups)
+    session.commit()
     unresolved = set()
     # Explicit temporal revisions travel as context; an unrelated contradiction
     # must not globally block answering facts from the same recording.
@@ -186,8 +198,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 "evidence": [twin_sources[source["evidence_id"]]
                              for source in row["evidence"] if source["excerpt"]]}
                for row in candidates]
-    # Retrieval may update cached vectors. Release its transaction before the
-    # network call so revocation can proceed while DeepSeek is working.
+    # No source writes or locks are held across the answer-provider call.
     session.commit()
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):

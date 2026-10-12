@@ -71,6 +71,10 @@ def test_profile_worker_uses_flash_and_preserves_owner_review_and_source_handles
         body=json.loads(request.content)
         assert body['model']=='deepseek-flash' and body['thinking']=={'type':'disabled'}
         assert 'real-source' not in request.content.decode()
+        if body['messages'][0]['content'].startswith('逐项核对人物候选'):
+            return httpx.Response(200,json={'model':'deepseek-flash','choices':[{
+                'finish_reason':'stop','message':{'content':json.dumps({'checks':[{
+                    'candidate':1,'supported':True,'bounded':True,'counter_correct':True}]})}}]})
         return httpx.Response(200,json={'model':'deepseek-flash','choices':[{
             'finish_reason':'stop','message':{'content':json.dumps({'candidates':[{
                 'domain':'PREFERENCES','statement':'偏好热茶','context':'饮品选择',

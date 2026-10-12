@@ -181,7 +181,7 @@ def test_profile_schema_rejects_status_confidence_and_unknown_counter_evidence()
     class Chat:
         def complete(self,*args):
             return {'candidates':[candidate]}, 'actual'
-    provider=ProfileProposalProvider(Chat())
+    provider=ProfileProposalProvider(Chat(), method="baseline")
     payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'每天散步'}])
     assert provider.propose(payload).prompt_version=='profile-proposals-evidence-v4'
     candidate['confidence']=.9
@@ -202,7 +202,7 @@ def test_proposal_http_worker_has_fixed_versions_and_bounded_input():
     with TestClient(create_app(Settings(_env_file=None), profile_provider=ProfileProposalProvider(Chat()))) as client:
         response=client.post('/profile-proposals',json={'materials':[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'原话'}]})
         assert response.status_code==200
-        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-evidence-v4'}
+        assert response.json()=={'candidates':[],'model_version':'DeepSeek-actual','prompt_version':'profile-proposals-nuwa-v5'}
         assert client.post('/profile-proposals',json={'materials':[],'prompt_version':'invented'}).status_code==422
 
 
@@ -298,7 +298,7 @@ def test_profile_uses_short_source_handles_and_explicit_schema():
             assert payload['materials'][0]['evidence_id'] == 's1'
             return {'candidates':[{'domain':'PREFERENCES','kind':'habit','statement':'喜欢散步',
                 'context':'本人描述日常散步','evidence_ids':['s1'],'counter_evidence_ids':[]}]}, 'actual'
-    result = ProfileProposalProvider(Chat()).propose(ProfileProposalInput(materials=[
+    result = ProfileProposalProvider(Chat(), method="baseline").propose(ProfileProposalInput(materials=[
         {'evidence_id':'src_very_long_identifier','episode_id':'ep1','excerpt':'我每天散步'}]))
     assert result.candidates[0].evidence_ids == ['src_very_long_identifier']
 
@@ -342,7 +342,7 @@ def test_profile_wire_evidence_alias_is_lossless_and_still_grounded():
     class Chat:
         def complete(self,*args): return {'candidates':[candidate]}, 'actual'
     payload=ProfileProposalInput(materials=[{'evidence_id':'ev1','episode_id':'ep1','excerpt':'我喜欢散步'}])
-    provider=ProfileProposalProvider(Chat())
+    provider=ProfileProposalProvider(Chat(), method="baseline")
     result=provider.propose(payload)
     assert result.candidates[0].evidence_ids==['ev1']
     assert 'evidence' not in result.candidates[0].model_dump()

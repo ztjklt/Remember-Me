@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from .vector_type import vector_type
 
 
 def utcnow() -> datetime:
@@ -700,6 +701,20 @@ class MemoryEmbedding(Base):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     vector: Mapped[list] = mapped_column(JSON, nullable=False)
+
+
+class EvidenceChunkEmbedding(Base):
+    """Rebuildable vectors over authorized, effective evidence; never a fact store."""
+    __tablename__ = 'evidence_chunk_embeddings'
+    __table_args__ = (Index('ix_evidence_chunks_subject_model', 'subject_id', 'model_version'),)
+    chunk_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    evidence_id: Mapped[str] = mapped_column(String(128), ForeignKey('evidence.evidence_id', ondelete='CASCADE'), nullable=False)
+    span_start: Mapped[int] = mapped_column(Integer, nullable=False)
+    span_end: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    vector: Mapped[list] = mapped_column(vector_type(), nullable=False)
 
 
 class TwinAnswer(Base):

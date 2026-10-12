@@ -3,7 +3,7 @@
 from sqlalchemy import select
 import pytest
 
-from app.models import CalibrationRun, Episode, Evidence, MemoryEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
+from app.models import CalibrationRun, Episode, Evidence, MemoryEmbedding, EvidenceChunkEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
 from app.seed import seed_development_data
 from app.worker import ProcessingWorker
 
@@ -85,11 +85,10 @@ def test_evidence_answer_is_scoped_and_invalidated_after_correction(app, client,
     assert answer["response_type"] == "ORIGINAL"
     assert answer["answer"] == answer["evidence"][0]["excerpt"]
     assert answer["model_version"] == "deepseek-flash-test"
-    # Question answering now uses complete effective text; the independent
-    # local search endpoint still creates and invalidates its vector cache.
+    # Both question answering and search now index effective original evidence.
     assert client.get(f'/api/v1/subjects/{own.subject_id}/memory-search',
                       params={'q':'散步'}, headers=headers).status_code == 200
-    assert session.scalar(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == own.subject_id))
+    assert session.scalar(select(EvidenceChunkEmbedding).where(EvidenceChunkEmbedding.subject_id == own.subject_id))
     app.state.twin_client = BadTwin()
     assert client.post(path, headers=headers,
                        json={"question": "喜欢什么？", "cloud_consent_id": consent}).status_code == 503
@@ -100,6 +99,7 @@ def test_evidence_answer_is_scoped_and_invalidated_after_correction(app, client,
     session.expire_all()
     assert session.get(TwinAnswer, answer["answer_id"]).invalidated_at is not None
     assert session.get(MemoryEmbedding, memory["memory_item_id"]) is None
+    assert session.scalar(select(EvidenceChunkEmbedding).where(EvidenceChunkEmbedding.subject_id==own.subject_id)) is None
     assert client.get(f"/api/v1/subjects/{own.subject_id}/twin/answers/{answer['answer_id']}",
                       headers=headers).json()["stale"] is True
 
