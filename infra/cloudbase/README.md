@@ -8,9 +8,9 @@
 
 - 一个容器中只有两种 HTTP 进程：Backend 对外监听 `PORT`，AI Core 只监听容器内 `127.0.0.1:8100`。一个主模型后面保留已有 Schema worker。
 - 不运行永久后台 worker。私人定时云函数每分钟调用受独立密钥保护的 `/internal/jobs/processing-tick` 和 `/internal/jobs/profile-tick`，每次请求同步完成一段工作。Backend 数据库 job lease 和本人核对门槛保留；只转写不会自动进入提取。
-- 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，云托管与数据库的实际连通仍待验证。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前检索依旧是 BGE CPU 编码与 Python 排序，向量列是 JSON；没有声称已切换 pgvector ANN 索引。
+- 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，原生认证、证书链与主机校验，以及应用容器就绪均已实际通过。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前检索依旧是 BGE CPU 编码与 Python 排序，向量列是 JSON；没有声称已切换 pgvector ANN 索引。
 - 使用此 PG 环境原生 Storage API 的私有桶 `remember-me-ios-audio` 保存原音和转写检查点。服务端专用 API Key 不进入客户端；对 `anon` 和 `authenticated` 配置 restrictive policy，阻止这个桶通过其他 permissive policy 暴露。存储适配器不跟随重定向、不把错误响应正文写入异常。S3 adapter 仍可作为另选部署方式。
-- 2026-10-13 用户指定主 LLM 优先 DeepSeek V4 Flash，当前官方目录使用 `deepseek-flash`（旧 V4 Flash 别名由当前 Flash 模型提供服务）。该独立 Key 来自用户自己创建的 RM Key，只发到 `https://api.deepseek.com`。合成文本的真实提取、Twin 和人物候选均通过；这不是已部署 CloudBase 或手机验收的声明。转写供应商依然开放：此前 Anker Key 认证返回 401，其 ASR 音频协议尚待真实验证，当前不发送手机原音。TTS 别名不是本人声纹或已部署声音克隆。
+- 2026-10-13 用户指定主 LLM 优先 DeepSeek V4 Flash，当前官方目录使用 `deepseek-flash`（旧 V4 Flash 别名由当前 Flash 模型提供服务）。该独立 Key 来自用户自己创建的 RM Key，只发到 `https://api.deepseek.com`。合成文本的真实提取、Twin 和人物候选均通过；这不是已部署 CloudBase 或手机验收的声明。本环境已由用户选定普通百炼 Paraformer V2，合成 WAV 与 AAC M4A 实际转写通过；此前 Anker Key 的 401 与未经验证的音频协议仅保留为历史。本人手机录音仍待试用者确认上传。TTS 别名不是本人声纹或已部署声音克隆。
 - 同步 relay 在私有存储保存提交标记和成功的原始机器稿；冷替换读已有结果，结果不确定时拒绝重放原音。明确拒绝的 4xx／429 可以重新核对配置；超时、5xx、截断输出不暗中重放。读取缓存仍验证当前授权。默认 relay 本机行为不变，只有本部署选择持久化。
 - Paraformer 在提交供应商任务之前先持久化 `submitting` 检查点；结果不确定或检查点不可读时不重新提交。冷启动会继续轮询已有任务。临时锁和诊断 JSONL 可丢失；原音、任务 checkpoint 和 Episode 结果不依赖容器临时盘。
 - 为保持当前跨进程文件锁和供应商配额语义，首次内测最大副本 **1**，网关并发 **1**，新版本切换先停旧版本再启动新版本。不得直接改成并行蓝绿或多副本；多副本需要分布式 quota／检查点锁。
@@ -18,7 +18,7 @@
 
 ## CloudBase 控制台准备
 
-环境名称 `remember-me-ios`，环境 ID `remember-me-ios-d5f9twwlcae71c69`，上海，PostgreSQL。最初通过兑换码创建免费体验环境；用户随后自行升级标准版，并接受及提交数据库独享升级。2026-10-12 配置页确认实例 `postgres-drasbama` 已运行，1 核／2 GiB／20 GB，每小时 352 点（30 天约 253,440 点）。数据库公网入口未启用。原生数据库密码已由用户在控制台重置，随后按其明确要求保存至本机 ignored 私密配置；不进入源码。用户已自行确认 CloudBase 与 CODING 协议，云托管已开通，应用服务尚未部署。非敏感身份记录在 `ENVIRONMENT.json`。
+环境名称 `remember-me-ios`，环境 ID `remember-me-ios-d5f9twwlcae71c69`，上海，PostgreSQL。最初通过兑换码创建免费体验环境；用户随后自行升级标准版，并接受及提交数据库独享升级。2026-10-12 配置页确认实例 `postgres-drasbama` 已运行，1 核／2 GiB／20 GB，每小时 352 点（30 天约 253,440 点）。数据库公网入口未启用。原生数据库密码已由用户在控制台重置，随后按其明确要求保存至本机 ignored 私密配置；不进入源码。用户已自行确认 CloudBase 与 CODING 协议，云托管已开通，应用服务已于 2026-10-13 上线。非敏感身份记录在 `ENVIRONMENT.json`。
 
 云托管、网络、存储与模型调用用量仍需实际核算，不能把标准套餐或数据库点数当作全部后端费用；未开启超限按量或新增付费网络产品。
 
@@ -82,7 +82,7 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 
 用户随后提供自己在 DeepSeek 官方平台创建的 RM Key，并选择 Flash 路线；不再把百炼按量作为已经获费用授权的默认路线。Key 归属在控制台确认，官方模型目录返回 200，当前列出的 Flash ID 为 `deepseek-flash`。记忆提取和 Twin 沿用原有适配器，人物候选／已有 Schema worker 接入同一个主模型；共享有界 JSON transport 与供应商固定目标验证，保留本人确认门槛和证据编号映射。
 
-用虚构文字真实执行：提取返回 200（0.77 秒），2 条记忆及 2 条证据；Twin 返回 200（0.60 秒），引用存在，原话保留尚未决定报名的意思；人物候选返回 200（0.94 秒），1 项候选，所有引用属于输入。均记录实际响应模型 `deepseek-flash`。没有发送个人记录或原音。定向 AI 回归 74 项通过，2 条上游弃用提醒。结果在 ignored `build/deepseek-*-live-probe-20261013.json`。原生数据库密码／CA／直连的后续验证见“当前权限与凭据待处理”；ASR、应用容器和手机尚未切换。
+用虚构文字真实执行：提取返回 200（0.77 秒），2 条记忆及 2 条证据；Twin 返回 200（0.60 秒），引用存在，原话保留尚未决定报名的意思；人物候选返回 200（0.94 秒），1 项候选，所有引用属于输入。均记录实际响应模型 `deepseek-flash`。没有发送个人记录或原音。定向 AI 回归 74 项通过，2 条上游弃用提醒。结果在 ignored `build/deepseek-*-live-probe-20261013.json`。原生数据库密码／CA／直连的后续验证见“当前权限与凭据待处理”；后续 ASR、应用容器和手机交付结果见文末已上线状态。
 
 [官方 Flash 模型与旧别名说明](https://api-docs.deepseek.com/quick_start/pricing/)
 
@@ -91,3 +91,9 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 用户选定普通按量百炼 ASR，并提供自行创建的工作空间 Key。当前候选使用 `paraformer-v2`，固定北京 workspace HTTPS origin，不含 compatible-mode 路径；Key 只保存在后端私密配置。适配器兼容现行 `ws-` 与既有 `llm-` 工作空间域名。真实合成中文音频 6 秒、3.7 秒完成转写且内容一致；定向回归 38 项通过。该结果仅覆盖供应商适配器，CloudBase 应用容器和手机闭环另验。
 
 远端初次应用构建未产出镜像，终止本次尚未上线的构建任务后改为已在腾讯云成功使用的 `python:3.12-slim`，通过 PyPI 安装固定 `uv==0.12.18`（版本目录已核实）；继续使用冻结 lock 和 CPU retrieval 依赖。并不由这项改动推断完整应用构建已成功。
+
+## 2026-10-13 已上线状态
+
+独立 `remember-ios-api` 已部署，origin 与实际就绪信息见 `ENVIRONMENT.json`，release 为 `ios-cloudbase-fe37b16`。数据库和私有存储 ready；真实合成语音已经走通上传、待核对、DeepSeek Memory、带原文证据的 Twin、原音读取与匿名拒绝。语音提问及 AAC M4A 都通过。每分钟 Event worker 已启用，并实际把待处理的人物候选任务推进为 complete。未开通额外 NAT、EIP 或 CLS。
+
+账号 `jitian` 为独立空空间，初始密码只保存在本机 `build/private/ios-internal-account.json`。本人权限由手机自行确认，测试使用另一个虚构账号。iPhone 已安装并启动 iOS 1.2.1 / 2026101301；真人录音旅程仍待使用者实测，云端声音克隆没有部署。详细结果以 dated verification 为准，前文未完成状态是各时间点的历史记录。

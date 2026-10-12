@@ -101,3 +101,21 @@ VPC 查询没有 NAT 网关；该 VPC 云函数访问 DeepSeek 模型目录超�
 真实 provider adapter 使用 macOS Tingting 生成的 6 秒中文测试音频完成私有临时上传、异步提交、轮询、结果下载，返回文字与合成内容一致，耗时 3.7 秒，来源 `bailian/paraformer-v2`。报告在 ignored `build/paraformer-live-probe-20261013.json`；没有使用本人声音、手机录音或个人记忆。正常配置已选 Paraformer，DeepSeek Flash 仍为主 LLM。应用容器／手机闭环结果需另行记录。
 
 [Paraformer 文件转写 API](https://help.aliyun.com/zh/model-studio/paraformer-recorded-speech-recognition-restful-api)及[临时文件上传](https://help.aliyun.com/zh/model-studio/get-temporary-file-url/)为协议依据。
+
+## 2026-10-13 云端应用与 iPhone 交付
+
+完整应用镜像已由腾讯云远端构建并推送，源码基线 `fe37b16`。服务 `remember-ios-api` 使用 1 CPU／2 GiB，min 0／max 1，数据库同 VPC + 平台默认公网出口；无需新增 NAT／EIP。原音及 ASR 检查点保存在本环境私有存储。原先构建任务未产出镜像时取消并重试，不能把该次当作已通过。随后完整应用构建、部署与就绪成功。
+
+HTTPS origin：`https://remember-ios-api-327435-12-1411199312.sh.run.tcloudbase.com`。`/health` 200，`/ready` 200 且 PostgreSQL／private ObjectStore 为 ok；`/api/v1/service-info` 200，发布身份 `ios-cloudbase-fe37b16`，注册 false。固定 allowed-host 为实际域名和 loopback，未用全局通配符。发布身份配置在定时器启用和测试 Job 创建前更新；后续替换仍要求避免多版本同时处理任务。没有实测配置网关并发上限；代码采用单 API worker、AI 并发 1、内部 tick 互斥与数据库 job lease。
+
+独立账号使用现有 `account_admin.create_account` 生成 Actor、Account、Subject，通过受保护 SQL 管理接口事务写入新 Schema；已存在账号则拒绝创建，不重置。初始随机密码仅在本机 ignored 私密文件中。账号 `jitian` 登录真实返回 200，1 个 owner 空间；核对时该空间 Episode 0、Consent 0，没有代其授予录音、文字模型或 VOICE 权限。另建独立虚构测试账号进行闭环，不把测试记忆放入本人空间。普通 Actor 调内部 tick 返回 401。
+
+合成 WAV 的真实云端 API 闭环：上传 201 → Paraformer 原始机器稿 → 待核对 → 确认 200 → DeepSeek 提取及模型更新 → result 200、1 条 Memory → Twin 200、ORIGINAL、1 个已存在的原文引用。原音下载 200 且 SHA-256 与上传字节相同；匿名下载 401。核对前读取 result 得到 409；初次 harness 未完整处理转写后进入 reviewing 的状态推进，修正测试流程后确认文字才继续，不放宽产品门槛或重放原音。
+
+语音提问 `/twin/transcribe-query` 真实 200，识别正确且 Episode 数未增加。额外验证与 iOS 录音相同类型的 AAC M4A（48 kHz／mono／128 kbps），`audio/mp4` 原音真实转写 200、内容一致。以上均为合成语音，没有发送本人录音／声纹。报告位于 ignored `build/cloud-*-probe-20261013.json`。
+
+`remember-ios-worker` Python3.9 Event 函数部署成功，无 HTTP 触发器、无 VPC（只调用已审核的 HTTPS API），120 秒 timeout。人工调用返回 timer_completed；启用 `remember-ios-minute` 的每分钟触发器。随后提交独立测试 Subject 的人物候选任务，返回 queued；没有人工调用 worker，之后读取为 complete、1 项 pending 候选、无 error，证明定时处理实际推进。统一日志读取返回 TopicNotExist，未为调试开通新的 CLS 服务；任务结果可由数据库／API 查询。
+
+iOS 来源为主工作区当前版本（包括已有未提交人物审核代码）；这些用户改动保留，本次只改连接、系统 TLS、cloudbase 本地配对类型、版本及对应测试。使用系统证书只适用于固定 CloudBase origin；旧 ECS／Mac 配对仍走原有 pin。两种会话都拒绝 HTTP 重定向，provider Key 不进入 App。连接测试 `ECSConnectionTests` 9 项通过（iOS27 模拟器），签名真机构建通过。补齐 Xcode build settings 的版本，实包核对为 **Remember Me iOS 1.2.1 / 2026101301**，bundle `me.remember.personal.ios`；已安装到 iPhone 15 Pro Max「黑幕」并由 devicectl 确认启动。只证明安装／启动，不冒称已经完成本人真机录音旅程。
+
+仍待本人在手机完成一次实际录音、核对、整理、Twin 试用。声音克隆／云端本人声纹朗读未部署；语音识别成功不等于声音克隆成功。单段原音上限 18 MiB，超出时仍需保留本机原音并另行处理。当前 BGE CPU 检索已在云端 Twin 路径工作，向量仍存 JSON，未切换 pgvector ANN。服务端存储 Key 有既定 30 天有效期，后续需要轮换；CLI 登录和签名开发包也按各自有效期管理。

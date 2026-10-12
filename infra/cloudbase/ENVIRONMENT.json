@@ -7,8 +7,8 @@
   "database_instance_type": "dedicated",
   "plan": "standard",
   "cloud_run_enabled": true,
-  "backend_deployed": false,
-  "api_origin": null,
+  "backend_deployed": true,
+  "api_origin": "https://remember-ios-api-327435-12-1411199312.sh.run.tcloudbase.com",
   "deployment_route": "native-postgresql",
   "database_instance_id": "postgres-drasbama",
   "database_status": "running",
@@ -46,5 +46,22 @@
   "asr_provider": "bailian",
   "asr_model": "paraformer-v2",
   "asr_smoke_validation": "local-adapter-with-synthetic-Chinese-speech",
-  "asr_workspace": "ws-5hudj5uvce12kiug"
+  "asr_workspace": "ws-5hudj5uvce12kiug",
+  "release_id": "ios-cloudbase-fe37b16",
+  "application_image_built": true,
+  "readiness": {
+    "database": "ok",
+    "object_store": "ok"
+  },
+  "synthetic_cloud_e2e_verified": true,
+  "voice_query_asr_verified": true,
+  "ios_aac_m4a_asr_verified": true,
+  "internal_account_created": true,
+  "worker_function": "remember-ios-worker",
+  "worker_timer_cron": "0 * * * * * *",
+  "worker_schedule_verified": true,
+  "ios_app_installed_version": "1.2.1",
+  "ios_app_installed_build": "2026101301",
+  "real_iphone_recording_to_twin_verified": false,
+  "cloud_voice_generation_deployed": false
 }
