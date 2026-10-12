@@ -94,9 +94,9 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 
 ## 2026-10-13 已上线状态
 
-独立 `remember-ios-api` 已部署，origin 与实际就绪信息见 `ENVIRONMENT.json`，当前 release 为 `ios-cloudbase-c2e8af7`。数据库和私有存储 ready；真实合成语音已经走通上传、待核对、DeepSeek Memory、带原文证据的 Twin、原音读取与匿名拒绝。语音提问及 AAC M4A 都通过。每分钟 Event worker 已启用，并实际把待处理的人物候选任务推进为 complete。未开通额外 NAT、EIP 或 CLS。
+独立 `remember-ios-api` 已部署，origin 与实际就绪信息见 `ENVIRONMENT.json`，当前 release 为 `ios-cloudbase-173f3ff`。数据库和私有存储 ready；真实合成语音已经走通上传、待核对、DeepSeek Memory、带原文证据的 Twin、原音读取与匿名拒绝。语音提问及 AAC M4A 都通过。每分钟 Event worker 已启用，并实际把待处理的人物候选任务推进为 complete。未开通额外 NAT、EIP 或 CLS。
 
-账号 `jitian` 为独立空空间，初始密码只保存在本机 `build/private/ios-internal-account.json`。本人权限由手机自行确认，测试使用另一个虚构账号。iPhone 已安装并启动 iOS 1.2.1 / 2026101301；真人录音旅程仍待使用者实测，云端声音克隆没有部署。详细结果以 dated verification 为准，前文未完成状态是各时间点的历史记录。
+账号 `jitian` 为独立空间，初始密码只保存在本机 `build/private/ios-internal-account.json`。本人权限由手机自行确认，测试使用另一个虚构账号。iPhone 已安装并启动 iOS 1.2.1 / 2026101301；真人录音旅程仍待使用者实测，云端声音克隆没有部署。详细结果以 dated verification 为准，前文未完成状态是各时间点的历史记录。
 
 
 ## 2026-10-13 原文 RAG / Nuwa 首版交付
@@ -108,3 +108,14 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 现有每分钟 Event worker 实际将新人物候选任务推进为 complete，产生一条 profile-proposals-nuwa-v5 / pending 候选，仍待本人决定。旧 v4 候选保留；没有自动确认或改写本人理解。新方法的小样本 A/B 没有证实总体忠实度优于 baseline。
 
 iOS 已覆盖安装 1.3.1 / 2026101304，中文记忆页新增描述搜索与原文回看；锁屏阻止了自动打开，需要本人解锁或打开 App。未卸载或清空数据。真人新录音旅程及人物理解质量仍待真实使用反馈；云端声音克隆未部署。
+
+
+## 2026-10-13 本人反馈与正式问答复核
+
+当前 remember-ios-api-006 / ios-cloudbase-173f3ff 已完成 release task 并上线；ready 的 database / object_store 均为 ok。正式 DeepSeek 问答已实际接入 GroundedTwin / twin-points-v7 的生成与语义复核，而非此前的单次 DeepSeekTwinProvider。新答案使用 t7e2: 的不透明依据版本；旧未经过此路径的答案会过期，原文与已确认人物记录保留。
+
+隔离合成账号实走：有来源 Twin 预测先锁定 → 上传 16 kHz 合成语音 → 普通百炼 ASR → 核对文字 → 记忆处理 → DeepSeek 比较五个维度 → 再问不同的条件问题。补充“时间紧留在家里”的原文之后，条件题由 UNKNOWN 变成有新录音证据的 ORIGINAL。只说明原文反馈被使用，不代表人格预测提升。
+
+表达测试曾发现旧路由将明天计划概括为“通常”；已接通正式证据复核、加入情境限制并修正官方 JSON 模式提示词要求，真实重测保留这次计划与时间紧的条件。当前云端验证返回 SIMULATION / available 表达；创建校准后 locked_answer 等于手机展示的措辞。旧表达答案读取为 stale，无证据或可用 expression。所有自动确认仅操作合成 QA 账号，不替真实本人审核。
+
+Backend 516 passed / 6 skipped，AI Core 285 passed，iOS 本轮 13 个 ECSConnectionTests + 6 个 SimpleFlowUITests 通过。iOS 1.3.2 / 2026101305 已覆盖安装；锁屏仍阻止自动启动。长期盲评趋势和真人相似度提升尚未验证。当前真实账号已有 CLOUD_TWIN 授权，但本轮未替用户发起个人选择测试或确认理解，等待其先给问题。方法、保留限制和诊断记录见 [相似度反馈设计](../../docs/architecture/twin-fidelity-feedback.md)。
