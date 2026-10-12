@@ -30,7 +30,9 @@ class Settings(BaseSettings):
 
     # Deployment uses S3-compatible object storage; local and memory serve
     # development, CI, and tests (ADR-0001 D5).
-    object_store_backend: Literal["local", "memory", "s3"] = "local"
+    object_store_backend: Literal["local", "memory", "s3", "cloudbase"] = "local"
+    cloudbase_environment_id: str = ""
+    cloudbase_api_key: SecretStr = SecretStr("")
     object_store_root: str = "./var/object-store"
     object_store_bucket: str = "remember-me-audio"
     # Set this for an S3-compatible service that is not AWS itself (MinIO and

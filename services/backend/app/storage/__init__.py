@@ -10,6 +10,7 @@ from .base import ObjectStore, StoredObject, checksum_of, validate_key
 from .local import LocalObjectStore
 from .memory import InMemoryObjectStore
 from .s3 import S3ObjectStore
+from .cloudbase import CloudBaseObjectStore
 from ..config import Settings
 
 __all__ = [
@@ -25,6 +26,9 @@ __all__ = [
 
 
 def build_object_store(settings: Settings) -> ObjectStore:
+    if settings.object_store_backend == "cloudbase":
+        return CloudBaseObjectStore(settings.cloudbase_environment_id,
+            settings.object_store_bucket, settings.cloudbase_api_key.get_secret_value())
     if settings.object_store_backend == "local":
         return LocalObjectStore(settings.object_store_root)
     if settings.object_store_backend == "memory":

@@ -4,11 +4,15 @@
 
 ## 外部实际状态
 
-- 环境 `remember-me-ios-d5f9twwlcae71c69` 已创建，上海，PostgreSQL，免费体验六个月，实付 ¥0，2027-04-12 到期；未选择订单附加产品。环境卡片与数据库管理页已观察到，未只凭按钮点击推定成功。
-- 用户自行在页面确认 CloudBase 云托管服务条款及 CODING 第三方软件授权弹窗。云托管服务创建入口已可用；不存在已部署的应用服务。
-- 创建表单此前准备服务名 `remember-ios-api`、端口 8000、最小实例 0、最大实例 1。磁盘中断后 Safari 重启，表单草稿重置；没有点击部署，也没有上传带密钥的源码包。
-- 数据库配置页显示 PostgreSQL 17.11、共享集群、内网地址 `-`，外网地址开关不可操作。独享集群升级入口显示本版本不支持，要求升级标准版，标价 ¥199/月；没有提交升级。数据库与容器资源计费还需另核实，不能把套餐价格当完整后端费用。
-- 当前候选是 SQLAlchemy / psycopg 直连方案，不能把 CloudBase HTTP 数据库地址替换到 DSN 中直接运行。免费环境仍可使用官方 HTTP／PostgREST／RPC 能力，但需要重做事务适配以保留账号隔离、授权、幂等、job lease 与源版本比较。目前等待用户明确原生适配或独立直连数据库路线。
+- 环境 `remember-me-ios-d5f9twwlcae71c69` 已创建，上海。最初使用兑换码免费创建，随后用户自行升级标准版。数据库独享升级配置由用户明确接受并亲自在控制台提交。
+- 数据库配置页确认实例 `postgres-drasbama` 运行中，PostgreSQL 17.11、1 核／2 GiB／20 GB，内网地址 `172.17.0.11:5432`，VPC `vpc-4hhp8p9k`、子网 `subnet-9tpjt6z9`。批准规格每小时 352 点，30 天约 253,440 点；未开启数据库公网入口。
+- 用户自行重置原生数据库密码，已回复完成；密码未出现在聊天、源码或测试中。真实直连及 TLS 尚未验证。
+- 用户自行确认 CloudBase 云托管服务条款及 CODING 第三方软件授权弹窗。云托管服务创建入口已可用，应用服务尚未部署。磁盘中断后创建表单草稿重置。
+- 原生 PostgreSQL 路线已确定。候选连接强制证书和主机验证，业务表放入私有 `remember_ios` Schema；该 Schema 不属于默认 public 数据接口。
+
+- `remember_ios` 私有 Schema 真实创建并收回 PUBLIC 权限。官方管理接口执行 Alembic PostgreSQL 离线迁移 SQL，事务代码块仅允许空 Schema。真实表数 34，head `0016_share_invitations`，已通过单条独立查询确认。
+- 原生私有存储桶 `remember-me-ios-audio` 创建成功，`public=false`；restrictive policy `remember_ios_backend_only` 对 anon/authenticated 生效。真实 put/get/delete readiness 通过；匿名读取现存合成测试对象返回 404；测试对象已删除。
+- 用户自行批准并完成腾讯云官方 CLI 设备登录授权；该授权不代表 PostgreSQL 各 API 均可用。原生 PostgreSQL 账号创建、查询及 SSL 配置 API 返回 `OperationDenied.CamDeniedError`，未反复尝试扩大权限。后台专用存储 Key 在本机私密文件中保存，有效期 30 天，未回显。
 
 ## 已实现并验证的候选代码
 
@@ -38,11 +42,13 @@ REMEMBER_TEST_POSTGRES_URL='postgresql+psycopg://cloudbase_fixture@127.0.0.1:654
 
 本机 Linux amd64 Docker 构建未通过：先遇到 Colima 缺失 DNS 配置、Docker Hub EOF 与已不存在的官方镜像 tag；修正后使用实际可拉取的 `ghcr.io/astral-sh/uv:0.12.18-python3.12-trixie-slim`，安装 CPU 依赖时因主机磁盘不足导致 snapshot 输入／输出错误。没有完成镜像，也没有运行容器 smoke test。恢复后删除本次创建的 default Colima 临时环境，主机可用空间从约 5.3 GiB 恢复到约 11 GiB；保留此前存在的 `campusmate-validation` 环境。
 
-后续 Dockerfile 关闭 uv 下载缓存，准备改用远端构建。远端构建仍未执行。源码包与 `git diff --check` 已检查；新增 zip 打包后定向复测打包排除敏感文件／本机状态与定时器拒绝重定向，2 项通过，11 项未选中。
+后续 Dockerfile 关闭 uv 下载缓存，准备改用远端构建。远端构建仍未执行。源码包与 `git diff --check` 已检查；新增 zip 打包后定向复测打包排除敏感文件／本机状态与定时器拒绝重定向，2 项通过，12 项未选中。
+
+TLS 与私有 Schema 配置修改后，定向执行 `tests/test_cloudbase_deployment.py`：15 项通过。新增原生 Storage adapter 后，定向 18 项通过，再运行上述测试组加 `test_cloudbase_object_store.py`：109 项通过（SQLite），仍有同样两条弃用提醒。没有将新增 adapter 的结果写成已在本地 PostgreSQL 重跑。
 
 ## 未完成
 
-CloudBase 数据持久层路线、服务端凭据、真实数据库迁移、独立 App 内测账号、私有录音存储、定时器、后端服务部署与 HTTPS origin、iPhone 切换新环境、本人真实录音到 Twin 的闭环。旧 iPhone ECS 包仍指向旧 ECS，不将环境创建成功写成 App 已切换成功。
+原生数据库凭据／CA／服务实际连通、供应商凭据、独立 App 内测账号、手机录音上传到新私有存储的验证、定时器、后端服务部署与 HTTPS origin、iPhone 切换新环境、本人真实录音到 Twin 的闭环。旧 iPhone ECS 包仍指向旧 ECS，不将环境创建成功写成 App 已切换成功。
 
 后台准备指南在 `infra/cloudbase/README.md`。官方资料与当前控制台分别作为证据：
 

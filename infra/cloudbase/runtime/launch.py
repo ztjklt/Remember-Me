@@ -5,7 +5,7 @@ import signal
 import subprocess
 import sys
 import time
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -20,12 +20,22 @@ def prepare_environment(source):
     database = urlsplit(env.get('REMEMBER_DATABASE_URL', ''))
     if database.scheme != 'postgresql+psycopg' or not database.hostname or not database.path.strip('/'):
         raise ValueError('A dedicated PostgreSQL database is required.')
-    if env.get('REMEMBER_OBJECT_STORE_BACKEND') != 's3':
+    database_options = dict(parse_qsl(database.query, keep_blank_values=True))
+    database_options['options'] = '-csearch_path=remember_ios'
+    database_options['sslmode'] = 'verify-full'
+    database_options['sslrootcert'] = '/tmp/remember-postgres-ca.pem' if env.get('REMEMBER_POSTGRES_CA_PEM') else '/etc/ssl/certs/ca-certificates.crt'
+    env['REMEMBER_DATABASE_URL'] = urlunsplit(database._replace(query=urlencode(database_options)))
+    if env.get('REMEMBER_OBJECT_STORE_BACKEND') not in {'s3', 'cloudbase'}:
         raise ValueError('Raw audio and ASR checkpoints require persistent object storage.')
     if not env.get('REMEMBER_OBJECT_STORE_BUCKET', '').startswith('remember-me-ios-'):
         raise ValueError('Use an independent remember-me-ios-* private bucket.')
+    if env['REMEMBER_OBJECT_STORE_BACKEND'] == 'cloudbase':
+        env['REMEMBER_CLOUDBASE_ENVIRONMENT_ID'] = env['CLOUDBASE_ENV_ID']
+        env['REMEMBER_CLOUDBASE_API_KEY'] = env.get('REMEMBER_CLOUDBASE_API_KEY') or env.get('CLOUDBASE_API_KEY', '')
+        if not env['REMEMBER_CLOUDBASE_API_KEY']:
+            raise ValueError('Supply this environment’s server-side CloudBase storage credential.')
     endpoint = urlsplit(env.get('REMEMBER_OBJECT_STORE_ENDPOINT_URL', ''))
-    if (endpoint.scheme != 'https' or not endpoint.hostname or endpoint.username or endpoint.password
+    if env['REMEMBER_OBJECT_STORE_BACKEND'] == 's3' and (endpoint.scheme != 'https' or not endpoint.hostname or endpoint.username or endpoint.password
             or endpoint.query or endpoint.fragment or endpoint.path not in {'', '/'}
             or not endpoint.hostname.endswith('.myqcloud.com')):
         raise ValueError('Use the reviewed Tencent COS HTTPS endpoint.')
@@ -121,6 +131,10 @@ def serve(env):
 def main():
     try:
         env = prepare_environment(os.environ)
+        if env.get('REMEMBER_POSTGRES_CA_PEM'):
+            ca = Path('/tmp/remember-postgres-ca.pem')
+            ca.write_text(env['REMEMBER_POSTGRES_CA_PEM'])
+            ca.chmod(0o600)
         action = sys.argv[1] if len(sys.argv) > 1 else 'serve'
         if action == 'serve':
             return serve(env)

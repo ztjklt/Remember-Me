@@ -8,6 +8,7 @@ import pytest
 import tarfile
 import urllib.error
 import urllib.request
+from urllib.parse import parse_qs, urlsplit
 from fastapi.testclient import TestClient
 from app.paraformer_asr import ParaformerSttProvider
 from app.storage.memory import InMemoryObjectStore
@@ -55,6 +56,20 @@ def test_cloudbase_uses_durable_checkpoints_and_keeps_registration_closed():
     assert prepared['REMEMBER_AI_CORE_URL']=='http://127.0.0.1:8100'
     assert int(prepared['REMEMBER_MAX_UPLOAD_BYTES']) < 20*1024*1024
     assert 'REMEMBER_ENVIRONMENT' not in source
+    query=parse_qs(urlsplit(prepared['REMEMBER_DATABASE_URL']).query)
+    assert query['options']==['-csearch_path=remember_ios']
+    assert query['sslmode']==['verify-full']
+
+
+def test_database_tls_and_schema_cannot_be_disabled_by_input():
+    launch=load_file('cloudbase_launch',ROOT/'infra/cloudbase/runtime/launch.py')
+    source=env();source['REMEMBER_DATABASE_URL']+='?sslmode=disable&options=-csearch_path%3Dpublic'
+    source['REMEMBER_POSTGRES_CA_PEM']='fixture public certificate'
+    prepared=launch.prepare_environment(source)
+    query=parse_qs(urlsplit(prepared['REMEMBER_DATABASE_URL']).query)
+    assert query['sslmode']==['verify-full']
+    assert query['options']==['-csearch_path=remember_ios']
+    assert query['sslrootcert']==['/tmp/remember-postgres-ca.pem']
 
 
 def test_ticks_require_separate_worker_credential_and_reject_overlap(app, monkeypatch):
