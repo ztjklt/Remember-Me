@@ -25,7 +25,7 @@
   "database_table_count": 34,
   "private_storage_bucket": "remember-me-ios-audio",
   "private_storage_readiness": "passed",
-  "native_database_connection_verified": false,
+  "native_database_connection_verified": true,
   "model_router": "deepseek-official",
   "model_authentication_verified": true,
   "model_probe_http_status": 200,
@@ -34,5 +34,13 @@
   "token_plan_app_backend_eligible": false,
   "main_model": "deepseek-flash",
   "model_smoke_validation": "local-services-with-synthetic-text",
-  "profile_model": "deepseek-flash"
+  "profile_model": "deepseek-flash",
+  "database_tls_identity_verified": true,
+  "database_tls_enforced": true,
+  "database_ca_source": "CloudBase console official TencentDB-PG-SSL-CA download",
+  "native_database_probe": "temporary-event-function-in-database-vpc",
+  "cloudrun_database_tls_verified": true,
+  "cloudrun_model_public_egress_verified": true,
+  "additional_nat_required_for_verified_route": false,
+  "cloudrun_public_egress": "platform-default"
 }

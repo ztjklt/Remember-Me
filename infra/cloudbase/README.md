@@ -18,7 +18,7 @@
 
 ## CloudBase 控制台准备
 
-环境名称 `remember-me-ios`，环境 ID `remember-me-ios-d5f9twwlcae71c69`，上海，PostgreSQL。最初通过兑换码创建免费体验环境；用户随后自行升级标准版，并接受及提交数据库独享升级。2026-10-12 配置页确认实例 `postgres-drasbama` 已运行，1 核／2 GiB／20 GB，每小时 352 点（30 天约 253,440 点）。数据库公网入口未启用。原生数据库密码已由用户在控制台重置，未传入聊天或源码。用户已自行确认 CloudBase 与 CODING 协议，云托管已开通，应用服务尚未部署。非敏感身份记录在 `ENVIRONMENT.json`。
+环境名称 `remember-me-ios`，环境 ID `remember-me-ios-d5f9twwlcae71c69`，上海，PostgreSQL。最初通过兑换码创建免费体验环境；用户随后自行升级标准版，并接受及提交数据库独享升级。2026-10-12 配置页确认实例 `postgres-drasbama` 已运行，1 核／2 GiB／20 GB，每小时 352 点（30 天约 253,440 点）。数据库公网入口未启用。原生数据库密码已由用户在控制台重置，随后按其明确要求保存至本机 ignored 私密配置；不进入源码。用户已自行确认 CloudBase 与 CODING 协议，云托管已开通，应用服务尚未部署。非敏感身份记录在 `ENVIRONMENT.json`。
 
 云托管、网络、存储与模型调用用量仍需实际核算，不能把标准套餐或数据库点数当作全部后端费用；未开启超限按量或新增付费网络产品。
 
@@ -60,7 +60,7 @@ bundle 同时生成 zip 和 tar.gz，仅复制白名单目录，包含内容哈�
 
 ## 当前权限与凭据待处理
 
-CloudBase SQL 管理与原生存储已可调用。当前 CLI 登录授权调用独立 PostgreSQL 的账号创建、账号查询、SSL 读取／修改 API 返回 `OperationDenied.CamDeniedError`；没有成功创建 `remember_ios_app` 角色，没有获得实例 CA。SQL 查询 `ssl` 为 on，但并不等于后端已通过证书验证或获得直连能力。控制台的 SSL 强制开关也未观察到开启。保留严格 TLS 连接要求，待核对该环境支持的 CA／原生连接配置。数据库密码和供应商 Key 由用户填写本次 worktree 的 `build/private/credentials.json`，不打包、不提交、不回显。
+CloudBase SQL 管理与原生存储已可调用。原生 PostgreSQL 的账号创建、账号查询、SSL 读取／修改 API 曾返回 `OperationDenied.CamDeniedError`；没有成功创建 `remember_ios_app` 角色。2026-10-13 控制台已确认强制 SSL 开启，下载了腾讯云 PostgreSQL 官方 CA。按用户明确要求，将其数据库密码填入本次 worktree 的 ignored 私密配置，并加入 CA；不打包、不提交、不回显。临时 Event 云函数在数据库同 VPC 中完成密码认证、证书链和服务器身份验证，读取到 34 张业务表及 head `0016_share_invitations`。随后不含凭据的 Python 云托管检查容器也通过数据库 TLS 校验、DeepSeek 公网目录可达检查（无 Key 返回 401），所选 VPC + 平台默认出口路径无需新增 NAT。两项临时检查资源已清理。这证明原生直连及网络可用，尚不代表应用容器或手机闭环已上线。
 
 ## 赛事模型适配与验证
 
@@ -82,6 +82,6 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 
 用户随后提供自己在 DeepSeek 官方平台创建的 RM Key，并选择 Flash 路线；不再把百炼按量作为已经获费用授权的默认路线。Key 归属在控制台确认，官方模型目录返回 200，当前列出的 Flash ID 为 `deepseek-flash`。记忆提取和 Twin 沿用原有适配器，人物候选／已有 Schema worker 接入同一个主模型；共享有界 JSON transport 与供应商固定目标验证，保留本人确认门槛和证据编号映射。
 
-用虚构文字真实执行：提取返回 200（0.77 秒），2 条记忆及 2 条证据；Twin 返回 200（0.60 秒），引用存在，原话保留尚未决定报名的意思；人物候选返回 200（0.94 秒），1 项候选，所有引用属于输入。均记录实际响应模型 `deepseek-flash`。没有发送个人记录或原音。定向 AI 回归 74 项通过，2 条上游弃用提醒。结果在 ignored `build/deepseek-*-live-probe-20261013.json`。原生数据库密码仍未填入本机连接配置，CA／直连及 ASR 仍待验证，容器服务和手机尚未切换。
+用虚构文字真实执行：提取返回 200（0.77 秒），2 条记忆及 2 条证据；Twin 返回 200（0.60 秒），引用存在，原话保留尚未决定报名的意思；人物候选返回 200（0.94 秒），1 项候选，所有引用属于输入。均记录实际响应模型 `deepseek-flash`。没有发送个人记录或原音。定向 AI 回归 74 项通过，2 条上游弃用提醒。结果在 ignored `build/deepseek-*-live-probe-20261013.json`。原生数据库密码／CA／直连的后续验证见“当前权限与凭据待处理”；ASR、应用容器和手机尚未切换。
 
 [官方 Flash 模型与旧别名说明](https://api-docs.deepseek.com/quick_start/pricing/)

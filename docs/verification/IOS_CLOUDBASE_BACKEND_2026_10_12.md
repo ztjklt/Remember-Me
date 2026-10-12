@@ -48,7 +48,7 @@ TLS 与私有 Schema 配置修改后，定向执行 `tests/test_cloudbase_deploy
 
 ## 未完成
 
-原生数据库凭据／CA／服务实际连通、供应商凭据、独立 App 内测账号、手机录音上传到新私有存储的验证、定时器、后端服务部署与 HTTPS origin、iPhone 切换新环境、本人真实录音到 Twin 的闭环。旧 iPhone ECS 包仍指向旧 ECS，不将环境创建成功写成 App 已切换成功。
+原生数据库凭据／CA／直连已于 2026-10-13 验证（见末节）。仍待完成：应用容器实际连通、ASR 凭据、独立 App 内测账号、手机录音上传到新私有存储的验证、定时器、后端服务部署与 HTTPS origin、iPhone 切换新环境、本人真实录音到 Twin 的闭环。旧 iPhone ECS 包仍指向旧 ECS，不将环境创建成功写成 App 已切换成功。
 
 后台准备指南在 `infra/cloudbase/README.md`。官方资料与当前控制台分别作为证据：
 
@@ -76,4 +76,18 @@ TLS 与私有 Schema 配置修改后，定向执行 `tests/test_cloudbase_deploy
 
 新增 DeepSeek profile JSON adapter，共用固定目标、有界 JSON transport；原有公开 Contract 不变。定向 `test_deepseek.py test_anker.py test_api.py test_twin.py test_weixin.py test_profile_relations.py`：74 通过、2 条上游弃用提醒。该结果不是全量评估、CloudBase部署或真人录音闭环。
 
-原生数据库密码仍未填入后端私密配置；TLS CA／原生连接和 ASR 仍未验证。没有用 Token Plan Key 做应用后端推理，没有开启自动充值，没有提交百炼的新普通 Key 或月预算。
+截至以上模型验证时，原生数据库密码仍未填入后端私密配置；后续数据库续接见下节。没有用 Token Plan Key 做应用后端推理，没有开启自动充值，没有提交百炼的新普通 Key 或月预算。
+
+## 2026-10-13 数据库密码与原生 TLS 续接
+
+用户随后在聊天提供数据库密码，并明确要求代填。密码已写入 ignored `build/private/credentials.json` 和运行配置，两文件均为 0600；不把聊天中的值复制进本文或源码。此前“密码未出现在聊天”的记录仅描述当时状态。
+
+Safari 配置页确认强制 SSL 复选框开启、保护地址 `172.17.0.11`，下载腾讯云官方 `TencentDB-PG-SSL-CA/ca.pem`。CA 可由系统 SSL parser 读取，证书有效期至 2042-06-12，issuer 为 Tencent Root CA；运行配置已加入 CA，启动器仍强制 `verify-full`。
+
+在该独立环境部署并调用临时 `remember-ios-db-preflight` Event 函数：Nodejs20.19、128 MB、20 秒，无 HTTP 入口、无触发器，绑定数据库 VPC／子网。实际证书 SAN 与 CN 对应数据库私有 IP。Node pg 的初次 SSL 主机推断失败；显式使用 Node 标准 `tls.checkServerIdentity` 校验目标 IP 后，完整证书链／身份校验和密码认证通过，读取 head `0016_share_invitations`、表数 34、实际角色 `cloudbase_postgres_postgres_drasbama`。没有关闭证书验证，没有创建数据库公网地址。原生直连结果保存在 ignored 私密测试报告中。
+
+VPC 查询没有 NAT 网关；该 VPC 云函数访问 DeepSeek 模型目录超时，未携带模型 Key。另行用不含凭据的临时 Python 容器检查云托管的 VPC 连接及平台默认公网出口。实际 HTTPS 检查响应 200，PostgreSQL SSL 协议及标准 Python SSL 证书链／目标 IP 校验通过；未带 Key 的 DeepSeek `/models` 返回预期 401，证明公网 HTTPS 出访可达。这条路径无需新增 NAT，未购置 NAT／EIP 或启用固定公网出口。临时镜像由腾讯云远端构建，Mac 没有再次构建大型应用镜像。应用 Backend／AI Core 镜像、ASR、独立 App 账号、定时器和手机环境切换仍未完成。
+
+临时数据库函数调用完成后已删除并查询确认函数列表为空。网络检查服务也已删除，清理后的函数列表和云托管服务列表均为空；它不含任何数据库密码、模型 Key、业务数据或公开业务接口。云托管日志检索曾提示尚未启用日志服务，未为诊断新增 CLS 计费服务；网络结果通过 HTTPS 测试响应取得。
+
+[云托管公网出访配置](https://docs.cloudbase.net/run/deploy/networking/egress)与[目的 VPC 网段的路由说明](https://docs.cloudbase.net/run/faq/network)用于解释实测；云函数与云托管的公网路径分别验证。
