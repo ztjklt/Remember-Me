@@ -68,6 +68,39 @@ def test_factory_requires_explicit_provider_and_credentials(tmp_path):
     with pytest.raises(SttFailed): build_stt_provider(cfg).transcribe(b'ORIGINAL','audio/mp4')
 
 
+def test_current_workspace_host_is_accepted(tmp_path, monkeypatch):
+    from app import paraformer_asr
+    cfg = settings(tmp_path)
+    cfg.paraformer_base_url = 'https://ws-test.cn-beijing.maas.aliyuncs.com'
+    remote = Remote()
+    real_client = httpx.Client
+    monkeypatch.setattr(paraformer_asr, '_client', lambda timeout: real_client(
+        transport=httpx.MockTransport(remote), timeout=timeout))
+    result = build_stt_provider(cfg).transcribe(b'ORIGINAL', 'audio/mp4')
+    assert result.text == '我沒有去過北京。'
+    authenticated = [r for r in remote.requests if 'authorization' in r.headers]
+    assert authenticated
+    assert all(r.url.host == 'ws-test.cn-beijing.maas.aliyuncs.com' for r in authenticated)
+
+
+@pytest.mark.parametrize('host', [
+    'https://ws-test.cn-beijing.maas.aliyuncs.com.evil.example',
+    'https://ws-test.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
+    'https://ws-test.cn-beijing.maas.aliyuncs.com?redirect=evil.example',
+    'https://unit-secret@ws-test.cn-beijing.maas.aliyuncs.com',
+    'http://ws-test.cn-beijing.maas.aliyuncs.com',
+])
+def test_current_workspace_host_rejects_unreviewed_destinations(tmp_path, monkeypatch, host):
+    from app import paraformer_asr
+    cfg = settings(tmp_path)
+    cfg.paraformer_base_url = host
+    def unexpected_network(_timeout):
+        pytest.fail('Invalid configuration attempted to send audio or credentials.')
+    monkeypatch.setattr(paraformer_asr, '_client', unexpected_network)
+    with pytest.raises(SttFailed):
+        build_stt_provider(cfg).transcribe(b'ORIGINAL', 'audio/mp4')
+
+
 def test_launcher_does_not_silently_replace_paraformer():
     from run_workbench import prepare_runtime
     env, _, commands = prepare_runtime({'REMEMBER_STT_BACKEND':'paraformer'}, {})

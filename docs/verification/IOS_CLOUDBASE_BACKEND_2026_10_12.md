@@ -91,3 +91,13 @@ VPC 查询没有 NAT 网关；该 VPC 云函数访问 DeepSeek 模型目录超�
 临时数据库函数调用完成后已删除并查询确认函数列表为空。网络检查服务也已删除，清理后的函数列表和云托管服务列表均为空；它不含任何数据库密码、模型 Key、业务数据或公开业务接口。云托管日志检索曾提示尚未启用日志服务，未为诊断新增 CLS 计费服务；网络结果通过 HTTPS 测试响应取得。
 
 [云托管公网出访配置](https://docs.cloudbase.net/run/deploy/networking/egress)与[目的 VPC 网段的路由说明](https://docs.cloudbase.net/run/faq/network)用于解释实测；云函数与云托管的公网路径分别验证。
+
+## 2026-10-13 普通百炼 ASR 续接
+
+用户明确选择普通百炼 ASR，随后自行创建普通工作空间 Key 并授权用于语音模型；它独立于 Token Plan 和 DeepSeek Key。只保存于 ignored 私密配置，固定使用已在控制台观察到的北京工作空间 `ws-5hudj5uvce12kiug`。临时上传策略真实返回 200，要求 private 且 forbid-overwrite；没有公开 CloudBase 原音桶。
+
+现有 Paraformer adapter 原先只接受 `llm-` 工作空间地址，补充当前 `ws-` 前缀，仍拒绝非 HTTPS、用户名／密码、路径、query、port 和非阿里云目标。新增测试验证 ws host 可以转写，认证请求只发到该 workspace，并在错误目的地址时零请求。`test_paraformer_asr.py test_cloudbase_deployment.py` 共 38 项通过，2 条既有上游弃用提醒。共享客户端 Contract 无修改。
+
+真实 provider adapter 使用 macOS Tingting 生成的 6 秒中文测试音频完成私有临时上传、异步提交、轮询、结果下载，返回文字与合成内容一致，耗时 3.7 秒，来源 `bailian/paraformer-v2`。报告在 ignored `build/paraformer-live-probe-20261013.json`；没有使用本人声音、手机录音或个人记忆。正常配置已选 Paraformer，DeepSeek Flash 仍为主 LLM。应用容器／手机闭环结果需另行记录。
+
+[Paraformer 文件转写 API](https://help.aliyun.com/zh/model-studio/paraformer-recorded-speech-recognition-restful-api)及[临时文件上传](https://help.aliyun.com/zh/model-studio/get-temporary-file-url/)为协议依据。

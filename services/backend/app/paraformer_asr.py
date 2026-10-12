@@ -31,7 +31,7 @@ def _base(settings):
     u = urlsplit(value)
     if (u.scheme != 'https' or u.username or u.password or u.port or u.path
             or u.query or u.fragment or not re.fullmatch(
-                r'llm-[a-z0-9-]+\.cn-beijing\.maas\.aliyuncs\.com', u.hostname or '')):
+                r'(?:llm|ws)-[a-z0-9-]+\.cn-beijing\.maas\.aliyuncs\.com', u.hostname or '')):
         raise SttFailed('百炼转写地址必须是北京工作空间 HTTPS 主机，不含 compatible-mode 路径。')
     return value
 

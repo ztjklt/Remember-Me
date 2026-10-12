@@ -29,7 +29,7 @@
   "model_router": "deepseek-official",
   "model_authentication_verified": true,
   "model_probe_http_status": 200,
-  "asr_live_verified": false,
+  "asr_live_verified": true,
   "token_plan_catalog_verified": true,
   "token_plan_app_backend_eligible": false,
   "main_model": "deepseek-flash",
@@ -42,5 +42,9 @@
   "cloudrun_database_tls_verified": true,
   "cloudrun_model_public_egress_verified": true,
   "additional_nat_required_for_verified_route": false,
-  "cloudrun_public_egress": "platform-default"
+  "cloudrun_public_egress": "platform-default",
+  "asr_provider": "bailian",
+  "asr_model": "paraformer-v2",
+  "asr_smoke_validation": "local-adapter-with-synthetic-Chinese-speech",
+  "asr_workspace": "ws-5hudj5uvce12kiug"
 }
