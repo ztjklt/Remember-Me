@@ -26,10 +26,13 @@
   "private_storage_bucket": "remember-me-ios-audio",
   "private_storage_readiness": "passed",
   "native_database_connection_verified": false,
-  "model_router": "anker-event-router",
-  "model_authentication_verified": false,
-  "model_probe_http_status": 401,
+  "model_router": "deepseek-official",
+  "model_authentication_verified": true,
+  "model_probe_http_status": 200,
   "asr_live_verified": false,
   "token_plan_catalog_verified": true,
-  "token_plan_app_backend_eligible": false
+  "token_plan_app_backend_eligible": false,
+  "main_model": "deepseek-flash",
+  "model_smoke_validation": "local-services-with-synthetic-text",
+  "profile_model": "deepseek-flash"
 }

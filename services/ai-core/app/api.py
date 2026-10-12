@@ -22,6 +22,7 @@ from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, We
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
 from .providers.deepseek import DeepSeekProvider
+from .providers.deepseek_chat import DeepSeekChat
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 from .providers.anker import AnkerChat, AnkerMemoryProvider, AnkerTwinProvider, AnkerCalibrationProvider
@@ -88,6 +89,11 @@ def create_app(
         model=settings.model, timeout_seconds=settings.timeout_seconds,
     ) if settings.provider == "deepseek" else None)
     active_profile = profile_provider
+    if settings.provider == 'deepseek':
+        active_profile = profile_provider or ProfileProposalProvider(DeepSeekChat(
+            api_key=settings.api_key.get_secret_value(), model=settings.model,
+            base_url=settings.base_url, timeout_seconds=settings.timeout_seconds,
+            max_response_bytes=settings.max_response_bytes))
     if settings.provider == 'anker':
         options = dict(api_key=settings.api_key.get_secret_value(), model=settings.model,
             base_url=settings.base_url, timeout_seconds=settings.timeout_seconds,

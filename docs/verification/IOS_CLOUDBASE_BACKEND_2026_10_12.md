@@ -63,3 +63,17 @@ TLS 与私有 Schema 配置修改后，定向执行 `tests/test_cloudbase_deploy
 用户补充共用 Key 与赛事文档。文档中的模型 ID 是路由别名，不是各个模型独立的密钥。实际验证 `https://ai-router-cn-pub.anker-in.com/chat/completions` 的 Qwen 最小 JSON 请求返回 HTTP 401；同主机 `/models` 也返回 401。没有发送个人材料、录音、声音样本，也没有进行 TTS 请求；没有凭模型列表宣称 ASR 已工作。
 
 新增 Anker 模型 adapter 与同步 relay 持久检查点候选；复用既有证据协议，不修改公开 Contract。AI 定向 `test_anker.py test_weixin.py test_api.py test_twin.py`：56 通过；Backend 定向 `test_durable_relay_asr.py test_cloud_asr.py test_cloud_asr_consent.py test_cloudbase_deployment.py test_worker.py`：88 通过，两组分别各有 2 条上游弃用提醒。真实 ASR payload、模型延迟及真人闭环仍未验证。
+
+## 2026-10-13 DeepSeek 官方 Flash 续接
+
+用户提供 RM Key 并选择 DeepSeek Flash。先在当前 DeepSeek 控制台确认归属，未将它当作百炼或赛事 Key。目录 HTTP 200，仅列当前 `deepseek-flash` 路由。官方说明旧 V4 Flash 别名仍兼容，实际服务由当前 Flash 版本承担；代码记录接口返回的模型标识。
+
+通过本机实际 AI Core 适配器调用官方 API，只有虚构文字：
+
+- `/process`：200，0.77 秒，2 条记忆、2 条已通过定位校验的证据；实际模型 `deepseek-flash`。
+- `/twin`：200，0.60 秒，ORIGINAL，引用都存在，原话保留尚未决定报名的意思；实际模型 `deepseek-flash`。
+- `/profile-proposals`：200，0.94 秒，1 项待本人确认的候选，引用属于输入；实际模型 `deepseek-flash`。
+
+新增 DeepSeek profile JSON adapter，共用固定目标、有界 JSON transport；原有公开 Contract 不变。定向 `test_deepseek.py test_anker.py test_api.py test_twin.py test_weixin.py test_profile_relations.py`：74 通过、2 条上游弃用提醒。该结果不是全量评估、CloudBase部署或真人录音闭环。
+
+原生数据库密码仍未填入后端私密配置；TLS CA／原生连接和 ASR 仍未验证。没有用 Token Plan Key 做应用后端推理，没有开启自动充值，没有提交百炼的新普通 Key 或月预算。

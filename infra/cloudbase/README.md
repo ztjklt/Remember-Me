@@ -10,7 +10,7 @@
 - 不运行永久后台 worker。私人定时云函数每分钟调用受独立密钥保护的 `/internal/jobs/processing-tick` 和 `/internal/jobs/profile-tick`，每次请求同步完成一段工作。Backend 数据库 job lease 和本人核对门槛保留；只转写不会自动进入提取。
 - 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，云托管与数据库的实际连通仍待验证。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前检索依旧是 BGE CPU 编码与 Python 排序，向量列是 JSON；没有声称已切换 pgvector ANN 索引。
 - 使用此 PG 环境原生 Storage API 的私有桶 `remember-me-ios-audio` 保存原音和转写检查点。服务端专用 API Key 不进入客户端；对 `anon` 和 `authenticated` 配置 restrictive policy，阻止这个桶通过其他 permissive policy 暴露。存储适配器不跟随重定向、不把错误响应正文写入异常。S3 adapter 仍可作为另选部署方式。
-- 当前用户选择 Anker 赛事模型平台，准备主模型 `hackathon/v_model/qwen-max` 与转写别名 `hackathon/v_model/qwen-audio-3.0-asr-flash`，供应商尚未冻结。实际接口认证返回 401；ASR 音频协议尚待真实验证，不能视为可用。TTS 别名仅列为平台能力，没有把通用 TTS 当作本人声纹或部署声音克隆。
+- 2026-10-13 用户指定主 LLM 优先 DeepSeek V4 Flash，当前官方目录使用 `deepseek-flash`（旧 V4 Flash 别名由当前 Flash 模型提供服务）。该独立 Key 来自用户自己创建的 RM Key，只发到 `https://api.deepseek.com`。合成文本的真实提取、Twin 和人物候选均通过；这不是已部署 CloudBase 或手机验收的声明。转写供应商依然开放：此前 Anker Key 认证返回 401，其 ASR 音频协议尚待真实验证，当前不发送手机原音。TTS 别名不是本人声纹或已部署声音克隆。
 - 同步 relay 在私有存储保存提交标记和成功的原始机器稿；冷替换读已有结果，结果不确定时拒绝重放原音。明确拒绝的 4xx／429 可以重新核对配置；超时、5xx、截断输出不暗中重放。读取缓存仍验证当前授权。默认 relay 本机行为不变，只有本部署选择持久化。
 - Paraformer 在提交供应商任务之前先持久化 `submitting` 检查点；结果不确定或检查点不可读时不重新提交。冷启动会继续轮询已有任务。临时锁和诊断 JSONL 可丢失；原音、任务 checkpoint 和 Episode 结果不依赖容器临时盘。
 - 为保持当前跨进程文件锁和供应商配额语义，首次内测最大副本 **1**，网关并发 **1**，新版本切换先停旧版本再启动新版本。不得直接改成并行蓝绿或多副本；多副本需要分布式 quota／检查点锁。
@@ -77,3 +77,11 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 - [Token Plan 个人版使用范围](https://help.aliyun.com/zh/model-studio/token-plan-personal-overview)
 - [普通百炼 API Key](https://help.aliyun.com/zh/model-studio/get-api-key/)
 - [按量预算管理](https://help.aliyun.com/zh/model-studio/budget-management)
+
+## 2026-10-13 DeepSeek Flash 接入
+
+用户随后提供自己在 DeepSeek 官方平台创建的 RM Key，并选择 Flash 路线；不再把百炼按量作为已经获费用授权的默认路线。Key 归属在控制台确认，官方模型目录返回 200，当前列出的 Flash ID 为 `deepseek-flash`。记忆提取和 Twin 沿用原有适配器，人物候选／已有 Schema worker 接入同一个主模型；共享有界 JSON transport 与供应商固定目标验证，保留本人确认门槛和证据编号映射。
+
+用虚构文字真实执行：提取返回 200（0.77 秒），2 条记忆及 2 条证据；Twin 返回 200（0.60 秒），引用存在，原话保留尚未决定报名的意思；人物候选返回 200（0.94 秒），1 项候选，所有引用属于输入。均记录实际响应模型 `deepseek-flash`。没有发送个人记录或原音。定向 AI 回归 74 项通过，2 条上游弃用提醒。结果在 ignored `build/deepseek-*-live-probe-20261013.json`。原生数据库密码仍未填入本机连接配置，CA／直连及 ASR 仍待验证，容器服务和手机尚未切换。
+
+[官方 Flash 模型与旧别名说明](https://api-docs.deepseek.com/quick_start/pricing/)

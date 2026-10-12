@@ -60,3 +60,43 @@ def test_flash_key_cannot_be_sent_to_an_unapproved_host(overrides):
     settings.update(overrides)
     with pytest.raises(ValidationError):
         Settings(**settings)
+
+
+def test_profile_worker_uses_flash_and_preserves_owner_review_and_source_handles(monkeypatch):
+    from fastapi.testclient import TestClient
+    from app import api
+    from app.providers.deepseek_chat import DeepSeekChat
+    def remote(request):
+        assert str(request.url) == 'https://api.deepseek.com/chat/completions'
+        body=json.loads(request.content)
+        assert body['model']=='deepseek-flash' and body['thinking']=={'type':'disabled'}
+        assert 'real-source' not in request.content.decode()
+        return httpx.Response(200,json={'model':'deepseek-flash','choices':[{
+            'finish_reason':'stop','message':{'content':json.dumps({'candidates':[{
+                'domain':'PREFERENCES','statement':'偏好热茶','context':'饮品选择',
+                'evidence_ids':['s1'],'counter_evidence_ids':[],'kind':'trait'}]})}}]})
+    with httpx.Client(transport=httpx.MockTransport(remote)) as transport:
+        monkeypatch.setattr(api,'DeepSeekChat',lambda **kw:DeepSeekChat(**kw,client=transport))
+        settings=Settings(provider='deepseek',model='deepseek-flash',model_version='deepseek-flash',
+            base_url='https://api.deepseek.com',api_key='fixture-key',_env_file=None)
+        with TestClient(api.create_app(settings)) as client:
+            result=client.post('/profile-proposals',json={'materials':[{
+                'evidence_id':'real-source','episode_id':'fixture-episode','excerpt':'我更喜欢热茶。'}]})
+        assert result.status_code==200
+        proposal=result.json()['candidates'][0]
+        assert proposal['evidence_ids']==['real-source']
+        assert 'status' not in proposal and 'confidence' not in proposal
+
+
+@pytest.mark.parametrize('status', [401, 307])
+def test_flash_profile_transport_does_not_retry_or_forward_credential(status):
+    from app.providers.deepseek_chat import DeepSeekChat
+    from app.errors import AICoreError
+    calls=[]
+    def remote(request):
+        calls.append(request)
+        return httpx.Response(status,headers={'Location':'https://other.invalid'},text='fixture private body')
+    with httpx.Client(transport=httpx.MockTransport(remote)) as client:
+        chat=DeepSeekChat(api_key='fixture-key',model='deepseek-flash',client=client)
+        with pytest.raises(AICoreError) as error:chat.complete('JSON',{})
+    assert len(calls)==1 and 'private body' not in str(error.value)
