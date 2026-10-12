@@ -59,7 +59,8 @@ class Settings(BaseSettings):
     # Complete relay endpoint, never inferred from another provider's URL/key.
     relay_asr_url: str = ""
     relay_asr_api_key: SecretStr = SecretStr("")
-    relay_asr_model: Literal["codestral-2508", "mistral-code-fim-latest"] = "codestral-2508"
+    relay_asr_model: Literal["codestral-2508", "mistral-code-fim-latest", "hackathon/v_model/qwen-audio-3.0-asr-flash"] = "codestral-2508"
+    relay_asr_checkpoint_backend: Literal['local', 'object_store'] = 'local'
     relay_asr_format: Literal["audio_url", "input_audio"] = "audio_url"
     relay_asr_audio_transport: Literal["original", "mp3_48k"] = "original"
     relay_asr_max_tokens: int = Field(default=8192, ge=512, le=16384)

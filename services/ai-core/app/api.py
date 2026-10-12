@@ -24,6 +24,7 @@ from .providers.fixture import FixtureProvider
 from .providers.deepseek import DeepSeekProvider
 from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
+from .providers.anker import AnkerChat, AnkerMemoryProvider, AnkerTwinProvider, AnkerCalibrationProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
 from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
 
@@ -37,6 +38,10 @@ def _build_extractor(settings: Settings) -> MemoryExtractor:
                                   max_response_bytes=settings.max_response_bytes)
     elif settings.provider == "weixin":
         provider = WeixinProvider(api_key=settings.weixin_api_key.get_secret_value())
+    elif settings.provider == 'anker':
+        provider = AnkerMemoryProvider(base_url=settings.base_url, model=settings.model,
+            api_key=settings.api_key.get_secret_value(), timeout_seconds=settings.timeout_seconds,
+            max_response_bytes=settings.max_response_bytes)
     elif settings.provider == "deepseek":
         provider = DeepSeekProvider(base_url=settings.base_url,
                                     api_key=settings.api_key.get_secret_value(),
@@ -83,6 +88,15 @@ def create_app(
         model=settings.model, timeout_seconds=settings.timeout_seconds,
     ) if settings.provider == "deepseek" else None)
     active_profile = profile_provider
+    if settings.provider == 'anker':
+        options = dict(api_key=settings.api_key.get_secret_value(), model=settings.model,
+            base_url=settings.base_url, timeout_seconds=settings.timeout_seconds,
+            max_response_bytes=settings.max_response_bytes)
+        active_twin = twin_provider or AnkerTwinProvider(**options,
+            focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers,
+            structured_answers=settings.twin_structured_answers, quote_answers=settings.twin_quote_answers)
+        active_calibration = calibration_provider or AnkerCalibrationProvider(**options)
+        active_profile = profile_provider or ProfileProposalProvider(AnkerChat(**options))
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
         active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers, structured_answers=settings.twin_structured_answers, quote_answers=settings.twin_quote_answers)

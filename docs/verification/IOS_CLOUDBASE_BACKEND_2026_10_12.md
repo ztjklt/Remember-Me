@@ -57,3 +57,9 @@ TLS 与私有 Schema 配置修改后，定向执行 `tests/test_cloudbase_deploy
 - [HTTP 执行 SQL：管理员限定](https://docs.cloudbase.net/en/http-api/pgdb/exec-pgsql)
 - [共享与独享实例及升级](https://docs.cloudbase.net/database/postgresql/database-management)
 - [云托管边界](https://docs.cloudbase.net/run/limitation)
+
+## 2026-10-12 赛事模型平台续接
+
+用户补充共用 Key 与赛事文档。文档中的模型 ID 是路由别名，不是各个模型独立的密钥。实际验证 `https://ai-router-cn-pub.anker-in.com/chat/completions` 的 Qwen 最小 JSON 请求返回 HTTP 401；同主机 `/models` 也返回 401。没有发送个人材料、录音、声音样本，也没有进行 TTS 请求；没有凭模型列表宣称 ASR 已工作。
+
+新增 Anker 模型 adapter 与同步 relay 持久检查点候选；复用既有证据协议，不修改公开 Contract。AI 定向 `test_anker.py test_weixin.py test_api.py test_twin.py`：56 通过；Backend 定向 `test_durable_relay_asr.py test_cloud_asr.py test_cloud_asr_consent.py test_cloudbase_deployment.py test_worker.py`：88 通过，两组分别各有 2 条上游弃用提醒。真实 ASR payload、模型延迟及真人闭环仍未验证。

@@ -25,5 +25,9 @@
   "database_table_count": 34,
   "private_storage_bucket": "remember-me-ios-audio",
   "private_storage_readiness": "passed",
-  "native_database_connection_verified": false
+  "native_database_connection_verified": false,
+  "model_router": "anker-event-router",
+  "model_authentication_verified": false,
+  "model_probe_http_status": 401,
+  "asr_live_verified": false
 }

@@ -140,9 +140,9 @@ class RelaySttProvider:
                 'messages': [{'role': 'system', 'content': INSTRUCTION}, {'role': 'user',
                     'content': [{'type': 'text', 'text': '请逐字转写这段音频。'}, chunk]}]}
             authorize()
-            return self._request(audio, payload, wire_audio)
+            return self._request(audio, payload, wire_audio, authorize)
 
-    def _request(self, audio, payload, wire_audio):
+    def _request(self, audio, payload, wire_audio, authorize=None):
         started = time.monotonic()
         record = {'at': datetime.now(timezone.utc).isoformat(), 'endpoint': self.settings.relay_asr_url,
             'request_model': self.settings.relay_asr_model, 'response_model': None,
@@ -152,6 +152,7 @@ class RelaySttProvider:
             'audio_transport': self.settings.relay_asr_audio_transport,
             'http_status': None, 'finish_reason': None, 'usage': None, 'validation': 'failed'}
         try:
+            self.last_http_status = None
             try:
                 response = httpx.post(self.settings.relay_asr_url, json=payload,
                     headers={'Authorization': 'Bearer ' + self.settings.relay_asr_api_key.get_secret_value()},
@@ -161,6 +162,7 @@ class RelaySttProvider:
             except httpx.HTTPError as error:
                 raise SttUnavailable('云端转写连接失败，原音保留。') from error
             record['http_status'] = response.status_code
+            self.last_http_status = response.status_code
             if response.status_code != 200:
                 try:
                     error = response.json().get('error', {})

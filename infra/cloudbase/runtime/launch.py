@@ -41,11 +41,19 @@ def prepare_environment(source):
         raise ValueError('Use the reviewed Tencent COS HTTPS endpoint.')
     if len(env.get('CLOUDBASE_WORKER_TOKEN', '')) < 32:
         raise ValueError('An independent worker credential of at least 32 characters is required.')
-    if env.get('REMEMBER_STT_BACKEND') != 'paraformer':
-        raise ValueError('This deployment has only prepared the explicit Paraformer adapter; choose another via a reviewed configuration.')
-    if not env.get('REMEMBER_PARAFORMER_API_KEY') or not env.get('REMEMBER_PARAFORMER_BASE_URL'):
-        raise ValueError('Supply this environment’s own ASR configuration.')
-    if env.get('AI_PROVIDER') not in {'deepseek', 'weixin'}:
+    if env.get('REMEMBER_STT_BACKEND') == 'paraformer':
+        if not env.get('REMEMBER_PARAFORMER_API_KEY') or not env.get('REMEMBER_PARAFORMER_BASE_URL'):
+            raise ValueError('Supply this environment’s own ASR configuration.')
+    elif env.get('REMEMBER_STT_BACKEND') == 'relay':
+        if (env.get('REMEMBER_RELAY_ASR_URL') != 'https://ai-router-cn-pub.anker-in.com/chat/completions'
+                or env.get('REMEMBER_RELAY_ASR_MODEL') != 'hackathon/v_model/qwen-audio-3.0-asr-flash'
+                or not env.get('REMEMBER_RELAY_ASR_API_KEY')):
+            raise ValueError('Supply the explicitly selected Anker ASR endpoint, alias and credential.')
+        env['REMEMBER_RELAY_ASR_CHECKPOINT_BACKEND'] = 'object_store'
+        env['REMEMBER_RELAY_ASR_STATE_DIR'] = '/tmp/remember-asr'
+    else:
+        raise ValueError('Select an explicitly prepared ASR adapter.')
+    if env.get('AI_PROVIDER') not in {'deepseek', 'weixin', 'anker'}:
         raise ValueError('Configure a real Twin provider; fixtures are not accepted.')
     key = 'WEIXIN_CHAT_API_KEY' if env['AI_PROVIDER'] == 'weixin' else 'AI_API_KEY'
     if not env.get(key):
@@ -61,7 +69,7 @@ def prepare_environment(source):
     env['REMEMBER_AI_TIMEOUT_SECONDS'] = str(min(float(env.get('REMEMBER_AI_TIMEOUT_SECONDS', 40)), 40))
     env['AI_TIMEOUT_SECONDS'] = str(min(float(env.get('AI_TIMEOUT_SECONDS', 40)), 40))
     env['REMEMBER_PARAFORMER_POLL_TIMEOUT_SECONDS'] = '20'
-    env['REMEMBER_STT_TIMEOUT_SECONDS'] = '8'
+    env['REMEMBER_STT_TIMEOUT_SECONDS'] = '40' if env['REMEMBER_STT_BACKEND'] == 'relay' else '8'
     env['AI_MAX_CONCURRENT_REQUESTS'] = '1'
     env['NO_PROXY'] = '127.0.0.1,localhost'
     return env

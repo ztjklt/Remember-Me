@@ -29,7 +29,7 @@ class Settings(BaseSettings):
             "ENVIRONMENT",
         ),
     )
-    provider: Literal["fixture", "openai_compatible", "ollama", "deepseek", "weixin"] = Field(
+    provider: Literal["fixture", "openai_compatible", "ollama", "deepseek", "weixin", "anker"] = Field(
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
@@ -108,6 +108,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def real_provider_has_explicit_identity(self) -> "Settings":
+        if self.provider == 'anker':
+            from .providers.anker import BASE_URL, MODELS
+            if self.base_url != BASE_URL or self.model not in MODELS:
+                raise ValueError('Anker requires its documented HTTPS endpoint and alias')
+            if not self.api_key.get_secret_value().strip():
+                raise ValueError('Anker requires AI_API_KEY')
+            if self.model_version.startswith('fixture-ai-'):
+                raise ValueError('Anker requires explicit AI_MODEL_VERSION')
         if self.prompt_version != PROMPT_VERSION or self.schema_version != SCHEMA_VERSION:
             raise ValueError("prompt/schema versions must identify the implementation in this build")
         if self.provider == "openai_compatible" and (

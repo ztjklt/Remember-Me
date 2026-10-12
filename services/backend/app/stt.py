@@ -197,6 +197,10 @@ def build_stt_provider(settings: Settings) -> SttProvider:
         return GroqSttProvider(settings)
     if settings.stt_backend == 'relay':
         from .relay_asr import RelaySttProvider
+        if settings.relay_asr_checkpoint_backend == 'object_store':
+            from .durable_relay_asr import DurableRelaySttProvider
+            from .storage import build_object_store
+            return DurableRelaySttProvider(settings, build_object_store(settings))
         return RelaySttProvider(settings)
     if settings.stt_backend == FAKE_BACKEND:
         refuse_fake_unless_permitted(settings, "speech-to-text")

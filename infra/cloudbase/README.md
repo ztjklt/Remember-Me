@@ -10,6 +10,8 @@
 - 不运行永久后台 worker。私人定时云函数每分钟调用受独立密钥保护的 `/internal/jobs/processing-tick` 和 `/internal/jobs/profile-tick`，每次请求同步完成一段工作。Backend 数据库 job lease 和本人核对门槛保留；只转写不会自动进入提取。
 - 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，云托管与数据库的实际连通仍待验证。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前检索依旧是 BGE CPU 编码与 Python 排序，向量列是 JSON；没有声称已切换 pgvector ANN 索引。
 - 使用此 PG 环境原生 Storage API 的私有桶 `remember-me-ios-audio` 保存原音和转写检查点。服务端专用 API Key 不进入客户端；对 `anon` 和 `authenticated` 配置 restrictive policy，阻止这个桶通过其他 permissive policy 暴露。存储适配器不跟随重定向、不把错误响应正文写入异常。S3 adapter 仍可作为另选部署方式。
+- 当前用户选择 Anker 赛事模型平台，准备主模型 `hackathon/v_model/qwen-max` 与转写别名 `hackathon/v_model/qwen-audio-3.0-asr-flash`，供应商尚未冻结。实际接口认证返回 401；ASR 音频协议尚待真实验证，不能视为可用。TTS 别名仅列为平台能力，没有把通用 TTS 当作本人声纹或部署声音克隆。
+- 同步 relay 在私有存储保存提交标记和成功的原始机器稿；冷替换读已有结果，结果不确定时拒绝重放原音。明确拒绝的 4xx／429 可以重新核对配置；超时、5xx、截断输出不暗中重放。读取缓存仍验证当前授权。默认 relay 本机行为不变，只有本部署选择持久化。
 - Paraformer 在提交供应商任务之前先持久化 `submitting` 检查点；结果不确定或检查点不可读时不重新提交。冷启动会继续轮询已有任务。临时锁和诊断 JSONL 可丢失；原音、任务 checkpoint 和 Episode 结果不依赖容器临时盘。
 - 为保持当前跨进程文件锁和供应商配额语义，首次内测最大副本 **1**，网关并发 **1**，新版本切换先停旧版本再启动新版本。不得直接改成并行蓝绿或多副本；多副本需要分布式 quota／检查点锁。
 - 云端声音克隆尚未部署，不能把它标为可用。独立声音授权、provider seam 仍保留。
@@ -59,3 +61,9 @@ bundle 同时生成 zip 和 tar.gz，仅复制白名单目录，包含内容哈�
 ## 当前权限与凭据待处理
 
 CloudBase SQL 管理与原生存储已可调用。当前 CLI 登录授权调用独立 PostgreSQL 的账号创建、账号查询、SSL 读取／修改 API 返回 `OperationDenied.CamDeniedError`；没有成功创建 `remember_ios_app` 角色，没有获得实例 CA。SQL 查询 `ssl` 为 on，但并不等于后端已通过证书验证或获得直连能力。控制台的 SSL 强制开关也未观察到开启。保留严格 TLS 连接要求，待核对该环境支持的 CA／原生连接配置。数据库密码和供应商 Key 由用户填写本次 worktree 的 `build/private/credentials.json`，不打包、不提交、不回显。
+
+## 赛事模型适配与验证
+
+用户提供主办方分配的共用模型 Key 和[接入文档](https://anker-in.feishu.cn/docx/HAtJdgo45otz2Px31bYcu3PDnRf)。在 Safari 直接读取文档，确认 Base URL `https://ai-router-cn-pub.anker-in.com`、`/chat/completions` 和 Bearer 认证；没有向猜测的其他平台发送该 Key。只发送了一条不含个人数据的 JSON 测试请求，Qwen 路由返回 401；随后读取同主机的模型目录也返回 401。未发送原音、个人记忆或生成语音请求。需要确认赛事 Key 的激活／有效期／权限；当前没有切换客户端或部署未经验证的服务。
+
+新 `anker` AI adapter 复用原有源编号选择、原话回填、引用验证、人物候选和校准协议，保留真实响应模型身份；它只接受文档列出的 HTTPS host 和别名，拒绝重定向、缺模型身份、坏 JSON、截断输出及认证失败。不是将平台 Key 当作 DeepSeek 官方或百炼原生 Key。
