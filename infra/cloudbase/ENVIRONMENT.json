@@ -29,5 +29,7 @@
   "model_router": "anker-event-router",
   "model_authentication_verified": false,
   "model_probe_http_status": 401,
-  "asr_live_verified": false
+  "asr_live_verified": false,
+  "token_plan_catalog_verified": true,
+  "token_plan_app_backend_eligible": false
 }

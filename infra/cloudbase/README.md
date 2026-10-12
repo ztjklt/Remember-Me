@@ -67,3 +67,13 @@ CloudBase SQL 管理与原生存储已可调用。当前 CLI 登录授权调用�
 用户提供主办方分配的共用模型 Key 和[接入文档](https://anker-in.feishu.cn/docx/HAtJdgo45otz2Px31bYcu3PDnRf)。在 Safari 直接读取文档，确认 Base URL `https://ai-router-cn-pub.anker-in.com`、`/chat/completions` 和 Bearer 认证；没有向猜测的其他平台发送该 Key。只发送了一条不含个人数据的 JSON 测试请求，Qwen 路由返回 401；随后读取同主机的模型目录也返回 401。未发送原音、个人记忆或生成语音请求。需要确认赛事 Key 的激活／有效期／权限；当前没有切换客户端或部署未经验证的服务。
 
 新 `anker` AI adapter 复用原有源编号选择、原话回填、引用验证、人物候选和校准协议，保留真实响应模型身份；它只接受文档列出的 HTTPS host 和别名，拒绝重定向、缺模型身份、坏 JSON、截断输出及认证失败。不是将平台 Key 当作 DeepSeek 官方或百炼原生 Key。
+
+## 2026-10-13 Token Plan 凭据核对
+
+用户补充自购 Token Plan 个人版凭据与官方端点。只读模型目录返回 200、16 个条目，未发送模型推理或录音请求。该凭据与赛事 Key 分开存放，仅在本机 ignored 私密目录，不加入应用运行环境。官方个人版使用范围明确排除自定义应用后端及自动化脚本；应用路径仍等待普通按量 API 凭据（或有效赛事凭据）与对应费用授权。部署启动校验拒绝把 `sk-sp-` 工具套餐 Key 发到应用模型／ASR供应商，定向部署测试 16 项通过，2 条上游弃用提醒。
+
+Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未提交；观察到专属端点 `https://ws-5hudj5uvce12kiug.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`。没有创建、重置或导出用户既有 API Key，没有执行其 Token Plan 工具安装脚本，也没有修改用户全局编程工具配置。
+
+- [Token Plan 个人版使用范围](https://help.aliyun.com/zh/model-studio/token-plan-personal-overview)
+- [普通百炼 API Key](https://help.aliyun.com/zh/model-studio/get-api-key/)
+- [按量预算管理](https://help.aliyun.com/zh/model-studio/budget-management)

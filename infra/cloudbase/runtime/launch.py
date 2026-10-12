@@ -13,6 +13,10 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def prepare_environment(source):
     env = dict(source)
+    if any(str(env.get(key, '')).startswith('sk-sp-') for key in
+            ('AI_API_KEY', 'WEIXIN_CHAT_API_KEY', 'REMEMBER_RELAY_ASR_API_KEY',
+             'REMEMBER_PARAFORMER_API_KEY')):
+        raise ValueError('Token Plan credentials are for interactive tools; use an application API credential here.')
     if env.get('REMEMBER_DEPLOYMENT_SCOPE') != 'ios-cloudbase':
         raise ValueError('Set the explicit ios-cloudbase deployment scope.')
     if not env.get('CLOUDBASE_ENV_ID', '').strip():

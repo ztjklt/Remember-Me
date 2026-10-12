@@ -61,6 +61,13 @@ def test_cloudbase_uses_durable_checkpoints_and_keeps_registration_closed():
     assert query['sslmode']==['verify-full']
 
 
+def test_tool_subscription_key_cannot_be_forwarded_to_application_provider():
+    launch=load_file('cloudbase_launch', ROOT/'infra/cloudbase/runtime/launch.py')
+    source=env(); source['AI_API_KEY']='sk-sp-fixture-tool-only'
+    with pytest.raises(ValueError, match='interactive tools'):
+        launch.prepare_environment(source)
+
+
 def test_database_tls_and_schema_cannot_be_disabled_by_input():
     launch=load_file('cloudbase_launch',ROOT/'infra/cloudbase/runtime/launch.py')
     source=env();source['REMEMBER_DATABASE_URL']+='?sslmode=disable&options=-csearch_path%3Dpublic'
