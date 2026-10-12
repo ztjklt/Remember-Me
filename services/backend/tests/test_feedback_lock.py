@@ -28,3 +28,19 @@ def test_feedback_freezes_displayed_answer_and_never_changes_source(app,client,s
     assert client.post(path+'/'+locked.json()['calibration_id']+'/complete',headers=oh,
         json={'cloud_consent_id':cloud}).status_code==409
     session.expire_all();assert session.get(TwinAnswer,row.answer_id).answer=='我喜欢散步'
+
+
+def test_legacy_unreviewed_answer_cannot_be_reused_after_guard_rollout(app,client,session):
+    from app.access import source_basis
+    owner,reader,oh,rh,ep,cloud=setup_pair(app,client,session)
+    root=f'/api/v1/subjects/{owner.subject_id}'
+    answer=client.post(root+'/twin/answers',headers=oh,
+        json={'question':'我喜欢什么？','cloud_consent_id':cloud}).json()
+    row=session.get(TwinAnswer,answer['answer_id'])
+    row.source_basis=source_basis(session,owner.subject_id);session.commit()
+    assert client.post(root+'/calibrations',headers=oh,
+        json={'twin_answer_id':row.answer_id,'cloud_consent_id':cloud}).status_code==409
+    response=client.get(root+'/twin/answers/'+row.answer_id,headers=oh)
+    assert response.status_code==200
+    assert response.json()['stale'] and not response.json()['evidence']
+    assert response.json()['expression'] is None

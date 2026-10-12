@@ -27,6 +27,7 @@ from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 from .providers.anker import AnkerChat, AnkerMemoryProvider, AnkerTwinProvider, AnkerCalibrationProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
+from .grounded_twin import GroundedTwin
 from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
@@ -80,10 +81,11 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
-    active_twin = twin_provider or (DeepSeekTwinProvider(
+    active_twin = twin_provider or (GroundedTwin(DeepSeekChat(
         base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
-        model=settings.model, timeout_seconds=settings.timeout_seconds,
-    ) if settings.provider == "deepseek" else None)
+        model=settings.model, timeout_seconds=min(settings.timeout_seconds, 8),
+        max_response_bytes=settings.max_response_bytes,
+    )) if settings.provider == "deepseek" else None)
     active_calibration = calibration_provider or (DeepSeekCalibrationProvider(
         base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
         model=settings.model, timeout_seconds=settings.timeout_seconds,
@@ -182,9 +184,9 @@ def create_app(
     def answer_twin(payload: TwinInput) -> TwinOutput:
         if active_twin is None:
             raise ProviderUnavailable("Twin requires the configured DeepSeek adapter")
-        # Interactive requests may wait briefly behind background proposals.
-        # Still one actual provider call, bounded total wait, no hidden retry.
-        if not slots.acquire(timeout=15):
+        # Official DeepSeek uses draft + review, with at most one explicit
+        # invalid-draft repair: 3 x 8s + 5s queue fits Backend's 30s timeout.
+        if not slots.acquire(timeout=5 if settings.provider == 'deepseek' else 15):
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_twin.answer(payload)

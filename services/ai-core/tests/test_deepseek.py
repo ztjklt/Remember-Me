@@ -104,3 +104,37 @@ def test_flash_profile_transport_does_not_retry_or_forward_credential(status):
         chat=DeepSeekChat(api_key='fixture-key',model='deepseek-flash',client=client)
         with pytest.raises(AICoreError) as error:chat.complete('JSON',{})
     assert len(calls)==1 and 'private body' not in str(error.value)
+
+@pytest.mark.parametrize('approved', [True,False])
+def test_default_official_twin_runs_evidence_review_before_returning_answer(monkeypatch,approved):
+    from fastapi.testclient import TestClient
+    from app import api
+    from app.providers.deepseek_chat import DeepSeekChat
+    calls=[]
+    def remote(request):
+        body=json.loads(request.content);calls.append(body)
+        assert str(request.url)=='https://api.deepseek.com/chat/completions'
+        assert 'real-source-id' not in request.content.decode()
+        system=body['messages'][0]['content']
+        assert 'json' in system.lower(), 'Official JSON mode requires an explicit JSON instruction'
+        if system.startswith('twin-points-review'):
+            packet=json.loads(body['messages'][1]['content'])
+            assert packet['rendered_answer']['answer']=='讲述者通常去图书馆。'
+            result={'checks':[dict(point=1,supported=approved,complete=True,attribution=True,
+                time_consistent=approved,mode_correct=True,
+                unsupported_claims=[] if approved else ['单次计划不能泛化为通常'])]}
+        else:
+            result={'points':[dict(question_part='选择',mode='SIMULATION',text='讲述者通常去图书馆。',source_ids=['s1'],names=[])]}
+        return httpx.Response(200,json={'model':'deepseek-flash','choices':[{
+            'finish_reason':'stop','message':{'content':json.dumps(result,ensure_ascii=False)}}]})
+    with httpx.Client(transport=httpx.MockTransport(remote)) as transport:
+        monkeypatch.setattr(api,'DeepSeekChat',lambda **kw:DeepSeekChat(**kw,client=transport))
+        settings=Settings(provider='deepseek',model='deepseek-flash',model_version='deepseek-flash',
+            base_url='https://api.deepseek.com',api_key='fixture-key',_env_file=None)
+        with TestClient(api.create_app(settings)) as client:
+            result=client.post('/twin',json={'question':'通常去哪里？','candidates':[{
+                'memory_item_id':'fixture-memory','statement':'不可当作原文的摘要','evidence':[{
+                    'evidence_id':'real-source-id','excerpt':'明天我打算去图书馆。','source_type':'SUBJECT'}]}]})
+    assert len(calls)==2
+    assert result.status_code==(200 if approved else 502)
+    if not approved:assert result.json()['error_code']=='AI_SCHEMA_INVALID'

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..calibration_client import CalibrationUnavailable
+from ..twin_basis import current as answer_basis
 from ..access import publication_lock, altered_story_ids
 from ..db import get_session
 from ..errors import AppError
@@ -135,6 +136,8 @@ def start(subject_id: str, body: StartCalibration,
         _check_source(session, existing)
         session.commit()
         return _view(existing)
+    if answer.source_basis != answer_basis(session, subject_id):
+        raise CalibrationNotReady("回答依据或核对规则已更新，请重新提问后再记录本人反馈。")
     snapshot = _snapshot(session, subject_id, answer.memory_item_ids)
     if not snapshot or not answer.evidence_ids:
         raise CalibrationNotReady("Twin 回答缺少有效的原始记忆证据。")

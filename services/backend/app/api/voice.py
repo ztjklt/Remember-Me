@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..db import get_session
 from ..errors import AppError
+from ..twin_basis import is_current_guard
 from ..models import Actor, ConsentScope, TwinAnswer, VoiceAsset, VoiceProfile, utcnow
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
@@ -112,7 +113,7 @@ def create_speech(subject_id: str, answer_id: str, request: Request,
     answer = session.scalar(select(TwinAnswer).where(
         TwinAnswer.answer_id == answer_id, TwinAnswer.subject_id == subject_id,
         TwinAnswer.actor_id == actor.actor_id, TwinAnswer.invalidated_at.is_(None)))
-    if answer is None or answer.response_type == "UNKNOWN":
+    if answer is None or answer.response_type == "UNKNOWN" or not is_current_guard(answer.source_basis):
         raise VoiceNotFound("这条回答已过期或没有可朗读的答案。")
     cached = session.scalar(select(VoiceAsset).where(
         VoiceAsset.answer_id == answer_id, VoiceAsset.profile_id == profile.profile_id))
@@ -136,7 +137,8 @@ def create_speech(subject_id: str, answer_id: str, request: Request,
     current_profile = session.get(VoiceProfile, profile_id)
     current_answer = session.get(TwinAnswer, answer_id)
     if (current_profile is None or current_profile.revoked_at is not None or
-            current_answer is None or current_answer.invalidated_at is not None):
+            current_answer is None or current_answer.invalidated_at is not None
+            or not is_current_guard(current_answer.source_basis)):
         raise VoiceNotFound("声音授权或回答已变化，请重新开始。")
     ConsentRepository(session).require_active(consent_id, subject_id=subject_id,
                                                scope=ConsentScope.VOICE, actor_id=actor.actor_id)
@@ -164,7 +166,9 @@ def read_speech(subject_id: str, asset_id: str, request: Request,
                                  TwinAnswer.invalidated_at.is_(None))).first()
     if row is None:
         raise VoiceNotFound("声音文件不存在或已失效。")
-    asset, profile, _ = row
+    asset, profile, answer = row
+    if not is_current_guard(answer.source_basis):
+        raise VoiceNotFound("回答依据或核对规则已更新，请重新提问。")
     ConsentRepository(session).require_active(profile.voice_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.VOICE, actor_id=actor.actor_id)
     return Response(content=request.app.state.object_store.get(asset.object_key), media_type="audio/wav")

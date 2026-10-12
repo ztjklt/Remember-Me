@@ -15,6 +15,7 @@ from ..errors import AppError
 from ..models import (Actor, Consent, ConsentScope, Episode, Evidence,
                       ModelRevision, PersonTrait, TwinAnswer, utcnow)
 from ..repositories.consents import ConsentRepository
+from ..twin_basis import from_material_basis, current as answer_basis
 from ..retrieval import EmbeddingUnavailable
 from ..evidence_rag import prepare, publish_and_select, search_items
 from ..security import current_actor
@@ -97,7 +98,7 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
     sources = [session.get(Evidence, identifier) for identifier in row.evidence_ids]
     return {
         "answer_id": row.answer_id, "subject_id": row.subject_id,
-        "question": row.question, "answer": row.answer if row.invalidated_at is None else "相关记忆已变化，请重新提问。",
+        "question": row.question, "answer": row.answer if row.invalidated_at is None else "回答依据或核对规则已更新，请重新提问。",
         "response_type": row.response_type, "confidence": row.confidence,
         "model_version": row.model_version, "person_model_version": row.person_model_version,
         "source_version": row.source_basis,
@@ -272,7 +273,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
                      confidence=confidence, model_version=version,
                      person_model_version=basis_version,
-                     source_basis=basis,
+                     source_basis=from_material_basis(basis),
                      expression=expression,
                      created_at=utcnow())
     session.add(row)
@@ -291,7 +292,7 @@ def read_answer(subject_id: str, answer_id: str,
         TwinAnswer.actor_id == actor.actor_id))
     if row is None:
         raise TwinNotFound("Answer not found")
-    if row.invalidated_at is None and row.source_basis != source_basis(session,subject_id):
+    if row.invalidated_at is None and row.source_basis != answer_basis(session,subject_id):
         row.invalidated_at=utcnow()
         session.commit()
     return answer_view(session, row)
