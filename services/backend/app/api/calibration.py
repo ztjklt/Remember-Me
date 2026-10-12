@@ -138,12 +138,20 @@ def start(subject_id: str, body: StartCalibration,
     snapshot = _snapshot(session, subject_id, answer.memory_item_ids)
     if not snapshot or not answer.evidence_ids:
         raise CalibrationNotReady("Twin 回答缺少有效的原始记忆证据。")
+    # Compare the wording the client actually displays. Original quotes never
+    # take the optional style pass; a rejected/empty pass falls back to facts.
+    expression = answer.expression or {}
+    expressed = (answer.response_type == 'SIMULATION' and expression.get('status') == 'available'
+        and isinstance(expression.get('text'), str) and 0 < len(expression['text']) <= 500
+        and expression['text'].strip())
+    locked_text = expression['text'] if expressed else answer.answer
+    expression_model = expression.get('model_version') if expressed else None
     row = CalibrationRun(
         calibration_id="cal_" + uuid4().hex[:16], subject_id=subject_id,
         actor_id=actor.actor_id, twin_answer_id=answer.answer_id,
-        question=answer.question, locked_answer=answer.answer,
+        question=answer.question, locked_answer=locked_text,
         locked_response_type=answer.response_type,
-        locked_model_version=answer.model_version,
+        locked_model_version=expression_model or answer.model_version,
         locked_person_model_version=answer.person_model_version,
         locked_evidence_ids=answer.evidence_ids, source_snapshot=snapshot,
         status="awaiting_human", dimension_diffs=[], created_at=utcnow(),
