@@ -1,4 +1,5 @@
-FROM ghcr.io/astral-sh/uv:0.12.18-python3.12-trixie-slim
+FROM python:3.12-slim
+RUN pip install --no-cache-dir uv==0.12.18
 ENV PYTHONUNBUFFERED=1 UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1 \
     HF_HOME=/opt/remember/model-cache TOKENIZERS_PARALLELISM=false \
     OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PORT=8000
