@@ -96,12 +96,12 @@ internal fun simplePendingCount(state: NativeState): Int {
 @Composable internal fun SimpleSourcePlayer(state: NativeState, model: NativeWorkbenchModel) {
     var expanded by remember(state.actor, state.subject) { mutableStateOf(false) }
     if(state.player.episode.isNotBlank()) SimpleButton("播放控制", Icons.Outlined.Headphones) { expanded = true }
-    if(expanded) NativeDialog("听原音", { expanded = false }) {
+    if(expanded) NativeDialog(sourcePlaybackLabel(state.player), { expanded = false }) {
         val player = state.player
         if(player.episode.isBlank()) Text("播放已结束。") else {
-            Text(if(player.preparing) "正在准备声音…" else if(player.playing) "正在播放原音" else "已暂停", style = MaterialTheme.typography.titleLarge)
+            Text(if(player.preparing) "正在准备声音…" else if(player.playing) "正在播放${sourcePlaybackLabel(player)}" else "已暂停", style = MaterialTheme.typography.titleLarge)
             Text("${clock(player.position)} / ${clock(player.duration)}")
-            SimpleButton(if(player.playing) "暂停原音" else "继续播放", if(player.playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+            SimpleButton(if(player.playing) "暂停" else "继续播放", if(player.playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
                 !player.preparing, primary = true) { if(player.playing) model.pauseSource() else model.resumeSource() }
             SimpleButton("从头再听", Icons.Outlined.Replay, !player.preparing) { model.seekSource(0); model.resumeSource() }
             SimpleButton("停止播放", Icons.Outlined.Stop) { model.stopSource() }

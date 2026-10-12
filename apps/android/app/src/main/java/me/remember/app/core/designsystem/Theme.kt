@@ -34,19 +34,27 @@ private val light = lightColorScheme(
     secondary=Color(0xFF80501E), secondaryContainer=Color(0xFFF5E8CF), onSecondaryContainer=Color(0xFF80501E),
     tertiary=Color(0xFF355C43), background=Color(0xFFF4F5EC), onBackground=Color(0xFF233C31),
     surface=Color(0xFFFAFBF6), onSurface=Color(0xFF233C31), onSurfaceVariant=Color(0xFF496052),
-    surfaceVariant=Color(0xFFFAFBF6), outline=Color(0xFF627865), outlineVariant=Color(0xFFD5DED0)
+    surfaceVariant=Color(0xFFFAFBF6), outline=Color(0xFF627865), outlineVariant=Color(0xFFD5DED0), surfaceTint=Color(0xFF355C43),
+    surfaceDim=Color(0xFFDEE3D7),surfaceBright=Color(0xFFFAFBF6),surfaceContainerLowest=Color(0xFFFFFFFF),
+    surfaceContainerLow=Color(0xFFF4F6ED),surfaceContainer=Color(0xFFEDF0E5),
+    surfaceContainerHigh=Color(0xFFE6EBDD),surfaceContainerHighest=Color(0xFFDDE5D6)
 )
 private val dark = darkColorScheme(
     primary=Color(0xFFB5D4BA), onPrimary=Color(0xFF183323), primaryContainer=Color(0xFF293F30), onPrimaryContainer=Color(0xFFEEF3E9),
     secondary=Color(0xFFF0C58B), secondaryContainer=Color(0xFF483924), onSecondaryContainer=Color(0xFFF0C58B),
     tertiary=Color(0xFFB5D4BA), background=Color(0xFF14251E), onBackground=Color(0xFFEEF3E9),
     surface=Color(0xFF21372B), onSurface=Color(0xFFEEF3E9), onSurfaceVariant=Color(0xFFB7CABB),
-    surfaceVariant=Color(0xFF21372B), outline=Color(0xFF92B298), outlineVariant=Color(0xFF3C5445)
+    surfaceVariant=Color(0xFF21372B), outline=Color(0xFF92B298), outlineVariant=Color(0xFF3C5445),surfaceTint=Color(0xFFB5D4BA),
+    surfaceDim=Color(0xFF14251E),surfaceBright=Color(0xFF334B3E),surfaceContainerLowest=Color(0xFF102017),
+    surfaceContainerLow=Color(0xFF1B3025),surfaceContainer=Color(0xFF21372B),
+    surfaceContainerHigh=Color(0xFF294132),surfaceContainerHighest=Color(0xFF334B3E)
 )
 private fun text(size: Int, line: Int, weight: FontWeight = FontWeight.Normal) =
     TextStyle(fontFamily=FontFamily.SansSerif,fontSize=size.sp,lineHeight=line.sp,fontWeight=weight)
 private val type = Typography(
-    displayLarge=text(32,40,FontWeight.SemiBold), headlineLarge=text(26,36,FontWeight.SemiBold),
+    displayLarge=text(32,40,FontWeight.SemiBold),displayMedium=text(38,46,FontWeight.Medium),
+    displaySmall=text(32,40,FontWeight.Medium),headlineSmall=text(22,32,FontWeight.Medium),titleSmall=text(15,22,FontWeight.SemiBold),
+    headlineLarge=text(26,36,FontWeight.SemiBold),
     headlineMedium=text(24,34,FontWeight.Medium), titleLarge=text(18,28,FontWeight.SemiBold),
     titleMedium=text(17,26,FontWeight.SemiBold), bodyLarge=text(17,26),bodyMedium=text(17,26),
     bodySmall=text(14,20),labelLarge=text(17,24,FontWeight.Medium),labelMedium=text(14,20,FontWeight.Medium),labelSmall=text(14,20)

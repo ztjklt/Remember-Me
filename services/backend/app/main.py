@@ -21,7 +21,7 @@ from .storage import build_object_store
 from .stt import build_stt_provider
 from .retrieval import LocalEncoder
 from .twin_client import TwinClient
-from .voice_client import VoiceClient
+from .voice_client import VoiceClient, build_synthetic_voice_client
 from .calibration_client import CalibrationClient
 
 access_logger = logging.getLogger("app.access")
@@ -164,6 +164,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.embedding_encoder = LocalEncoder(settings.embedding_model)
     app.state.twin_client = TwinClient(settings.ai_core_url, settings.ai_timeout_seconds)
     app.state.voice_client = VoiceClient(settings.voice_url, settings.voice_timeout_seconds)
+    app.state.synthetic_voice_client = build_synthetic_voice_client(settings)
     app.state.calibration_client = CalibrationClient(settings.ai_core_url, settings.ai_timeout_seconds)
 
     app.add_middleware(RequestContextMiddleware)
@@ -197,6 +198,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(profiles.router)
     from .api import narrative
     app.include_router(narrative.router)
+    from .api import companion
+    app.include_router(companion.router)
+    app.include_router(companion.spaces_router)
+    from .api import companion_audio
+    app.include_router(companion_audio.router)
     if settings.enable_workbench:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles

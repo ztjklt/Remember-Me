@@ -9,6 +9,7 @@ from .access import source_basis, profile_source_basis, publication_lock, requir
 from .models import ProfileCandidate, ProfileRefresh, Episode, utcnow
 from .materials import effective_materials
 from .repositories.person_model import PERSON_DOMAINS
+from .profile_batches import plan_profile_batches
 
 
 class ProfileClient:
@@ -48,6 +49,32 @@ def approved_traits(session, subject_id):
         ProfileCandidate.status=='confirmed', ProfileCandidate.source_basis==basis)))
 
 
+def validate_proposals(result, materials, episode_texts):
+    if not isinstance(result,dict) or not isinstance(result.get('candidates'),list) or len(result['candidates'])>8:
+        raise ValueError('人物候选结构无效')
+    for k in ('model_version','prompt_version'):
+        if not isinstance(result.get(k),str) or not result[k] or len(result[k])>128:
+            raise ValueError('人物候选模型版本无效')
+    validated = []
+    for item in result['candidates']:
+        if not isinstance(item,dict) or set(item) != {'domain','kind','statement','context','evidence_ids','counter_evidence_ids'}:
+            raise ValueError('人物候选字段无效')
+        if item['domain'] not in PERSON_DOMAINS or item['kind'] not in {'trait','habit'}:
+            raise ValueError('人物候选领域无效')
+        if any(not isinstance(item[k],str) or not item[k].strip() or len(item[k])>1000 for k in ('statement','context')):
+            raise ValueError('人物候选文字无效')
+        ids, counters = item['evidence_ids'], item['counter_evidence_ids']
+        if (not isinstance(ids,list) or not ids or not isinstance(counters,list) or
+            any(not isinstance(i,str) for i in ids+counters) or len(set(ids))!=len(ids) or
+            len(set(counters))!=len(counters) or set(ids)&set(counters) or
+            any(i not in materials for i in ids+counters)):
+            raise ValueError('人物候选引用无效')
+        texts = {re.sub(r'[\W_]+','',materials[i]['excerpt']).casefold() for i in ids}
+        episodes = {episode_texts[materials[i]['episode_id']] for i in ids}
+        validated.append((item,min(len(texts),len(episodes)),result['model_version'],result['prompt_version']))
+    return validated
+
+
 def run_profile_once(database, client):
     """Claim/commit, perform network work unlocked, then source-CAS publication.
 
@@ -80,7 +107,9 @@ def run_profile_once(database, client):
         with database.session() as session:
             publication_lock(session,subject)
             require_owner(session,subject,actor); require_cloud(session,subject,actor,consent)
-            candidates = effective_materials(session,subject,visible_episodes(session,subject,actor,cloud=True))
+            # Same evidence/authorization resolver; only the aggregate budget is
+            # replaced by whole-recording batches with preflight limits.
+            candidates = effective_materials(session,subject,visible_episodes(session,subject,actor,cloud=True),enforce_budget=False)
             materials = {e['evidence_id']:e for c in candidates for e in c['evidence']}
             # Third party evidence is useful for factual QA but never establishes
             # the narrator's psychological tendencies.
@@ -92,40 +121,30 @@ def run_profile_once(database, client):
             basis = profile_source_basis(session,subject)
             publication_basis = source_basis(session,subject)
             session.commit()
-        result = client.propose([{k:v for k,v in m.items() if k!='source_type'} for m in materials.values()]) if materials else {
-            'candidates':[], 'model_version':'no-evidence','prompt_version':'no-evidence'}
-        if not isinstance(result,dict) or not isinstance(result.get('candidates'),list) or len(result['candidates'])>8:
-            raise ValueError('人物候选结构无效')
+        batches = plan_profile_batches(list(materials.values()))
         validated = []
-        for item in result['candidates']:
-            if set(item) != {'domain','kind','statement','context','evidence_ids','counter_evidence_ids'}:
-                raise ValueError('人物候选字段无效')
-            if item['domain'] not in PERSON_DOMAINS or item['kind'] not in {'trait','habit'}:
-                raise ValueError('人物候选领域无效')
-            if any(not isinstance(item[k],str) or not item[k].strip() or len(item[k])>1000 for k in ('statement','context')):
-                raise ValueError('人物候选文字无效')
-            ids, counters = item['evidence_ids'], item['counter_evidence_ids']
-            if (not isinstance(ids,list) or not ids or not isinstance(counters,list) or
-                any(not isinstance(i,str) for i in ids+counters) or len(set(ids))!=len(ids) or
-                any(i not in materials for i in ids+counters)):
-                raise ValueError('人物候选引用无效')
-            texts = {re.sub(r'[\W_]+','',materials[i]['excerpt']).casefold() for i in ids}
-            episodes = {episode_texts[materials[i]['episode_id']] for i in ids}
-            validated.append((item,min(len(texts),len(episodes))))
-        for k in ('model_version','prompt_version'):
-            if not isinstance(result.get(k),str) or not result[k] or len(result[k])>128:
-                raise ValueError('人物候选模型版本无效')
+        for batch in batches:
+            # Stop remaining calls if an earlier call raced a source/auth edit.
+            # No database transaction is kept open during provider work.
+            with database.session() as session:
+                publication_lock(session,subject)
+                require_owner(session,subject,actor); require_cloud(session,subject,actor,consent)
+                if publication_basis != source_basis(session,subject):
+                    raise ValueError('SOURCE_CHANGED：资料或授权已变化，请明确重试')
+                session.commit()
+            result = client.propose([{k:v for k,v in m.items() if k!='source_type'} for m in batch])
+            validated.extend(validate_proposals(result,{m['evidence_id']:m for m in batch},episode_texts))
         with database.session() as session:
             publication_lock(session,subject)
             require_owner(session,subject,actor); require_cloud(session,subject,actor,consent)
             if publication_basis != source_basis(session,subject):
                 raise ValueError('SOURCE_CHANGED：资料或授权已变化，请明确重试')
-            for item,count in validated:
+            for item,count,model_version,prompt_version in validated:
                 identity = hashlib.sha256(json.dumps([subject,basis,item],sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:40]
                 if session.get(ProfileCandidate,'pc_'+identity) is None:
                     session.add(ProfileCandidate(candidate_id='pc_'+identity, subject_id=subject,
                         **item, independent_episodes=count, source_basis=basis, status='pending',
-                        model_version=result['model_version'],prompt_version=result['prompt_version']))
+                        model_version=model_version,prompt_version=prompt_version))
             job=session.get(ProfileRefresh,id); job.status,job.updated_at='complete',utcnow()
             session.commit()
     except Exception as exc:

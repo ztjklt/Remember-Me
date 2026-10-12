@@ -29,10 +29,7 @@ import me.remember.app.core.designsystem.LocalSimpleMode
             Icon(Icons.Outlined.Spa,null,Modifier.size(36.dp),tint=MaterialTheme.colorScheme.primary)
             Text("今天，想留下什么？",style=MaterialTheme.typography.headlineSmall)
             Text("一件往事，或一句想说的话。",style=MaterialTheme.typography.bodyLarge)
-            Button(onClick=record,enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp),
-                shape=RoundedCornerShape(20.dp)) {
-                Icon(Icons.Outlined.Mic,null);Spacer(Modifier.width(10.dp));Text("讲一段",style=MaterialTheme.typography.titleMedium)
-            }
+            RememberActionButton("讲一段", !state.busy, filled=true, icon=Icons.Outlined.Mic, onClick=record)
         }
     }
     val pending=state.stories.filter{it.optBoolean("waiting_for_review") || it.text("status")!="ready"}
@@ -76,10 +73,7 @@ import me.remember.app.core.designsystem.LocalSimpleMode
                 }
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                     verticalArrangement=Arrangement.Center,horizontalAlignment=Alignment.CenterHorizontally) {
-                    Icon(Icons.Outlined.Mic, null, Modifier.size(72.dp), tint=MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(24.dp))
-                    Text(clock(state.elapsed),style=if(simple) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.displayMedium)
-                    Text(if(state.recording) if(state.paused) "已暂停" else "正在录音" else "慢慢说，我在听",style=MaterialTheme.typography.titleMedium)
+                    RememberRecordingStatus(state.recording,state.paused,state.elapsed)
                     state.error?.let{Text(it,color=MaterialTheme.colorScheme.error)}
                     revision?.let { target ->
                         Spacer(Modifier.height(24.dp))
@@ -94,11 +88,13 @@ import me.remember.app.core.designsystem.LocalSimpleMode
                     }
                 }
                 if(state.recording) {
-                    OutlinedButton(onClick=model::pauseOrResumeRecording,enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text(if(state.paused) "继续录音" else "暂停") }
+                    RememberActionButton(if(state.paused) "继续录音" else "暂停", !state.busy,
+                        icon=if(state.paused) Icons.Outlined.Mic else Icons.Outlined.Pause, onClick=model::pauseOrResumeRecording)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick={finish()},enabled=!state.busy,modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text("完成并保存") }
-                } else Button(onClick={permission.launch(Manifest.permission.RECORD_AUDIO)},
-                    enabled=!state.busy && (revision?.kind!="change" || revision.time.isNotBlank()),modifier=Modifier.fillMaxWidth().heightIn(min=if(simple) 64.dp else 56.dp)) { Text("开始录音") }
+                    RememberActionButton("完成并保存", !state.busy, filled=true, icon=Icons.Outlined.Check,
+                        pendingLabel="正在保存原音…", successLabel="原音已保存", onClick={finish()})
+                } else RememberActionButton("开始录音", !state.busy && (revision?.kind!="change" || revision.time.isNotBlank()),
+                    filled=true, icon=Icons.Outlined.Mic) { permission.launch(Manifest.permission.RECORD_AUDIO) }
             }
         }
         if(confirmClose) AlertDialog(onDismissRequest={confirmClose=false},title={Text("保存这段声音？")},

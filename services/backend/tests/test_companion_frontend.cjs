@@ -1,0 +1,80 @@
+// Independent browser contract checks. Uses HTTP fixtures, not model/gold data.
+// Run: node services/backend/tests/test_companion_frontend.cjs
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const playwright=require('playwright');
+const assets=path.join(__dirname,'../app/workbench');
+const record=(id,title,text,status='confirmed')=>({id,title,text,status,kind:'story',source_valid:status!=='stale',facets:['EXPERIENCE'],revision:1,evidence_ids:['real-evidence-1'],evidence:[{evidence_id:'real-evidence-1',episode_id:'real-episode-1',excerpt:'A source passage.'}]});
+const narrative=(title='A story')=>({records:[record('real-narrative-1',title,'<img src=x onerror="window.injected=true">'),record('old-record','Old source','PRIVATE_STALE_TEXT','stale'),record('pending-record','Pending story','A pending suggestion.','pending')],understandings:[],facets:Array.from({length:8},(_,i)=>({id:'facet-'+i,title:'Facet '+i,count:i===0?1:0})),views:Array.from({length:4},(_,i)=>({title:'View '+i,records:i===0?['real-narrative-1']:[]})),notice:'Fixture sources only.'});
+const wav=Buffer.alloc(16044);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(8000,24);wav.writeUInt32LE(16000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(wav.length-44,40);
+// /profile-candidates puts support and counter rows into one evidence array;
+// /narrative normally returns separate arrays. Both are actual API structures.
+const budgetSupport={evidence_id:'budget-support',episode_id:'real-episode-1',excerpt:'我舍不得浪费东西，会先修一下。'},brushException={evidence_id:'brush-exception',episode_id:'real-episode-1',excerpt:'那次我送了贵画笔，可能是心里有点过意不去。'};
+const combinedObservation={candidate_id:'budget-candidate',status:'pending',statement:'有些东西倾向先修，但给孩子的礼物有例外。',context:'日常处理旧物与给孩子送礼时。',label:'多次材料支持的候选',independent_episodes:2,evidence_ids:['budget-support'],counter_evidence_ids:['brush-exception'],evidence:[budgetSupport,brushException]};
+async function run(){
+  const browser=await playwright.chromium.launch({headless:true,channel:process.env.COMPANION_TEST_BROWSER||'chrome'});
+  let count=0;
+  try{
+    for(const role of ['owner','contributor','reader']){
+      const context=await browser.newContext({viewport:{width:412,height:915}}),page=await context.newPage();
+      const calls=[],errors=[];let revoked=false,slow=false,audioForbidden=false,sourceRevoked=false,slowAudio=false;const roleOwner=role==='owner',actor=roleOwner?'actor-owner':'actor-family';
+      const letters=[],snapshots=[],notes=[];
+      const base=()=>({role:roleOwner?'owner':'companion',contribution_grants:role==='contributor'?[{actor_id:actor,enabled:true,revision:1}]:[],contributions:notes,letters,snapshots});
+      page.on('pageerror',e=>errors.push(e.message));
+      page.on('dialog',d=>d.accept());
+      await page.addInitScript(()=>{window.audioCreated=[];window.audioRevoked=[];const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);URL.createObjectURL=value=>{const url=create(value);window.audioCreated.push(url);return url;};URL.revokeObjectURL=url=>{window.audioRevoked.push(url);return revoke(url);};});
+      await page.route('http://localhost:9898/**',async route=>{
+        const request=route.request(),url=new URL(request.url()),pathname=url.pathname;
+        if(pathname.startsWith('/workbench/')){const filename=pathname.split('/').pop()||'companion.html';if(['companion.html','companion.js','companion.css'].includes(filename))return route.fulfill({status:200,contentType:filename.endsWith('.js')?'text/javascript':filename.endsWith('.css')?'text/css':'text/html',body:fs.readFileSync(path.join(assets,filename),'utf8')});}
+        const body=request.postDataJSON();calls.push({pathname,method:request.method(),body});
+        let data={},status=200;
+        if(pathname==='/api/v1/workbench/spaces')data={actor_id:actor,display_name:role,items:roleOwner?[{subject_id:'subject-a',display_name:'Person A',role:'owner'},{subject_id:'subject-b',display_name:'Person B',role:'owner'}]:[]};
+        else if(pathname==='/api/v1/companion/spaces')data={items:roleOwner?[]:[{subject_id:'subject-a',display_name:'Person A',role:'companion'}]};
+        else if(pathname.endsWith('/companion')){if(revoked){status=404;data={error_message:'Access revoked.'};}else data=base();}
+        else if(pathname.endsWith('/narrative')){if(slow&&pathname.includes('subject-a'))await new Promise(resolve=>setTimeout(resolve,200));data=roleOwner?{...narrative(pathname.includes('subject-b')?'B story':'A story'),understandings:[combinedObservation]}:{records:[],understandings:[],facets:[],views:[]};}
+        else if(pathname.endsWith('/recipients'))data={items:[{actor_id:'actor-family',display_name:'Family account',username:'family'}]};
+        else if(pathname.endsWith('/stories'))data={items:sourceRevoked?[]:[{episode_id:'real-episode-1',transcript:'A real fixture transcript.',reviewed:true,unavailable:false}]};
+        else if(pathname.endsWith('/stories/real-episode-1/audio')){if(slowAudio)await new Promise(resolve=>setTimeout(resolve,200));if(audioForbidden){status=403;data={error_message:'Audio access revoked.'};}else return route.fulfill({status:200,contentType:'audio/wav',body:wav}).catch(()=>{});}
+        else if(pathname.endsWith('/contributions')&&request.method()==='POST'){notes.push({id:'new-note',classification:body.classification,text:body.text,status:'pending',author_actor_id:actor,revision:1});data=notes[0];}
+        else if(pathname.endsWith('/letters')&&request.method()==='POST'){letters.push({id:'new-letter',...body,status:'draft',revision:1});data=letters[0];}
+        else if(pathname.endsWith('/letters/new-letter/publish')){letters[0].status='published';letters[0].revision++;data=letters[0];}
+        else if(pathname.endsWith('/letters/new-letter/revoke')){letters[0].status='revoked';letters[0].text=undefined;letters[0].revision++;data=letters[0];}
+        else if(pathname.endsWith('/snapshots/preview'))data={source_version:'a'.repeat(64),items:[{kind:'narrative',source_id:'real-narrative-1',content:{title:'A story',text:'Sealed real content'},version:1}],recipient_actor_ids:body.recipient_actor_ids,readonly:true};
+        else if(pathname.endsWith('/snapshots')&&request.method()==='POST'){snapshots.push({id:'saved-snapshot',status:'sealed',revision:1,source_version:body.source_version,recipient_actor_ids:body.recipient_actor_ids,items:[{source_id:'real-narrative-1',content:{title:'A story',text:'Sealed real content'},version:{revision:2,evidence_snapshot:{'real-evidence-1':'saved-fingerprint'}},source_valid:true}]});data=snapshots[0];}
+        else if(pathname.endsWith('/accounts/logout'))data={signed_out:true};
+        return route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)}).catch(()=>{});
+      });
+      await page.goto('http://localhost:9898/workbench/companion.html');await page.locator('#workspace').waitFor({state:'visible'});await page.waitForFunction(()=>document.getElementById('spaceHint').textContent!=='正在读取当前可见的内容。');
+      if(roleOwner){
+        assert.equal(await page.locator('#facets .facet').count(),8);assert.equal(await page.locator('#viewTabs button').count(),4);assert.equal(await page.locator('#records img').count(),0);assert.equal(await page.evaluate(()=>window.injected),undefined);assert(!await page.locator('body').innerText().then(t=>t.includes('PRIVATE_STALE_TEXT')));count++;
+        async function openAudio(){const evidence=page.locator('#records .card').first().locator('details');if(!await evidence.evaluate(n=>n.open))await evidence.locator('summary').click();await evidence.getByRole('button',{name:'查看来源故事',exact:true}).first().click();await page.locator('#detailDialog').waitFor({state:'visible'});await page.getByRole('button',{name:'播放完整原音',exact:true}).click();await page.locator('audio').waitFor({state:'visible'});assert((await page.locator('audio').getAttribute('src')).startsWith('blob:'));assert(!await page.locator('audio').getAttribute('src').then(src=>src.includes('/api/')));}
+        await openAudio();const firstURL=await page.locator('audio').getAttribute('src');await page.locator('#closeDetail').click();assert.equal(await page.locator('audio').count(),0);assert(await page.evaluate(url=>window.audioRevoked.includes(url),firstURL));count++;
+        await openAudio();audioForbidden=true;await page.getByRole('button',{name:'播放完整原音',exact:true}).click();await page.locator('#detailDialog').waitFor({state:'hidden'});assert.equal(await page.locator('audio').count(),0);assert(await page.evaluate(()=>audioCreated.every(url=>audioRevoked.includes(url))));audioForbidden=false;count++;
+        await openAudio();sourceRevoked=true;await page.locator('#detailDialog').waitFor({state:'hidden',timeout:8000});assert.equal(await page.locator('audio').count(),0);assert(await page.evaluate(()=>audioCreated.every(url=>audioRevoked.includes(url))));sourceRevoked=false;count++;
+        const evidence=page.locator('#records .card').first().locator('details');if(!await evidence.evaluate(n=>n.open))await evidence.locator('summary').click();await evidence.getByRole('button',{name:'查看来源故事',exact:true}).first().click();await page.locator('#detailDialog').waitFor({state:'visible'});slowAudio=true;await page.getByRole('button',{name:'播放完整原音',exact:true}).click();await page.locator('#closeDetail').click();await page.waitForTimeout(250);assert.equal(await page.locator('audio').count(),0);slowAudio=false;count++;
+        await page.locator('#reviewToggle').check();assert(await page.locator('#records').innerText().then(t=>t.includes('Pending story')));assert(!await page.locator('#records').innerText().then(t=>t.includes('PRIVATE_STALE_TEXT')));assert.equal(calls.filter(c=>c.pathname.endsWith('/confirm')).length,0);count++;
+        const observation=page.locator('#understandings .understanding').first();await observation.locator('details summary').click();const support=observation.locator('[data-evidence-role=support]'),counter=observation.locator('[data-evidence-role=counter]');assert.equal(await support.locator('h4').innerText(),'支持依据');assert.equal(await counter.locator('h4').innerText(),'例外 / 反例');assert(await support.innerText().then(t=>t.includes(budgetSupport.excerpt)&&!t.includes(brushException.excerpt)));assert(await counter.innerText().then(t=>t.includes(brushException.excerpt)&&!t.includes(budgetSupport.excerpt)));assert.equal(await observation.locator('blockquote').count(),2);assert(await observation.innerText().then(t=>t.includes('多段来源的观察')&&!t.includes('多次材料支持的候选')));assert.equal(calls.filter(c=>c.pathname.endsWith('/confirm')).length,0);count++;
+        assert.equal(await page.locator('#facetDetails').evaluate(n=>n.open),false);assert.equal(await page.locator('#narrativeNotice').isVisible(),false);count++;
+        await page.locator('[data-section="family"]').click();assert.equal(await page.locator('#noteForm').isVisible(),false);assert.equal(await page.locator('#grantPanel').isVisible(),true);count++;
+        await page.locator('[data-section="foryou"]').click();await page.locator('#letterRecipient select').selectOption('actor-family');await page.locator('#letterTitle').fill('Only for you');await page.locator('#letterText').fill('Private words');await page.locator('#letterForm button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('letters').textContent.includes('Only for you'));assert.equal(letters[0].status,'draft');assert.equal(calls.filter(c=>c.pathname.endsWith('/publish')).length,0);count++;
+        await page.getByRole('button',{name:'核对收信账号后发送'}).click();await page.waitForFunction(()=>document.getElementById('letters').textContent.includes('已发送'));assert.equal(letters[0].recipient_actor_id,'actor-family');assert.equal(calls.find(c=>c.pathname.endsWith('/publish')).body.confirmed,true);count++;
+        await page.locator('#snapshotSources input').check();await page.locator('#snapshotRecipients input').check();await page.locator('#snapshotForm button').click();await page.locator('#snapshotPreview').waitFor({state:'visible'});assert.equal(snapshots.length,0);const preview=calls.find(c=>c.pathname.endsWith('/snapshots/preview'));assert.deepEqual(preview.body.narrative_ids,['real-narrative-1']);assert.deepEqual(preview.body.profile_candidate_ids,[]);count++;
+        await page.getByRole('button',{name:'确认保存只读版本'}).click();assert.equal(snapshots.length,0);await page.locator('#snapshotPreview input').check();await page.getByRole('button',{name:'确认保存只读版本'}).click();await page.waitForFunction(()=>document.getElementById('snapshots').textContent.includes('Sealed real content'));assert.equal(snapshots.length,1);assert.equal(calls.find(c=>c.pathname.endsWith('/snapshots')&&c.method==='POST').body.source_version,'a'.repeat(64));assert(await page.locator('#snapshots').innerText().then(t=>!t.includes('第 2 版')&&!t.includes('saved-fingerprint')&&!t.includes('[object Object]')));count++;
+        await page.getByRole('button',{name:'撤销留言',exact:true}).click();await page.waitForFunction(()=>document.getElementById('letters').textContent.includes('已撤销'));assert(!await page.locator('#letters').innerText().then(t=>t.includes('Private words')));count++;
+        slow=true;await page.locator('[data-section="person"]').click();await page.locator('#refresh').click();await page.locator('#space').selectOption('subject-b');await page.waitForFunction(()=>document.getElementById('records').textContent.includes('B story'));await page.waitForTimeout(250);assert(!await page.locator('#records').innerText().then(t=>t.includes('A story')));count++;
+      }else{
+        await page.locator('[data-section="family"]').click();assert.equal(await page.locator('#grantPanel').isVisible(),false);assert.equal(await page.locator('#noteForm').isVisible(),role==='contributor');
+        if(role==='contributor'){await page.locator('#noteText').fill('A family firsthand memory');await page.locator('#noteForm button[type=submit]').click();await page.waitForFunction(()=>document.getElementById('notes').textContent.includes('A family firsthand memory'));const sent=calls.find(c=>c.pathname.endsWith('/contributions')&&c.method==='POST');assert.equal(sent.body.author_actor_id,undefined);assert.equal(notes[0].author_actor_id,actor);}
+        await page.locator('[data-section="foryou"]').click();assert.equal(await page.locator('#letterForm').isVisible(),false);assert.equal(await page.locator('#snapshotForm').isVisible(),false);count++;
+      }
+      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));count++;
+      revoked=true;await page.locator('#refresh').click();await page.waitForFunction(()=>document.getElementById('spaceHint').textContent==='这个空间的许可已变化。');assert.equal(await page.locator('#records .card').count(),0);assert.equal(await page.locator('#letters .card').count(),0);count++;
+      await page.locator('#logout').click();await page.locator('#login').waitFor({state:'visible'});assert.equal(await page.locator('#workspace').isVisible(),false);assert.equal(await page.evaluate(()=>localStorage.length),0);assert.deepEqual(errors,[]);count++;
+      await context.close();
+    }
+    console.log(JSON.stringify({passed:count,fixture_only:true,browser:'Chromium',viewport:'412 x 915',checks:['roles','independent contribution permission','draft and explicit publish','actual source selection','preview before seal','revocation','late response','XSS text rendering','logout','mobile overflow','authorized audio blob','close and revoke object URL','audio 403 cleanup','source revocation while player open','late audio after dialog close','combined evidence support and counter separation','source count label','collapsed memory facets','no persistent completeness notice','structured snapshot version']},null,2));
+  }finally{await browser.close();}
+}
+run().catch(e=>{console.error(e);process.exitCode=1;});

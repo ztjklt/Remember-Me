@@ -10,6 +10,21 @@ import java.security.MessageDigest
 import org.json.JSONObject
 
 class BackendClientTest {
+    @Test fun readingAttributedOriginalUsesOnlyReadEndpointWithoutModelPermission() {
+        val errors=mutableListOf<Throwable>();val requests=mutableListOf<String>()
+        val server=TinyServer(1,errors) {headers,body ->
+            requests+=headers.getValue(":request-line")
+            assertEquals("Bearer reader",headers["authorization"]);assertEquals("",body)
+            ok("{\"id\":\"note-one\",\"text\":\"亲友原文\",\"author_display_name\":\"亲友\",\"model_use_author_allowed\":false,\"model_use_owner_allowed\":false}")
+        }
+        server.use {
+            val gate=SessionGate();val session=gate.connect(server.url,"reader")
+            val original=BackendClient(gate).companionOriginal(session,"subject","note-one")
+            assertEquals("亲友原文",original.text("text"));assertFalse(contributionModelUseAllowed(original))
+        }
+        assertTrue(errors.toString(),errors.isEmpty())
+        assertEquals(listOf("GET /api/v1/workbench/subjects/subject/companion/contributions/note-one HTTP/1.1"),requests)
+    }
     @Test fun realHttpUsesBearerNoCacheAndDoesNotFollowRedirect() {
         val errors = mutableListOf<Throwable>()
         val server = TinyServer(1, errors) { headers, _ ->
@@ -72,6 +87,50 @@ class BackendClientTest {
             bodies.forEach { assertTrue(it.contains("ANDROID_MIC"));assertTrue(it.contains("name=\"client_transcript\""));assertTrue(it.contains(checksum));assertTrue(it.contains("stable-key"));assertFalse(it.contains("reviewed_at")) }
             assertEquals("retained original",file.readText())
         } finally { file.delete() }
+    }
+    @Test fun companionAudioIsDedicatedMultipartWithStableRetryIdentity() {
+        val file=File.createTempFile("companion", ".m4a").apply {writeText("dedicated audio")}
+        val errors=mutableListOf<Throwable>();val bodies=mutableListOf<String>()
+        val server=TinyServer(2,errors) {headers,body ->
+            assertEquals("POST /api/v1/workbench/subjects/subject/companion/audio HTTP/1.1",headers[":request-line"])
+            assertEquals("Bearer contributor",headers["authorization"])
+            bodies+=body;ok("{\"audio_id\":\"dedicated\",\"status\":\"saved\",\"revision\":1}")
+        }
+        try {
+            server.use {
+                val gate=SessionGate();val session=gate.connect(server.url,"contributor")
+                repeat(2) {assertEquals("dedicated",BackendClient(gate).uploadCompanionAudio(session,"subject","contribution",file,"audio/mp4","same-key").text("audio_id"))}
+            }
+            assertTrue(errors.toString(),errors.isEmpty());assertEquals(2,bodies.size)
+            bodies.forEach {body ->
+                assertTrue(body.contains("name=\"purpose\"\r\n\r\ncontribution"));assertTrue(body.contains("name=\"file\""));assertTrue(body.contains("same-key"))
+                assertFalse(body.contains("episode_id"));assertFalse(body.contains("recording_consent_id"));assertFalse(body.contains(file.absolutePath))
+            }
+            assertTrue(file.exists())
+        } finally {file.delete()}
+    }
+    @Test fun calibrationImportRetainsAudioAndLockedAnswerLinkAcrossRetries() {
+        val file=File.createTempFile("calibration", ".wav").apply {writeText("original human audio")}
+        val errors=mutableListOf<Throwable>();val bodies=mutableListOf<String>()
+        val server=TinyServer(2,errors) {headers,body ->
+            assertEquals("POST /api/v1/episodes HTTP/1.1",headers[":request-line"])
+            bodies+=body;ok("{\"episode_id\":\"human-episode\"}")
+        }
+        try {
+            server.use {
+                val gate=SessionGate();val session=gate.connect(server.url,"owner")
+                val recording=AudioRecording(file.absolutePath,2500,"audio/wav",file.length(),24000,1,"2026-10-12T00:00:00Z")
+                repeat(2) {assertEquals("human-episode",BackendClient(gate).upload(session,"subject","consent",recording,"stable-calibration","agreed-policy",calibrationId="locked-answer-run",source="IMPORT"))}
+            }
+            assertTrue(errors.toString(),errors.isEmpty());assertEquals(2,bodies.size)
+            bodies.forEach {body ->
+                assertTrue(body.contains("\"calibration_id\":\"locked-answer-run\""))
+                assertTrue(body.contains("name=\"source\"\r\n\r\nIMPORT"))
+                assertTrue(body.contains("Content-Type: audio/wav"));assertTrue(body.contains("stable-calibration"))
+                assertTrue(body.contains("original human audio"));assertFalse(body.contains("client_transcript"))
+            }
+            assertEquals("original human audio",file.readText())
+        } finally {file.delete()}
     }
     private fun ok(body: String): String = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.toByteArray().size}\r\nConnection: close\r\n\r\n$body"
     /** Exercise real HTTP without introducing a mocked networking stack. */

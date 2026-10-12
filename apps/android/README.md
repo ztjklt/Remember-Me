@@ -2,16 +2,20 @@
 
 2026-10-10：默认入口是原生 Compose 工作台，沿用 #85 的植物品牌和自然背景。普通账号登录后进入本人／授权读者空间，不需要填写 actor_id。原音保存在本机，上传以 `ANDROID_MIC` 标记来源，经 ECS Paraformer 转写后必须核对才能整理。故事、八个内容侧面、四个人物视图、候选审核、来源播放、问答、邀请、修订与问题请求通过共享后端处理。查看[团队运行说明](../../docs/agent-loop/TEAM_RUNBOOK_2026-10-10.md)与[19 张实跑截图](../../docs/agent-loop/screenshots/2026-10-10/README.md)。
 
-`internal` 0.7.1 包直接连接 `https://39.108.183.47`，保留该 IP 的证书验证；不需要电脑 ASR 或 ADB reverse。[下载安装与双角色说明](../../docs/agent-loop/ANDROID_TEAM_DELIVERY_2026-10-10.md)。经所有者批准，App IPv4 HTTPS 入口不再限制指定 Wi-Fi，注册仍关闭，普通账号由管理员提供。源码 `debug` 默认 `http://127.0.0.1:8877`，仅本机开发时才需要 ADB reverse；连接 ECS 时按下面命令显式传入 URL；PR 的 CI 会显式构建 ECS debug 包。上传和云端模型处理需明确确认，每日提醒默认关闭。供应商密钥只在服务端。原有本地原型和本机 ASR 代码保留，当前共享后端主线不依赖手机 ASR 权重。
+`internal` 0.7.1 包直接连接 `https://39.108.183.47`，保留该 IP 的证书验证；不需要电脑 ASR 或 ADB reverse。[下载安装与双角色说明](../../docs/agent-loop/ANDROID_TEAM_DELIVERY_2026-10-10.md)。经所有者批准，App IPv4 HTTPS 入口不再限制指定 Wi-Fi，注册仍关闭，普通账号由管理员提供。源码 `debug` 默认 `http://10.0.2.2:8891`，用于模拟器直连本机服务，不需要 ADB reverse；本分支 PR 的 CI 同样构建本地 Twin 评审包；新后端尚未部署，ECS 试用请继续下载既有云端版本。上传和云端模型处理需明确确认，每日提醒默认关闭。供应商密钥只在服务端。原有本地原型和本机 ASR 代码保留，当前共享后端主线不依赖手机 ASR 权重。
+
+本地人物对话、亲友音频补记与专属信入口及验证见[本次团队交接](../../docs/agent-loop/TWIN_TEAM_HANDOFF_2026-10-12.md)。该 debug 包只接本机；CI 提供本地评审构建，不替换云端安装包。
+
+2026-10-12 最新本地融合包为 `0.9.3-internal-twin-integrated-r2-20261012`，文件 `output/twin-integrated-r2-20261012/RememberMe-twin-integrated-r2-20261012.apk`，SHA256 `9a2e8ba1663688cb446619714623c1dcc5a8a8dba634a6a5b64539c557b81c76`。它融合两批按钮、页面、主题及音频交互，并保留当前 Twin、亲友与校准功能；97 项单元测试和 23 项隔离组件设备测试通过。正常包名仍为 `me.remember.app`，服务仍是 `http://10.0.2.2:8891`，不带交互预览页。第一版融合包与更早 persona 包继续保留；本包未部署到 ECS。改动、真实只读截图和验收边界见[第二批融合交接](../../docs/agent-loop/TWIN_INTERACTION_R2_CLIENTS_2026-10-12.md)。
 
 ## 运行
 
 要求：Android Studio、JDK 17、Android SDK 35。使用 Android Studio 打开 `apps/android`，等待 Gradle Sync，然后运行 `app`。
 
-命令行：
+先按 [本地启动说明](../../docs/agent-loop/TWIN_LOCAL_SETUP_2026-10-12.md) 启动后端和 AI，建立自己的普通账号；再构建模拟器包：
 
 ```bash
-./gradlew testDebugUnitTest assembleDebug -PrememberServiceUrl=https://39.108.183.47
+./gradlew testDebugUnitTest assembleDebug -PrememberServiceUrl=http://10.0.2.2:8891
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n me.remember.app/.MainActivity
 ```

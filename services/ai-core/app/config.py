@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     twin_verify_answers: bool = Field(default=True, validation_alias="AI_TWIN_VERIFY_ANSWERS")
     twin_structured_answers: bool = Field(default=False, validation_alias="AI_TWIN_STRUCTURED_ANSWERS")
     twin_quote_answers: bool = Field(default=False, validation_alias="AI_TWIN_QUOTE_ANSWERS")
+    profile_verify_candidates: bool = Field(default=False, validation_alias="AI_PROFILE_VERIFY_CANDIDATES")
+    persona_total_timeout_seconds: float = Field(
+        default=90.0, gt=0, le=90, allow_inf_nan=False,
+        validation_alias="AI_PERSONA_TOTAL_TIMEOUT_SECONDS",
+    )
+    persona_call_timeout_seconds: float = Field(
+        default=45.0, gt=0, le=45, allow_inf_nan=False,
+        validation_alias="AI_PERSONA_CALL_TIMEOUT_SECONDS",
+    )
+    persona_fictional_debug_trace: bool = Field(
+        default=False, validation_alias="AI_PERSONA_FICTIONAL_DEBUG_TRACE",
+    )
     base_url: str = Field(
         default="http://127.0.0.1:8000/v1",
         validation_alias="AI_BASE_URL",
@@ -108,6 +120,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def real_provider_has_explicit_identity(self) -> "Settings":
+        if self.persona_fictional_debug_trace and self.environment not in {"development", "test"}:
+            raise ValueError("Fictional Persona debug traces are local development/test only")
         if self.prompt_version != PROMPT_VERSION or self.schema_version != SCHEMA_VERSION:
             raise ValueError("prompt/schema versions must identify the implementation in this build")
         if self.provider == "openai_compatible" and (

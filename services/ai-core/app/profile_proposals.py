@@ -5,7 +5,7 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError
 from .errors import AIOutputInvalid
 from .providers.ollama import DOMAINS
 
-PROMPT_VERSION = 'profile-proposals-evidence-v4'
+PROMPT_VERSION = 'profile-proposals-evidence-v5'
 Domain = Literal['IDENTITY','EPISODIC_MEMORY','RELATIONSHIPS','PREFERENCES','VALUES_BELIEFS','DECISION_PATTERNS','EXPRESSION']
 
 class Material(BaseModel):
@@ -39,7 +39,7 @@ class ProfileProposalOutput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     candidates: list[ProfileCandidate] = Field(max_length=8)
     model_version: str = Field(min_length=1,max_length=128)
-    prompt_version: Literal['profile-proposals-evidence-v4'] = PROMPT_VERSION
+    prompt_version: Literal['profile-proposals-evidence-v5','profile-v5-reviewed-v1'] = PROMPT_VERSION
 
 class ProfileSelection(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -57,8 +57,9 @@ class ProfileWireSelection(BaseModel):
     candidates: list[ProfileWireCandidate] = Field(max_length=8)
 
 class ProfileProposalProvider:
-    def __init__(self, chat):
+    def __init__(self, chat, *, verify_candidates=False):
         self.chat = chat
+        self.verify_candidates = verify_candidates
     def close(self):
         self.chat.close()
     def propose_relations(self, payload):
@@ -75,7 +76,10 @@ class ProfileProposalProvider:
                   '单次事件不代表稳定习惯；重复抄录不算独立观察；矛盾证据用 counter_evidence_ids。候选需要人工确认。'
                   '最多8项，不得生成状态或置信度。只返回 JSON 对象 candidates，数组项使用 domain、statement、context、evidence_ids、counter_evidence_ids、kind。'
                   'domain 只允许 ' + ','.join(DOMAINS) + '；kind 只允许 trait 或 habit。'
-                  '本次只提议最多3项充分有据的候选，不要凑数；没有反例时counter_evidence_ids是空数组。'
+                  '先检查各领域的材料，最多8项充分有据且互不重复的候选，不必填满领域。不要只保留最近一段的内容而漏掉前文的重要变化。'
+                  '同一故事中的选择理由和表达方式可以分别观察，但不得拆成多条同义人格标签。'
+                  '本人用可能、也许、不一定表达的原因仍保留为可能，不升级为确定动机；自我反思要与早期做法一起呈现。'
+                  '没有反例时counter_evidence_ids是空数组；真实例外不能为了标签整齐而省略。'
                   'domain是知识领域，kind是特征类型，两者不能混淆。HABITS、HABIT、PERSONALITY都不是合法domain，禁止输出。'
                   '行为习惯若适用可归DECISION_PATTERNS，口味倾向归PREFERENCES；kind仍单独填habit或trait。'
                   '每项结论严格限定到证据，不能从愿意回答推断关系亲密，不能从一句安全口号推断稳定习惯。'
@@ -99,6 +103,10 @@ class ProfileProposalProvider:
                     raise AIOutputInvalid('Profile proposal cites unknown evidence')
                 c.evidence_ids = [handles[i] for i in c.evidence_ids]
                 c.counter_evidence_ids = [handles[i] for i in c.counter_evidence_ids]
+            if self.verify_candidates:
+                from .profile_review import review_candidates
+                output.candidates = review_candidates(self.chat,output.candidates,payload.materials)
+                output.prompt_version = 'profile-v5-reviewed-v1'
             return output
         except (ValidationError, TypeError, ValueError) as exc:
             raise AIOutputInvalid('Profile proposal schema invalid') from exc

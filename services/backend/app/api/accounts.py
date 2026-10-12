@@ -43,7 +43,12 @@ def transport(request):
     settings=request.app.state.settings
     # An untrusted Host header does not make a remote connection local.
     peer=request.client.host if request.client else ''
-    local=peer in {'127.0.0.1','::1','testclient'} and request.url.hostname in {'127.0.0.1','localhost','[::1]','testserver'}
+    local_hosts={'127.0.0.1','localhost','[::1]','testserver'}
+    # Android Emulator maps this host to the computer's loopback interface.
+    # Opt-in host configuration and the real TCP peer are both required; this
+    # exception never permits public plaintext account login in production.
+    if '10.0.2.2' in settings.allowed_hosts: local_hosts.add('10.0.2.2')
+    local=peer in {'127.0.0.1','::1','testclient'} and request.url.hostname in local_hosts
     if request.url.scheme!='https' and not (settings.environment in {'development','test'} and local):
         raise RequestInvalid('账号登录需要HTTPS；本机开发连接可使用回环地址。')
     origin=request.headers.get('origin')

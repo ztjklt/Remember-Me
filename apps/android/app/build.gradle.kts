@@ -28,6 +28,10 @@ android {
         }
     }
     buildTypes {
+        debug {
+            versionNameSuffix = "-twin-integrated-r2-20261012"
+            buildConfigField("String", "SERVICE_URL", "\"${providers.gradleProperty("rememberServiceUrl").orElse("http://10.0.2.2:8891").get()}\"")
+        }
         release { isMinifyEnabled = false }
         create("internal") {
             initWith(getByName("release"))

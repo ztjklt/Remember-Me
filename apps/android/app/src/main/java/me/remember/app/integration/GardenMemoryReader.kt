@@ -91,8 +91,8 @@ import androidx.compose.ui.window.DialogProperties
                     }
                 } else Text(date(source), color = quiet, style = MaterialTheme.typography.bodySmall)
                 if(active && !state.player.preparing) {
-                    Slider(state.player.position.toFloat(), { seek(it.toLong()) }, enabled = !state.busy,
-                        valueRange = 0f..state.player.duration.coerceAtLeast(1).toFloat(), modifier = Modifier.testTag("garden-reader-seek"))
+                    RememberAudioScrubber("${state.actor}:${state.subject}:$source",state.player.position,state.player.duration,
+                        enabled=!state.recording,seek=seek,modifier=Modifier.testTag("garden-reader-seek"))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(gardenClock(state.player.position), style = MaterialTheme.typography.bodySmall)
                         Text("${gardenClock(state.player.duration)} · 完整原音", style = MaterialTheme.typography.bodySmall)
@@ -118,19 +118,22 @@ import androidx.compose.ui.window.DialogProperties
 /** Keep the garden visible when listening; the source reader owns the detailed controls. */
 @Composable internal fun GardenMiniPlayer(player: SourcePlayback, toggle: () -> Unit, seek: (Long) -> Unit, stop: () -> Unit) {
     Surface(shape = RoundedCornerShape(20.dp), color = gardenGlass.copy(alpha = .95f), contentColor = gardenInk) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = toggle, enabled = !player.preparing) {
-                    Icon(if(player.playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if(player.playing) "暂停" else "继续播放")
+                FilledIconButton(onClick=toggle,enabled=!player.preparing,modifier=Modifier.size(52.dp),
+                    colors=IconButtonDefaults.filledIconButtonColors(containerColor=gardenInk,contentColor=gardenGlass)) {
+                    if(player.preparing) CircularProgressIndicator(Modifier.size(22.dp),color=gardenMuted,strokeWidth=2.dp)
+                    else Icon(if(player.playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow, if(player.playing) "暂停" else "继续播放")
                 }
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(if(player.preparing) "正在准备原音…" else "正在听 · 完整原音", fontSize = 13.sp)
-                    Text("${gardenClock(player.position)} / ${gardenClock(player.duration)}", fontSize = 11.sp, color = gardenMuted)
+                    Text(if(player.preparing) "正在准备声音…" else if(player.playing) "正在听 · ${sourcePlaybackLabel(player)}" else "${sourcePlaybackLabel(player)}已暂停",style=MaterialTheme.typography.titleMedium)
+                    Text("${gardenClock(player.position)} / ${gardenClock(player.duration)}",style=MaterialTheme.typography.bodySmall,color=gardenMuted)
                 }
                 IconButton(onClick = stop) { Icon(Icons.Outlined.Close, "停止播放") }
             }
-            Slider(player.position.toFloat(), { seek(it.toLong()) }, valueRange = 0f..player.duration.coerceAtLeast(1).toFloat(),
-                enabled = !player.preparing, modifier = Modifier.height(24.dp),
+            RememberAudioScrubber("${LocalInteractions.current.identity}:${player.episode}",player.position,player.duration,
+                enabled=!player.preparing,seek=seek,
                 colors = SliderDefaults.colors(thumbColor = gardenInk, activeTrackColor = gardenMuted, inactiveTrackColor = gardenMuted.copy(alpha = .25f)))
         }
     }

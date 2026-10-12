@@ -16,11 +16,12 @@ import org.json.JSONObject
     var code by remember(state.actor) { mutableStateOf("") }
     Text("亲友邀请", style = MaterialTheme.typography.titleLarge)
     OutlinedTextField(code, { code = it }, label = { Text("粘贴邀请码") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-    Button(onClick = { model.claimInvitation(code); code = "" }, enabled = !state.busy && code.trim().length >= 16) { Text("领取邀请") }
+    RememberActionButton("领取邀请", !state.busy && code.trim().length >= 16, filled=true,
+        pendingLabel="正在领取…", successLabel="已领取，等待确认") { model.claimInvitation(code) }
     Text("领取不会立即开放故事。记录者确认你的账号后，从顶部空间列表进入。", style = MaterialTheme.typography.bodySmall)
 }
 
-@Composable fun SharingPanel(state: NativeState, model: NativeWorkbenchModel, confirm: (String, () -> Unit) -> Unit) {
+@Composable fun SharingPanel(state: NativeState, model: NativeWorkbenchModel, confirm: ConfirmAction) {
     val enabled = !state.busy && !state.recording
     Text("与亲友分享", style = MaterialTheme.typography.titleLarge)
     if(state.owner && state.serviceInfo.invitations) {
@@ -40,14 +41,15 @@ import org.json.JSONObject
             Row { Checkbox(id in selected, { checked -> selected = if(checked) selected + id else selected - id; model.clearSharePreview() }, enabled = enabled, modifier = Modifier.testTag("share-episode-$id"))
                 Text(storyTitle(story), Modifier.padding(top = 12.dp)) }
         }
-        Button(onClick = { model.previewShare(ShareSelection(selected.toList(), stories.toList())) }, enabled = enabled && (selected.isNotEmpty() || stories.isNotEmpty())) { Text("预览分享范围") }
+        RememberActionButton("预览分享范围", enabled && (selected.isNotEmpty() || stories.isNotEmpty()),
+            pendingLabel="正在读取范围…", successLabel="预览已就绪") { model.previewShare(ShareSelection(selected.toList(), stories.toList())) }
         state.sharePreview?.let { preview ->
             Text(preview.text("notice"), style = MaterialTheme.typography.titleMedium)
             preview.rows().forEach { item ->
                 Text(recordingDate(item.text("recorded_at")), style = MaterialTheme.typography.labelMedium)
                 SelectionContainer { Text(item.text("transcript")) }
                 if(item.text("supplement").isNotBlank()) Text("本人书面补充：${item.text("supplement")}")
-                OutlinedButton(onClick = { model.playSource(item.text("episode_id")) }, enabled = enabled) { Text("试听这段完整原音") }
+                RememberActionButton("试听这段完整原音",enabled,pendingLabel="正在取回声音…",successLabel="声音已取回") {model.playSource(item.text("episode_id"))}
                 HorizontalDivider()
             }
             Row { RadioButton(recipient == null, { recipient = null }, enabled = enabled); Text("邀请新的亲友", Modifier.padding(top = 12.dp)) }
@@ -57,7 +59,8 @@ import org.json.JSONObject
             }
             Row { Checkbox(audio, { audio = it }, enabled = enabled, modifier = Modifier.testTag("share-audio-confirmation")); Text("确认开放上述完整原音、核对文字、书面补充及相关记忆。", Modifier.padding(top = 12.dp)) }
             Row { Checkbox(cloud, { cloud = it }, enabled = enabled, modifier = Modifier.testTag("share-cloud-confirmation")); Text("另行允许这些材料参与亲友的云端问答。", Modifier.padding(top = 12.dp)) }
-            Button(onClick = { model.createInvitation(audio, cloud, recipient) }, enabled = enabled && audio) { Text(if(recipient == null) "生成一次性邀请" else "选定亲友并继续确认") }
+            RememberActionButton(if(recipient == null) "生成一次性邀请" else "选定亲友并继续确认", enabled && audio,
+                filled=true, successLabel="邀请已准备") { model.createInvitation(audio, cloud, recipient) }
         }
         state.issuedInvitation?.takeIf { it.text("code").isNotBlank() && state.invitations.any { row -> row.text("id") == it.text("id") && row.text("status") == "created" } }?.let { invitation ->
             val clipboard = LocalClipboardManager.current
@@ -65,7 +68,7 @@ import org.json.JSONObject
             SelectionContainer { Text(invitation.text("code")) }
             OutlinedButton(onClick = { clipboard.setText(AnnotatedString(invitation.text("code"))) }) { Text("复制邀请码") }
         }
-        state.invitations.forEach { invitation ->
+        state.invitations.forEach { invitation -> key(invitation.text("id")) {
             HorizontalDivider(); Text(invitationStatus(invitation.text("status")), style = MaterialTheme.typography.titleMedium)
             val scope = invitation.rows("scope")
             val scopeLabel = scope.joinToString("\n") { "${recordingDate(it.text("recorded_at"))} · ${it.text("title")}" }
@@ -76,17 +79,17 @@ import org.json.JSONObject
             Text(if(cloudProcessingAllowed(invitation)) "包含完整原音、文字与云端问答" else "仅浏览和聆听，不允许云端问答")
             val path = "/invitations/${segment(invitation.text("id"))}"
             if(invitation.text("status") == "claimed") {
-                Button(onClick = { confirm("接收账号：${person?.text("username")}（${person?.text("display_name")}）\n开放下列完整录音和文字：\n$scopeLabel\n确认这是你要分享的亲友与范围？") { model.mutation("$path/approve", "POST") } }, enabled = enabled && scope.isNotEmpty()) { Text("确认账号并批准") }
-                OutlinedButton(onClick = { model.mutation("$path/reject", "POST") }, enabled = enabled) { Text("不是这位亲友，拒绝") }
+                RememberConfirmedAction("确认账号并批准","接收账号：${person?.text("username")}（${person?.text("display_name")}）\n开放下列完整录音和文字：\n$scopeLabel\n确认这是你要分享的亲友与范围？",false,enabled&&scope.isNotEmpty(),successLabel="已批准") {model.mutation("$path/approve","POST")}
+                RememberActionButton("不是这位亲友，拒绝",enabled,successLabel="已拒绝") {model.mutation("$path/reject","POST")}
             }
-            if(invitation.text("status") in listOf("created", "claimed")) OutlinedButton(onClick = { model.mutation("$path/cancel", "POST") }, enabled = enabled) { Text("取消这次邀请") }
-            if(invitation.text("status") == "approved") OutlinedButton(onClick = { confirm("撤销本次新开放的录音：\n$scopeLabel\n不会撤销更早的独立分享，也无法收回已另行保存的内容。") { model.mutation("$path/revoke", "POST") } }, enabled = enabled) { Text("撤销本次分享") }
-        }
+            if(invitation.text("status") in listOf("created", "claimed")) RememberActionButton("取消这次邀请",enabled,successLabel="已取消") {model.mutation("$path/cancel","POST")}
+            if(invitation.text("status") == "approved") RememberConfirmedAction("撤销本次分享","撤销本次新开放的录音：\n$scopeLabel\n不会撤销更早的独立分享，也无法收回已另行保存的内容。",true,enabled,successLabel="已撤销") {model.mutation("$path/revoke","POST")}
+        } }
     } else if(state.owner) Text("服务器尚未提供新版邀请，请管理员更新服务。")
-    state.grants.forEach { grant ->
+    state.grants.forEach { grant -> key(grant.text("grant_id")) {
         val story = state.stories.firstOrNull { it.text("episode_id") == grant.text("episode_id") }
         val person = state.recipients.firstOrNull { it.text("actor_id") == grant.text("reader_actor_id") }
         Text("${story?.let(::storyTitle) ?: "一段已分享录音"} · ${person?.text("display_name") ?: "已授权亲友"}")
-        if(state.owner) OutlinedButton(onClick = { confirm("撤销这段完整录音的访问权限？") { model.mutation("/grants/${segment(grant.text("grant_id"))}", "DELETE") } }, enabled = enabled) { Text("撤销这段授权") }
-    }
+        if(state.owner) RememberConfirmedAction("撤销这段授权","撤销这段完整录音的访问权限？",true,enabled,successLabel="已撤销") {model.mutation("/grants/${segment(grant.text("grant_id"))}","DELETE")}
+    } }
 }

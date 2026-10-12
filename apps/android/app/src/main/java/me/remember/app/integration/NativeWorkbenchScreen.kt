@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,16 @@ import org.json.JSONObject
 @Composable
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
     val state by model.ui.collectAsStateWithLifecycle()
+    CompositionLocalProvider(LocalInteractions provides InteractionContext(
+        identity = "${state.actor}:${state.subject}", operation = state.operation,
+        latest = { model.ui.value.operation }, reduceMotion = appearance.reduceMotion,
+    )) {
+        NativeWorkbenchContent(model, appearance, updateAppearance, state)
+    }
+}
+
+@Composable private fun NativeWorkbenchContent(model: NativeWorkbenchModel, appearance: AppearanceChoice,
+    updateAppearance: (AppearanceChoice) -> Unit, state: NativeState) {
     val localPlayer by model.audio.playback.collectAsStateWithLifecycle()
     var server by remember { mutableStateOf(me.remember.app.BuildConfig.SERVICE_URL) }
     LaunchedEffect(server, state.actor) { if(state.actor.isBlank()) model.loadServiceInfo(server) }
@@ -72,11 +83,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }
     val scope = rememberCoroutineScope()
     val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     var detail by remember(state.actor, state.subject) { mutableStateOf<String?>(null) }
     var askDraft by rememberSaveable(state.actor,state.subject) { mutableStateOf("") }
     var recordingPage by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
     var revision by remember(state.actor, state.subject) { mutableStateOf<RevisionTarget?>(null) }
-    var confirm by remember(state.actor, state.subject) { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    var confirm by remember(state.actor, state.subject) { mutableStateOf<ActionConfirmation?>(null) }
     val gardenVisible = state.actor.isNotBlank() && tab == 1 && archiveMode == 1 && !state.recording
     val view = LocalView.current
     val darkBars = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f
@@ -105,6 +117,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         if(tab == 1 && archiveMode != 3) { archiveMode = 3; scope.launch { scrollPositions[1].scrollTo(0) } }
         else tab = 0
     }
+    BackHandler(state.companionRecording.isNotBlank()) { model.finishCompanionRecording() }
+    BackHandler(state.recording && state.calibrationId.isNotBlank() && state.companionRecording.isBlank()) { model.finish() }
     if(recordingPage && state.owner) {
         StoryRecordingFlow(state,model,revision,{revision=it},
             {revision=null;recordingPage=false},{recordingPage=false;tab=1;archiveMode=0})
@@ -113,7 +127,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     Scaffold(modifier = backdrop, containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
         if(state.actor.isNotBlank() && !state.recording) NavigationBar(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), containerColor = if(gardenVisible) gardenGlass.copy(alpha = .94f) else MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
             (if(appearance.simpleMode) listOf("今天", "故事", "问答", "我的") else listOf("今天", "档案", "对话", "我的")).forEachIndexed { index, title ->
-                NavigationBarItem(selected = tab == index, onClick = { focus.clearFocus(); tab = index }, icon = {
+                NavigationBarItem(selected = tab == index, onClick = { focus.clearFocus(); keyboard?.hide(); tab = index }, icon = {
                     Icon(listOf(Icons.Outlined.WbSunny, Icons.Outlined.FolderOpen, Icons.Outlined.ChatBubbleOutline, Icons.Outlined.PersonOutline)[index], title)
                 }, label = { Text(title) }, colors = if(gardenVisible) NavigationBarItemDefaults.colors(
                     selectedIconColor = gardenInk, selectedTextColor = gardenInk,
@@ -129,8 +143,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 Spacer(Modifier.weight(1f))
                 if(state.actor.isNotBlank()) SpaceChooser(state, model, gardenVisible, ready, Modifier.weight(2.4f))
             }
-            if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
+            key(identity) { RememberLoadingSlot(state.busy) }
+            state.error?.let { message -> RememberIssue(message) { model.dismissError(message) } }
             if(state.actor.isBlank()) {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     var username by remember { mutableStateOf("") }
@@ -145,7 +159,11 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     OutlinedTextField(username, { username = it }, label = { Text("账号") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     OutlinedTextField(password, { password = it }, label = { Text("密码（至少8个字符）") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation())
                     if(registering) OutlinedTextField(name, { name = it }, label = { Text("怎么称呼你") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                    Button(onClick = { model.signIn(server, username, password, if(registering) name else null); password = "" }, enabled = !state.busy && username.isNotBlank() && password.length >= 8 && (!registering || name.isNotBlank()), modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp)) { Text(if(registering) "创建我的空间" else "登录") }
+                    RememberActionButton(if(registering) "创建我的空间" else "登录",
+                        enabled = !state.busy && username.isNotBlank() && password.length >= 8 && (!registering || name.isNotBlank()),
+                        filled=true, pendingLabel="正在进入…", successLabel="已连接") {
+                        model.signIn(server, username, password, if(registering) name else null)
+                    }
                     LaunchedEffect(state.serviceInfo.registrationAllowed) { if(!state.serviceInfo.registrationAllowed) registering = false }
                     if(state.serviceInfo.registrationAllowed) TextButton(onClick = { registering = !registering }) { Text(if(registering) "已有账号，返回登录" else "第一次使用，创建账号") }
                     else Text("本次内测由管理员准备账号；亲友使用自己的账号领取邀请。", style = MaterialTheme.typography.bodySmall)
@@ -173,13 +191,13 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     {if(state.player.playing) model.pauseSource() else model.resumeSource()},model::seekSource,model::stopSource)
                 if(localPlayer.audioPath != null) Panel {
                     Text("本机原音 ${clock(localPlayer.positionMillis)} / ${clock(localPlayer.durationMillis)}")
-                    Slider(localPlayer.positionMillis.toFloat(), { model.audio.seekPlayback(it.toLong()) }, enabled = !localPlayer.preparing,
-                        valueRange = 0f..localPlayer.durationMillis.coerceAtLeast(1).toFloat())
+                    RememberAudioScrubber("$identity:${localPlayer.audioPath}",localPlayer.positionMillis,localPlayer.durationMillis,
+                        enabled=!localPlayer.preparing,seek=model.audio::seekPlayback)
                     Row { TextButton(onClick = { if(localPlayer.playing) model.audio.pausePlayback() else model.audio.resumePlayback() }) { Text(if(localPlayer.playing) "暂停" else "继续播放") }
                         TextButton(onClick = model.audio::stopPlayback) { Text("停止本机播放") } }
                 }
                 if(state.subject.isNotBlank()) {
-                    Column(Modifier.weight(1f).clipToBounds().then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f).clipToBounds().rememberPageEntrance("$identity:$tab").then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when(tab) {
                             0 -> {
                                 if(appearance.simpleMode) SimpleHome(state, {revision=null;recordingPage=true},
@@ -200,10 +218,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                     Icon(Icons.Outlined.ArrowBack,null); Spacer(Modifier.width(8.dp)); Text("返回故事列表")
                                 }
                                 if(!appearance.simpleMode && (!gardenVisible || !gardenStoryOpen)) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
-                                    listOf(1 to "花田", 2 to "人物").forEach { (index,title) -> FilterChip(archiveMode==index,{focus.clearFocus();archiveMode=index;scope.launch { scrollPositions[1].scrollTo(0) }},label={Text(title)},
+                                    listOf(1 to "花田", 2 to "人物", 4 to "亲友").forEach { (index,title) -> FilterChip(archiveMode==index,{focus.clearFocus();archiveMode=index;scope.launch { scrollPositions[1].scrollTo(0) }},label={Text(title)},enabled=ready,
                                         colors=if(gardenVisible) FilterChipDefaults.filterChipColors(labelColor=gardenInk,selectedLabelColor=gardenGlass,selectedContainerColor=gardenInk) else FilterChipDefaults.filterChipColors()) }
                                     Spacer(Modifier.weight(1f))
-                                    TextButton(onClick={focus.clearFocus();archiveMode=0;scope.launch { scrollPositions[1].scrollTo(0) }}) { Text("全部录音",color=if(gardenVisible) gardenInk else MaterialTheme.colorScheme.primary) }
+                                    TextButton(onClick={focus.clearFocus();archiveMode=0;scope.launch { scrollPositions[1].scrollTo(0) }},enabled=ready) { Text("全部录音",color=if(gardenVisible) gardenInk else MaterialTheme.colorScheme.primary) }
                                 }
                                 if(archiveMode==0) {
                                     Text("我的录音",style=MaterialTheme.typography.headlineMedium)
@@ -221,12 +239,14 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                     { detail = it }, { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } },
                                     { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } }, ask={askDraft=it;tab=2}, onStoryOpenChanged = { gardenStoryOpen = it })
                                 if(archiveMode == 2) NarrativeScreen(state, model, Modifier.weight(1f)) { detail = it }
+                                if(appearance.simpleMode && archiveMode!=4) TextButton(onClick={archiveMode=4}) { Text("亲友补记与留给你的信") }
+                                if(archiveMode == 4) CompanionScreen(state,model)
                             }
-                            2 -> AskTab(state, model,askDraft)
+                            2 -> AskTab(state, model,askDraft) { tab=1;archiveMode=2 }
                             3 -> pages.SaveableStateProvider("settings:$identity") {
                                 AppSettingsScreen(state, model, appearance, updateAppearance,
                                     { tab = 1; archiveMode = 2 }, { tab = 1; archiveMode = 0 },
-                                    { scope.launch { scrollPositions[3].scrollTo(0) } }) { message, action -> confirm = message to action }
+                                    { scope.launch { scrollPositions[3].scrollTo(0) } }) { message, destructive, action -> confirm = ActionConfirmation(message, destructive, action) }
                             }
                         }
                         if(tab!=1 || archiveMode!=2) Spacer(Modifier.height(28.dp))
@@ -267,13 +287,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 revision = RevisionTarget(memory.text("memory_item_id"), "supplement", ""); detail = null; tab = 0; recordingPage = true
                             }
                             Action("删除这条记忆", ready) {
-                                confirm = "删除这条记忆并使相关回答失效？完整原音和核对文字会保留。" to {
+                                confirm = ActionConfirmation("删除这条记忆并使相关回答失效？完整原音和核对文字会保留。", true) {
                                     detail = null; model.mutation("/memories/${segment(memory.text("memory_item_id"))}", "DELETE", subjectApi = true)
                                 }
                             }
                         }
                     } }
-                    Text("转写：${story.text("stt_model_version")} · 整理：${story.text("model_version")}", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -282,7 +301,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         var cloud by remember(id) { mutableStateOf(false) }
         val leaveReview: () -> Unit = {
             if(appearance.simpleMode && (state.reviewText != state.reviewInitialText || state.reviewSupplement.isNotBlank()))
-                confirm = "这次修改还没有提交。退出会放弃刚改的文字，原音与机器稿仍然保留。" to model::closeReview
+                confirm = ActionConfirmation("这次修改还没有提交。退出会放弃刚改的文字，原音与机器稿仍然保留。", false, model::closeReview)
             else model.closeReview()
         }
         NativeDialog("请听原音并核对文字", leaveReview) {
@@ -298,7 +317,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             if(state.player.episode == id) {
                 Text("${clock(state.player.position)} / ${clock(state.player.duration)}")
                 if(!state.player.preparing) {
-                    Slider(state.player.position.toFloat(), { model.seekSource(it.toLong()) }, valueRange = 0f..state.player.duration.coerceAtLeast(1).toFloat())
+                    RememberAudioScrubber("$identity:$id",state.player.position,state.player.duration,
+                        enabled=!state.recording,seek=model::seekSource)
                     Action(if(state.player.playing) "暂停核对原音" else "继续核对原音") { if(state.player.playing) model.pauseSource() else model.resumeSource() }
                 }
                 Action("停止核对原音") { model.stopSource() }
@@ -308,16 +328,16 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             OutlinedTextField(state.reviewSupplement, model::editSupplement, label = { Text("本次补充说明（选填）") }, placeholder = { Text("例如：这里的老隗是同事隗师傅；方言‘落屋’指回家。") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
             if(state.vocabulary.isNotBlank()) Action("带入我的用词") { model.editSupplement(listOf(state.reviewSupplement, state.vocabulary).filter { it.isNotBlank() }.joinToString("\n")) }
             Check("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。", cloud, { cloud = it })
-            Action("确认文字并整理", ready && cloud && state.reviewText.isNotBlank()) { model.confirmReview(state.reviewText, cloud) }
+            RememberActionButton("确认文字并整理", ready && cloud && state.reviewText.isNotBlank(), filled=true,
+                pendingLabel="正在提交核对稿…", successLabel="已提交整理") { model.confirmReview(state.reviewText, cloud) }
             if(appearance.simpleMode) TextButton(onClick=leaveReview,modifier=Modifier.heightIn(min=60.dp)) {Text("稍后再核对")}
         }
     }
-    confirm?.let { (message, action) -> AlertDialog(onDismissRequest = { confirm = null }, title = { Text("确认操作") }, text = { Text(message) },
-        confirmButton = { TextButton(onClick = { confirm = null; action() }, enabled = ready) { Text("确认") } },
-        dismissButton = { TextButton(onClick = { confirm = null }) { Text("取消") } }) }
+    confirm?.let { request -> RememberConfirmationDialog(request.message, request.destructive, ready,
+        dismiss = { confirm = null }, confirm = { confirm = null; request.action() }) }
 }
 
-@Composable private fun CaptureTab(state: NativeState, model: NativeWorkbenchModel, revision: RevisionTarget?, setRevision: (RevisionTarget?) -> Unit) {
+@Composable internal fun CaptureTab(state: NativeState, model: NativeWorkbenchModel, revision: RevisionTarget?, setRevision: (RevisionTarget?) -> Unit) {
     if(!state.owner) { Text("这里可以查看记录者授权的故事。你也可以在管理页提出想了解的问题。"); return }
     val resolver = LocalContext.current.contentResolver
     var exportTicket by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
@@ -362,7 +382,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
 
             Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。" else "同意上传完整原音，交由云端转文字", uploadConsent, { uploadConsent = it }, configured)
             if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
-            Action(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
+            RememberActionButton(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent,
+                filled=true, pendingLabel="正在上传原音…", successLabel="已提交识别") { model.upload(capture, uploadConsent) }
         }
     } }
 }
@@ -379,28 +400,69 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }
 }
 
-@Composable private fun AskTab(state: NativeState, model: NativeWorkbenchModel, initialQuestion:String="") {
+@Composable private fun AskTab(state: NativeState, model: NativeWorkbenchModel, initialQuestion:String="", openPerson: () -> Unit = {}) {
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var question by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion) }
     var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
-    Text("从原话寻找答案", style = MaterialTheme.typography.headlineMedium)
+    var mode by rememberSaveable(state.actor,state.subject) { mutableStateOf("evidence") }
+    var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
+    val style=state.narrative.optJSONObject("style")
+    Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
+    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
+        FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
+    }
+    if(state.owner && style!=null) RememberToggle("允许分身使用已确认的理解与表达",style.optBoolean("enabled"),{enabled -> model.mutation("/narrative/style","PUT",JSONObject().put("revision",style.optInt("revision")).put("enabled",enabled))},enabled=!state.busy&&!state.recording)
+    LaunchedEffect(style?.optBoolean("enabled")) { if(style?.optBoolean("enabled")!=true) mode="evidence" }
     OutlinedTextField(question, { question = it }, label = { Text("想了解什么？") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
 
     Check("同意本次将问题和有权访问的核对文字发送给云端文字模型。", cloud, { cloud = it })
-    Action("提问", !state.busy && question.isNotBlank() && cloud) {
-        focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud)
+    RememberActionButton("提问", !state.busy && !state.recording && question.isNotBlank() && cloud, filled=true,
+        icon=Icons.Outlined.ChatBubbleOutline, pendingLabel="正在整理回答…", successLabel="回答已返回") {
+        focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud, mode)
     }
     state.answer?.let { answer -> Panel {
-        Text(when(answer.text("response_type")) { "ORIGINAL" -> "本人原话 · 核对文字"; "SIMULATION" -> "依据记录生成 · 不是本人原话"; else -> "目前记录还不足以回答" }, style = MaterialTheme.typography.titleMedium)
-        Text(answer.text("answer"))
-        answer.optJSONObject("expression")?.let { expression ->
-            Text(if(expression.text("status")=="available") "表达参考 · 系统生成，不是本人新发言" else "表达处理未通过或不可用，保留有来源的回答。",style=MaterialTheme.typography.bodySmall)
-            if(expression.text("status")=="available") Text(expression.text("text"))
+        Text(if(answer.text("mode")=="persona") "AI 分身" else when(answer.text("response_type")) { "ORIGINAL" -> "来自本人原话"; "SIMULATION" -> "AI 分身"; else -> "还没有足够的记录" }, style = MaterialTheme.typography.titleMedium)
+        Text(answer.text("answer"),style=MaterialTheme.typography.bodyLarge)
+        personaCoverageHint(answer)?.let {Text(it,style=MaterialTheme.typography.bodyMedium)}
+        if(answer.text("response_type")!="UNKNOWN") RememberActionButton("听这条回答", !state.busy,
+            pendingLabel="正在准备声音…",successLabel="声音已取回") { model.speakAnswer(answer) }
+        if(state.owner && answer.text("response_type")!="UNKNOWN") {
+            var compareCloud by remember(answer.text("answer_id")) { mutableStateOf(false) }
+            Check("同意将两段回答交由云端比较",compareCloud,{compareCloud=it})
+            RememberActionButton("和我的想法对照",!state.busy&&!state.recording&&compareCloud,
+                pendingLabel="正在保存这次问题…",successLabel="对照已开始") {model.startCalibration(answer,compareCloud)}
         }
-        answer.rows("evidence").forEach { evidence -> Evidence(evidence, state, model) }
-        Text("模型：${answer.text("model_version")} · 资料版本：${answer.text("person_model_version")}", style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick={sources=!sources}) { Text(if(sources) "收起依据" else "查看理解与来源") }
+        if(sources) {
+            val ids=answer.optJSONArray("understanding_ids")?.let {a->(0 until a.length()).map{a.getString(it)}}.orEmpty()
+            confirmedUnderstandings(state.narrative).filter{it.text("candidate_id") in ids}.forEach {Text(it.text("statement"));Text("适用情境："+it.text("context"))}
+            answer.rows("evidence").forEach { evidence -> Evidence(evidence, state, model) }
+            val contributions=answer.optJSONArray("contribution_ids")?.let{a->(0 until a.length()).map{a.getString(it)}}.orEmpty()
+            state.companion.rows("contributions").filter{it.text("id") in contributions}.forEach {Text(it.text("author_display_name")+"的补记："+it.text("text"))}
+        }
     } }
+    if(state.owner) CalibrationSection(state,model,openPerson)
+    if(state.owner) {
+        var voiceSettings by remember { mutableStateOf(false) }
+        var voiceConsent by remember(state.subject) { mutableStateOf(false) }
+        TextButton(onClick={voiceSettings=!voiceSettings}) { Text("分身声音与亲友许可") }
+        if(voiceSettings) Panel {
+            if(!state.voiceProfile.optBoolean("ready") && state.voiceProfile.optJSONArray("synthetic_presets")?.length()?.let{it>0}==true) {
+                Check("同意为这个虚构空间启用分身声音",voiceConsent,{voiceConsent=it})
+                RememberActionButton("启用分身声音",!state.busy&&voiceConsent,pendingLabel="正在启用…",successLabel="已启用") {model.enrollSyntheticVoice(voiceConsent)}
+            }
+            Text(if(state.voiceProfile.optBoolean("ready")) "分身声音已就绪" else "分身声音尚未启用")
+            if(state.voiceProfile.optBoolean("ready")) RememberConfirmedAction("停用分身声音","停用后，将不再生成或播放分身声音。",true,!state.busy,
+                pendingLabel="正在停用…",successLabel="已停用") {model.disableVoice()}
+            state.recipients.forEach { person ->
+                val grant=state.voiceGrants.firstOrNull{it.text("actor_id")==person.text("actor_id")}
+                key(person.text("actor_id")) {RememberToggle("允许${person.text("display_name")}收听分身回答",grant?.optBoolean("enabled")==true,
+                    {model.voiceRecipient(person.text("actor_id"),it)},enabled=!state.busy&&!state.recording)}
+            }
+        }
+    }
 }
 @Composable private fun Evidence(evidence: JSONObject, state: NativeState, model: NativeWorkbenchModel) {
     Text("依据：${evidence.text("excerpt")}")
@@ -408,7 +470,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     if(evidence.text("episode_id").isNotBlank()) Action("播放来源完整原音", !state.busy) { model.playSource(evidence.text("episode_id")) }
 }
 
-@Composable internal fun ManageTab(state: NativeState, model: NativeWorkbenchModel, confirm: (String, () -> Unit) -> Unit) {
+@Composable internal fun ManageTab(state: NativeState, model: NativeWorkbenchModel, confirm: ConfirmAction) {
     val enabled = !state.busy && !state.recording
     var requestText by remember(state.actor, state.subject) { mutableStateOf("") }
     Text("想了解的问题", style = MaterialTheme.typography.titleLarge)
@@ -436,7 +498,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             Text("新记忆：${next?.rows("memories")?.joinToString("；") { it.text("content") }?.ifBlank { "尚待整理" } ?: "尚待整理"}")
             if(revision.text("time_text").isNotBlank()) Text("变化时间：${revision.text("time_text")}")
             if(revision.text("status") == "pending") Action("确认这次关系", enabled && next?.text("status") == "ready") {
-                confirm("确认新旧记忆的上述关系？纠正会使旧说法退出当前回答，原音继续保留。") { model.mutation("/revisions/${segment(revision.text("revision_id"))}/confirm", "POST") }
+                confirm("确认新旧记忆的上述关系？纠正会使旧说法退出当前回答，原音继续保留。", false) { model.mutation("/revisions/${segment(revision.text("revision_id"))}/confirm", "POST") }
             }
         } }
         Text("人物理解候选", style = MaterialTheme.typography.titleLarge)
@@ -447,7 +509,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         state.candidateJobs.forEach { job -> Text("归纳任务：${job.text("status")} ${job.text("error")}", style = MaterialTheme.typography.bodySmall) }
         state.candidates.forEach { candidate -> Panel {
             Text(candidate.text("statement")); Text("${candidate.text("label")} · ${candidate.text("domain")} · ${candidate.text("status")}", style = MaterialTheme.typography.bodySmall)
-            Text("去重材料数：${candidate.optInt("independent_episodes")} · 模型：${candidate.text("model_version")}", style = MaterialTheme.typography.bodySmall)
+            Text("${candidate.optInt("independent_episodes")} 段来源", style = MaterialTheme.typography.bodySmall)
             Text("重复说法不代表独立经历。", style = MaterialTheme.typography.bodySmall)
             Text("情境：${candidate.text("context")}")
             val evidenceIds = candidate.optJSONArray("evidence_ids")
@@ -455,7 +517,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 val evidenceId = evidenceIds.getString(i)
                 val evidence = candidate.rows("evidence").firstOrNull { it.text("evidence_id") == evidenceId }
                     ?: state.stories.flatMap { it.rows("memories") }.flatMap { it.rows("evidence") }.firstOrNull { it.text("evidence_id") == evidenceId }
-                if(evidence != null) Evidence(evidence, state, model) else Text("依据：$evidenceId（可从故事中核对）", style = MaterialTheme.typography.bodySmall)
+                if(evidence != null) Evidence(evidence, state, model) else Text("暂时无法打开这条依据。", style = MaterialTheme.typography.bodySmall)
             }
             Text("反证：${candidate.optJSONArray("counter_evidence_ids") ?: "[]"}", style = MaterialTheme.typography.bodySmall)
             if(candidate.text("status") == "pending") {
@@ -483,7 +545,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 Action("拒绝此候选", enabled) { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
             }
             if(candidate.text("status") == "confirmed") Action("撤回这项确认", enabled) {
-                confirm("撤回此候选的确认并使相关回答失效？") { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
+                confirm("撤回此候选的确认并使相关回答失效？", true) { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
             }
         } }
         state.profileUpdates.forEach { update -> Panel {
@@ -495,7 +557,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             if(update.text("time_text").isNotBlank()) Text("变化时间：${update.text("time_text")}")
             if(update.text("question").isNotBlank()) Text(update.text("question"))
             if(update.text("status") == "pending") {
-                Action("确认上述更新", enabled) { confirm("已核对双方原文和情境？支持或变化保留历史；冲突暂停使用相关理解。") {
+                Action("确认上述更新", enabled) { confirm("已核对双方原文和情境？支持或变化保留历史；冲突暂停使用相关理解。", false) {
                     model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/confirm", "POST")
                 } }
                 Action("拒绝这次更新", enabled) { model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/reject", "POST") }
@@ -504,13 +566,13 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }
 }
 
-@Composable private fun Panel(content: @Composable ColumnScope.() -> Unit) {
+@Composable internal fun Panel(content: @Composable ColumnScope.() -> Unit) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .95f))) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content) }
 }
-@Composable private fun Action(label: String, enabled: Boolean = true, action: () -> Unit) {
-    OutlinedButton(onClick = action, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = if(LocalSimpleMode.current) 60.dp else 48.dp)) { Text(label) }
+@Composable internal fun Action(label: String, enabled: Boolean = true, action: () -> Unit) {
+    RememberActionButton(label, enabled, onClick = action)
 }
-@Composable private fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
+@Composable internal fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
     Row(Modifier.fillMaxWidth().heightIn(min=if(LocalSimpleMode.current) 60.dp else 48.dp)
         .toggleable(value=checked,enabled=enabled,role=Role.Checkbox,onValueChange=onChange),verticalAlignment=Alignment.CenterVertically) {
         Checkbox(checked, onCheckedChange = null, enabled = enabled); Text(label, Modifier.weight(1f).padding(vertical=12.dp))

@@ -11,6 +11,9 @@ from sqlalchemy import create_engine, pool
 from app.config import get_settings
 from app.logging_config import configure_logging
 from app.models import Base
+from app import companion_models  # Register additive tables for autogeneration.
+from app import persona_models
+from app import voice_models
 
 config = context.config
 target_metadata = Base.metadata

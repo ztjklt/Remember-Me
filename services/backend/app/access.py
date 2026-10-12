@@ -101,7 +101,7 @@ def _source_basis(session, subject_id, *, include_profiles, include_authorizatio
         select(GraphFact).where(GraphFact.subject_id == subject_id),
         select(ModelRevision).where(ModelRevision.subject_id == subject_id)]
     if include_authorization:
-        queries.extend([select(Consent).where(Consent.subject_id == subject_id),
+        queries.extend([select(Consent).where(Consent.subject_id == subject_id,Consent.scope!='VOICE'),
             select(StoryGrant).join(Episode).where(Episode.subject_id == subject_id)])
     else:
         parts.append('profile-material-v2')
@@ -111,6 +111,9 @@ def _source_basis(session, subject_id, *, include_profiles, include_authorizatio
         from .models import NarrativeRecord, NarrativePreference
         queries.extend([select(NarrativeRecord).where(NarrativeRecord.subject_id==subject_id,NarrativeRecord.status=='confirmed'),
                         select(NarrativePreference).where(NarrativePreference.subject_id==subject_id)])
+        from .companion_models import CompanionContribution, ContributionGrant
+        queries.extend([select(CompanionContribution).where(CompanionContribution.subject_id==subject_id),
+                        select(ContributionGrant).where(ContributionGrant.subject_id==subject_id)])
     for query in queries:
         rows = [{column.name: getattr(row, column.name) for column in row.__table__.columns}
                 for row in session.scalars(query.execution_options(populate_existing=True))]

@@ -18,7 +18,10 @@ def evidence_fingerprint(evidence):
 
 
 def valid_snapshot(session,subject,actor,row,*,require_saved=False):
-    sources={e['evidence_id']:e for c in effective_materials(session,subject,visible_episodes(session,subject,actor)) for e in c['evidence']}
+    # This is a local evidence comparison, not a provider input. Generation
+    # already enforces whole-recording batch limits; large archives still need
+    # to be reviewable, corrected and sealed without sending them to a model.
+    sources={e['evidence_id']:e for c in effective_materials(session,subject,visible_episodes(session,subject,actor),enforce_budget=False) for e in c['evidence']}
     ids=set(row.evidence_ids+row.counter_evidence_ids)
     if not row.evidence_ids or not ids <= sources.keys():
         raise ProfileChanged('人物理解的依据已不可用，请重新归纳。')

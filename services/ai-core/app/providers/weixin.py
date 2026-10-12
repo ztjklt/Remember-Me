@@ -1,5 +1,6 @@
 """Single-request JSON transport, with 429 cooldown; callers bound their retries."""
 import json
+import asyncio
 import re
 import logging
 import hashlib
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from ..errors import AIOutputInvalid, ProviderTimeout, ProviderUnavailable, ProviderAuthenticationFailed, ProviderRateLimited
 from .ollama import grounded_result, locate_quote
 from ..telemetry import quote_trace_id
+from ..calibration import PROMPT_VERSION as CALIBRATION_PROMPT_VERSION
 
 BASE_URL = 'https://chatapi.weixin.qq.com/openai/v1'
 MODEL = 'Deepseek-v4-flash'
@@ -42,7 +44,47 @@ class WeixinChat:
         if self._owns_client:
             self.client.close()
 
-    def complete(self, system, payload):
+    def _check_status(self, response, telemetry):
+        telemetry['status'] = response.status_code
+        if response.status_code in {401,403}:
+            raise ProviderAuthenticationFailed('Weixin authentication failed')
+        if response.status_code in {408,504}:
+            raise ProviderTimeout('Weixin timed out')
+        if response.status_code == 429:
+            try: delay=float(response.headers.get('Retry-After','60'))
+            except ValueError: delay=60
+            if not math.isfinite(delay): delay=60
+            delay=max(1,min(delay,3600))
+            self._blocked_until=perf_counter()+delay
+            telemetry['retry_after_seconds']=delay
+            raise ProviderRateLimited(delay)
+        if response.status_code >= 500:
+            raise ProviderUnavailable('Weixin temporarily unavailable')
+        if not response.is_success:
+            raise AIOutputInvalid('Weixin rejected request')
+
+    def _async_client(self):
+        # A deadline-scoped client closes on cancellation and has no work left
+        # running in a background thread when the caller starts a bounded retry.
+        return httpx.AsyncClient(timeout=45, trust_env=False)
+
+    async def _bounded_bytes(self, body, headers, timeout_seconds, telemetry):
+        # HTTPX timeout alone limits each I/O phase/read, not the whole request.
+        # This scope cancels connection, headers and a slow/dripping response.
+        async with asyncio.timeout(timeout_seconds):
+            async with self._async_client() as client:
+                async with client.stream('POST', self.base_url + '/chat/completions',
+                        json=body, headers=headers, timeout=min(45, timeout_seconds),
+                        follow_redirects=False) as response:
+                    self._check_status(response, telemetry)
+                    chunks = bytearray()
+                    async for chunk in response.aiter_bytes(chunk_size=65536):
+                        if len(chunks) + len(chunk) > self.max_response_bytes:
+                            raise AIOutputInvalid('Weixin output too large')
+                        chunks.extend(chunk)
+                    return chunks
+
+    def complete(self, system, payload, *, timeout_seconds=None):
         started = perf_counter()
         telemetry = {'event':'weixin_chat', 'requested_model':self.model, 'status':None,
                      'endpoint': self.base_url + '/chat/completions',
@@ -57,31 +99,23 @@ class WeixinChat:
                 {'role':'system','content':system},
                 {'role':'user','content':json.dumps(payload, ensure_ascii=False)}],
                 'response_format':{'type':'json_object'}}
-            with self.client.stream('POST', self.base_url + '/chat/completions', json=body,
-                    headers={'Authorization':'Bearer ' + self.api_key, 'Content-Type':'application/json'},
-                    timeout=45, follow_redirects=False) as response:
-                telemetry['status'] = response.status_code
-                if response.status_code in {401,403}:
-                    raise ProviderAuthenticationFailed('Weixin authentication failed')
-                if response.status_code in {408,504}:
-                    raise ProviderTimeout('Weixin timed out')
-                if response.status_code == 429:
-                    try:delay=float(response.headers.get('Retry-After','60'))
-                    except ValueError:delay=60
-                    if not math.isfinite(delay):delay=60
-                    delay=max(1,min(delay,3600))
-                    self._blocked_until=perf_counter()+delay
-                    telemetry['retry_after_seconds']=delay
-                    raise ProviderRateLimited(delay)
-                if response.status_code >= 500:
-                    raise ProviderUnavailable('Weixin temporarily unavailable')
-                if not response.is_success:
-                    raise AIOutputInvalid('Weixin rejected request')
-                chunks = bytearray()
-                for chunk in response.iter_bytes(chunk_size=65536):
-                    if len(chunks) + len(chunk) > self.max_response_bytes:
-                        raise AIOutputInvalid('Weixin output too large')
-                    chunks.extend(chunk)
+            headers={'Authorization':'Bearer ' + self.api_key, 'Content-Type':'application/json'}
+            if timeout_seconds is not None:
+                if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+                    raise ProviderTimeout('Weixin request budget exhausted')
+                telemetry['timeout_seconds'] = timeout_seconds
+                # complete is synchronous; Persona's HTTP route runs in a worker
+                # thread. Existing unbudgeted consumers keep their sync client.
+                chunks = asyncio.run(self._bounded_bytes(body, headers, timeout_seconds, telemetry))
+            else:
+                with self.client.stream('POST', self.base_url + '/chat/completions', json=body,
+                        headers=headers, timeout=45, follow_redirects=False) as response:
+                    self._check_status(response, telemetry)
+                    chunks = bytearray()
+                    for chunk in response.iter_bytes(chunk_size=65536):
+                        if len(chunks) + len(chunk) > self.max_response_bytes:
+                            raise AIOutputInvalid('Weixin output too large')
+                        chunks.extend(chunk)
             envelope = json.loads(chunks, parse_constant=reject_constant)
             model = envelope['model']
             if not isinstance(model, str) or not model.strip() or len(model) > 128:
@@ -99,7 +133,7 @@ class WeixinChat:
                 raise AIOutputInvalid('Weixin output must be an object')
             telemetry['json_object_parsed'] = True
             return result, model
-        except httpx.TimeoutException as exc:
+        except (httpx.TimeoutException, TimeoutError) as exc:
             raise ProviderTimeout('Weixin timed out') from exc
         except httpx.TransportError as exc:
             raise ProviderUnavailable('Weixin transport failed') from exc
@@ -445,6 +479,8 @@ class WeixinTwinProvider(WeixinChat):
 
 
 class WeixinCalibrationProvider(WeixinChat):
+    prompt_version = CALIBRATION_PROMPT_VERSION
+
     def compare(self, payload):
         from ..calibration import CalibrationOutput, SYSTEM
         from pydantic import ValidationError

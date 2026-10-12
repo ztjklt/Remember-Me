@@ -70,6 +70,41 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
         selectedContainerColor=accent,selectedLabelColor=paper)
     val largeText=LocalDensity.current.fontScale>=1.5f
     Column(modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+        val confirmed=confirmedUnderstandings(data)
+        if(confirmed.isNotEmpty()&&!auditQueue) {
+            val understandingPager=rememberPagerState(pageCount={confirmed.size})
+            val understandingScope=rememberCoroutineScope()
+            val understandingMotion=interactionMotion()
+            fun turnUnderstanding(delta:Int) {understandingScope.launch {
+                val target=(understandingPager.currentPage+delta).coerceIn(0,confirmed.lastIndex)
+                if(understandingMotion) understandingPager.animateScrollToPage(target) else understandingPager.scrollToPage(target)
+            }}
+            var understandingDetail by remember(state.actor,state.subject) {mutableStateOf<JSONObject?>(null)}
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                Text("已确认的理解",style=MaterialTheme.typography.titleMedium,color=ink,modifier=Modifier.weight(1f))
+                IconButton(onClick={turnUnderstanding(-1)},enabled=understandingPager.currentPage>0) {Icon(Icons.Outlined.ChevronLeft,"上一条理解",tint=ink)}
+                Text("${understandingPager.currentPage+1} / ${confirmed.size}",color=ink)
+                IconButton(onClick={turnUnderstanding(1)},enabled=understandingPager.currentPage<confirmed.lastIndex) {Icon(Icons.Outlined.ChevronRight,"下一条理解",tint=ink)}
+            }
+            HorizontalPager(understandingPager,modifier=Modifier.fillMaxWidth()) {index ->
+                val item=confirmed[index]
+                Surface(modifier=Modifier.testTag("confirmed-understanding-${item.text("candidate_id")}"),shape=RoundedCornerShape(18.dp),color=paper,contentColor=ink) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal=14.dp,vertical=8.dp)) {
+                        Text(item.text("statement"),style=MaterialTheme.typography.bodyLarge,maxLines=3,overflow=TextOverflow.Ellipsis)
+                        TextButton(onClick={understandingDetail=item},contentPadding=PaddingValues(0.dp)) {Text("查看情境与来源")}
+                    }
+                }
+            }
+            understandingDetail?.let {item -> NativeDialog("已确认的理解",{understandingDetail=null}) {
+                Text(item.text("statement"),style=MaterialTheme.typography.titleMedium)
+                Text("适用情境："+item.text("context"))
+                val counter=item.optJSONArray("counter_evidence_ids")?.let{a->(0 until a.length()).map{a.getString(it)}.toSet()}.orEmpty()
+                listOf("支持" to item.rows("evidence").filter{it.text("evidence_id") !in counter}, "例外 / 反例" to (item.rows("counter_evidence")+item.rows("evidence").filter{it.text("evidence_id") in counter}).distinctBy{it.text("evidence_id")}).forEach { (label,refs) ->
+                    refs.forEach { e -> Text(label+"："+e.text("excerpt"));TextButton(onClick={understandingDetail=null;openSource(e.text("episode_id"))}){Text("查看来源故事")} }
+                }
+                TextButton(onClick={understandingDetail=null}){Text("返回人物")}
+            } }
+        }
         Row(Modifier.fillMaxWidth().then(if(largeText) Modifier.horizontalScroll(rememberScrollState()) else Modifier).testTag("person-sections"),verticalAlignment=Alignment.CenterVertically) {
             listOf("了解这个人", "记忆侧面").forEachIndexed { index,title ->
                 FilterChip(section==index,{section=index;selectedFacet="";auditQueue=false},label={Text(title,maxLines=1)},
@@ -102,7 +137,7 @@ private fun payload(row: JSONObject): JSONObject = JSONObject().apply {
         val overview=section==1 && selectedFacet.isBlank() && query.isBlank() && !auditQueue
         val shown=if(overview) emptyList() else selectNarrativeRecords(records,state.owner,auditQueue,if(section==1) -1 else selectedView,selectedFacet,query)
         val understandings=if(section==0 && selectedView==2 && selectedFacet.isBlank()) data.rows("understandings").filter {
-            (if(auditQueue) state.owner && it.text("status") in setOf("pending","stale","conflicted") else it.text("status")=="confirmed") &&
+            (if(auditQueue) state.owner && it.text("status") in setOf("pending","stale","conflicted") else false) &&
                 (query.isBlank() || (it.text("statement")+it.text("context")).contains(query,true))
         } else emptyList()
         if(overview) Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -285,6 +320,11 @@ private fun statusName(value:String)=mapOf("confirmed" to "本人已核对","pen
     }
     val pager=rememberPagerState(pageCount={ids.size})
     val scope=rememberCoroutineScope()
+    val motion=interactionMotion()
+    fun turn(delta:Int) { scope.launch {
+        val target=(pager.currentPage+delta).coerceIn(0,ids.lastIndex)
+        if(motion) pager.animateScrollToPage(target) else pager.scrollToPage(target)
+    } }
     Column(modifier) {
         HorizontalPager(pager,modifier=Modifier.weight(1f).fillMaxWidth().testTag("person-story-pager"),
             key={ids[it]},pageSpacing=12.dp) { index ->
@@ -293,9 +333,9 @@ private fun statusName(value:String)=mapOf("confirmed" to "本人已核对","pen
             }
         }
         Row(Modifier.fillMaxWidth().heightIn(min=48.dp),horizontalArrangement=Arrangement.Center,verticalAlignment=Alignment.CenterVertically) {
-            IconButton(onClick={scope.launch{pager.animateScrollToPage(pager.currentPage-1)}},enabled=pager.currentPage>0) { Icon(Icons.Outlined.ChevronLeft,"上一段",tint=ink) }
+            IconButton(onClick={turn(-1)},enabled=pager.currentPage>0) { Icon(Icons.Outlined.ChevronLeft,"上一段",tint=ink) }
             Text("${pager.currentPage+1} / ${ids.size}",Modifier.testTag("person-page-index"),style=MaterialTheme.typography.labelLarge,color=ink)
-            IconButton(onClick={scope.launch{pager.animateScrollToPage(pager.currentPage+1)}},enabled=pager.currentPage<ids.lastIndex) { Icon(Icons.Outlined.ChevronRight,"下一段",tint=ink) }
+            IconButton(onClick={turn(1)},enabled=pager.currentPage<ids.lastIndex) { Icon(Icons.Outlined.ChevronRight,"下一段",tint=ink) }
         }
     }
 }
