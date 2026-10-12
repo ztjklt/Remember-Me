@@ -118,4 +118,10 @@ HTTPS origin：`https://remember-ios-api-327435-12-1411199312.sh.run.tcloudbase.
 
 iOS 来源为主工作区当前版本（包括已有未提交人物审核代码）；这些用户改动保留，本次只改连接、系统 TLS、cloudbase 本地配对类型、版本及对应测试。使用系统证书只适用于固定 CloudBase origin；旧 ECS／Mac 配对仍走原有 pin。两种会话都拒绝 HTTP 重定向，provider Key 不进入 App。连接测试 `ECSConnectionTests` 9 项通过（iOS27 模拟器），签名真机构建通过。补齐 Xcode build settings 的版本，实包核对为 **Remember Me iOS 1.2.1 / 2026101301**，bundle `me.remember.personal.ios`；已安装到 iPhone 15 Pro Max「黑幕」并由 devicectl 确认启动。只证明安装／启动，不冒称已经完成本人真机录音旅程。
 
-仍待本人在手机完成一次实际录音、核对、整理、Twin 试用。声音克隆／云端本人声纹朗读未部署；语音识别成功不等于声音克隆成功。单段原音上限 18 MiB，超出时仍需保留本机原音并另行处理。当前 BGE CPU 检索已在云端 Twin 路径工作，向量仍存 JSON，未切换 pgvector ANN。服务端存储 Key 有既定 30 天有效期，后续需要轮换；CLI 登录和签名开发包也按各自有效期管理。
+仍待本人在手机完成一次实际录音、核对、整理、Twin 试用。声音克隆／云端本人声纹朗读未部署；语音识别成功不等于声音克隆成功。单段原音上限 18 MiB，超出时仍需保留本机原音并另行处理。BGE CPU 检索实现在独立的 `/memory-search` 路径，向量仍存 JSON，未切换 pgvector ANN；当前 Twin 问答读取授权范围内的有效原文与记忆，而非调用 BGE top-k 召回。合成 Twin 闭环通过不能证明向量检索已进入问答路径，独立语义检索在该云端部署的可用性也未由本次 Twin 测试验证。服务端存储 Key 有既定 30 天有效期，后续需要轮换；CLI 登录和签名开发包也按各自有效期管理。
+
+### 2026-10-13 记忆库与 RAG 实现核对
+
+核对实际部署来源 `fe37b16` 的 `app/api/twin.py`：`/memory-search` 调用 `retrieve`，问答调用 `effective_materials`，二者未串联。`effective_materials` 保留核对后的原文、未抽取句段、修改／删除遮罩及时间变化，原文和去重后证据分别限制 24000 字符。iOS 1.3.0 简明记忆页搜索是已加载记忆内容的子串过滤，没有调用语义搜索接口。以上为代码核对；没有执行新云端语义检索测试、修改问答行为或启用数据库扩展。原先“BGE 已在 Twin 路径工作”的描述已更正。
+
+只读查询当前 CloudBase 原生 PostgreSQL 的 `pg_available_extensions`：`vector` 的 `default_version` 为 `0.8.2`、`installed_version` 为 null，说明扩展可用但本数据库未启用；未执行 `CREATE EXTENSION` 或索引迁移。
