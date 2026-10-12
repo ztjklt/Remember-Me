@@ -78,10 +78,37 @@ def _same_file(value, state):
 class ParaformerSttProvider:
     backend = 'paraformer'
 
-    def __init__(self, settings):
+    def __init__(self, settings, *, checkpoint_store=None):
         self.settings = settings
         self.policy_id = cloud_policy(settings)
         self.directory = Path(settings.paraformer_state_dir)
+        self.checkpoint_store = checkpoint_store
+
+    def _read_checkpoint(self, path):
+        if self.checkpoint_store is None:
+            return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+        try:
+            data = self.checkpoint_store.get('asr-checkpoints/' + path.name)
+        except FileNotFoundError:
+            return {}
+        except Exception:
+            raise SttUnavailable('转写检查点暂不可读，未重新提交原音。') from None
+        if len(data) > 65536:
+            raise SttFailed('转写检查点超过大小限制，未重新提交。')
+        state = json.loads(data)
+        if not isinstance(state, dict):
+            raise SttFailed('转写检查点结构无效，未重新提交。')
+        return state
+
+    def _write_checkpoint(self, path, state):
+        if self.checkpoint_store is None:
+            _save(path, state)
+            return
+        try:
+            self.checkpoint_store.put('asr-checkpoints/' + path.name,
+                json.dumps(state, ensure_ascii=False).encode(), 'application/json')
+        except Exception:
+            raise SttUnavailable('转写检查点未能保存，请核查任务；未将本段标为成功。') from None
 
     def transcribe(self, audio, content_type):
         return self.transcribe_authorized(audio, content_type, lambda: None)
@@ -106,7 +133,7 @@ class ParaformerSttProvider:
         try:
             with FileLock(str(path) + '.lock', timeout=1), _client(self.settings.stt_timeout_seconds) as client:
                 authorize()
-                state = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+                state = self._read_checkpoint(path)
                 headers = {'Authorization': 'Bearer ' + self.settings.paraformer_api_key.get_secret_value()}
 
                 def request(method, url, *, decode=True, submitting=False, **kwargs):
@@ -123,7 +150,7 @@ class ParaformerSttProvider:
                                 status = response.status_code
                                 if submitting:
                                     state['submission'] = 'rejected' if 400 <= status < 500 and status != 429 else 'unknown'
-                                    _save(path, state)
+                                    self._write_checkpoint(path, state)
                                 if status == 429 or status in {500, 502, 503, 504}:
                                     raise SttUnavailable(f'百炼暂不可用（HTTP {status}），原音保留。')
                                 raise SttFailed(f'百炼请求被拒绝（HTTP {status}），请检查授权或配置。')
@@ -157,7 +184,7 @@ class ParaformerSttProvider:
                     state = {'file_url':'oss://' + key, 'upload_hostname':urlsplit(host).hostname,
                              'submission':'submitting', 'created_at':time.time()}
                     authorize()
-                    _save(path, state)
+                    self._write_checkpoint(path, state)
                     body = request('POST', base + '/api/v1/services/audio/asr/transcription', submitting=True,
                         headers={**headers, 'X-DashScope-Async':'enable', 'X-DashScope-OssResourceResolve':'enable'},
                         json={'model':MODEL, 'input':{'file_urls':[state['file_url']]}, 'parameters':{
@@ -166,7 +193,7 @@ class ParaformerSttProvider:
                     if not isinstance(task_id, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', task_id):
                         raise SttFailed('百炼未返回有效任务编号，未重复提交。')
                     state['task_id'] = task_id; state['submission'] = 'accepted'
-                    _save(path, state)
+                    self._write_checkpoint(path, state)
                 record['task_id'] = state['task_id']
                 if time.time() - state['created_at'] > 23 * 3600:
                     raise SttFailed('百炼任务结果已接近过期，请人工核查后重新处理；原音仍在。')

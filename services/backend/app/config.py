@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     paraformer_api_key: SecretStr = SecretStr("")
     paraformer_base_url: str = ""
     paraformer_state_dir: str = "./var/paraformer-asr"
+    paraformer_checkpoint_backend: Literal["local", "object_store"] = "local"
     paraformer_poll_interval_seconds: float = 2.0
     paraformer_poll_timeout_seconds: float = 120.0
     groq_api_key: SecretStr = SecretStr("")

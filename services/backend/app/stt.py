@@ -187,7 +187,9 @@ class ClientOnlySttProvider:
 def build_stt_provider(settings: Settings) -> SttProvider:
     if settings.stt_backend == 'paraformer':
         from .paraformer_asr import ParaformerSttProvider
-        return ParaformerSttProvider(settings)
+        from .storage import build_object_store
+        checkpoints = build_object_store(settings) if settings.paraformer_checkpoint_backend == 'object_store' else None
+        return ParaformerSttProvider(settings, checkpoint_store=checkpoints)
     if settings.stt_backend == 'client':
         return ClientOnlySttProvider()
     if settings.stt_backend == 'groq':

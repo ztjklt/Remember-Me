@@ -1,0 +1,14 @@
+{
+  "environment_name": "remember-me-ios",
+  "environment_id": "remember-me-ios-d5f9twwlcae71c69",
+  "region": "ap-shanghai",
+  "client_scope": "ios",
+  "database": "postgresql",
+  "database_instance_type": "shared",
+  "plan": "free-trial",
+  "trial_expires_date": "2027-04-12",
+  "cloud_run_enabled": true,
+  "backend_deployed": false,
+  "api_origin": null,
+  "deployment_route": "awaiting-database-route-decision"
+}
