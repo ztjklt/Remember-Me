@@ -8,7 +8,7 @@
 
 - 一个容器中只有两种 HTTP 进程：Backend 对外监听 `PORT`，AI Core 只监听容器内 `127.0.0.1:8100`。一个主模型后面保留已有 Schema worker。
 - 不运行永久后台 worker。私人定时云函数每分钟调用受独立密钥保护的 `/internal/jobs/processing-tick` 和 `/internal/jobs/profile-tick`，每次请求同步完成一段工作。Backend 数据库 job lease 和本人核对门槛保留；只转写不会自动进入提取。
-- 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，原生认证、证书链与主机校验，以及应用容器就绪均已实际通过。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前检索依旧是 BGE CPU 编码与 Python 排序，向量列是 JSON；没有声称已切换 pgvector ANN 索引。
+- 当前候选代码需要可通过 PostgreSQL 协议直连的数据库，保存应用账号、授权、原文、记忆、任务和向量缓存。用户已升级标准版及独享集群，原生 PostgreSQL 路线已确定；实例运行中，内网地址 `172.17.0.11:5432`，原生认证、证书链与主机校验，以及应用容器就绪均已实际通过。业务表使用私有 `remember_ios` Schema；连接强制 `verify-full`，禁止覆盖为明文或不校验证书。当前原文 RAG 使用 BGE CPU 编码、原生 pgvector 精确余弦排序及文字匹配；没有部署 ANN 索引。
 - 使用此 PG 环境原生 Storage API 的私有桶 `remember-me-ios-audio` 保存原音和转写检查点。服务端专用 API Key 不进入客户端；对 `anon` 和 `authenticated` 配置 restrictive policy，阻止这个桶通过其他 permissive policy 暴露。存储适配器不跟随重定向、不把错误响应正文写入异常。S3 adapter 仍可作为另选部署方式。
 - 2026-10-13 用户指定主 LLM 优先 DeepSeek V4 Flash，当前官方目录使用 `deepseek-flash`（旧 V4 Flash 别名由当前 Flash 模型提供服务）。该独立 Key 来自用户自己创建的 RM Key，只发到 `https://api.deepseek.com`。合成文本的真实提取、Twin 和人物候选均通过；这不是已部署 CloudBase 或手机验收的声明。本环境已由用户选定普通百炼 Paraformer V2，合成 WAV 与 AAC M4A 实际转写通过；此前 Anker Key 的 401 与未经验证的音频协议仅保留为历史。本人手机录音仍待试用者确认上传。TTS 别名不是本人声纹或已部署声音克隆。
 - 同步 relay 在私有存储保存提交标记和成功的原始机器稿；冷替换读已有结果，结果不确定时拒绝重放原音。明确拒绝的 4xx／429 可以重新核对配置；超时、5xx、截断输出不暗中重放。读取缓存仍验证当前授权。默认 relay 本机行为不变，只有本部署选择持久化。
@@ -25,8 +25,8 @@
 1. 创建独立 PostgreSQL 数据库／Schema 和专用数据库角色，连接串必须开启适合该环境的 TLS，不使用 Android 的数据库地址或账号。确认服务到数据库的私网／受控连接及迁移权限。
 2. 私有 CloudBase Storage 桶和 restrictive policy 已创建，真实 put/get/delete readiness 已通过；匿名读取现存测试文件返回 404。后端专用 Key 有效期 30 天，需要在到期前轮换；所有测试对象已删除。此 Key 不能用于客户端，也不能当作 S3 密钥。
 3. 在服务端 secret 配置中填入 `.env.example` 的空字段，ASR 与 LLM 使用用户自己的独立凭据；不从队友 ECS 导出密钥，不把密钥放进源码／镜像／手机／聊天。拿到服务地址后配置 `REMEMBER_ALLOWED_HOSTS` JSON，包含实际 hostname 与本机地址；默认仅接受本机 Host。内部定时请求另用随机至少 32 字符的凭据。
-4. 仅在直连数据库配置可用时部署此候选容器，监听端口 8000，最小副本可为 0，最大副本 1、并发 1；先选测试期实际允许且预算批准的 CPU／内存规格。Dockerfile 设计为构建时下载指定 revision 的 CPU BGE，运行时离线加载；当前本机镜像构建因磁盘错误失败，不能写成已通过。平台默认 hostname TLS。
-5. **迁移是单独步骤**。本次已用 Alembic PostgreSQL 离线 SQL，通过官方 ExecutePGSql 管理接口在单个事务代码块中迁移空 `remember_ios` Schema；真实 head `0016_share_invitations` 和 34 张表已另行查询确认。后续用同一镜像执行 `migrate`，普通 API 启动不自动创建表／跑迁移。未复制或重置 Android 数据。
+4. 仅在直连数据库配置可用时部署此候选容器，监听端口 8000，最小副本可为 0，最大副本 1，模型调用并发为 1（未验证网关并发配置为 1）；先选测试期实际允许且预算批准的 CPU／内存规格。Dockerfile 设计为构建时下载指定 revision 的 CPU BGE，运行时离线加载；本机曾因磁盘错误失败；后续腾讯云远端已成功构建并推送，不能将两者混为本机构建成功。平台默认 hostname TLS。
+5. **迁移是单独步骤**。本次已用 Alembic PostgreSQL 离线 SQL，通过官方 ExecutePGSql 管理接口在单个事务代码块中迁移空 `remember_ios` Schema；初始 head `0016_share_invitations` 和 34 张表已另行查询确认；原文 RAG 增量升级至 `0017_evidence_chunks` / 35 张表。后续用同一镜像执行 `migrate`，普通 API 启动不自动创建表／跑迁移。未复制或重置 Android 数据。
 6. 执行 `account-create 新用户名 昵称`，密码由管理员交互输入。此命令只创建新账号及其 owner 空间，不默认签署 RECORDING、CLOUD_TWIN 或 VOICE，不打开公开注册，不重置现有用户。
 7. 部署 `timer/index.py` 为 Python 定时函数，入口 `index.main_handler`，超时至少 120 秒，定时每分钟触发，不开启 HTTP 入口；配置新服务 HTTPS origin 与同一 `CLOUDBASE_WORKER_TOKEN`。它拒绝重定向，不输出凭据，重叠 tick 返回 409。
 8. `/health` 为存活检查，`/ready` 必须确认 PostgreSQL／私有存储。验证普通 Actor token 无法调用 `/internal/jobs/*`；AI 的 8100 不对外开放。确认定时器在手机退出后仍能推进转写，并观测超过一分钟的处理中状态。
@@ -94,6 +94,17 @@ Safari 已打开北京默认业务空间的普通 API Key 创建表单，尚未�
 
 ## 2026-10-13 已上线状态
 
-独立 `remember-ios-api` 已部署，origin 与实际就绪信息见 `ENVIRONMENT.json`，release 为 `ios-cloudbase-fe37b16`。数据库和私有存储 ready；真实合成语音已经走通上传、待核对、DeepSeek Memory、带原文证据的 Twin、原音读取与匿名拒绝。语音提问及 AAC M4A 都通过。每分钟 Event worker 已启用，并实际把待处理的人物候选任务推进为 complete。未开通额外 NAT、EIP 或 CLS。
+独立 `remember-ios-api` 已部署，origin 与实际就绪信息见 `ENVIRONMENT.json`，当前 release 为 `ios-cloudbase-c2e8af7`。数据库和私有存储 ready；真实合成语音已经走通上传、待核对、DeepSeek Memory、带原文证据的 Twin、原音读取与匿名拒绝。语音提问及 AAC M4A 都通过。每分钟 Event worker 已启用，并实际把待处理的人物候选任务推进为 complete。未开通额外 NAT、EIP 或 CLS。
 
 账号 `jitian` 为独立空空间，初始密码只保存在本机 `build/private/ios-internal-account.json`。本人权限由手机自行确认，测试使用另一个虚构账号。iPhone 已安装并启动 iOS 1.2.1 / 2026101301；真人录音旅程仍待使用者实测，云端声音克隆没有部署。详细结果以 dated verification 为准，前文未完成状态是各时间点的历史记录。
+
+
+## 2026-10-13 原文 RAG / Nuwa 首版交付
+
+代码 c2e8af7 远端镜像构建与 release task 均完成，remember-ios-api-004 已接收 100% 流量。service-info 确认 ios-cloudbase-c2e8af7；ready 确认 database / object_store 为 ok。原文向量表是 PostgreSQL public.vector，已在隔离合成账号实际写入三个 512 维、指定 BGE revision 的片段；迁移前后的录音 2 / 记忆 4 没变。
+
+真实搜索“明天准备去哪里阅读？”返回图书馆原文，包括一个非 MemoryItem 的 episode: 原文命中；Twin 返回 ORIGINAL 和一项所属录音证据。无来源的护照号码问题返回 UNKNOWN；不携带登录 Cookie / Bearer 的全新客户端返回 401。缓存后的两次查找 0.17 / 0.16 秒、一次 Twin 0.98 秒，仅是这个短合成例子的热缓存结果，不是全库性能保证。检索范围、失效边界及测试结果见 [设计记录](../../docs/architecture/evidence-rag-nuwa.md)。
+
+现有每分钟 Event worker 实际将新人物候选任务推进为 complete，产生一条 profile-proposals-nuwa-v5 / pending 候选，仍待本人决定。旧 v4 候选保留；没有自动确认或改写本人理解。新方法的小样本 A/B 没有证实总体忠实度优于 baseline。
+
+iOS 已覆盖安装 1.3.1 / 2026101304，中文记忆页新增描述搜索与原文回看；锁屏阻止了自动打开，需要本人解锁或打开 App。未卸载或清空数据。真人新录音旅程及人物理解质量仍待真实使用反馈；云端声音克隆未部署。

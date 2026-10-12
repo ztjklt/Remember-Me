@@ -25,4 +25,7 @@ profile-proposals-nuwa-v5 继续使用一个 DeepSeek 主模型及现有 schema 
 - Backend 完整测试：511 passed、6 skipped；包含原文空隙、超过 24,000 字全库、反例上下文、读者隔离、缓存复用、来源变化与迁移。跳过的环境依赖用例不视为通过。
 - AI Core 完整测试：283 passed；新增条件化候选、第二次审核拒绝、失效审核结构、短来源编号和 baseline 对照。
 - 普通 DeepSeek / deepseek-flash 真实合成材料 A/B：baseline 一次调用 1.83 秒、nuwa 两次调用 2.44 秒，各得到三条有来源且限定情境的候选。两者均保留年代变化、拒绝将邻居父亲误认本人父亲。小样本没有证实新方法的总体忠实度优于 baseline；这些时间也不是服务 SLA。
-- 数据库升级前快照：2 段录音、4 条记忆、0016_share_invitations；向量扩展 0.8.2。新增迁移已由 CloudBase 管理 API 执行成功。新的 CloudRun RAG 路径和 iPhone 安装尚待本轮部署验证，另行记录实际结果。
+- 数据库升级前快照：2 段录音、4 条记忆、0016_share_invitations；向量扩展 0.8.2。新增迁移已由 CloudBase 管理 API 执行成功。新的 CloudRun RAG 路径、人物 worker 和 iPhone 安装结果见 infra/cloudbase/README.md 的本轮交付记录。
+
+
+查找结果沿用原字段形状，但会包含有效材料解析器已有的 episode: 原文 ID。它不是持久 MemoryItem，客户端不能用它做 Memory 修正/删除；iOS 通过 evidence.episode_id 打开原文和录音。独立环境没有改动 Android 所接的 ECS 或原型。
