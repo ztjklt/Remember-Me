@@ -33,6 +33,30 @@ def swap(target):
     pending.replace(ROOT / 'current')
 
 
+def validate_smoke(smoke, commit):
+    """Evidence-mode synthesis is valid; do not require a single-quote label.
+
+    This release probe asks the fixed demonstration year-correction question.
+    Require its complete positive/negative source clause, not just HTTP success
+    or the presence of a year in an otherwise unsupported response.
+    """
+    assert smoke['service_info']['release_id'] == commit
+    for name, mode in [('persona', 'persona'), ('evidence', 'evidence')]:
+        answer = smoke[name]
+        assert answer['mode'] == mode and answer['stale'] is False
+        assert answer['model_version'] == 'Deepseek-v4-flash'
+        assert answer['answer_id'] and answer['source_version']
+        assert answer['response_type'] in ('ORIGINAL', 'SIMULATION')
+        assert answer['answer'].strip() and answer['evidence']
+        assert all(e['evidence_id'] and e['episode_id'] and e['excerpt'].strip()
+                   for e in answer['evidence'])
+    evidence = smoke['evidence']
+    assert evidence['question'] == '第一次独立跑十二路是哪一年？'
+    correction = '第一次独立开12路是1987年，不是1986年。'
+    assert correction in evidence['answer']
+    assert any(correction in e['excerpt'] for e in evidence['evidence'])
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--candidate', type=Path, required=True)
@@ -61,10 +85,7 @@ def main():
     assert suites and sum(int(s.get('tests', 0)) for s in suites) >= 630
     assert not sum(int(s.get(k, 0)) for s in suites for k in ['errors', 'failures', 'skipped'])
     smoke = json.loads(args.smoke.read_text())
-    assert smoke['persona']['mode'] == 'persona' and not smoke['persona']['stale']
-    assert smoke['persona']['model_version'] == 'Deepseek-v4-flash'
-    assert smoke['evidence']['response_type'] == 'ORIGINAL' and smoke['evidence']['evidence']
-    assert smoke['service_info']['release_id'] == args.commit
+    validate_smoke(smoke, args.commit)
     from dotenv import dotenv_values
     from sqlalchemy.engine import make_url
     production = make_url(dotenv_values(CONFIG/'api.env')['REMEMBER_DATABASE_URL'])
@@ -78,13 +99,17 @@ def main():
         assert Path(voice['REMEMBER_A01_VOICE_REFERENCE_PATH']).resolve().is_relative_to('/var/lib/remember-me')
     previous = (ROOT / 'current').resolve()
     assert previous != candidate
+    # Older Git snapshots contain this Windows-authored script with CRLF.
+    # Execute a normalized copy via stdin, keeping the candidate manifest intact.
+    backup_script = (candidate / 'tools/round_two/backup_ecs_paired.sh').read_text()
+    run(['bash', '-n'], input=backup_script, text=True, capture_output=True)
     snapshot = None
     switched = False
     config_changed = False
     try:
         # Finish active API requests before the consistent database/audio backup.
         run(['systemctl', 'stop', *['remember-me@' + n for n in ['api', 'worker', 'profile']]])
-        result = run(['bash', str(candidate / 'tools/round_two/backup_ecs_paired.sh'), str(candidate)], capture_output=True, text=True)
+        result = run(['bash', '-s', '--', str(candidate)], input=backup_script, capture_output=True, text=True)
         check = json.loads(result.stdout.strip().splitlines()[-1])
         snapshot = Path(check['snapshot'])
         saved = snapshot / 'switch-config'

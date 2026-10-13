@@ -45,8 +45,8 @@ jobs:
           test -d "$ANDROID_SDK_ROOT"
           "$JAVA_HOME/bin/java" -version
           ./gradlew --version
-      # This candidate includes APIs that have not been deployed to ECS.
-      # Keep CI artifacts distinct from the existing signed cloud demo release.
+      # CI exercises a local development build, not the signed cloud APK.
+      # Team cloud downloads are versioned separately in GitHub Releases.
       - name: Test and build local Twin review app
         run: ./gradlew --no-daemon test assembleDebug -PrememberServiceUrl=http://10.0.2.2:8891 --stacktrace
       - name: Record APK checksum and source

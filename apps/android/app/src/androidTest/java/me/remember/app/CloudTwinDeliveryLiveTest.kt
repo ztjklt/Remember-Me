@@ -142,8 +142,12 @@ class CloudTwinDeliveryLiveTest {
             require(!asking || config.optBoolean("allow_new_question", false)) { "New questions require allow_new_question" }
             require(!asking || it.getString("question").trim().length in 1..1000)
             require(!it.optBoolean("play_new_answer_voice", false) || asking)
+            val savedVoice = it.optBoolean("play_saved_answer_voice", false)
+            require(!savedVoice || (!asking && it.optString("saved_answer_id").isNotBlank())) {
+                "Saved-answer speech requires saved_answer_id and ask_new=false; do not re-ask a completed question"
+            }
             require(!it.optBoolean("read_only", it.getString("role") == "reader") ||
-                (!asking && !it.optBoolean("allow_enable_style", false) && !it.optBoolean("play_new_answer_voice", false)))
+                (!asking && !it.optBoolean("allow_enable_style", false) && !it.optBoolean("play_new_answer_voice", false) && !savedVoice))
             require(it.optString("saved_asset_id").isBlank() || it.optString("saved_answer_id").isNotBlank())
         }
         phases.forEach { phase -> runPhase(config, phase, runId) }
@@ -227,10 +231,25 @@ class CloudTwinDeliveryLiveTest {
                 val answer = checkNotNull(model.ui.value.answer)
                 assertEquals(id, answer.text("answer_id")); verifyAnswer(answer, subject, requirePersona = true)
                 result.put("saved_answer", answerRecord(answer)); reveal(ui.onNodeWithText(answer.text("answer"))); shot("05-saved-answer")
+                click("查看理解与来源")
+                val source = ui.onAllNodesWithText("依据：${answer.rows("evidence").first().text("excerpt")}").onFirst()
+                source.assertExists(); reveal(source); shot("05b-saved-answer-sources")
                 phase.optString("saved_asset_id").takeIf { it.isNotBlank() }?.let { asset ->
                     readAction("saved_voice_read") { model.playSavedSpeech(id, asset) }
                     verifyPlayback("answer:$id", "06-saved-voice", exerciseControls = true)
                     result.put("saved_answer_played", true).put("saved_asset_id", asset); persist()
+                }
+                if(phase.optBoolean("play_saved_answer_voice", false)) {
+                    assertTrue("Use only a previously enabled voice profile", model.ui.value.voiceProfile.optBoolean("ready"))
+                    val attempts = File(activity.filesDir, "cloud-twin-attempts").apply { mkdirs() }
+                    // Share the existing guard with new-answer speech; never remove an old attempt.
+                    val speechMarker = File(attempts, "$runId-$role-speech.json")
+                    assertTrue("A speech generation attempt already exists for this role/run_id", speechMarker.createNewFile())
+                    speechMarker.writeText(JSONObject().put("answer_id", id).put("at", Instant.now().toString()).toString())
+                    result.put("new_speech_attempts", 1).put("speech_answer_id", id); event("saved_answer_voice_single_submit")
+                    click("听这条回答"); idle(240_000)
+                    verifyPlayback("answer:$id", "06b-saved-answer-generated-voice", exerciseControls = true)
+                    result.put("saved_answer_played", true); persist()
                 }
             }
             if(phase.optBoolean("ask_new", false)) askOnce(phase, runId, subject)
@@ -289,7 +308,8 @@ class CloudTwinDeliveryLiveTest {
         reveal(ui.onNodeWithText(answer.text("answer"))); shot("08-new-persona-answer")
         click("查看理解与来源")
         val evidence = answer.rows("evidence").first()
-        reveal(ui.onNodeWithText("依据：${evidence.text("excerpt")}")); shot("09-answer-sources")
+        val source = ui.onAllNodesWithText("依据：${evidence.text("excerpt")}").onFirst()
+        source.assertExists(); reveal(source); shot("09-answer-sources")
         if(phase.optBoolean("play_new_answer_voice", false)) {
             assertTrue("Use only a previously enabled voice profile", model.ui.value.voiceProfile.optBoolean("ready"))
             val speechMarker = File(attempts, "$runId-$role-speech.json")

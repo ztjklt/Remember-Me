@@ -1,5 +1,7 @@
 # Twin 与最新 Android UI：团队交接
 
+> 后续进展：2026-10-13 已升级 ECS；云端签名包及最新验证见 [云端交付](CLOUD_TWIN_DELIVERY_2026-10-13.md)。下文保留 10 月 12 日的历史状态和评测范围。
+
 本次把本地完成的 Twin、亲友补记、声音和两批 Android 交互改动交给团队评审。基点为 `a12354a`，工作分支 `codex/twin-a01-local-20261012`，接在 [PR #89](https://github.com/ztjklt/Remember-Me/pull/89) 之上；不合并，也不升级 ECS。
 
 ## 先选对版本
