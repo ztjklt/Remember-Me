@@ -65,7 +65,7 @@ class Backend:
 
 class ProxySTT(stt.STT):
     def __init__(self,backend):
-        super().__init__(capabilities=stt.STTCapabilities(streaming=True,interim_results=True))
+        super().__init__(capabilities=stt.STTCapabilities(streaming=True,interim_results=False))
         self.backend=backend
         self.on_final=None
     async def _recognize_impl(self,buffer,*,language=None,conn_options):

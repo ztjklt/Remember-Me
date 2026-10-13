@@ -87,7 +87,7 @@ def command(role, port='8000'):
     if role == 'ai':
         return ai, [str(ai / '.venv/bin/python'), '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8100', '--workers', '1', '--no-access-log']
     if role == 'api':
-        return backend, [str(backend / '.venv/bin/python'), '-m', 'uvicorn', 'runtime.api:app', '--host', '0.0.0.0', '--port', port, '--workers', '1', '--no-access-log', '--proxy-headers', '--forwarded-allow-ips', '*']
+        return backend, [str(backend / '.venv/bin/python'), '-m', 'uvicorn', 'runtime.api:app', '--host', '0.0.0.0', '--port', port, '--workers', '1', '--no-access-log', '--ws', 'wsproto', '--ws-ping-interval', '0', '--proxy-headers', '--forwarded-allow-ips', '*']
     if role == 'migrate':
         return backend, [str(backend / '.venv/bin/alembic'), 'upgrade', 'head']
     raise ValueError('Unknown process role.')

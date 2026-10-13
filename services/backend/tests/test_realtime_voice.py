@@ -252,7 +252,7 @@ def test_real_uvicorn_websocket_handshake_enforces_worker_authorization(ready,cl
     identifier=start(client,app,ready).json()['call_id']
     listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen(128)
     port=listener.getsockname()[1]
-    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='critical',access_log=False,lifespan='off'))
+    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='critical',access_log=False,lifespan='off',ws='wsproto',ws_ping_interval=0))
     thread=threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True)
     thread.start()
     try:
@@ -307,7 +307,7 @@ def test_continuous_pcm_does_not_query_per_frame_and_revoke_closes_socket(ready,
         ClientTimeout=aiohttp.ClientTimeout,WSMsgType=aiohttp.WSMsgType,ClientError=aiohttp.ClientError))
     identifier=start(client,app,ready).json()['call_id']
     listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen(128);port=listener.getsockname()[1]
-    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='critical',access_log=False,lifespan='off'))
+    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='critical',access_log=False,lifespan='off',ws='wsproto',ws_ping_interval=0))
     thread=threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True);thread.start()
     try:
         deadline=time.monotonic()+5
@@ -328,3 +328,46 @@ def test_continuous_pcm_does_not_query_per_frame_and_revoke_closes_socket(ready,
     finally:
         server.should_exit=True;thread.join(timeout=5);listener.close()
         assert not thread.is_alive() and upstream.closed
+
+
+def test_partial_recognition_does_not_delay_final_or_repeat_database_guards(ready,client,app,monkeypatch):
+    import asyncio,json
+    from types import SimpleNamespace
+    import aiohttp
+    from app import realtime_listen
+    identifier=start(client,app,ready).json()['call_id'];checks=[];original=realtime_listen.check_call
+    def checked(*args):checks.append(1);return original(*args)
+    monkeypatch.setattr(realtime_listen,'check_call',checked)
+    class Upstream:
+        def __init__(self):self.task_id='';self.index=0
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        async def send_json(self,event):self.task_id=event['header']['task_id']
+        async def receive_json(self):return {'header':{'event':'task-started','task_id':self.task_id}}
+        def __aiter__(self):return self
+        async def __anext__(self):
+            if self.index>50:raise StopAsyncIteration
+            self.index+=1
+            value={'header':{'event':'result-generated','task_id':self.task_id},
+                'payload':{'output':{'sentence':{'text':'synthetic question','sentence_end':self.index==51,'begin_time':0}}}}
+            return SimpleNamespace(type=aiohttp.WSMsgType.TEXT,data=json.dumps(value))
+    upstream=Upstream()
+    class ProviderSession:
+        def __init__(self,**kwargs):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        def ws_connect(self,*args,**kwargs):return upstream
+    monkeypatch.setattr(realtime_listen,'aiohttp',SimpleNamespace(ClientSession=ProviderSession,
+        ClientTimeout=aiohttp.ClientTimeout,WSMsgType=aiohttp.WSMsgType,ClientError=aiohttp.ClientError))
+    class Socket:
+        headers=internal()
+        def __init__(self):self.app=app;self.sent=[]
+        async def accept(self):pass
+        async def send_json(self,data):self.sent.append(data)
+        async def iter_bytes(self):
+            await asyncio.Event().wait()
+            if False:yield b''
+        async def close(self,**kwargs):pass
+    ws=Socket();asyncio.run(realtime_listen.proxy_listen(ws,identifier))
+    assert [event['type'] for event in ws.sent]==['ready','final']
+    assert len(checks)==2  # Initial access and final text; live watchdog is separate.

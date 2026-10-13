@@ -56,10 +56,13 @@ async def proxy_listen(ws, call_id):
                         if kind=='result-generated':
                             sentence=event.get('payload',{}).get('output',{}).get('sentence',{})
                             text=sentence.get('text','')
-                            if sentence.get('heartbeat') or not text.strip(): continue
+                            # VAD handles immediate interruption. Only final text
+                            # is submitted to Twin; per-word SQL guards otherwise
+                            # queue provider events behind the live microphone.
+                            if sentence.get('heartbeat') or not sentence.get('sentence_end') or not text.strip(): continue
                             if len(text)>1000: raise ValueError('Question too long')
                             await run_in_threadpool(authorize)
-                            await ws.send_json({'type':'final' if sentence.get('sentence_end') else 'interim',
+                            await ws.send_json({'type':'final',
                                                 'text':text,'sentence_id':str(sentence.get('begin_time',0))})
                 async def watchdog():
                     while True:
