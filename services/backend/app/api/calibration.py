@@ -17,7 +17,7 @@ from ..models import (Actor, CalibrationRun, ConsentScope, Episode, Evidence,
                       MemoryItem, TwinAnswer, utcnow)
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
-from .twin import require_subject
+from .twin import require_subject, TwinQuestion, generate_answer
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}/calibrations", tags=["calibration"])
 DIMENSIONS = {"DECISION", "REASONING", "VALUE_PRIORITY", "EMOTIONAL_REACTION", "EXPRESSION"}
@@ -101,10 +101,12 @@ def _check_source(session: Session, row: CalibrationRun) -> bool:
 
 def _view(row: CalibrationRun) -> dict:
     stale = row.status == "stale"
+    hidden = row.status == 'awaiting_human'
     return {
         "calibration_id": row.calibration_id, "subject_id": row.subject_id,
         "twin_answer_id": row.twin_answer_id, "question": row.question,
-        "locked_answer": None if stale else row.locked_answer,
+        "locked_answer": None if stale or hidden else row.locked_answer,
+        "answer_hidden": hidden,
         "locked_response_type": row.locked_response_type,
         "locked_model_version": row.locked_model_version,
         "locked_person_model_version": row.locked_person_model_version,
@@ -117,6 +119,16 @@ def _view(row: CalibrationRun) -> dict:
         "created_at": row.created_at.isoformat(),
         "completed_at": row.completed_at.isoformat() if row.completed_at else None,
     }
+
+
+@router.post('/prepare-voice')
+def prepare_voice(subject_id: str, body: TwinQuestion, request: Request,
+                  actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+    """Prepare and lock without delivering the model answer to the human UI."""
+    require_subject(session,subject_id,actor)
+    answer=generate_answer(subject_id,body.model_copy(update={'retrieval_mode':'local'}),request,actor,session)
+    return start(subject_id,StartCalibration(twin_answer_id=answer['answer_id'],
+        cloud_consent_id=body.cloud_consent_id),actor,session)
 
 
 @router.post("")

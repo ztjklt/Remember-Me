@@ -85,6 +85,12 @@ class Settings(BaseSettings):
     a01_voice_subject_id: str = ""
     a01_voice_reference_path: str = ""
 
+    # Experimental single-worker WSS calls; opt-in actor IDs, never public by default.
+    realtime_voice_enabled: bool = False
+    realtime_voice_actor_ids: list[str] = Field(default_factory=list)
+    realtime_voice_max_sessions: int = Field(default=8, ge=1, le=32)
+    realtime_voice_max_seconds: int = Field(default=1200, ge=30, le=1800)
+
     # A placeholder provider is refused outside development and test. This is the
     # explicit way to say "yes, here too" — bringing an environment up end to end
     # before its real provider exists (app/providers.py). Building a fake because

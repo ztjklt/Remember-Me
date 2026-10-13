@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from threading import BoundedSemaphore
 from time import monotonic
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -169,7 +169,14 @@ def create_app(
             slots.release()
 
     @app.post("/twin", response_model=TwinOutput)
-    def answer_twin(payload: TwinInput) -> TwinOutput:
+    async def answer_twin(payload: TwinInput, request: Request) -> TwinOutput:
+        if payload.voice_response:
+            from .cancellation import until_disconnect
+            return await until_disconnect(request,lambda: run_twin(payload))
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(run_twin,payload)
+
+    def run_twin(payload):
         if active_twin is None:
             raise ProviderUnavailable("Twin requires the configured DeepSeek adapter")
         # Interactive requests may wait briefly behind background proposals.
@@ -193,7 +200,14 @@ def create_app(
             slots.release()
 
     @app.post("/persona", response_model=PersonaOutput)
-    def answer_persona(payload: PersonaInput) -> PersonaOutput:
+    async def answer_persona(payload: PersonaInput, request: Request) -> PersonaOutput:
+        if payload.voice_response:
+            from .cancellation import until_disconnect
+            return await until_disconnect(request,lambda: run_persona(payload))
+        from starlette.concurrency import run_in_threadpool
+        return await run_in_threadpool(run_persona,payload)
+
+    def run_persona(payload):
         if active_persona is None:
             raise ProviderUnavailable("Persona requires the configured Weixin adapter")
         started = monotonic()

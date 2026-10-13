@@ -1,0 +1,65 @@
+import asyncio
+import pytest
+from app.voice_turns import VoiceTurns
+
+
+def test_cancelled_generation_and_audio_cannot_publish():
+    async def run():
+        events=[]; gate=asyncio.Event()
+        async def answer(q,h):
+            try: await gate.wait()
+            except asyncio.CancelledError: pass  # deliberately misbehaving late provider
+            return {'answer':'旧答案。','answer_id':'old','source_version':'v1'}
+        async def tts(text): yield b'\0\0'*20
+        async def send(e): events.append(e)
+        async def check(answer=None): pass
+        call=VoiceTurns('session',send,answer,tts,check)
+        await call.submit('旧问题'); await asyncio.sleep(0)
+        await call.interrupt(); gate.set(); await asyncio.sleep(.01)
+        assert not any(e['type'] in {'answer_ready','audio'} for e in events)
+        await call.close()
+    asyncio.run(run())
+
+
+def test_history_contains_only_completed_played_sentences():
+    async def run():
+        events=[]; histories=[]
+        async def answer(q,h):
+            histories.append(h)
+            return {'answer':'先检查原因。也要听家人的意见。','answer_id':'a','source_version':'v1'}
+        async def tts(text): yield b'\0\0'*100
+        async def send(e): events.append(e)
+        async def check(answer=None): pass
+        call=VoiceTurns('s',send,answer,tts,check)
+        await call.submit('怎么修？'); await call.task
+        turn=call.turn_id
+        call.playback(turn,150)
+        await call.interrupt()
+        await call.submit('为什么？'); await call.task
+        assert histories[-1] == [{'question':'怎么修？','heard_answer':'先检查原因。','interrupted':True}]
+        with pytest.raises(ValueError): call.playback(call.turn_id,99999)
+        call.playback(turn,200)  # old ack cannot mark current answer heard
+        assert call.played==0
+        await call.close()
+    asyncio.run(run())
+
+
+def test_source_change_stops_audio_and_clears_history():
+    async def run():
+        events=[]; changed=False
+        async def answer(q,h): return {'answer':'原来的话。','answer_id':'a','source_version':'v1'}
+        async def tts(text):
+            nonlocal changed
+            yield b'\0\0'*10
+            changed=True
+            yield b'\0\0'*10
+        async def send(e): events.append(e)
+        async def check(answer=None):
+            if changed: raise RuntimeError('revoked')
+        call=VoiceTurns('s',send,answer,tts,check)
+        await call.submit('问题'); await call.task
+        assert len([e for e in events if e['type']=='audio'])==1
+        assert events[-1]['type']=='error'
+        assert call.history==[]
+        await call.close()
+    asyncio.run(run())

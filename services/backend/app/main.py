@@ -157,6 +157,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.voice_sessions = {}
     app.state.database = database
     app.state.object_store = object_store
     app.state.stt_provider = stt_provider
@@ -189,6 +190,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(person_model.router)
     app.include_router(pairing.router)
     app.include_router(twin.router)
+    from .api import voice_sessions
+    app.include_router(voice_sessions.router)
     app.include_router(voice.router)
     app.include_router(calibration.router)
     app.include_router(workbench.router)

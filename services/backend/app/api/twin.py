@@ -151,6 +151,12 @@ def search_memories(subject_id: str, q: str, request: Request,
 @router.post("/twin/answers")
 def ask(subject_id: str, payload: TwinQuestion, request: Request,
         actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    return generate_answer(subject_id,payload,request,actor,session)
+
+
+def generate_answer(subject_id, payload, request, actor, session, *, voice_context=None,
+                    cancel_check=lambda: None):
+    cancel_check()
     actor_id = actor.actor_id
     from ..narrative import visible_records,contextual_sources
     from ..models import NarrativePreference
@@ -202,7 +208,13 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if payload.retrieval_mode=='local':
         provider=build_rag_provider(session,request.app.state.embedding_encoder,
             episode_ids=loaded['ids'],reader=loaded['reader'],sources=loaded['sources'])
-        selection=retrieve_context(payload.question,load_snapshot,provider)
+        retrieval_question=payload.question
+        if voice_context:
+            # Only lookup hints. The model receives history separately as non-evidence.
+            previous=voice_context[-1]['question']
+            if len(previous)+len(retrieval_question)<980:
+                retrieval_question=previous+'；追问：'+retrieval_question
+        selection=retrieve_context(retrieval_question,load_snapshot,provider)
         retrieval_audit={'mode':'local','source_basis':selection.source_basis,
             'retriever_version':selection.retriever_version,'hit_ids':list(selection.hit_ids),
             'selected_evidence_ids':list(selection.selected_evidence_ids),
@@ -238,8 +250,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     from ..errors import RequestInvalid
     if payload.mode=='persona' and (not pref or not pref.style_enabled or not examples or not loaded['understandings']):
         raise RequestInvalid('请先由本人开启分身表达，并确认可使用的人物理解和表达范例。')
-    from ..persona_context import visible_contributions
-    contributions=visible_contributions(session,subject_id,actor_id) if payload.mode=='persona' else []
+    from ..persona_context import visible_contributions, select_contributions
+    contributions=visible_contributions(session,subject_id,actor_id,
+        enforce_budget=payload.retrieval_mode=='full') if payload.mode=='persona' else []
+    if payload.retrieval_mode=='local':
+        contributions=select_contributions(contributions,retrieval_question)
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
@@ -277,8 +292,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
             if payload.mode=='persona':
-                result=request.app.state.twin_client.persona(dict(question=question,candidates=limited,
-                    understandings=understandings,examples=examples,contributions=contributions))
+                model_input=dict(question=question,candidates=limited,
+                    understandings=understandings,examples=examples,contributions=contributions)
+                if voice_context is not None:
+                    model_input.update(dialogue_context=voice_context,voice_response=True)
+                result=request.app.state.twin_client.persona(model_input)
             else:
                 result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
@@ -287,9 +305,12 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 failure.code = exc.code
                 failure.http_status = 502
             raise failure from exc
+    cancel_check()
     expression=None
     if payload.mode=='persona':
         pass
+    elif voice_context is not None:
+        pass  # Voice answers already have their reviewed wording; no extra style pass.
     elif examples and result.get('response_type')=='SIMULATION' and style_over_budget:
         expression={'status':'unavailable','text':'','model_version':'','prompt_version':'expression-checked-v1',
                     'reason':'表达范例超过8条或4000字，本次仅提供有来源的回答。'}
@@ -373,6 +394,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         cloud_consent_id=payload.cloud_consent_id,understanding_ids=used_traits,contribution_ids=used_notes,
         prompt_version=result.get('prompt_version','') if payload.mode=='persona' else '',
         review_summary=review_summary))
+    cancel_check()
     session.commit()
     return answer_view(session, row)
 

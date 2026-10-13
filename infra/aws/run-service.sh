@@ -4,7 +4,7 @@ root=$(cd -- "$(dirname -- "$0")/../.." && pwd)
 case "${1:-}" in
   api)
     cd "$root/services/backend"
-    exec .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port "${REMEMBER_API_PORT:-8877}" --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-access-log ;;
+    exec .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port "${REMEMBER_API_PORT:-8877}" --proxy-headers --forwarded-allow-ips 127.0.0.1 --ws-max-size 65536 --ws-max-queue 8 --no-access-log ;;
   worker|profile)
     cd "$root/services/backend"
     module=app.worker

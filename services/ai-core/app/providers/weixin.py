@@ -85,6 +85,10 @@ class WeixinChat:
                     return chunks
 
     def complete(self, system, payload, *, timeout_seconds=None):
+        from ..cancellation import cancelled_request, check_cancelled, cancellable
+        check_cancelled()
+        if cancelled_request.get() is not None and timeout_seconds is None:
+            timeout_seconds=45
         started = perf_counter()
         telemetry = {'event':'weixin_chat', 'requested_model':self.model, 'status':None,
                      'endpoint': self.base_url + '/chat/completions',
@@ -106,7 +110,7 @@ class WeixinChat:
                 telemetry['timeout_seconds'] = timeout_seconds
                 # complete is synchronous; Persona's HTTP route runs in a worker
                 # thread. Existing unbudgeted consumers keep their sync client.
-                chunks = asyncio.run(self._bounded_bytes(body, headers, timeout_seconds, telemetry))
+                chunks = asyncio.run(cancellable(self._bounded_bytes(body, headers, timeout_seconds, telemetry)))
             else:
                 with self.client.stream('POST', self.base_url + '/chat/completions', json=body,
                         headers=headers, timeout=45, follow_redirects=False) as response:

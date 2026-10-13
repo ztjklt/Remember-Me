@@ -50,6 +50,8 @@ import org.json.JSONObject
 @Composable
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
     val state by model.ui.collectAsStateWithLifecycle()
+    val call by model.voiceCall.collectAsStateWithLifecycle()
+    if(call!=null){VoiceCallScreen(call!!,model::endVoice);return}
     CompositionLocalProvider(LocalInteractions provides InteractionContext(
         identity = "${state.actor}:${state.subject}", operation = state.operation,
         latest = { model.ui.value.operation }, reduceMotion = appearance.reduceMotion,
@@ -409,6 +411,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
     val style=state.narrative.optJSONObject("style")
     Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
+    VoiceCallEntry(state,model,mode)
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
         FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
@@ -421,6 +424,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     RememberActionButton("提问", !state.busy && !state.recording && question.isNotBlank() && cloud, filled=true,
         icon=Icons.Outlined.ChatBubbleOutline, pendingLabel="正在整理回答…", successLabel="回答已返回") {
         focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud, mode)
+    }
+    if(state.owner) RememberActionButton("先录下我的回答，再对照",!state.busy&&!state.recording&&question.isNotBlank()&&cloud,
+        pendingLabel="正在准备问题…",successLabel="可以开始回答"){
+        focus.clearFocus();keyboard?.hide();model.prepareVoiceCalibration(question,mode)
     }
     state.answer?.let { answer -> Panel {
         Text(if(answer.text("mode")=="persona") "AI 分身" else when(answer.text("response_type")) { "ORIGINAL" -> "来自本人原话"; "SIMULATION" -> "AI 分身"; else -> "还没有足够的记录" }, style = MaterialTheme.typography.titleMedium)

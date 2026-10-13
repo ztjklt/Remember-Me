@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from .errors import AIOutputInvalid, ProviderTimeout
 from .grounded_twin import source_packet
 from .telemetry import quote_trace_id
-from .twin import TwinCandidate, TwinOutput
+from .twin import TwinCandidate, TwinOutput, DialogueContextTurn
 
 
 PROMPT_VERSION = "persona-conditional-reviewed-v8"
@@ -60,6 +60,8 @@ class PersonaInput(StrictData):
     understandings: list[Understanding] = Field(max_length=32)
     examples: list[PersonaExample] = Field(max_length=8)
     contributions: list[Contribution] = Field(max_length=16)
+    dialogue_context: list[DialogueContextTurn] = Field(default_factory=list,max_length=6)
+    voice_response: bool = False
 
     @model_validator(mode="after")
     def bounded_basis(self):
