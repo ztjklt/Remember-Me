@@ -7,7 +7,7 @@ from test_agent_workbench import setup_pair
 
 class Dialogue:
     def __init__(self): self.calls = []
-    def answer(self, question, candidates, *, conversation_turns, conversation_mode):
+    def answer(self, question, candidates, *, conversation_turns, conversation_mode, **kwargs):
         self.calls.append((question, candidates, conversation_turns, conversation_mode))
         return dict(answer='这是当前对话的回应。',response_type='CONVERSATION',
                     evidence_ids=[], confidence=0, model_version='fake-dialogue')

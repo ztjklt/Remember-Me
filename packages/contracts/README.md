@@ -1,3 +1,7 @@
+# Integration Contract v0.7
+
+2026-10-13：获授权的旧聊天长期记忆，见 [提案](../../docs/architecture/twin-chat-memory-proposal.md)。近期20轮之外可检索同 Actor / Subject 的历史原消息，模型摘要保留原消息编号，不成为人格证据。v0.7 增加 recalled_turn_count、history_summary_status、recalled_answer_ids 及本人聊天记忆查看／开关／清除形状；旧客户端请求仍有效。清除会删除派生索引／摘要并设置时间界限，原聊天记录和独立保存的 IOS_TEXT 不随此操作删除。
+
 # Integration Contract v0.6
 
 Version `0.6.0` adds separately consented real-time Twin voice profiles, capabilities, call requests and short-lived LiveKit room tickets. The [approved realtime proposal](../../docs/architecture/realtime-twin-voice-contract-proposal.md) records the owner’s LiveKit Cloud / CosyVoice direction and authorization boundaries. Provider credentials stay server-side.

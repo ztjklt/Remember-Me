@@ -2,8 +2,8 @@
 import hashlib
 from .access import source_basis
 
-ANSWER_GUARD_VERSION = 'twin-grounded-points-v7-expression-v2'
-GUARD_TAG = 't7e2:'
+ANSWER_GUARD_VERSION = 'twin-grounded-points-v7-history-v1-expression-v2'
+GUARD_TAG = 't7h1:'
 
 
 def from_material_basis(basis):

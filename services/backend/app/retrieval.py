@@ -152,7 +152,9 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
 def invalidate_answers(session: Session, store, subject_id: str) -> None:
     """Retire answer snapshots and remove speech derived from changed memories."""
     from sqlalchemy import delete
-    from .models import EvidenceChunkEmbedding
+    from .models import EvidenceChunkEmbedding, ChatTurnEmbedding, ChatDigest
+    session.execute(delete(ChatTurnEmbedding).where(ChatTurnEmbedding.subject_id == subject_id))
+    session.execute(delete(ChatDigest).where(ChatDigest.subject_id == subject_id))
     session.execute(delete(EvidenceChunkEmbedding).where(EvidenceChunkEmbedding.subject_id == subject_id))
     answers = list(session.scalars(select(TwinAnswer).where(
         TwinAnswer.subject_id == subject_id, TwinAnswer.invalidated_at.is_(None))))

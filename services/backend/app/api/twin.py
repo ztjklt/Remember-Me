@@ -126,6 +126,9 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
         "parent_answer_id": row.parent_answer_id,
         "context_turn_count": len(row.context_answer_ids or []),
         "context_truncated": row.context_truncated,
+        "recalled_turn_count": len(row.recalled_answer_ids or []) if row.invalidated_at is None else 0,
+        "history_summary_status": row.history_summary_status,
+        "recalled_answer_ids": (row.recalled_answer_ids or []) if row.invalidated_at is None else [],
         "remembered_episode_id": remembered.episode_id if remembered else None,
         "expression": row.expression if row.invalidated_at is None else None,
         "evidence": [{"evidence_id": source.evidence_id, "excerpt": source.excerpt,
@@ -217,6 +220,15 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     from ..twin_conversation import context, retrieval_question
     turns, conversation_id, truncated = context(session, subject_id, actor_id,
         payload.previous_answer_id, from_material_basis(basis)) if payload.conversation_mode else ([], None, False)
+    from .. import chat_memory
+    recalled, chat_updates, chat_snapshot = [], [], None
+    summary, summary_status = None, None
+    if payload.conversation_mode and not reader:
+        try:
+            recalled, chat_updates, chat_snapshot = chat_memory.prepare(session, subject_id, actor_id,
+                from_material_basis(basis), retrieval_question(payload.question, turns), turns, request.app.state.embedding_encoder)
+        except EmbeddingUnavailable as exc:
+            raise TwinFailed(str(exc)) from exc
     if payload.conversation_mode and conversation_id is None: conversation_id = 'tc_' + uuid4().hex
     session.commit()
     question = payload.question.strip()
@@ -230,6 +242,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    if not chat_memory.publish(session, subject_id, actor_id, from_material_basis(basis), turns, chat_snapshot, chat_updates):
+        raise SourceChanged('聊天记忆已变化，请重新提问。')
     candidates = publish_and_select(session, plan, candidates, related_groups=related_groups)
     session.commit()
     unresolved = set()
@@ -247,6 +261,14 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     session.commit()
+    if recalled:
+        summary, summary_status = chat_memory.digest(session, subject_id, actor_id, recalled, request.app.state.twin_client)
+        publication_lock(session, subject_id)
+        if basis != source_basis(session, subject_id) or not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled):
+            raise SourceChanged('聊天记忆或授权已变化，请重新提问。')
+        require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+        chat_memory.save_digest(session, subject_id, actor_id, summary)
+        session.commit()
     if not limited and not payload.conversation_mode:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
@@ -255,6 +277,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
             dialogue_options = {'conversation_turns':turns, 'conversation_mode':True}
+            if recalled: dialogue_options['conversation_recall'] = recalled
+            if summary: dialogue_options['conversation_summary'] = summary['summary']
             if examples and not style_over_budget:
                 dialogue_options['expression_examples'] = [e['text'] for e in examples]
             result = (request.app.state.twin_client.answer(question, limited, **dialogue_options) if payload.conversation_mode else
@@ -281,6 +305,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    if recalled and not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled):
+        raise SourceChanged('聊天记忆已变化，请重新提问。')
     valid = {source["evidence_id"]: (source, row) for row in candidates for source in row["evidence"]}
     kind = result.get("response_type")
     cited = result.get("evidence_ids")
@@ -325,7 +351,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
                      conversation_id=conversation_id, parent_answer_id=payload.previous_answer_id,
                      request_id=payload.request_id, context_answer_ids=[t['answer_id'] for t in turns],
-                     context_truncated=truncated,
+                     context_truncated=truncated, recalled_answer_ids=[t['answer_id'] for t in recalled],
+                     history_summary_status='ready' if summary_status=='generated' else summary_status,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
@@ -406,3 +433,87 @@ def read_answer(subject_id: str, answer_id: str,
         row.invalidated_at=utcnow()
         session.commit()
     return answer_view(session, row)
+
+
+class ChatMemoryPreference(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    enabled: StrictBool
+
+
+def _chat_memory_view(session, subject_id, actor_id, basis):
+    from .. import chat_memory
+    from ..models import ChatDigest
+    pref = chat_memory.state(session, subject_id, actor_id)
+    turns = chat_memory.history(session, subject_id, actor_id, basis)
+    by_id = {t['answer_id']:t for t in turns}
+    summaries = []
+    for item in session.scalars(select(ChatDigest).where(ChatDigest.subject_id==subject_id,
+        ChatDigest.actor_id==actor_id).order_by(ChatDigest.created_at.desc()).limit(100)):
+        originals = [by_id[id] for id in item.source_answer_ids if id in by_id]
+        if len(originals)==len(item.source_answer_ids) and chat_memory.fingerprint(originals)==item.source_hash:
+            summaries.append(dict(summary=item.summary, source_answer_ids=item.source_answer_ids,
+                model_version=item.model_version, created_at=item.created_at.isoformat()))
+    return dict(enabled=pref.enabled if pref else True, available_turn_count=len(turns),
+        forgotten_before=pref.forgotten_before.isoformat() if pref and pref.forgotten_before else None,
+        items=list(reversed(turns))[:50], summaries=summaries[:10])
+
+
+@router.get('/twin/chat-memory')
+def read_chat_memory(subject_id: str, request: Request, cloud_consent_id: str, q: str='', answer_ids: str='',
+                     actor: Actor=Depends(current_actor), session: Session=Depends(get_session)):
+    from ..access import require_owner
+    from .. import chat_memory
+    require_owner(session,subject_id,actor.actor_id)
+    require_cloud(session,subject_id,actor.actor_id,cloud_consent_id)
+    basis=source_basis(session,subject_id)
+    view=_chat_memory_view(session,subject_id,actor.actor_id,from_material_basis(basis))
+    if answer_ids:
+        ids=set(answer_ids.split(','))
+        if len(ids)>12: raise TwinFailed('来源数量过多。')
+        view['items']=[t for t in chat_memory.history(session,subject_id,actor.actor_id,from_material_basis(basis)) if t['answer_id'] in ids]
+    elif q.strip():
+        if len(q)>1000: raise TwinFailed('搜索内容过长。')
+        selected,updates,snapshot=chat_memory.prepare(session,subject_id,actor.actor_id,
+            from_material_basis(basis),q.strip(),[],request.app.state.embedding_encoder)
+        publication_lock(session,subject_id)
+        if basis!=source_basis(session,subject_id) or not chat_memory.publish(session,subject_id,actor.actor_id,from_material_basis(basis),[],snapshot,updates):
+            raise SourceChanged('聊天记忆已变化，请重新搜索。')
+        require_cloud(session,subject_id,actor.actor_id,cloud_consent_id)
+        session.commit()
+        view['items']=list(reversed(selected))
+    return view
+
+
+@router.put('/twin/chat-memory')
+def configure_chat_memory(subject_id: str, body: ChatMemoryPreference, request: Request,
+                          actor: Actor=Depends(current_actor), session: Session=Depends(get_session)):
+    from ..access import require_owner
+    from ..models import ChatMemoryState
+    from .. import chat_memory
+    from ..retrieval import invalidate_answers
+    publication_lock(session,subject_id); require_owner(session,subject_id,actor.actor_id)
+    pref=chat_memory.state(session,subject_id,actor.actor_id)
+    if pref is None:
+        pref=ChatMemoryState(subject_id=subject_id,actor_id=actor.actor_id,enabled=body.enabled,revision=0)
+        session.add(pref)
+    if pref.enabled!=body.enabled:
+        pref.enabled=body.enabled;pref.revision+=1
+    session.flush()
+    invalidate_answers(session,request.app.state.object_store,subject_id)
+    session.commit()
+    return {'enabled':pref.enabled}
+
+
+@router.delete('/twin/chat-memory')
+def clear_chat_memory(subject_id: str, request: Request, actor: Actor=Depends(current_actor),
+                      session: Session=Depends(get_session)):
+    from ..access import require_owner
+    from .. import chat_memory
+    from ..retrieval import invalidate_answers
+    publication_lock(session,subject_id);require_owner(session,subject_id,actor.actor_id)
+    pref=chat_memory.clear(session,subject_id,actor.actor_id)
+    session.flush()
+    invalidate_answers(session,request.app.state.object_store,subject_id)
+    session.commit()
+    return {'enabled':pref.enabled,'available_turn_count':0,'forgotten_before':pref.forgotten_before.isoformat(),
+            'items':[],'summaries':[]}

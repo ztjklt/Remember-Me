@@ -735,6 +735,8 @@ class TwinAnswer(Base):
     parent_answer_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     context_answer_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    recalled_answer_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    history_summary_status: Mapped[str | None] = mapped_column(String(24), nullable=True)
     context_truncated: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
@@ -748,6 +750,39 @@ class TwinAnswer(Base):
     expression: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ChatMemoryState(Base):
+    __tablename__ = 'chat_memory_state'
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    forgotten_before: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class ChatTurnEmbedding(Base):
+    __tablename__ = 'chat_turn_embeddings'
+    answer_id: Mapped[str] = mapped_column(String(64), ForeignKey('twin_answers.answer_id', ondelete='CASCADE'), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    vector: Mapped[list] = mapped_column(JSON, nullable=False)
+
+
+class ChatDigest(Base):
+    __tablename__ = 'chat_digests'
+    __table_args__ = (Index('ix_chat_digest_source', 'subject_id', 'actor_id', 'source_hash', unique=True),)
+    digest_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_answer_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 
 class CalibrationRun(Base):

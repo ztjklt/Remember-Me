@@ -28,6 +28,7 @@ from .providers.ollama import OllamaProvider
 from .providers.anker import AnkerChat, AnkerMemoryProvider, AnkerTwinProvider, AnkerCalibrationProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
 from .grounded_twin import GroundedTwin
+from .chat_summary import ChatSummaryInput, ChatSummaryOutput, ChatSummaryProvider
 from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
@@ -234,6 +235,16 @@ def create_app(
             raise ProviderUnavailable('AI Core capacity is busy')
         try:
             return active_profile.propose_narrative(payload)
+        finally:
+            slots.release()
+
+    @app.post('/chat-summary', response_model=ChatSummaryOutput)
+    def chat_summary(payload: ChatSummaryInput):
+        chat = getattr(active_twin, 'chat', None)
+        if chat is None: raise ProviderUnavailable('Chat summary requires a configured adapter')
+        if not slots.acquire(timeout=5): raise ProviderUnavailable('AI Core capacity is busy')
+        try:
+            return ChatSummaryProvider(chat).summarize(payload)
         finally:
             slots.release()
 

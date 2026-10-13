@@ -101,6 +101,8 @@ def _source_basis(session, subject_id, *, include_profiles, include_authorizatio
         select(GraphFact).where(GraphFact.subject_id == subject_id),
         select(ModelRevision).where(ModelRevision.subject_id == subject_id)]
     if include_authorization:
+        from .models import ChatMemoryState
+        queries.append(select(ChatMemoryState).where(ChatMemoryState.subject_id == subject_id))
         queries.extend([select(Consent).where(Consent.subject_id == subject_id),
             select(StoryGrant).join(Episode).where(Episode.subject_id == subject_id)])
     else:

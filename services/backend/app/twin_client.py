@@ -36,12 +36,23 @@ class TwinClient:
         except (httpx.HTTPError,ValueError):
             return {'status':'unavailable','text':'','model_version':'','prompt_version':'expression-v1'}
 
-    def answer(self, question: str, candidates: list[dict], *, conversation_turns=None, conversation_mode=False, expression_examples=None) -> dict:
+    def summarize_chat(self, turns):
+        try:
+            response = httpx.post(self.url.removesuffix('/twin')+'/chat-summary',
+                json={'turns':turns},timeout=min(self.timeout, 12),follow_redirects=False,trust_env=False)
+            response.raise_for_status()
+            return response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            raise TwinUnavailable('旧聊天摘要暂时不可用。') from exc
+
+    def answer(self, question: str, candidates: list[dict], *, conversation_turns=None, conversation_mode=False, expression_examples=None, conversation_recall=None, conversation_summary=None) -> dict:
         try:
             payload = {"question": question, "candidates": candidates}
             if conversation_mode:
                 payload.update(conversation_mode=True, conversation_turns=conversation_turns or [])
                 if expression_examples: payload['expression_examples'] = expression_examples
+                if conversation_recall: payload['conversation_recall'] = conversation_recall
+                if conversation_summary: payload['conversation_summary'] = conversation_summary
             response = httpx.post(self.url, json=payload,
                                   timeout=self.timeout, follow_redirects=False, trust_env=False)
             if response.is_error:

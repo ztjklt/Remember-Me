@@ -1,7 +1,7 @@
 """Only server-owned, actor/subject-scoped turns form a conversation."""
 from sqlalchemy import select
 from .access import Hidden
-from .models import TwinAnswer
+from .models import TwinAnswer, ChatMemoryState, as_utc
 
 MAX_TURNS = 20
 MAX_CHARACTERS = 24000
@@ -10,6 +10,7 @@ MAX_CHARACTERS = 24000
 def context(session, subject_id, actor_id, parent_id, current_basis):
     rows, seen, size, truncated = [], set(), 0, False
     conversation_id = None
+    memory_state = session.get(ChatMemoryState, (subject_id, actor_id))
     while parent_id:
         if parent_id in seen:
             raise Hidden('会话链不可用，请开始新的聊天。')
@@ -21,6 +22,8 @@ def context(session, subject_id, actor_id, parent_id, current_basis):
             TwinAnswer.subject_id == subject_id, TwinAnswer.actor_id == actor_id))
         if row is None:
             raise Hidden('前一条消息不属于当前本人会话。')
+        if memory_state and memory_state.forgotten_before and as_utc(row.created_at) <= as_utc(memory_state.forgotten_before):
+            break
         cid = row.conversation_id or ('tc_' + row.answer_id)
         if conversation_id is None: conversation_id = cid
         elif row.conversation_id is not None and row.conversation_id != conversation_id:

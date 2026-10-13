@@ -51,12 +51,18 @@ class TwinInput(BaseModel):
     candidates: list[TwinCandidate] = Field(max_length=24000)
     conversation_mode: bool = False
     conversation_turns: list["ConversationTurn"] = Field(default_factory=list, max_length=20)
+    conversation_recall: list["ConversationTurn"] = Field(default_factory=list, max_length=12)
+    conversation_summary: str = Field(default='', max_length=1500)
     expression_examples: list[str] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode='after')
     def material_budget(self):
-        if self.conversation_turns and not self.conversation_mode:
+        if (self.conversation_turns or self.conversation_recall or self.conversation_summary) and not self.conversation_mode:
             raise ValueError('Conversation context requires conversation mode')
+        if sum(len(t.question)+len(t.answer or '') for t in self.conversation_recall)>10000:
+            raise ValueError('Recalled chat exceeds budget')
+        if len({t.answer_id for t in self.conversation_recall+self.conversation_turns}) != len(self.conversation_recall+self.conversation_turns):
+            raise ValueError('Duplicate chat source')
         if sum(len(t.question) + len(t.answer or '') for t in self.conversation_turns) > 24000:
             raise ValueError('Conversation context exceeds 24000 characters')
         if (self.expression_examples and not self.conversation_mode) or sum(map(len, self.expression_examples)) > 4000:
@@ -87,6 +93,8 @@ class ConversationTurn(BaseModel):
     answer: str | None = Field(default=None, max_length=500)
     response_type: Literal['ORIGINAL','SIMULATION','UNKNOWN','CONVERSATION']
     assistant_stale: bool = False
+    created_at: str | None = Field(default=None, max_length=40)
+    conversation_id: str | None = Field(default=None, max_length=64)
 
     @model_validator(mode='after')
     def stale_has_no_body(self):
@@ -135,7 +143,7 @@ class DeepSeekTwinProvider:
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": TWIN_SYSTEM},
                          {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True,
-                             exclude={'conversation_mode','conversation_turns','expression_examples'}), ensure_ascii=False)}],
+                             exclude={'conversation_mode','conversation_turns','expression_examples','conversation_recall','conversation_summary'}), ensure_ascii=False)}],
             "response_format": {"type": "json_object"},
             "max_tokens": 700,
             "temperature": 0,
