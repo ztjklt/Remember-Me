@@ -87,7 +87,7 @@ async def pcm_chunks(source):
     if buffer:yield bytes(buffer)
 
 
-async def clocked_pcm(source):
+async def clocked_pcm(source, *, live_after=None):
     """Batch incoming PCM promptly; advance ASR time only during input gaps.
 
     RTC can deliver a queued burst while the ASR socket is opening. Pacing that
@@ -108,6 +108,9 @@ async def clocked_pcm(source):
                 pending=None
                 if isinstance(frame,rtc.AudioFrame):
                     if frame.num_channels!=1 or frame.sample_rate!=16000:raise ValueError('ASR requires 16 kHz mono')
+                    captured=frame.userdata.get('remember_received_at')
+                    if live_after is not None and captured is not None and captured>=live_after and loop.time()-captured>2:
+                        raise ValueError('Realtime microphone audio fell behind')
                     buffer.extend(bytes(frame.data))
                     while len(buffer)>=3200:
                         packet=bytes(buffer[:3200]);del buffer[:3200]
@@ -122,6 +125,13 @@ async def clocked_pcm(source):
     finally:
         if pending:
             pending.cancel();await asyncio.gather(pending,return_exceptions=True)
+
+
+async def send_pcm(ws, data, *, timeout=2):
+    try:await asyncio.wait_for(ws.send_bytes(data),timeout)
+    except asyncio.TimeoutError:
+        # Ending this call is safer than eventually submitting stale queued speech.
+        raise ValueError('Realtime microphone transport fell behind') from None
 
 
 class ProxyStream(stt.RecognizeStream):
@@ -141,11 +151,12 @@ class ProxyStream(stt.RecognizeStream):
             async with client.ws_connect(url,headers=backend.headers,heartbeat=10,max_msg_size=128*1024,compress=15) as ws:
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
+                if not hasattr(self,'_audio_live_after'):self._audio_live_after=asyncio.get_running_loop().time()
                 counters={'pcm_bytes':0,'heartbeat_count':0,'final_count':0,'final_events':0,'send_stall_max_ms':0,'compression_bits':ws.compress};opened=asyncio.get_running_loop().time()
                 async def send():
-                    async for data in clocked_pcm(self._input_ch):
+                    async for data in clocked_pcm(self._input_ch,live_after=self._audio_live_after):
                         before=asyncio.get_running_loop().time()
-                        await ws.send_bytes(data);counters['pcm_bytes']+=len(data)
+                        await send_pcm(ws,data);counters['pcm_bytes']+=len(data)
                         counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
                 async def receive():
                     seen=set()
@@ -185,7 +196,9 @@ async def listen_microphone(recognizer, participant):
         track_source=rtc.TrackSource.SOURCE_MICROPHONE,sample_rate=16000,num_channels=1)
     stream=recognizer.stream()
     async def feed():
-        async for event in audio:stream.push_frame(event.frame)
+        async for event in audio:
+            event.frame.userdata['remember_received_at']=asyncio.get_running_loop().time()
+            stream.push_frame(event.frame)
         stream.end_input()
     async def drain():
         async for _ in stream:pass  # ProxyStream submits authenticated finals directly.

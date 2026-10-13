@@ -252,3 +252,24 @@ async def test_silence_clock_does_not_add_transport_wait_to_each_audio_interval(
         count+=1
         await asyncio.sleep(.12)  # Model a transport send that takes over 100 ms.
     assert count>=4  # A second 100 ms sleep after every send only emits three.
+
+
+@pytest.mark.asyncio
+async def test_stalled_audio_send_ends_instead_of_reconnecting_with_a_backlog():
+    from agent import send_pcm
+    class StalledSocket:
+        async def send_bytes(self,data):await asyncio.Event().wait()
+    with pytest.raises(ValueError,match='transport fell behind'):
+        await send_pcm(StalledSocket(),b'\0'*3200,timeout=.01)
+
+
+@pytest.mark.asyncio
+async def test_old_live_microphone_frames_are_not_submitted_after_a_stall():
+    from agent import clocked_pcm
+    from livekit import rtc
+    now=asyncio.get_running_loop().time()
+    async def source():
+        yield rtc.AudioFrame(data=b'\0'*3200,sample_rate=16000,num_channels=1,samples_per_channel=1600,
+            userdata={'remember_received_at':now-3})
+    with pytest.raises(ValueError,match='audio fell behind'):
+        async for _ in clocked_pcm(source(),live_after=now-10):pytest.fail('Stale audio forwarded')
