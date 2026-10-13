@@ -90,6 +90,27 @@ def test_worker_refuses_remote_plain_http_or_missing_service_key():
     with pytest.raises(ValueError):Backend('https://fixture.invalid','short','vc_fixture')
 
 
+@pytest.mark.asyncio
+async def test_network_diagnostics_are_opt_in_bounded_and_exclude_http_contents(monkeypatch,caplog):
+    import logging,json
+    backend=Backend('https://fixture.invalid','diagnostic-secret-not-for-logs'*2,'vc_fixture')
+    assert await backend.connection_trace() is None
+    monkeypatch.setenv('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS','1')
+    async def addresses(*args,**kwargs):return [(None,None,None,None,('192.0.2.1',443))]
+    monkeypatch.setattr(asyncio.get_running_loop(),'getaddrinfo',addresses)
+    with caplog.at_level(logging.INFO):
+        trace=await backend.connection_trace()
+        await trace('http11.receive_response_headers.complete',{'return_value':(b'HTTP/1.1',403,b'Forbidden',
+            [(b'authorization',b'diagnostic-secret-not-for-logs'),(b'set-cookie',b'private-cookie')])})
+        await trace('http11.send_request_body.complete',{'body':'private-transcript'})
+        assert await backend.connection_trace() is not None
+        assert await backend.connection_trace() is None
+    serialized=json.dumps([vars(record) for record in caplog.records],default=str)
+    assert 'dns.complete' in serialized and 'receive_response_headers.complete' in serialized
+    assert all(secret not in serialized for secret in ['diagnostic-secret-not-for-logs','private-cookie','private-transcript'])
+    await backend.client.aclose()
+
+
 def test_worker_agent_name_defaults_without_configuration(monkeypatch):
     from agent import agent_name
     monkeypatch.delenv('REMEMBER_LIVEKIT_AGENT_NAME',raising=False)

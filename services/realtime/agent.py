@@ -7,6 +7,7 @@ import json
 import os
 import logging
 import re
+import socket
 from urllib.parse import urlsplit
 from uuid import uuid4
 import aiohttp
@@ -43,8 +44,38 @@ class Backend:
         self.url=url.rstrip('/'); self.call_id=call_id
         self.headers={'Authorization':'Bearer '+secret}
         self.client=httpx.AsyncClient(timeout=httpx.Timeout(120,connect=8),follow_redirects=False,trust_env=False)
+        self.diagnostic_requests=0
+
+    async def connection_trace(self):
+        """Opt-in transport stages only; never log headers, URLs or payloads."""
+        if os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')!='1' or self.diagnostic_requests>=2:
+            return None
+        self.diagnostic_requests+=1
+        loop=asyncio.get_running_loop();started=loop.time()
+        logger=logging.getLogger(__name__);host=urlsplit(self.url).hostname
+        def record(phase,**safe):
+            logger.info('Realtime connection diagnostic',extra={'phase':phase,
+                'elapsed_ms':round((loop.time()-started)*1000),'target_host':host,**safe})
+        try:
+            addresses=await asyncio.wait_for(loop.getaddrinfo(host,443,type=socket.SOCK_STREAM),1)
+            record('dns.complete',addresses=sorted({item[4][0] for item in addresses})[:8])
+        except Exception as exc:record('dns.failed',error_type=type(exc).__name__)
+        async def trace(event,info):
+            if not any(part in event for part in ('connect_tcp','start_tls','send_request_headers','receive_response_headers')):
+                return
+            safe={}
+            if event.endswith('.failed'):safe['error_type']=type(info.get('exception')).__name__
+            stream=info.get('return_value')
+            if event in {'connection.connect_tcp.complete','connection.start_tls.complete'} and hasattr(stream,'get_extra_info'):
+                peer=stream.get_extra_info('server_addr')
+                if peer:safe['peer_address']=str(peer[0])
+            record(event,**safe)
+        return trace
 
     async def request(self,method,path,**kwargs):
+        if path=='/authorize':
+            trace=await self.connection_trace()
+            if trace:kwargs['extensions']={**kwargs.get('extensions',{}),'trace':trace}
         response=await self.client.request(method,self.url+'/internal/voice-calls/'+self.call_id+path,headers=self.headers,**kwargs)
         response.raise_for_status();return response.json()
 
