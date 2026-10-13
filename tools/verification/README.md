@@ -23,6 +23,8 @@ services/realtime/.venv/bin/python tools/verification/public_voice_scenario.py \
 
 控制面调用运行在独立进程组，25秒超时后结束该组。SQL只用于该Actor／Subject的活跃QA通话计数、当前call证明、已保存parent关系，及当前收到的turn request_id对应的合成答案清理；不会按整个账号或时间窗口删除历史内容。若清理失败，report保留具体步骤和错误类型，整体结果为failed，应先核查这次遗留资源再复跑。程序退出0还要求全部场景和清理通过；进度快照只表明当前阶段。
 
+3719a0b起，语音request_id绑定call_id＋turn_id。探针清理包含本次随机turn对应的旧格式及当前call派生格式，兼容两种已部署版本；仍同时限定Actor／Subject，不扩展至其他通话或历史。语音历史召回限定当前conversation，文字入口保留跨会话检索。
+
 需要独立本机Worker对照时可显式加 `--qa-agent-name`。`rtc_test_dispatch.py` 验证原票据签名、room/call/participant绑定及microphone-only权限，只替换agents中的agentName，保留包括call metadata在内的全部其他字段；原票据的业务授权仍由Backend检查。该能力只用于这个有账号白名单的合成探针，不进入手机代码。注册／停止本机Worker由独立controller完成，不能将本机对照通过称为已发布Cloud Worker通过。
 
 注意：同一QA账号不应同时运行多个探针。控制面授权失效或前置检查失败时不猜测RTC故障；另一个测试call存在时拒绝启动。报告不代表真人音色、耳机路由、手机播放或人格忠实度验收。
