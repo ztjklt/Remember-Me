@@ -35,6 +35,34 @@ async def settle():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('enabled',[True,False])
+@pytest.mark.parametrize('error_body',[{'error_code':'AI_SCHEMA_INVALID','error_message':'private response text'},['private response text']])
+async def test_failed_answer_diagnostic_is_numeric_opt_in_and_keeps_user_error(enabled,error_body,caplog):
+    import json,logging
+    from agent import SegmentDiagnostics
+    class Failure:
+        diagnostics=SegmentDiagnostics(enabled,call_number=123)
+        async def request(self,*args,**kwargs):
+            request=httpx.Request('POST','https://fixture.invalid/private',headers={'Authorization':'Bearer private-token'})
+            response=httpx.Response(502,json=error_body,request=request)
+            response.raise_for_status()
+    events=[]
+    async def publish(value):events.append(value)
+    controller=CallController(Failure(),Session(),publish);controller.turn_id='fixture-turn'
+    caplog.set_level(logging.INFO,logger='agent')
+    await controller.respond('private question text','fixture-turn',2)
+    assert events[-1]['type']=='error' and not any(e.get('state')=='listening' for e in events)
+    records=[r for r in caplog.records if r.getMessage()=='Realtime segment diagnostic']
+    assert len(records)==int(enabled)
+    if enabled:
+        assert records[0].stage=='twin_answer.failed' and records[0].http_status==502
+        assert records[0].turn_number==2 and records[0].call_number==123
+        assert records[0].failure_kind==(1 if isinstance(error_body,dict) else 0)
+    serialized=json.dumps([vars(r) for r in caplog.records],default=str)
+    assert all(secret not in serialized for secret in ['private-token','private question text','private response text','fixture-turn'])
+
+
+@pytest.mark.asyncio
 async def test_barge_in_discards_late_reply_even_when_upstream_ignores_cancel():
     api=API();session=Session();events=[]
     async def publish(data):events.append(data)

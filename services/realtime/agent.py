@@ -38,7 +38,7 @@ class SegmentDiagnostics:
     def mark(self,stage,**numbers):
         if not self.enabled:return
         safe={key:value for key,value in numbers.items()
-              if key in {'segment','packets','pcm_bytes','duration_ms','turn_number','frames'}
+              if key in {'segment','packets','pcm_bytes','duration_ms','turn_number','frames','http_status','failure_kind'}
               and type(value) in {int,float}}
         logging.getLogger(__name__).info('Realtime segment diagnostic',extra={
             'stage':stage,'call_number':self.call_number,'elapsed_ms':round((self.clock()-self.started)*1000),**safe})
@@ -387,16 +387,20 @@ class CallController:
         self.interrupt();return True
 
     async def respond(self,text,turn,turn_number=0):
+        phase='publish_question'
         try:
             await self.publish({'type':'question','turn_id':turn,'text':text})
             await self.publish({'type':'state','turn_id':turn,'state':'thinking'})
+            phase='twin_answer'
             answer=await self.backend.request('POST','/answers',json={'question':text,'turn_id':turn})
             if self.closed or self.turn_id!=turn:return
             if segment_diagnostics(self.backend):segment_diagnostics(self.backend).mark('twin_answer',turn_number=turn_number)
+            phase='publish_answer'
             await self.publish({'type':'answer','turn_id':turn,'answer':answer})
             if answer['stale'] or answer['response_type']=='UNKNOWN':
                 await self.publish({'type':'state','turn_id':turn,'state':'listening'});return
             await self.publish({'type':'state','turn_id':turn,'state':'speaking'})
+            phase='playout'
             audio=self.backend.frames(answer['answer_id'],turn)
             async def observed_audio():
                 first=True;count=0
@@ -421,8 +425,20 @@ class CallController:
             if self.turn_id==turn:
                 await self.publish({'type':'state','turn_id':turn,'state':'listening'})
         except asyncio.CancelledError:raise
-        except Exception:
+        except Exception as error:
             if not self.closed and self.turn_id==turn:
+                trace=segment_diagnostics(self.backend)
+                if trace:
+                    status=0;kind=0
+                    if isinstance(error,httpx.HTTPStatusError):
+                        status=error.response.status_code
+                        try:
+                            code=error.response.json().get('error_code')
+                            kind={'AI_SCHEMA_INVALID':1,'EVIDENCE_INVALID':2,'AI_AUTH_FAILED':3,
+                                  'SOURCE_CHANGED':4,'TWIN_FAILED':5,'TWIN_UNAVAILABLE':6,
+                                  'NOT_FOUND':7,'DATABASE_UNAVAILABLE':8}.get(code,0)
+                        except (ValueError,AttributeError,TypeError):pass
+                    trace.mark(phase+'.failed',turn_number=turn_number,http_status=status,failure_kind=kind)
                 await self.publish({'type':'error','turn_id':turn,'message':'本轮语音回答未完成，可以重新说或结束通话。'})
 
     async def close(self):
