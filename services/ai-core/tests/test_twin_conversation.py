@@ -53,9 +53,9 @@ def test_no_recordings_still_uses_draft_and_semantic_review():
                                   time_consistent=True,mode_correct=True,unsupported_claims=[])]},'actual-model'
     chat=Chat();out=GroundedTwin(chat).answer(payload())
     assert out.response_type=='CONVERSATION' and len(chat.calls)==2
-    assert 'conversation-v3-history' in chat.calls[0][0]
-    assert 'twin-points-v7。' not in chat.calls[0][0]
-    assert 'conversation-v2-review' in chat.calls[1][0]
+    assert 'conversation-v4-first-person-history' in chat.calls[0][0]
+    assert 'twin-points-v8-first-person。' not in chat.calls[0][0]
+    assert 'conversation-v3-first-person-review' in chat.calls[1][0]
     assert chat.calls[1][1]['cited_material'][0]['sources'][0]['role']=='user'
     assert chat.calls[1][1]['rendered_answer']['answer']==out.answer
 

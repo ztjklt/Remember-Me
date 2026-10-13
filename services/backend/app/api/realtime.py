@@ -287,7 +287,6 @@ async def speech_call(call_id: str,answer_id: str,turn_id: str,request: Request,
     if result['stale'] or result['response_type']=='UNKNOWN': raise TwinNotFound('回答已过期或没有可朗读的内容。')
     text=result['answer']  # Expression is used only if independently checked by the existing API.
     if result['response_type']=='SIMULATION' and result.get('expression') and result['expression'].get('status')=='available': text=result['expression']['text']
-    if result['response_type']=='SIMULATION': text='根据现有记录推测，'+text
     voice_id,model=profile.provider_voice_id,profile.model
     session.commit()
     def still_authorized():

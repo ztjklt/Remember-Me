@@ -103,18 +103,26 @@ def test_full_packet_keeps_calibration_and_temporal_revisions():
     assert source['text']==e.excerpt
 
 
-@pytest.mark.parametrize('text,valid',[
-    ('结束后我给妈妈打了电话。',False),
-    ('我喜欢散步。',False),
-    ('据讲述者说，他提到“我喜欢散步”。',True),
-    ('据讲述者说，这是当时的自我理解。',True),
-])
-def test_generated_answer_cannot_speak_as_the_subject(text,valid):
+def test_supported_first_person_keeps_the_actual_speaker_and_evidence():
     from app.grounded_twin import validate_answer
-    value=raw();value['points']=value['points'][:1];value['points'][0].update(text=text,names=[])
-    if valid:assert validate_answer(value,data(),'actual').response_type=='SIMULATION'
-    else:
-        with pytest.raises(AIOutputInvalid,match='first person'):validate_answer(value,data(),'actual')
+    value=raw();value['points']=value['points'][:1]
+    value['points'][0].update(text='同事老周告诉我，他父亲曾在铁路工作。',names=['老周'])
+    output=validate_answer(value,data(),'actual')
+    assert output.answer=='同事老周告诉我，他父亲曾在铁路工作。'
+    assert output.response_type=='SIMULATION' and output.evidence_ids==['e1']
+
+
+def test_first_person_does_not_bypass_semantic_rejection_of_other_persons_family():
+    from app.grounded_twin import GroundedTwin
+    class Chat:
+        def complete(self,system,packet):
+            if 'points' not in packet:
+                return {'points':[dict(question_part='父亲工作',mode='SIMULATION',
+                    text='我父亲曾在铁路工作。',source_ids=['s1'],names=[])]},'actual'
+            assert packet['cited_material'][0]['sources'][0]['text']=='同事老周告诉我，他父亲曾在铁路工作。'
+            return {'checks':[dict(point=1,supported=False,complete=True,attribution=False,
+                time_consistent=True,mode_correct=True,unsupported_claims=['colleague father became my father'])]},'actual'
+    with pytest.raises(AIOutputInvalid,match='review'):GroundedTwin(Chat()).answer(data())
 
 
 def test_original_model_text_cannot_differ_from_what_will_be_reviewed():

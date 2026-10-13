@@ -253,7 +253,7 @@ def test_only_current_saved_answer_can_stream_and_source_change_stops_midstream(
     app.state.realtime_provider.after_chunk=invalidate
     result=client.get(path,headers=internal(),params={'turn_id':'turn'})
     assert result.status_code==200 and result.content==b'\x01\x00'*480
-    assert app.state.realtime_provider.operations[-1][1]['text'].startswith('根据现有记录推测，')
+    assert app.state.realtime_provider.operations[-1][1]['text'] == row.answer
 
 
 def test_unknown_is_text_only(ready,client,app,session):
