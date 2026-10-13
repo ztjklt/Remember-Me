@@ -1,0 +1,14 @@
+/* Drifting alpha clouds sit above the static landscape and below all app content. */
+.cloud-drift{display:none;position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.phone[data-page=home] .cloud-drift{display:block}
+.cloud-bank{position:absolute;display:block;max-width:none;height:auto;pointer-events:none;will-change:transform;animation:cloud-sail 38s ease-in-out infinite alternate}
+.cloud-bank-near{width:166%;left:-72%;top:43%;opacity:.58;--cloud-start:-8%;--cloud-end:15%;--cloud-rise:-7px}
+.cloud-bank-far{width:117%;left:46%;top:48%;opacity:.43;--cloud-start:12%;--cloud-end:-18%;--cloud-rise:6px;animation-duration:57s;animation-delay:-19s}
+@keyframes cloud-sail{from{transform:translate3d(var(--cloud-start),0,0)}to{transform:translate3d(var(--cloud-end),var(--cloud-rise),0)}}
+.dark .cloud-drift{opacity:.12}
+.cloud-toggle{display:flex;gap:7px;align-items:center;min-height:44px;padding:8px 0 8px 8px;color:var(--muted);font-size:calc(11px * var(--scale));flex:none}
+.cloud-toggle svg{width:14px;height:14px}.cloud-toggle:disabled{opacity:1}.cloud-state-dot{width:5px;height:5px;border-radius:50%;background:var(--primary)}
+.clouds-paused .cloud-bank,.reduce .cloud-bank{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.cloud-bank{animation:none;will-change:auto;transform:none}}
+@media(prefers-contrast:more){.cloud-drift{display:none!important}.cloud-toggle{display:none}}
+@media(max-width:360px){.cloud-toggle{font-size:10px;gap:5px}}

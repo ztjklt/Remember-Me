@@ -1,0 +1,21 @@
+# Garden v21 — assets and prompts
+
+2026-10-02. Generated with built-in imagegen, not a project API or CLI. No real memory text was uploaded.
+
+Final project assets:
+- `docs/mobile-ui/nature/garden-v21/night.png` — 1024 × 1536, nighttime garden; matching edit of the v20 generated pond background, no painted firefly dots
+- `assets/brand/forget-me-not/v21/stem.png` — 1024 × 1536 RGBA, photographic-style stem, leaves and buds; macro flower v20 used only as material/light reference
+
+The cutout's empty regions contain alpha zero (sampled directly from PNG data). RGB stored under fully transparent pixels can contain a green backdrop, which some previews display; the browser uses the alpha channel and shows a clean cutout. The original generated versions remain outside the repository; only the final cutout is referenced. No raster pixels were edited with Python or shell tools.
+
+## Night prompt
+
+Create a matching nighttime version of this quiet garden pond background for a mobile memory app. Preserve the portrait composition and softly detailed plants framing a clear central area. Naturalistic fine-art landscape photography, believable blue hour after sunset becoming night, muted deep indigo sky, very subtle moonlit silver-blue reflection in the small pond, damp sage-green foliage, faint warm amber light in a distant obscured garden window among trees off to the side. A tranquil intimate real garden, not fantasy. Keep the centre spacious and softly hazy, no foreground hero flowers, no objects competing with blue forget-me-not UI flowers that will be layered on top. No visible moon disk, stars, text, symbols, people or UI. Do NOT paint fireflies or glowing dots into the image: tiny moving fireflies will be added separately in code. Rich tonal separation but readable shadows, never pitch black. Warm memory atmosphere, restrained realistic photographic textures. Portrait 2:3.
+
+## Stem prompt
+
+Using the attached blue forget-me-not flower ONLY as a reference for photographic material, green calyx colour and soft upper-left light, create a NEW isolated plant-part asset: one realistic fresh Myosotis forget-me-not leafy stem, with NO blue flowers and no yellow centres. Genuine transparent background. Portrait 2:3, full stem in frame with generous transparent margins. The stalk starts at the exact horizontal centre close to the top edge and ends at the same horizontal centre close to the bottom edge; a graceful slight organic S bend in between, never looping, not a vine. The upper 18 percent is a clean tapering naked cylindrical pedicel that can attach behind an existing blossom. Lower down, four small alternate narrow lanceolate softly furry leaves arise at real nodes; two angle toward the viewer revealing curved thickness and fine natural branching veins, two tilt away and catch edge light. One tiny modest curled side shoot with two unopened hairy green buds may arise at the upper-middle node. The main stem is light olive green with convincing cylindrical volume, soft shadow on its right edge, delicate translucent pale hairs, tiny irregular grooves; base only a little thicker than top. Match the subtle velvety botanical macro realism of the supplied flower, avoid glossy succulent leaves. All parts grow from the single continuous main stem, no detached pieces, no large fern or grass blades, no roots, no ground, no vase, no text. Plant occupies middle 60 percent width and 90 percent height, full sharp detail on leaves and stem, feather-free transparent cutout. This is a production compositing asset, not a illustration, not a diagram, not smooth plastic, not flat vector, no cast shadow or checkerboard background.
+
+## Cutout refinement prompt
+
+Edit this exact stem image. Preserve every pixel of the plant's shape, size, position, leaf veins, fine hairs and lighting as closely as possible. REMOVE ALL background and ALL broad green/gray/yellow haze, glow, halo or shadows surrounding the plant. Output a clean, genuinely transparent RGBA cutout of only the physical stem, leaves, buds and their tiny attached hairs. The entire empty area between and outside the leaves MUST be alpha zero, including the large hazy regions. Do not paint black, green, white, gray or checkerboard. No stylistic glow or feathered silhouette. Do not add, crop, enlarge or move the plant. Same portrait composition.

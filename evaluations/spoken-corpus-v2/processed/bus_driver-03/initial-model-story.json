@@ -1,0 +1,87 @@
+{
+  "episode_id": "ep_d71b512711fa4c58",
+  "status": "ready",
+  "recorded_at": "2026-09-06T08:00:00+00:00",
+  "duration_ms": 55200,
+  "transcript": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n这两天总想起这件事，就再补这几句。",
+  "machine_transcript": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。这两天总想起这件事，就再补这几句。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_8aabcaded5234115",
+      "content": "本人第一次自己跑12路那天，收车以后在站房坐了一会儿；开车时还绷着，坐下来后肩膀才慢慢松了。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_9d727e9afc9b47e1",
+          "excerpt": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_58173d81a8c44d16",
+      "content": "那天收车后，同事在边上说话，本人听着，心里想的是今天总算平平安安跑完了。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_c2a671db2ae34609",
+          "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_52e4e059c6c242fa",
+      "content": "同事当时说了什么、都有谁，本人现在记不全；年份也还没核实，工作证也没找到。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_5e223bed5e2f4a63",
+          "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_ca29aaf666d94b0e",
+      "content": "本人这两天总想起这件事，就再补了几句。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_5107386610a141e6",
+          "excerpt": "这两天总想起这件事，就再补这几句。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

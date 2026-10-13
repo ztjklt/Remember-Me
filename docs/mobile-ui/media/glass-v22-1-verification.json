@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-03",
+  "checks": [
+    {
+      "case": "night-transparent",
+      "blur": "blur(10px) saturate(1.08) brightness(0.8)",
+      "scene": "night",
+      "tint": "rgba(22, 44, 43, 0.18)"
+    },
+    {
+      "case": "night-solid",
+      "filter": "none",
+      "tint": "rgb(52, 75, 61)"
+    },
+    {
+      "case": "home-solid",
+      "filter": "none",
+      "tint": "rgb(52, 75, 61)"
+    },
+    {
+      "case": "home-transparent",
+      "filter": "blur(10px) saturate(1.12) brightness(0.68)",
+      "textOpacity": "1",
+      "tint": "rgba(40, 60, 47, 0.26)"
+    }
+  ]
+}

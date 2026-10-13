@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "svgFiles": 36,
+  "gallery": "24 displayed glyphs loaded; flat 24 / auto 96 controls and reset checked",
+  "theme": "dark empty state switched to memory-dark-material.svg",
+  "layoutCases": [
+    {
+      "large": false,
+      "screen": "home",
+      "contentHeight": 656,
+      "height": 852,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": false,
+      "screen": "archive",
+      "contentHeight": 656,
+      "height": 852,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": false,
+      "screen": "review",
+      "contentHeight": 588,
+      "height": 852,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": false,
+      "screen": "home",
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": false,
+      "screen": "archive",
+      "contentHeight": 703,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "large": false,
+      "screen": "review",
+      "contentHeight": 636,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "large": true,
+      "screen": "home",
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": true,
+      "screen": "archive",
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": true,
+      "screen": "review",
+      "contentHeight": 563,
+      "height": 900,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "large": true,
+      "screen": "home",
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "large": true,
+      "screen": "archive",
+      "contentHeight": 685,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    },
+    {
+      "large": true,
+      "screen": "review",
+      "contentHeight": 608,
+      "height": 900,
+      "overflow": false,
+      "width": 412
+    }
+  ],
+  "failures": [],
+  "native": "Android build and tests passed; iOS syntax only; devices not verified"
+}

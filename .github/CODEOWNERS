@@ -1,0 +1,4 @@
+# Advisory routing only. Neither main nor develop requires a Code Owner review.
+/apps/ios/ @ztjklt
+/apps/android/ @shuziyuxingxing-stack
+/packages/contracts/ @ztjklt

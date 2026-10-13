@@ -1,0 +1,138 @@
+{
+  "episode_id": "ep_55d7960102d74610",
+  "status": "ready",
+  "recorded_at": "2026-09-30T08:00:00+00:00",
+  "duration_ms": 69120,
+  "transcript": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n一天的活忙完了，有个人惦记着我回家，心里会松下来。\n\n所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n这段我先录下来，过后再听一遍。\n\n好多话平时说不出口，慢慢讲反倒能讲清一点。",
+  "machine_transcript": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。一天的活忙完了，有个人惦记着我回家，心里会松下来。所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天他都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。这段我先录下来，过后再听一遍。好多话平时说不出口，慢慢讲反倒能讲清一点。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_f4a5856288eb4444",
+      "content": "陈岚前几天问过说话人一句话，说话人想好了，要从陈岚妈妈那盏灯讲起。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_735212b22d994af5",
+          "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_ff99da3008864817",
+      "content": "以前说话人收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等自己。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_0ec31bbf68734da1",
+      "content": "一天活忙完后，有个人惦记着自己回家，说话人心里会松下来。",
+      "memory_type": "EMOTION",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_485241868c56488b",
+          "excerpt": "一天的活忙完了，有个人惦记着我回家，心里会松下来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_2012fd90f66f416a",
+      "content": "说话人总说平安回家比多跑一趟重要，主要是因为想到家里还有人在等；不是每一天玉琴都等到很晚，也没有一场事故要讲给陈岚听。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "VALUES_BELIEFS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_a88d871a4439494d",
+      "content": "说话人表示这些平常的日子留在了自己心里。",
+      "memory_type": "EMOTION",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_80a3cc0922af42cb",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_b519401b4f454699",
+      "content": "说话人打算先把这段录下来，过后再听一遍。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "DECISION_PATTERNS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_e642b001110c4429",
+          "excerpt": "这段我先录下来，过后再听一遍。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_d2f0fdfb0dab4272",
+      "content": "说话人觉得好多话平时说不出口，慢慢讲反倒能讲清一点。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_69a8866969064470",
+          "excerpt": "好多话平时说不出口，慢慢讲反倒能讲清一点。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

@@ -1,0 +1,2 @@
+# The Android client does not store provider API keys. Configure providers in the paired Backend.
+sdk.dir=C:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk

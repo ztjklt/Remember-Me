@@ -1,0 +1,815 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.local/contracts/integration-contract-v0.2.schema.json",
+  "title": "Remember Me Integration Contract v0.2",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/captureEpisode"
+    },
+    {
+      "$ref": "#/$defs/episodeCreated"
+    },
+    {
+      "$ref": "#/$defs/processingStatus"
+    },
+    {
+      "$ref": "#/$defs/aiCoreInput"
+    },
+    {
+      "$ref": "#/$defs/aiCoreOutput"
+    },
+    {
+      "$ref": "#/$defs/episodeResult"
+    },
+    {
+      "$ref": "#/$defs/twinRequest"
+    },
+    {
+      "$ref": "#/$defs/twinResponse"
+    },
+    {
+      "$ref": "#/$defs/voiceRequest"
+    },
+    {
+      "$ref": "#/$defs/voiceResponse"
+    },
+    {
+      "$ref": "#/$defs/calibrationInput"
+    },
+    {
+      "$ref": "#/$defs/calibrationOutput"
+    },
+    {
+      "$ref": "#/$defs/personModelSnapshot"
+    },
+    {
+      "$ref": "#/$defs/captureQuestion"
+    }
+  ],
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "source_type",
+        "source_ref"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "span_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "memoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_type",
+        "content",
+        "source_type",
+        "evidence_ids",
+        "confidence",
+        "model_version",
+        "prompt_version",
+        "schema_version"
+      ],
+      "properties": {
+        "memory_type": {
+          "enum": [
+            "EVENT",
+            "PERSON",
+            "RELATIONSHIP",
+            "PREFERENCE",
+            "VALUE",
+            "EMOTION"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effective_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "captureEpisode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "audio_ref",
+        "source",
+        "recorded_at"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recording_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audio_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "enum": [
+            "ANDROID_MIC",
+            "IOS_MIC",
+            "WORK_3200",
+            "RECORDING_DEVICE",
+            "IMPORT"
+          ]
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "episodeCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "upload_status"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upload_status": {
+          "enum": [
+            "pending",
+            "uploading",
+            "uploaded",
+            "failed"
+          ]
+        }
+      }
+    },
+    "processingStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "status"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "uploaded",
+            "transcribing",
+            "extracting",
+            "modeling",
+            "ready",
+            "failed"
+          ]
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "error_message": {
+          "type": "string"
+        }
+      }
+    },
+    "aiCoreInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "subject_id",
+        "transcript",
+        "existing_model_version"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transcript": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_context": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "existing_model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "aiCoreOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_items",
+        "graph_updates",
+        "persona_updates",
+        "evidence",
+        "model_version"
+      ],
+      "properties": {
+        "memory_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/memoryItem"
+          }
+        },
+        "graph_updates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graphFact"
+          }
+        },
+        "persona_updates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/personTrait"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "episodeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "status",
+        "memory_items",
+        "model_version"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "ready"
+        },
+        "memory_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/memoryItem"
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "twinRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "user_query"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "user_query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "twinResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer",
+        "response_type",
+        "evidence",
+        "confidence"
+      ],
+      "properties": {
+        "answer": {
+          "type": "string"
+        },
+        "response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "voiceRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "authorized_text",
+        "voice_profile_id",
+        "voice_consent_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorized_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_consent_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "voiceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "queued",
+            "processing",
+            "ready",
+            "failed"
+          ]
+        },
+        "audio_ref": {
+          "type": "string"
+        },
+        "provider_metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "calibrationInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "question",
+        "locked_twin_answer",
+        "human_answer"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locked_twin_answer": {
+          "type": "string"
+        },
+        "human_answer": {
+          "type": "string"
+        }
+      }
+    },
+    "calibrationOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension_diffs",
+        "model_updates",
+        "followup_questions"
+      ],
+      "properties": {
+        "dimension_diffs": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "model_updates": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "followup_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "personTrait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trait_id",
+        "domain",
+        "statement",
+        "confidence",
+        "source_type",
+        "evidence_ids",
+        "counter_evidence_ids",
+        "status",
+        "model_version"
+      ],
+      "properties": {
+        "trait_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES_BELIEFS",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "counter_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "unresolved",
+            "superseded"
+          ]
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory_item_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "graphFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact_id",
+        "subject_id",
+        "kind",
+        "content",
+        "evidence_ids",
+        "model_version"
+      ],
+      "properties": {
+        "fact_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "EVENT",
+            "PERSON",
+            "RELATIONSHIP"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "personModelSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "version",
+        "domains"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "domains": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "domain",
+              "traits"
+            ],
+            "properties": {
+              "domain": {
+                "enum": [
+                  "IDENTITY",
+                  "EPISODIC_MEMORY",
+                  "RELATIONSHIPS",
+                  "PREFERENCES",
+                  "VALUES_BELIEFS",
+                  "DECISION_PATTERNS",
+                  "EXPRESSION"
+                ]
+              },
+              "traits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/personTrait"
+                }
+              }
+            }
+          }
+        },
+        "graph_facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graphFact"
+          }
+        }
+      }
+    },
+    "captureQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_id",
+        "subject_id",
+        "text",
+        "target_domain",
+        "reason",
+        "status"
+      ],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES_BELIEFS",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "answered",
+            "skipped"
+          ]
+        }
+      }
+    }
+  }
+}

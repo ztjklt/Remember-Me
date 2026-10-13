@@ -1,0 +1,33 @@
+/* Quiet material hierarchy: glass is reserved for navigation, paper for reading. */
+:root{--press-time:110ms;--settle-time:240ms;--nav-glass:#fafbf6ed;--nav-edge:#ffffffba}
+.dark{--nav-glass:#21372bf0;--nav-edge:#d4e8d438}
+.phone .bottomnav{background:var(--nav-glass);border:1px solid var(--nav-edge);backdrop-filter:blur(22px) saturate(1.12);-webkit-backdrop-filter:blur(22px) saturate(1.12);box-shadow:inset 0 1px 0 #ffffff35,0 7px 24px #1536221c}
+.phone .bottomnav:before{box-shadow:inset 0 1px 0 #ffffff22,0 2px 5px #18342318}
+.phone :is(.primary,.secondary,.play,.toolbar button,.entry,.resume){transition:transform var(--press-time) ease-out,background-color 160ms ease,box-shadow 160ms ease}
+.phone :is(.primary,.secondary,.play,.toolbar button):active:not(:disabled){transform:scale(.975)}
+.phone :is(.entry,.resume):active:not(:disabled){transform:scale(.993);background-color:var(--press)}
+.phone .bottomnav button:active svg{transform:translateY(0) scale(.93)}
+.phone[data-page=archive] #results,.phone[data-page=profile] .feature,.phone:not([data-page=home]) .notice,.phone .details,.phone .editor,.phone .player,.phone .feedback-study{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+.phone .player{box-shadow:0 2px 6px #193e2a08;border:1px solid var(--line)}
+.phone .player-time,.phone .timer{font-variant-numeric:tabular-nums}
+.phone .editor{line-height:1.85;padding:18px;border:1px solid var(--line)}
+.overlay:not(.hidden){animation:scrim-enter 160ms ease-out}
+.overlay:not(.hidden) .dialog{animation:sheet-enter var(--settle-time) cubic-bezier(.2,.8,.2,1)}
+@keyframes scrim-enter{from{opacity:0}to{opacity:1}}
+@keyframes sheet-enter{from{opacity:.3;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
+.feedback-study{padding:20px;border-radius:22px;border:1px solid var(--line);margin:16px 0}
+.feedback-study>p{font-size:calc(13px * var(--scale));line-height:1.8}
+.feedback-study button{margin-top:12px;width:100%}
+.feedback-study .feedback-status{margin:12px 0 0;min-height:2em;font-size:calc(13px * var(--scale));color:var(--muted)}
+.material-setting{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.material-setting label{min-height:48px;display:flex;align-items:center;gap:12px;font-size:calc(14px * var(--scale));cursor:pointer}
+.material-setting input{width:20px;height:20px;accent-color:var(--primary)}
+.botanical-study{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:22px;padding:18px;background:var(--surface);margin:16px 0}
+.botanical-study img{width:60px;height:60px;flex:none}.botanical-study p{font-size:calc(13px * var(--scale))}.botanical-study a{padding:8px 0;min-height:44px;display:inline-flex;align-items:center;color:var(--primary);font-size:calc(13px * var(--scale))}
+.dark .botanical-study img{content:url('../brand/v2/mark-dark.svg')}
+.solid-controls .phone .bottomnav{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--line)}
+.reduce .phone button:active,.reduce .phone .bottomnav button:active svg{transform:none!important}
+.reduce .overlay,.reduce .dialog{animation:none!important}
+@media(prefers-reduced-motion:reduce){.phone button:active,.phone .bottomnav button:active svg{transform:none!important}.overlay,.dialog{animation:none!important}}
+@media(prefers-reduced-transparency:reduce),(prefers-contrast:more){.phone .bottomnav{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;border-color:var(--ink)}}
+@supports not (backdrop-filter:blur(1px)){.phone .bottomnav{background:var(--surface)}}

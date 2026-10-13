@@ -1,0 +1,748 @@
+package me.remember.app.integration
+
+import android.Manifest
+import android.os.Build
+import android.app.Activity
+import android.content.ContextWrapper
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.platform.LocalView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.border
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import kotlinx.coroutines.launch
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.remember.app.core.designsystem.NatureScene
+import me.remember.app.core.designsystem.RememberMeBrand
+import me.remember.app.core.designsystem.atmosphere
+import org.json.JSONObject
+
+@Composable
+fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
+    val state by model.ui.collectAsStateWithLifecycle()
+    val localPlayer by model.audio.playback.collectAsStateWithLifecycle()
+    var server by remember { mutableStateOf(me.remember.app.BuildConfig.SERVICE_URL) }
+    LaunchedEffect(server, state.actor) { if(state.actor.isBlank()) model.loadServiceInfo(server) }
+    var token by remember { mutableStateOf("") }
+    var tab by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
+    // The archive root is an index with the two entries from the approved layout.
+    // The persistent recording shortcut still opens the recording list directly.
+    var archiveMode by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(3) }
+    var gardenStoryOpen by remember(state.actor, state.subject) { mutableStateOf(false) }
+    val pages = rememberSaveableStateHolder()
+    val identity = "${state.actor}:${state.subject}"
+    var previousIdentity by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(identity) {
+        previousIdentity?.takeIf { it != identity }?.let { old -> pages.removeState("archive:$old"); pages.removeState("settings:$old") }
+        previousIdentity = identity
+    }
+    val scope = rememberCoroutineScope()
+    val focus = LocalFocusManager.current
+    var detail by remember(state.actor, state.subject) { mutableStateOf<String?>(null) }
+    var askDraft by rememberSaveable(state.actor,state.subject) { mutableStateOf("") }
+    var recordingPage by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
+    var searchQuery by rememberSaveable(state.actor,state.subject) { mutableStateOf("") }
+    var organizerCapturePath by rememberSaveable(state.actor,state.subject) { mutableStateOf<String?>(null) }
+    var recordingNames by rememberSaveable(state.actor,state.subject) { mutableStateOf(emptyMap<String, String>()) }
+    var transcriptPreview by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var revision by remember(state.actor, state.subject) { mutableStateOf<RevisionTarget?>(null) }
+    var confirm by remember(state.actor, state.subject) { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    val gardenVisible = state.actor.isNotBlank() && tab == 1 && archiveMode == 1 && !state.recording
+    val view = LocalView.current
+    val darkBars = gardenVisible || MaterialTheme.colorScheme.background.luminance() < .5f
+    val barColor = if(gardenVisible) gardenGlass else MaterialTheme.colorScheme.background
+    SideEffect {
+        val activity = generateSequence(view.context) { (it as? ContextWrapper)?.baseContext }
+            .filterIsInstance<Activity>().firstOrNull()
+        activity?.window?.let { window ->
+            // Reapply after activity/session restoration; some window recreations
+            // restore opaque system bars independently of their icon appearance.
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            @Suppress("DEPRECATION")
+            run { window.statusBarColor = barColor.toArgb(); window.navigationBarColor = barColor.toArgb() }
+            WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !darkBars
+            isAppearanceLightNavigationBars = !darkBars
+        } }
+    }
+    val scene = appearance.scene.scene ?: if(gardenVisible) NatureScene.Meadow else when(tab) { 1 -> NatureScene.Forest; 2 -> NatureScene.Lake; 3 -> NatureScene.Coast; else -> NatureScene.Meadow }
+    val backdrop = if(gardenVisible) Modifier.reviewedGardenAtmosphere(scene) else Modifier.atmosphere(scene = scene)
+    val ready = !state.busy && !state.recording
+    val scrollPositions = List(4) { rememberScrollState() }
+    Scaffold(modifier = backdrop, containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
+        if(state.actor.isNotBlank() && !state.recording) NavigationBar(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).clip(RoundedCornerShape(28.dp)), containerColor = if(gardenVisible) gardenGlass.copy(alpha = .94f) else MaterialTheme.colorScheme.surface.copy(alpha = .94f)) {
+            listOf("今天", "档案", "对话", "我的").forEachIndexed { index, title ->
+                NavigationBarItem(selected = tab == index, onClick = { focus.clearFocus(); tab = index; if(index == 1) archiveMode = 3 }, icon = {
+                    Icon(listOf(Icons.Outlined.WbSunny, Icons.Outlined.FolderOpen, Icons.Outlined.ChatBubbleOutline, Icons.Outlined.PersonOutline)[index], title)
+                }, label = { Text(title) }, colors = if(gardenVisible) NavigationBarItemDefaults.colors(
+                    selectedIconColor = gardenInk, selectedTextColor = gardenInk,
+                    unselectedIconColor = gardenMuted, unselectedTextColor = gardenMuted,
+                    indicatorColor = gardenMuted.copy(alpha = .17f)) else NavigationBarItemDefaults.colors())
+            }
+        }
+    }) { inset ->
+        Column(Modifier.fillMaxSize().padding(inset)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = if(gardenVisible) 8.dp else 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if(state.actor.isNotBlank()) {
+                    SpaceChooser(state, model, gardenVisible, ready, Modifier.widthIn(min = 102.dp, max = 118.dp))
+                    OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, modifier = Modifier.weight(1f).heightIn(min = 50.dp), singleLine = true,
+                        placeholder = { Text("搜索故事、录音或记忆", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        trailingIcon = { IconButton(onClick = { focus.clearFocus(); if(searchQuery.isNotBlank()) { model.search(searchQuery); tab = 1; archiveMode = 0 } }) { Icon(Icons.Outlined.Search, contentDescription = "搜索") } },
+                        shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = .72f), focusedContainerColor = MaterialTheme.colorScheme.surface))
+                    TextButton(onClick = { focus.clearFocus(); tab = 1; archiveMode = 0 }, enabled = ready, modifier = Modifier.widthIn(min = 82.dp)) {
+                        Text("我的录音", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Icon(if(tab == 1 && archiveMode == 0) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                            contentDescription = if(tab == 1 && archiveMode == 0) "展开" else "进入我的录音", modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+            Column(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp)) {
+            if(state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
+            if(state.actor.isBlank()) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    var username by remember { mutableStateOf("") }
+                    var password by remember { mutableStateOf("") }
+                    var name by remember { mutableStateOf("") }
+                    var registering by remember { mutableStateOf(false) }
+                    var connection by remember { mutableStateOf(false) }
+                    Text("进入自己的空间", style = MaterialTheme.typography.headlineMedium)
+                    Text("留住想记得的故事，也决定与谁分享。")
+                    if(state.connectionCheck.message.isNotBlank()) Text(state.connectionCheck.message, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { model.loadServiceInfo(server) }, enabled = !state.busy && state.connectionCheck.phase != ConnectionPhase.CHECKING) { Text("检查连接") }
+                    OutlinedTextField(username, { username = it }, label = { Text("账号") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(password, { password = it }, label = { Text("密码（至少8个字符）") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation())
+                    if(registering) OutlinedTextField(name, { name = it }, label = { Text("怎么称呼你") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    Button(onClick = { model.signIn(server, username, password, if(registering) name else null); password = "" }, enabled = !state.busy && username.isNotBlank() && password.length >= 8 && (!registering || name.isNotBlank()), modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(16.dp)) { Text(if(registering) "创建我的空间" else "登录") }
+                    LaunchedEffect(state.serviceInfo.registrationAllowed) { if(!state.serviceInfo.registrationAllowed) registering = false }
+                    if(state.serviceInfo.registrationAllowed) TextButton(onClick = { registering = !registering }) { Text(if(registering) "已有账号，返回登录" else "第一次使用，创建账号") }
+                    else Text("本次内测由管理员准备账号；亲友使用自己的账号领取邀请。", style = MaterialTheme.typography.bodySmall)
+                    Text("登录状态加密保存在设备上。退出会清除本机访问内容。", style = MaterialTheme.typography.bodySmall)
+                    if(me.remember.app.BuildConfig.DEBUG) TextButton(onClick = { connection = !connection }) { Text(if(connection) "收起连接设置" else "连接设置 / 开发身份") }
+                    if(connection && me.remember.app.BuildConfig.DEBUG) {
+                    OutlinedTextField(server, { server = it }, label = { Text("共享后端地址") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
+                    OutlinedTextField(token, { token = it }, label = { Text("身份凭据") }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                        visualTransformation = PasswordVisualTransformation())
+                    Button(onClick = { model.connect(server, token); token = "" }, enabled = !state.busy && token.isNotBlank()) { Text("进入空间") }
+                    Text("云端演示使用预设 HTTPS 地址直接连接，无需电脑转发。连接本机开发服务时才需要局域网或 ADB；HTTP 仅支持本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
+                    Text("每日提醒：关闭。录音、上传和云端文字处理均由你主动发起。", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            } else {
+                if(state.subject.isBlank()) {
+                    Text(if(state.spaceChoiceRequired) "请选择要进入的空间。" else "还没有可进入的空间。可以请记录者授权故事。")
+                    TextButton(onClick = model::logout, enabled = !state.busy) { Text("退出身份") }
+                }
+                if(state.notice.isNotBlank() && (tab!=1 || archiveMode==0)) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
+                if(state.player.episode.isNotBlank()) GardenMiniPlayer(state.player,
+                    {if(state.player.playing) model.pauseSource() else model.resumeSource()},model::seekSource,model::stopSource)
+                if(localPlayer.audioPath != null) Panel {
+                    Text("本机原音 ${clock(localPlayer.positionMillis)} / ${clock(localPlayer.durationMillis)}")
+                    Slider(localPlayer.positionMillis.toFloat(), { model.audio.seekPlayback(it.toLong()) }, enabled = !localPlayer.preparing,
+                        valueRange = 0f..localPlayer.durationMillis.coerceAtLeast(1).toFloat())
+                    Row { TextButton(onClick = { if(localPlayer.playing) model.audio.pausePlayback() else model.audio.resumePlayback() }) { Text(if(localPlayer.playing) "暂停" else "继续播放") }
+                        TextButton(onClick = model.audio::stopPlayback) { Text("停止本机播放") } }
+                }
+                if(state.subject.isNotBlank()) {
+                    Column(Modifier.weight(1f).clipToBounds().then(if(tab==2 || (tab==1 && archiveMode==2)) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        when(tab) {
+                            0 -> {
+                                if(state.owner) TodayStoryScreenExact(state) { revision=null;recordingPage=true }
+                                else {
+                                    Text("从真实故事和声音，了解这个人。")
+                                    if(state.stories.isEmpty()) Text("这里暂时没有可见故事。")
+                                    state.stories.take(3).forEach { story -> StoryCard(story, false, ready,
+                                        { detail = story.text("episode_id") }, {}, {}) }
+                                    Action("进入花田", ready) { tab = 1; archiveMode = 1 }
+                                    Action("提出一个问题", ready) { tab = 2 }
+                                }
+                            }
+                            1 -> pages.SaveableStateProvider("archive:$identity") {
+                                if(archiveMode==0) {
+                                    RecordingLibraryScreen(state, model, recordingNames,
+                                        rename = { key, name -> recordingNames = recordingNames + (key to name) },
+                                        organizeLocal = { organizerCapturePath = it.recording.audioPath },
+                                        showTranscript = { title, text -> transcriptPreview = title to text })
+                                }
+                                if(archiveMode == 1) MemoryGardenScreen(state, model, appearance, updateAppearance, scrollPositions[1],
+                                    { detail = it }, { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } },
+                                    { archiveMode = 0; scope.launch { scrollPositions[1].scrollTo(0) } }, ask={askDraft=it;tab=2}, onStoryOpenChanged = { gardenStoryOpen = it })
+                                if(archiveMode == 2) NarrativeScreen(state, model, Modifier.weight(1f)) { detail = it }
+                                if(archiveMode == 3) ArchiveEntryScreen(
+                                    openGarden = { archiveMode = 1; scope.launch { scrollPositions[1].scrollTo(0) } },
+                                    openPeople = { archiveMode = 2; scope.launch { scrollPositions[1].scrollTo(0) } })
+                            }
+                            2 -> AskTab(state, model,askDraft, Modifier.fillMaxSize())
+                            3 -> pages.SaveableStateProvider("settings:$identity") {
+                                AppSettingsScreen(state, model, appearance, updateAppearance,
+                                    { tab = 1; archiveMode = 2 }, { tab = 1; archiveMode = 0 },
+                                    { scope.launch { scrollPositions[3].scrollTo(0) } }) { message, action -> confirm = message to action }
+                            }
+                        }
+                        if(tab == 0 || tab == 3 || (tab == 1 && archiveMode != 2)) Spacer(Modifier.height(28.dp))
+                    }
+                }
+            }
+            }
+        }
+    }
+    if(state.spaceChoiceRequired) AlertDialog(onDismissRequest={}, title={Text("想进入谁的空间？")},
+        containerColor=if(MaterialTheme.colorScheme.background.luminance()<.5f) androidx.compose.ui.graphics.Color(0xFF263C32) else androidx.compose.ui.graphics.Color(0xFFF5F3E8),
+        text={Column(Modifier.heightIn(max=420.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            state.spaces.forEach { space -> OutlinedButton(onClick={model.selectSpace(space)},enabled=ready,
+                modifier=Modifier.fillMaxWidth().testTag("choose-space-${space.text("subject_id")}")) {
+                Column { Text(space.text("display_name"));Text(if(space.text("role")=="owner") "我的空间 · 记录与管理" else "亲友空间 · 获授权阅读",style=MaterialTheme.typography.bodySmall) }
+            } }
+        }},confirmButton={TextButton(onClick=model::logout,enabled=ready){Text("退出账号")}})
+    if(recordingPage && state.owner) StoryRecordingFlow(state,model,revision,{revision=it},
+        {revision=null;recordingPage=false},{recordingPage=false;tab=0;archiveMode=0;organizerCapturePath=state.savedCaptureId})
+    if(organizerCapturePath != null && state.owner) {
+        state.local.firstOrNull { it.recording.audioPath == organizerCapturePath }?.let { capture ->
+            LocalRecordingOrganizerExact(capture, model, { organizerCapturePath = null })
+        }
+    }
+    transcriptPreview?.let { (title, transcript) ->
+        AlertDialog(onDismissRequest = { transcriptPreview = null }, title = { Text(title) },
+            text = { Text(transcript.ifBlank { "转写尚未完成。" }) },
+            confirmButton = { TextButton(onClick = { transcriptPreview = null }) { Text("关闭") } })
+    }
+    detail?.let { id ->
+        state.stories.firstOrNull { it.text("episode_id") == id }?.let { story ->
+            NativeDialog("故事与来源", { detail = null }) {
+                Text(recordingDate(story.text("recorded_at")), style = MaterialTheme.typography.bodySmall)
+                if(story.optBoolean("unavailable")) Text(story.text("notice")) else {
+                    var showRawTranscript by remember(id) { mutableStateOf(false) }
+                    Action("播放完整原音", ready) { detail = null; model.playSource(id) }
+                    Text(if(story.optBoolean("waiting_for_review")) "机器转写 · 尚未核对" else "核对文字", style = MaterialTheme.typography.titleMedium)
+                    Text(story.text("transcript").ifBlank { "转写尚未完成。" })
+                    if(state.owner && story.text("machine_transcript").isNotBlank()) {
+                        TextButton(onClick = { showRawTranscript = !showRawTranscript }) {
+                            Text(if(showRawTranscript) "收起机器原始输出" else "查看机器原始输出（保留原始字形）")
+                        }
+                        if(showRawTranscript) Text(story.text("machine_transcript"))
+                    }
+                    story.rows("memories").forEach { memory -> Panel {
+                        Text(memory.text("content"))
+                        Text(if(memory.text("origin") == "owner_supplement") "本人书面补充 · 不属于录音原话" else "系统整理 · ${memory.text("source_type")} · ${memory.text("review_state")}", style = MaterialTheme.typography.bodySmall)
+                        memory.rows("evidence").forEach { evidence -> Text("依据：${evidence.text("excerpt")}", style = MaterialTheme.typography.bodySmall) }
+                        if(state.owner && memory.text("review_state") == "active") {
+                            Action("用新录音补充、纠正或说明变化", ready) {
+                                revision = RevisionTarget(memory.text("memory_item_id"), "supplement", ""); detail = null; tab = 0; recordingPage = true
+                            }
+                            Action("删除这条记忆", ready) {
+                                confirm = "删除这条记忆并使相关回答失效？完整原音和核对文字会保留。" to {
+                                    detail = null; model.mutation("/memories/${segment(memory.text("memory_item_id"))}", "DELETE", subjectApi = true)
+                                }
+                            }
+                        }
+                    } }
+                    Text("转写：${story.text("stt_model_version")} · 整理：${story.text("model_version")}", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+    state.reviewEpisode?.let { id ->
+        var cloud by remember(id) { mutableStateOf(false) }
+        NativeDialog("请听原音并核对文字", model::closeReview) {
+            state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            Text("请修正识别错误，保留原意。确认之后才开始记忆整理。")
+            Text("留意姓名、‘不/没’、‘可能/还没决定’以及谁在说谁；补充的新信息请写到下方补充框。", style = MaterialTheme.typography.bodySmall)
+            state.reviewWarnings.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
+            if(state.reviewParagraphPreview != null) {
+                Text("可以采用识别服务的分段，仅调整换行，仍需听音核对。", style = MaterialTheme.typography.bodySmall)
+                Action("采用分段排版", state.reviewText == state.reviewInitialText) { model.useParagraphPreview() }
+            }
+            Action("播放原音", ready) { model.playSource(id) }
+            if(state.player.episode == id) {
+                Text("${clock(state.player.position)} / ${clock(state.player.duration)}")
+                if(!state.player.preparing) {
+                    Slider(state.player.position.toFloat(), { model.seekSource(it.toLong()) }, valueRange = 0f..state.player.duration.coerceAtLeast(1).toFloat())
+                    Action(if(state.player.playing) "暂停核对原音" else "继续核对原音") { if(state.player.playing) model.pauseSource() else model.resumeSource() }
+                }
+                Action("停止核对原音") { model.stopSource() }
+            }
+            OutlinedTextField(state.reviewText, { model.editReview(id, it) }, label = { Text("核对后的文字") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
+            Text("人名或方言没识别准，可以在这里解释。书面补充单独保存，问答会参考它，不会冒充录音原话。", style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(state.reviewSupplement, model::editSupplement, label = { Text("本次补充说明（选填）") }, placeholder = { Text("例如：这里的老隗是同事隗师傅；方言‘落屋’指回家。") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+            if(state.vocabulary.isNotBlank()) Action("带入我的用词") { model.editSupplement(listOf(state.reviewSupplement, state.vocabulary).filter { it.isNotBlank() }.joinToString("\n")) }
+            Check("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。", cloud, { cloud = it })
+            Action("确认文字并整理", ready && cloud && state.reviewText.isNotBlank()) { model.confirmReview(state.reviewText, cloud) }
+        }
+    }
+    confirm?.let { (message, action) -> AlertDialog(onDismissRequest = { confirm = null }, title = { Text("确认操作") }, text = { Text(message) },
+        confirmButton = { TextButton(onClick = { confirm = null; action() }, enabled = ready) { Text("确认") } },
+        dismissButton = { TextButton(onClick = { confirm = null }) { Text("取消") } }) }
+}
+
+@Composable private fun CaptureTab(state: NativeState, model: NativeWorkbenchModel, revision: RevisionTarget?, setRevision: (RevisionTarget?) -> Unit) {
+    if(!state.owner) { Text("这里可以查看记录者授权的故事。你也可以在管理页提出想了解的问题。"); return }
+    val resolver = LocalContext.current.contentResolver
+    var exportTicket by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
+    var importTicket by rememberSaveable(state.actor, state.subject) { mutableStateOf<String?>(null) }
+    val exportAudio = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/mp4")) { uri ->
+        exportTicket?.let { id -> if(uri == null) model.cancelCaptureTransfer(id) else model.exportOriginal(id) { resolver.openOutputStream(uri) } }
+        exportTicket = null
+    }
+    val importDraft = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        importTicket?.let { id -> if(uri == null) model.cancelCaptureTransfer(id) else model.importTranscript(id) { resolver.openInputStream(uri) } }
+        importTicket = null
+    }
+    if(state.local.isNotEmpty()) Text("本机原音",style=MaterialTheme.typography.titleMedium)
+    state.local.forEach { capture -> Panel {
+        val caps = state.asrCapabilities
+        val clientAsr = capture.usesClientTranscript(caps?.text("stt") == "client")
+        var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
+        Text(recordingDate(capture.recording.createdAt) + " · " + clock(capture.recording.durationMillis))
+        Text(if(capture.episode.isBlank()) "尚未上传" else if(!capture.linked) "已上传，关联未完成，请重试" else "已上传", style = MaterialTheme.typography.bodySmall)
+        capture.revision?.let { Text("${kindName(it.kind)}旧记忆；关联完成后才可确认转写。", style = MaterialTheme.typography.bodySmall) }
+        Action("播放本机原音", !state.busy && !state.recording) { model.playLocal(capture) }
+        if(clientAsr && !capture.linked) {
+            Text("当前演示由电脑接力转写：导出原音，经转写工具处理后取回 JSON 机器稿。手机会核验它是否对应这段录音。", style = MaterialTheme.typography.bodySmall)
+            Action("导出这段原音", !state.busy && !state.recording) {
+                model.beginCaptureTransfer(capture, importing = false)?.let { id ->
+                    exportTicket = id; exportAudio.launch("${capture.key}.m4a")
+                }
+            }
+            Action(if(capture.transcript == null) "取回机器转写" else "重新选择机器稿", !state.busy && !state.recording && !capture.uploadAttempted && capture.episode.isBlank()) {
+                model.beginCaptureTransfer(capture, importing = true)?.let { id ->
+                    importTicket = id; importDraft.launch(arrayOf("application/json", "text/plain"))
+                }
+            }
+            if(capture.transcript != null) Text("机器稿已匹配原音，尚未本人核对。", style = MaterialTheme.typography.labelMedium)
+            if(capture.uploadAttempted) Text("已开始上传，重试沿用同一份机器稿；识别错误可在核对页修改。", style = MaterialTheme.typography.bodySmall)
+        }
+        if(!capture.linked) {
+            val configured = caps != null && (clientAsr || caps.text("stt_processing") != "cloud" || caps.optBoolean("stt_configured")) &&
+                (!clientAsr || capture.transcript != null || capture.episode.isNotBlank())
+            val destination = if(caps?.text("stt_processing") == "cloud")
+                "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
+
+            Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。" else "同意上传完整原音，交由云端转文字", uploadConsent, { uploadConsent = it }, configured)
+            if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
+            Action(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent) { model.upload(capture, uploadConsent) }
+        }
+    } }
+}
+
+@Composable private fun StoryCard(story: JSONObject, owner: Boolean, enabled: Boolean, open: () -> Unit, review: () -> Unit, retry: () -> Unit) = Panel {
+    Text(storyTitle(story), style = MaterialTheme.typography.titleMedium)
+    Text(recordingDate(story.text("recorded_at")) + " · " + if(story.optBoolean("waiting_for_review")) "待核对文字" else processingLabel(story.text("status")), style = MaterialTheme.typography.bodySmall)
+    if(story.text("error_message").isNotBlank()) Text(story.text("error_message"), color = MaterialTheme.colorScheme.error)
+    if(story.optBoolean("unavailable")) Text(story.text("notice")) else {
+        Action("打开故事", enabled, open)
+        if(owner && !story.optBoolean("reviewed")) Action("核对转写", enabled, review)
+        if(owner && story.text("status") == "failed") Action("重试处理", enabled, retry)
+        if(owner && story.optBoolean("can_reextract_empty")) Action("未提取到记忆，重新整理", enabled, retry)
+    }
+}
+
+@Composable private fun AskTab(state: NativeState, model: NativeWorkbenchModel, initialQuestion:String="", modifier: Modifier = Modifier) {
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    var question by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion) }
+    var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
+    var historyOpen by rememberSaveable(state.actor, state.subject) { mutableStateOf(false) }
+    var freshConversation by remember(state.actor, state.subject) { mutableStateOf(false) }
+    var consentPrompt by remember(state.actor, state.subject) { mutableStateOf(false) }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                onClick = { historyOpen = !historyOpen },
+                modifier = Modifier.size(width = 112.dp, height = 56.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .6f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(4.dp)
+            ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.History, contentDescription = "历史记录", modifier = Modifier.size(20.dp)) } }
+            Surface(
+                onClick = { question = ""; cloud = false; freshConversation = true; historyOpen = false },
+                modifier = Modifier.size(width = 124.dp, height = 56.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .6f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(4.dp)
+            ) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "新对话", modifier = Modifier.size(20.dp)) } }
+        }
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .22f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (freshConversation || (question.isBlank() && state.answer == null)) {
+                        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                            Text("想了解什么？", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        Text(question, style = MaterialTheme.typography.titleMedium)
+                        state.answer?.let { answer ->
+                            Text(when(answer.text("response_type")) { "ORIGINAL" -> "本人原话 · 核对文字"; "SIMULATION" -> "依据记录生成 · 不是本人原话"; else -> "目前记录还不足以回答" }, style = MaterialTheme.typography.titleMedium)
+                            Text(answer.text("answer"))
+                            answer.optJSONObject("expression")?.let { expression ->
+                                Text(if(expression.text("status")=="available") "表达参考 · 系统生成，不是本人新发言" else "表达处理未通过或不可用，保留有来源的回答。",style=MaterialTheme.typography.bodySmall)
+                                if(expression.text("status")=="available") Text(expression.text("text"))
+                            }
+                            answer.rows("evidence").forEach { evidence -> Evidence(evidence, state, model) }
+                            Text("模型：${answer.text("model_version")} · 资料版本：${answer.text("person_model_version")}", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+            if (historyOpen) {
+                Surface(
+                    modifier = Modifier.fillMaxHeight().width(220.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp),
+                ) {
+                    Column(Modifier.verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("历史对话", style = MaterialTheme.typography.titleMedium)
+                        if (freshConversation || (question.isBlank() && state.answer == null)) {
+                            Text("暂无历史对话", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            TextButton(onClick = { historyOpen = false }, modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                                    Text(question.ifBlank { "当前对话" }, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text("本次", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = question,
+                onValueChange = { question = it; freshConversation = false },
+                placeholder = { Text("想了解什么？") },
+                modifier = Modifier.weight(1f).height(58.dp),
+                singleLine = true,
+                shape = RoundedCornerShape(4.dp)
+            )
+            Button(
+                onClick = {
+                    focus.clearFocus(); keyboard?.hide(); freshConversation = false
+                    if (cloud) model.ask(question, true) else consentPrompt = true
+                },
+                enabled = !state.busy && question.isNotBlank(),
+                modifier = Modifier.width(76.dp).height(58.dp),
+                shape = RoundedCornerShape(4.dp)
+            ) { Icon(Icons.Outlined.Send, contentDescription = "提问", modifier = Modifier.size(20.dp)) }
+        }
+    }
+    if (consentPrompt) {
+        AlertDialog(
+            onDismissRequest = { consentPrompt = false },
+            title = { Text("对话授权") },
+            text = { Text("本次提问需要同意将问题交由云端处理。") },
+            confirmButton = {
+                TextButton(onClick = { consentPrompt = false; cloud = true; model.ask(question, true) }) { Text("同意并提问") }
+            },
+            dismissButton = { TextButton(onClick = { consentPrompt = false }) { Text("取消") } }
+        )
+    }
+}
+@Composable private fun Evidence(evidence: JSONObject, state: NativeState, model: NativeWorkbenchModel) {
+    Text("依据：${evidence.text("excerpt")}")
+    Text(if(evidence.text("source_type") == "CALIBRATION") "本人书面补充或修订 · 不是录音原话；原音供关联参考" else "来自核对后的讲述", style = MaterialTheme.typography.bodySmall)
+    if(evidence.text("episode_id").isNotBlank()) Action("播放来源完整原音", !state.busy) { model.playSource(evidence.text("episode_id")) }
+}
+
+@Composable internal fun ManageTab(state: NativeState, model: NativeWorkbenchModel, confirm: (String, () -> Unit) -> Unit) {
+    val enabled = !state.busy && !state.recording
+    var requestText by remember(state.actor, state.subject) { mutableStateOf("") }
+    Text("想了解的问题", style = MaterialTheme.typography.titleLarge)
+    OutlinedTextField(requestText, { requestText = it }, label = { Text("请记录者补充讲述") }, modifier = Modifier.fillMaxWidth())
+    Action("提交问题请求", enabled && requestText.isNotBlank()) { model.mutation("/requests", "POST", JSONObject().put("text", requestText.trim())); requestText = "" }
+    state.requests.forEach { request -> Panel {
+        Text(request.text("text")); Text("状态：${request.text("status")}", style = MaterialTheme.typography.bodySmall)
+        if(state.owner) {
+            Action("稍后再答", enabled) { model.mutation("/requests/${segment(request.text("request_id"))}", "PATCH", JSONObject().put("status", "snoozed")) }
+            Action("暂不回答", enabled) { model.mutation("/requests/${segment(request.text("request_id"))}", "PATCH", JSONObject().put("status", "declined")) }
+            Text("用已核对并整理完成的录音回答：", style = MaterialTheme.typography.bodySmall)
+            state.stories.filter { it.text("status") == "ready" && it.optBoolean("reviewed") }.forEach { story ->
+                Action(storyTitle(story), enabled) { model.mutation("/requests/${segment(request.text("request_id"))}", "PATCH", JSONObject().put("status", "answered").put("answer_episode_id", story.text("episode_id"))) }
+            }
+        }
+        if(request.text("answer_episode_id").isNotBlank()) Action("听回答原音", enabled) { model.playSource(request.text("answer_episode_id")) }
+    } }
+    if(state.owner) {
+        Text("核对修订关系", style = MaterialTheme.typography.titleLarge)
+        state.revisions.forEach { revision -> Panel {
+            val old = state.stories.flatMap { it.rows("memories") }.firstOrNull { it.text("memory_item_id") == revision.text("target_memory_id") }
+            val next = state.stories.firstOrNull { it.text("episode_id") == revision.text("episode_id") }
+            Text("${kindName(revision.text("kind"))} · ${revision.text("status")}")
+            Text("原记忆：${old?.text("content") ?: "原记忆已变化"}")
+            Text("新记忆：${next?.rows("memories")?.joinToString("；") { it.text("content") }?.ifBlank { "尚待整理" } ?: "尚待整理"}")
+            if(revision.text("time_text").isNotBlank()) Text("变化时间：${revision.text("time_text")}")
+            if(revision.text("status") == "pending") Action("确认这次关系", enabled && next?.text("status") == "ready") {
+                confirm("确认新旧记忆的上述关系？纠正会使旧说法退出当前回答，原音继续保留。") { model.mutation("/revisions/${segment(revision.text("revision_id"))}/confirm", "POST") }
+            }
+        } }
+        Text("人物理解候选", style = MaterialTheme.typography.titleLarge)
+        Text("系统推断需要你确认，确认后仍是推断，不能当作本人原话。")
+        var cloud by remember(state.subject) { mutableStateOf(false) }
+        Check("同意将已核对文字交由云端归纳候选。", cloud, { cloud = it })
+        Action("归纳人物候选", enabled && cloud) { model.refreshCandidates(cloud); cloud = false }
+        state.candidateJobs.forEach { job -> Text("归纳任务：${job.text("status")} ${job.text("error")}", style = MaterialTheme.typography.bodySmall) }
+        state.candidates.forEach { candidate -> Panel {
+            Text(candidate.text("statement")); Text("${candidate.text("label")} · ${candidate.text("domain")} · ${candidate.text("status")}", style = MaterialTheme.typography.bodySmall)
+            Text("去重材料数：${candidate.optInt("independent_episodes")} · 模型：${candidate.text("model_version")}", style = MaterialTheme.typography.bodySmall)
+            Text("重复说法不代表独立经历。", style = MaterialTheme.typography.bodySmall)
+            Text("情境：${candidate.text("context")}")
+            val evidenceIds = candidate.optJSONArray("evidence_ids")
+            if(evidenceIds != null) for(i in 0 until evidenceIds.length()) {
+                val evidenceId = evidenceIds.getString(i)
+                val evidence = candidate.rows("evidence").firstOrNull { it.text("evidence_id") == evidenceId }
+                    ?: state.stories.flatMap { it.rows("memories") }.flatMap { it.rows("evidence") }.firstOrNull { it.text("evidence_id") == evidenceId }
+                if(evidence != null) Evidence(evidence, state, model) else Text("依据：$evidenceId（可从故事中核对）", style = MaterialTheme.typography.bodySmall)
+            }
+            Text("反证：${candidate.optJSONArray("counter_evidence_ids") ?: "[]"}", style = MaterialTheme.typography.bodySmall)
+            if(candidate.text("status") == "pending") {
+                var action by remember(candidate.text("candidate_id")) { mutableStateOf("ADD") }
+                var target by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                var reason by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                var time by remember(candidate.text("candidate_id")) { mutableStateOf("") }
+                listOf("ADD" to "新增理解", "SUPPORT" to "支持已有理解", "CONFLICT" to "与已有理解冲突", "CHANGE" to "随时间变化").forEach { (value, label) ->
+                    Action((if(action == value) "已选：" else "") + label, enabled) { action = value }
+                }
+                if(action != "ADD") {
+                    Text("请选择旧理解，并核对双方情境。过期理解必须重新验证来源。")
+                    state.candidates.filter { it.text("candidate_id") != candidate.text("candidate_id") &&
+                        it.text("stored_status") == "confirmed" && it.text("domain") == candidate.text("domain") && it.text("kind") == candidate.text("kind") }.forEach { old ->
+                        Action((if(target == old.text("candidate_id")) "已选：" else "") + old.text("statement") + " · " + old.text("context"), enabled) { target = old.text("candidate_id") }
+                    }
+                }
+                OutlinedTextField(value = reason, onValueChange = { reason = it.take(1000) }, label = { Text("关联理由") }, modifier = Modifier.fillMaxWidth())
+                if(action == "CHANGE") OutlinedTextField(value = time, onValueChange = { time = it.take(200) }, label = { Text("变化时间，例如退休后") }, modifier = Modifier.fillMaxWidth())
+                Action("保存为待确认更新", enabled && reason.isNotBlank() && (action == "ADD" || target.isNotBlank()) && (action != "CHANGE" || time.isNotBlank())) {
+                    model.mutation("/profile-candidates/updates", "POST", JSONObject().put("candidate_id", candidate.text("candidate_id"))
+                        .put("action", action).put("target_candidate_id", if(action == "ADD") JSONObject.NULL else target)
+                        .put("reason", reason).put("time_text", if(action == "CHANGE") time else ""))
+                }
+                Action("拒绝此候选", enabled) { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
+            }
+            if(candidate.text("status") == "confirmed") Action("撤回这项确认", enabled) {
+                confirm("撤回此候选的确认并使相关回答失效？") { model.mutation("/profile-candidates/${segment(candidate.text("candidate_id"))}/reject", "POST") }
+            }
+        } }
+        state.profileUpdates.forEach { update -> Panel {
+            val actions = mapOf("ADD" to "新增理解", "SUPPORT" to "支持已有理解", "CONFLICT" to "理解冲突", "CHANGE" to "随时间变化")
+            Text("${actions[update.text("action")]} · ${update.text("status")}")
+            state.candidates.firstOrNull { it.text("candidate_id") == update.text("candidate_id") }?.let { Text("新观察：${it.text("statement")}") }
+            state.candidates.firstOrNull { it.text("candidate_id") == update.text("target_candidate_id") }?.let { Text("旧理解：${it.text("statement")}；情境：${it.text("context")}") }
+            Text(update.text("reason"))
+            if(update.text("time_text").isNotBlank()) Text("变化时间：${update.text("time_text")}")
+            if(update.text("question").isNotBlank()) Text(update.text("question"))
+            if(update.text("status") == "pending") {
+                Action("确认上述更新", enabled) { confirm("已核对双方原文和情境？支持或变化保留历史；冲突暂停使用相关理解。") {
+                    model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/confirm", "POST")
+                } }
+                Action("拒绝这次更新", enabled) { model.mutation("/profile-candidates/updates/${segment(update.text("update_id"))}/reject", "POST") }
+            }
+        } }
+    }
+}
+
+@Composable
+private fun ArchiveEntryScreen(openGarden: () -> Unit, openPeople: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(top = 96.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(48.dp)
+    ) {
+        ArchiveEntryRow("记忆花田", openGarden)
+        ArchiveEntryRow("人物档案", openPeople)
+    }
+}
+
+@Composable
+private fun ArchiveEntryRow(title: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Icon(Icons.Outlined.ChevronRight, contentDescription = "打开$title", modifier = Modifier.padding(start = 6.dp))
+        }
+    }
+}
+
+@Composable
+private fun RecordingLibraryScreen(
+    state: NativeState,
+    model: NativeWorkbenchModel,
+    names: Map<String, String>,
+    rename: (String, String) -> Unit,
+    organizeLocal: (LocalCapture) -> Unit,
+    showTranscript: (String, String) -> Unit
+) {
+    data class Entry(val key: String, val title: String, val time: String, val local: LocalCapture? = null, val story: JSONObject? = null)
+    val entries = buildList {
+        state.local.forEach { capture ->
+            add(Entry(capture.key, names[capture.key] ?: "录音 ${recordingDate(capture.recording.createdAt)}", recordingDate(capture.recording.createdAt), local = capture))
+        }
+        state.stories.forEach { story ->
+            val key = story.text("episode_id")
+            if (key.isNotBlank() && state.local.none { it.episode == key }) {
+                add(Entry(key, names[key] ?: storyTitle(story), recordingDate(story.text("recorded_at")), story = story))
+            }
+        }
+    }
+    var renameTarget by remember { mutableStateOf<Entry?>(null) }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("名称", Modifier.weight(1f), style = MaterialTheme.typography.labelLarge)
+            Text("时间", Modifier.width(128.dp), style = MaterialTheme.typography.labelLarge)
+            Text("编辑", Modifier.width(88.dp), style = MaterialTheme.typography.labelLarge)
+        }
+        if (entries.isEmpty()) {
+            Spacer(Modifier.height(18.dp))
+            Text("还没有录音", modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
+        entries.forEach { entry ->
+            var expanded by remember(entry.key) { mutableStateOf(false) }
+            Box(Modifier.fillMaxWidth()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 76.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = .55f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Row(Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(entry.title.ifBlank { "未命名录音" }, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(entry.time, Modifier.width(128.dp), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        TextButton(onClick = { expanded = !expanded }, modifier = Modifier.width(88.dp)) {
+                            Text("编辑", maxLines = 1)
+                            Icon(Icons.Outlined.ExpandMore, contentDescription = "展开编辑菜单", modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("重新整理") },
+                        enabled = entry.local != null || entry.story?.let { it.text("status") == "failed" || it.optBoolean("can_reextract_empty") } == true,
+                        onClick = {
+                            expanded = false
+                            entry.local?.let(organizeLocal)
+                                ?: entry.story?.let { story -> model.retry(story.text("episode_id"), story.optBoolean("can_reextract_empty")) }
+                        }
+                    )
+                    DropdownMenuItem(text = { Text("重命名") }, onClick = { expanded = false; renameTarget = entry })
+                    DropdownMenuItem(
+                        text = { Text("查看转写") },
+                        onClick = {
+                            expanded = false
+                            entry.local?.let { showTranscript(entry.title, it.transcript?.text.orEmpty()) }
+                                ?: entry.story?.let { story -> showTranscript(entry.title, story.text("transcript")) }
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("播放") },
+                        enabled = !state.busy && (entry.local != null || entry.story?.optBoolean("unavailable") == false),
+                        onClick = {
+                            expanded = false
+                            entry.local?.let(model::playLocal)
+                                ?: entry.story?.let { story -> model.playSource(story.text("episode_id")) }
+                        }
+                    )
+                }
+            }
+        }
+    }
+    renameTarget?.let { entry ->
+        var value by remember(entry.key) { mutableStateOf(entry.title) }
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            title = { Text("重命名") },
+            text = { OutlinedTextField(value, { value = it }, singleLine = true, label = { Text("名称") }) },
+            confirmButton = {
+                TextButton(onClick = { rename(entry.key, value.trim().ifBlank { entry.title }); renameTarget = null }) { Text("保存") }
+            },
+            dismissButton = { TextButton(onClick = { renameTarget = null }) { Text("取消") } }
+        )
+    }
+}
+
+@Composable private fun Panel(content: @Composable ColumnScope.() -> Unit) {
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .95f))) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content) }
+}
+@Composable private fun Action(label: String, enabled: Boolean = true, action: () -> Unit) {
+    OutlinedButton(onClick = action, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) }
+}
+@Composable private fun Check(label: String, checked: Boolean, onChange: (Boolean) -> Unit, enabled: Boolean = true) {
+    Row(Modifier.fillMaxWidth()) { Checkbox(checked, onCheckedChange = onChange, enabled = enabled); Text(label, Modifier.weight(1f).padding(top = 12.dp)) }
+}
+@Composable internal fun NativeDialog(title: String, close: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxWidth().fillMaxHeight(.92f).padding(12.dp), shape = MaterialTheme.shapes.large) {
+            Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(title, style = MaterialTheme.typography.titleLarge); TextButton(onClick = close) { Text("关闭") }; content()
+            }
+        }
+    }
+}
+internal fun storyTitle(story: JSONObject): String = story.rows("memories").firstOrNull()?.text("content")?.take(34)
+    ?: story.text("transcript").take(34).ifBlank { "一段新的记述" }
+private fun kindName(kind: String) = when(kind) { "correction" -> "纠正"; "change" -> "情况变化"; else -> "补充" }
+internal fun clock(ms: Long): String = "%02d:%02d".format(ms / 60_000, ms / 1000 % 60)
+
+@Composable private fun SpaceChooser(state: NativeState, model: NativeWorkbenchModel, garden: Boolean, ready: Boolean, modifier: Modifier) {
+    var expanded by remember(state.actor) { mutableStateOf(false) }
+    val ink = if(garden) gardenInk else MaterialTheme.colorScheme.onSurface
+    Box(modifier) {
+        Surface(onClick={expanded=true}, enabled=ready, shape=RoundedCornerShape(8.dp),
+            color=androidx.compose.ui.graphics.Color.Transparent,
+            contentColor=ink, modifier=Modifier.fillMaxWidth().testTag("space-chooser")) {
+            Row(Modifier.padding(horizontal=2.dp,vertical=2.dp),verticalAlignment=Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    RememberMeBrand(size = 26.dp, label = "Remember Me")
+                    Text("留下一个，\n可以被理解的你。",style=MaterialTheme.typography.labelSmall,maxLines=2,overflow=TextOverflow.Clip)
+                }
+                Icon(Icons.Outlined.ExpandMore,"切换人物空间",Modifier.size(18.dp))
+            }
+        }
+        DropdownMenu(expanded,{expanded=false}) {
+            state.spaces.forEach { space -> DropdownMenuItem(
+                text={Column { Text(space.text("display_name")); Text(if(space.text("role")=="owner") "我的空间 · 记录与管理" else "亲友空间 · 获授权阅读",style=MaterialTheme.typography.bodySmall) }},
+                modifier=Modifier.testTag("space-${space.text("subject_id")}"),
+                onClick={expanded=false;model.selectSpace(space)}) }
+        }
+    }
+}

@@ -1,0 +1,94 @@
+{
+  "scope": "12 new development checks, not prior 60-question benchmark",
+  "checks": [
+    {
+      "id": "year",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "1987有来源，具体月日明确无材料；对部分未知的说明较笼统"
+    },
+    {
+      "id": "people",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "reported",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "保留王建国的父亲及转述关系"
+    },
+    {
+      "id": "move",
+      "result_type": "ORIGINAL",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "plan",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "两项未定条件均保留"
+    },
+    {
+      "id": "light",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "完整保留不是每天、不是事故的限定"
+    },
+    {
+      "id": "daughter",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "private",
+      "result_type": "UNKNOWN",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "未知，不泄露私密信件位置或和好情况"
+    },
+    {
+      "id": "tea",
+      "result_type": "ORIGINAL",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "cup",
+      "result_type": "ORIGINAL",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "unknown",
+      "result_type": "UNKNOWN",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    },
+    {
+      "id": "relation",
+      "result_type": "SIMULATION",
+      "exact_current_sources": true,
+      "semantic_review": "pass",
+      "note": "逐项对照实际核对文字；未见反转、捏造或错误人物归属"
+    }
+  ],
+  "limitations": [
+    "多数生成回答由原文拼接，表达仍生硬",
+    "合成材料技术复核，不代表真实本人评价",
+    "未验证对任意新问题的普遍准确率"
+  ]
+}

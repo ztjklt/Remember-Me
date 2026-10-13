@@ -1,0 +1,170 @@
+{
+  "version": "0.9.0-internal",
+  "version_code": 20261014,
+  "baseline": "a7079f4560016fb00c3787a16946e88cce4bb626",
+  "source_commit": "See demo-android-0.9.0-20261011 Git tag and release provenance.json",
+  "apk_sha256": "dde176de54b2a58429e331a763e976e96864887950db0d5c219578579e8ab6ab",
+  "apk_bytes": 162842222,
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "source_files_fingerprint": "dd97dd6858ca6eb66384740580c3388148a251a5c5d1f0e5fd7d356a833b797b",
+  "unit_tests": {
+    "tests": 76,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "owner100": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 52.527
+    },
+    "owner200": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 2,
+      "physical_phone": false,
+      "elapsed_seconds": 48.002
+    },
+    "reader100": {
+      "real_ecs": true,
+      "episodes": 8,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 41.982
+    }
+  },
+  "screenshots": [
+    {
+      "file": "01-owner100-01-today.png",
+      "title": "今天：讲一段",
+      "sha256": "68d0fe4d101ac7fd9fcba8858e0ea10b21d2f19c7f89236b5d0672e6c688c2c4",
+      "case": "owner100"
+    },
+    {
+      "file": "02-owner100-02b-recorder-paused.png",
+      "title": "独立录音与暂停",
+      "sha256": "86e466d9f867036fe076c5a351015b16af3dff8f944248bd9c245978fa6f0574",
+      "case": "owner100"
+    },
+    {
+      "file": "03-owner100-03-garden.png",
+      "title": "连续花径",
+      "sha256": "30dba1429835be644db3902d957a0d344d460c0039c9ae7b26b2f92912aa9b98",
+      "case": "owner100"
+    },
+    {
+      "file": "04-owner100-04-flower.png",
+      "title": "聚焦同一花形",
+      "sha256": "2be9011562e4c5e408cc24ee0e1a3016b7e113c017e30e7b8c0b28663d8537e5",
+      "case": "owner100"
+    },
+    {
+      "file": "05-owner100-05-memory-source.png",
+      "title": "花瓣记忆与来源",
+      "sha256": "82b1306e8ca98f14d628bf96a742f25f034142ce537e01d642461fe88dad13b7",
+      "case": "owner100"
+    },
+    {
+      "file": "06-owner100-06-playback.png",
+      "title": "真实原音播放后暂停",
+      "sha256": "af0d01546bf390fe17f09cd133f1c9e8e3cb0beda8dec2aa53c230f3a80b1cd5",
+      "case": "owner100"
+    },
+    {
+      "file": "07-owner100-06b-list.png",
+      "title": "同一批内容的列表",
+      "sha256": "05b5d752acebfdfa638390b69c37e12958d0d3437613f3a6f67a9268d6dbc1f5",
+      "case": "owner100"
+    },
+    {
+      "file": "08-owner100-06c-search.png",
+      "title": "王建国：精准与相关查找",
+      "sha256": "1ab8f86597a3b4292c328b08413b1e55aada865f32bfa429669efb1917eaf3ca",
+      "case": "owner100"
+    },
+    {
+      "file": "09-owner100-08-view-0.png",
+      "title": "人生足迹",
+      "sha256": "7a33016554c093a8e664f1db8c287713cf417e11657770723e50da6d18f2f1d1",
+      "case": "owner100"
+    },
+    {
+      "file": "10-owner100-08-view-1.png",
+      "title": "重要的人",
+      "sha256": "c9be9e3d799bf70502aa7abe19ffb28e13ecb9e11c41775966705bccf444a7fa",
+      "case": "owner100"
+    },
+    {
+      "file": "11-owner100-08-view-2.png",
+      "title": "在意选择",
+      "sha256": "9209afac0a3dcf2edbe8006470332124552952eccf9225aed185ab3510d67b62",
+      "case": "owner100"
+    },
+    {
+      "file": "12-owner100-08-view-3.png",
+      "title": "声音表达",
+      "sha256": "76f7bcf6caa5e247a5199bce6101d1b71264136c8a524d1d60c5a07f56e994b0",
+      "case": "owner100"
+    },
+    {
+      "file": "13-owner100-09-sides.png",
+      "title": "八个记忆侧面",
+      "sha256": "d3d56ed00991c7772154ee65bb837caf0087449a3c348532a15ffba9c6af3513",
+      "case": "owner100"
+    },
+    {
+      "file": "14-owner100-09b-side-search.png",
+      "title": "在八维总览查找人物",
+      "sha256": "4137c535cec4f69381cab592b51ebabc0af3eac310aad7f46a87a2289ef9f617",
+      "case": "owner100"
+    },
+    {
+      "file": "15-owner100-10-library.png",
+      "title": "全部录音",
+      "sha256": "3ad37f0bf84efb57da529cf1de3bcc30b7afc24e045ac3a6b2eef2f1f64dd684",
+      "case": "owner100"
+    },
+    {
+      "file": "16-reader100-03-garden.png",
+      "title": "亲友的获授权花田",
+      "sha256": "ee9577142a5f61766f9824b6e25aacc7a7edfdb5069160b1d663e7edad404696",
+      "case": "reader100"
+    },
+    {
+      "file": "17-reader100-07-person.png",
+      "title": "亲友的可见人物内容",
+      "sha256": "4d565d4652bd1c25c557630d422fd63452b1594aa7f2e2b32c853f3e8aa8d6c8",
+      "case": "reader100"
+    },
+    {
+      "file": "18-owner200-04-flower.png",
+      "title": "200%字号花瓣改为顺序入口",
+      "sha256": "63eac96eb96c8bf8c60d78bd6b376f6c8213eeaef3ece0f3a39bf9aa34b82d9d",
+      "case": "owner200"
+    },
+    {
+      "file": "19-owner200-05-memory-source.png",
+      "title": "200%字号来源阅读",
+      "sha256": "91c605fa0f0c6ac9c1bc76de07465598b3ffc8341ed0a05ad2cb58d9490d4444",
+      "case": "owner200"
+    }
+  ],
+  "server_release": "garden-password8-c0e7a0f6",
+  "server_code_changed": false,
+  "database_migration": false,
+  "models": {
+    "tts": "mimo-v2.5-tts-voiceclone",
+    "asr": "bailian/paraformer-v2",
+    "text": "Deepseek-v4-flash"
+  },
+  "physical_android": "pending",
+  "ios_build": "pending",
+  "full_manual_listening": "pending",
+  "prior_60_question_set": "not rerun"
+}

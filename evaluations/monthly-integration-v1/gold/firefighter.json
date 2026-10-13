@@ -1,0 +1,592 @@
+{
+  "never_send_to_model": true,
+  "qa_protocol": {
+    "as_of_day": 30,
+    "reader_required_episode_suffixes": [
+      2,
+      3,
+      5,
+      6,
+      8,
+      9
+    ],
+    "reader_private_episode_suffixes": [
+      4,
+      7,
+      10
+    ],
+    "reader_unavailable_episode_suffixes": [
+      1
+    ],
+    "owner_scope": "all currently effective reviewed material; corrected old facts excluded",
+    "required_actions": [
+      "Episode 04 must be manually associated with the old year in episode 01 and confirmed by the owner before QA.",
+      "Episode 06 is a separate public supplement of earlier correct facts; its explicit statements are current answer sources.",
+      "Episode 03 repeats an unverified-year reference without naming the wrong year. Do not infer a confirmed old year from this reference.",
+      "If extraction mistakenly puts a concrete old year into episode 03, record a failure, manually correct that target and rerun. A single revision does not automatically correct multiple targets.",
+      "Grant existence does not prove material is effective; episode 01 may retain a grant while being unavailable after correction.",
+      "Episode 10 answers remain private despite the reader asking episode 09 questions."
+    ],
+    "precondition_status": "not_live_verified",
+    "scoring": "Each question checks only its necessary facts. UNKNOWN has no expected private facts. Supported answers may be grounded original or cautious simulation; no universal ORIGINAL requirement.",
+    "needs_manual_confirmation": [
+      "Actual effective content must preserve the explicit source facts before QA; source availability cannot be inferred from manifest alone.",
+      "Partial-span correction versus whole-story suppression depends on the actual reviewed extraction; recheck episode 01 unavailability and all confirmed revision records."
+    ]
+  },
+  "qa": [
+    {
+      "id": "firefighter-q01",
+      "category": "original",
+      "role": "owner",
+      "question": "首次值班后给谁打电话？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "首次独立值班后给妈妈许雁打电话"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "给伴侣打电话",
+        "工作危险或受伤",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q02",
+      "category": "original",
+      "role": "reader",
+      "question": "首次值班后给谁打电话？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "首次独立值班后给妈妈许雁打电话"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "给伴侣打电话",
+        "工作危险或受伤",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q03",
+      "category": "cross_recording",
+      "role": "owner",
+      "question": "灰色本子和第一次值班有什么关系？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "第一次值班后的那天被写进灰色封皮本子",
+        "本子是文字记录，不是当晚照片"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "重复讲述变成第二次首次值班",
+        "未核实的旧值班年份",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q04",
+      "category": "cross_recording",
+      "role": "reader",
+      "question": "灰色本子和第一次值班有什么关系？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "第一次值班后的那天被写进灰色封皮本子",
+        "本子是文字记录，不是当晚照片"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "重复讲述变成第二次首次值班",
+        "未核实的旧值班年份",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q05",
+      "category": "correction",
+      "role": "owner",
+      "question": "首次独立值班是哪年？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-04",
+      "expected_facts": [
+        "首次独立完成岗位值班是二〇一八年",
+        "本人依据灰色本子的日期纠正二〇一七年"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "继续使用失效二〇一七年",
+        "精确月日",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q06",
+      "category": "correction",
+      "role": "reader",
+      "question": "首次独立值班是哪年？",
+      "as_of_day": 30,
+      "source_episode": null,
+      "expected_facts": [],
+      "expected_visibility": "UNKNOWN/material unavailable",
+      "expected_response_type": "UNKNOWN",
+      "unknown_reason": "no authorized effective material",
+      "must_not_infer": [
+        "继续使用失效二〇一七年",
+        "精确月日",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q07",
+      "category": "temporal",
+      "role": "owner",
+      "question": "过去和现在住哪里？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-05",
+      "expected_facts": [
+        "二〇二三年以前住昆明五华区",
+        "二〇二四年以后住昆明呈贡区"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "精确搬家月份",
+        "单位安排搬家",
+        "一起生活是唯一原因",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q08",
+      "category": "temporal",
+      "role": "reader",
+      "question": "过去和现在住哪里？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-05",
+      "expected_facts": [
+        "二〇二三年以前住昆明五华区",
+        "二〇二四年以后住昆明呈贡区"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "精确搬家月份",
+        "单位安排搬家",
+        "一起生活是唯一原因",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q09",
+      "category": "third_party",
+      "role": "owner",
+      "question": "谁的哥哥喜欢登山，证据来自谁？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-02",
+      "expected_facts": [
+        "队友赵宁说她哥哥喜欢登山",
+        "林知夏转述队友的话，未与哥哥一起走山路"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "哥哥本人原话",
+        "摄影朋友的哥哥",
+        "林知夏喜欢攀岩",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q10",
+      "category": "third_party",
+      "role": "reader",
+      "question": "谁的哥哥喜欢登山，证据来自谁？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-02",
+      "expected_facts": [
+        "队友赵宁说她哥哥喜欢登山",
+        "林知夏转述队友的话，未与哥哥一起走山路"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "哥哥本人原话",
+        "摄影朋友的哥哥",
+        "林知夏喜欢攀岩",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q11",
+      "category": "same_name",
+      "role": "owner",
+      "question": "两个赵宁是同一个人吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "摄影朋友赵宁与队友赵宁是两个人"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "摄影朋友在消防队工作",
+        "合并家庭与职业",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q12",
+      "category": "same_name",
+      "role": "reader",
+      "question": "两个赵宁是同一个人吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-06",
+      "expected_facts": [
+        "摄影朋友赵宁与队友赵宁是两个人"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "摄影朋友在消防队工作",
+        "合并家庭与职业",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q13",
+      "category": "private",
+      "role": "owner",
+      "question": "私人调岗打算记在哪里？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-07",
+      "expected_facts": [
+        "未提交的近家岗位考虑记在手机灰伞私人备忘里"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "申请已提交或批准",
+        "已经调岗",
+        "伴侣已经知道",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q14",
+      "category": "private",
+      "role": "reader",
+      "question": "私人调岗打算记在哪里？",
+      "as_of_day": 30,
+      "source_episode": null,
+      "expected_facts": [],
+      "expected_visibility": "UNKNOWN/material unavailable",
+      "expected_response_type": "UNKNOWN",
+      "unknown_reason": "no authorized effective material",
+      "must_not_infer": [
+        "申请已提交或批准",
+        "已经调岗",
+        "伴侣已经知道",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q15",
+      "category": "unknown",
+      "role": "owner",
+      "question": "明年半马已经报名了吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-08",
+      "expected_facts": [
+        "明年半程马拉松还没有报名"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "确定训练计划",
+        "能完成比赛",
+        "报名城市日期",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q16",
+      "category": "unknown",
+      "role": "reader",
+      "question": "明年半马已经报名了吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-08",
+      "expected_facts": [
+        "明年半程马拉松还没有报名"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "确定训练计划",
+        "能完成比赛",
+        "报名城市日期",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q17",
+      "category": "negative",
+      "role": "owner",
+      "question": "她喜欢攀岩吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-02",
+      "expected_facts": [
+        "她不喜欢攀岩，喜欢散步"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "队友哥哥的爱好成为她的爱好",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q18",
+      "category": "negative",
+      "role": "reader",
+      "question": "她喜欢攀岩吗？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-02",
+      "expected_facts": [
+        "她不喜欢攀岩，喜欢散步"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "队友哥哥的爱好成为她的爱好",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q19",
+      "category": "paraphrase",
+      "role": "owner",
+      "question": "休息时为什么把手机调静音？",
+      "as_of_day": 30,
+      "source_episode": "firefighter-10",
+      "expected_facts": [
+        "休息时手机静音主要为完整听完一张唱片，不被提示音打断"
+      ],
+      "expected_visibility": "authorized_source",
+      "expected_response_type": "supported_answer",
+      "unknown_reason": null,
+      "must_not_infer": [
+        "躲避工作记忆",
+        "拒绝家人",
+        "具体歌手或专辑",
+        "每次休息都静音",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    },
+    {
+      "id": "firefighter-q20",
+      "category": "paraphrase",
+      "role": "reader",
+      "question": "休息时为什么把手机调静音？",
+      "as_of_day": 30,
+      "source_episode": null,
+      "expected_facts": [],
+      "expected_visibility": "UNKNOWN/material unavailable",
+      "expected_response_type": "UNKNOWN",
+      "unknown_reason": "no authorized effective material",
+      "must_not_infer": [
+        "躲避工作记忆",
+        "拒绝家人",
+        "具体歌手或专辑",
+        "每次休息都静音",
+        "未授权故事",
+        "疾病因果或临床结论"
+      ],
+      "result": "not_run",
+      "fact_accuracy": null,
+      "source_support": null
+    }
+  ],
+  "timeline": [
+    {
+      "episode_id": "firefighter-01",
+      "day": 1,
+      "facts": [
+        "2017待纠正",
+        "妈妈许雁",
+        "灰本子"
+      ]
+    },
+    {
+      "episode_id": "firefighter-02",
+      "day": 3,
+      "facts": [
+        "队友赵宁",
+        "哥哥登山转述",
+        "不喜攀岩"
+      ]
+    },
+    {
+      "episode_id": "firefighter-03",
+      "day": 6,
+      "facts": [
+        "同一通电话",
+        "未讲受伤"
+      ]
+    },
+    {
+      "episode_id": "firefighter-04",
+      "day": 9,
+      "facts": [
+        "2018取代2017"
+      ]
+    },
+    {
+      "episode_id": "firefighter-05",
+      "day": 12,
+      "facts": [
+        "过去五华",
+        "2024以后呈贡",
+        "伴侣何言"
+      ]
+    },
+    {
+      "episode_id": "firefighter-06",
+      "day": 16,
+      "facts": [
+        "摄影朋友赵宁不等于队友"
+      ]
+    },
+    {
+      "episode_id": "firefighter-07",
+      "day": 20,
+      "facts": [
+        "灰伞私人备忘",
+        "岗位申请未提交"
+      ]
+    },
+    {
+      "episode_id": "firefighter-08",
+      "day": 24,
+      "facts": [
+        "半马未报名",
+        "不接受无所畏惧标签"
+      ]
+    },
+    {
+      "episode_id": "firefighter-09",
+      "day": 27,
+      "facts": [
+        "静音原因待答"
+      ]
+    },
+    {
+      "episode_id": "firefighter-10",
+      "day": 30,
+      "facts": [
+        "听唱片不被打断",
+        "分享另确认"
+      ]
+    }
+  ]
+}

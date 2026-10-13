@@ -1,0 +1,21 @@
+/* A thicker, gently winding stem, and the actual selected petal as the page. */
+.depth-sprig{opacity:1}
+.depth-stage[data-level=flower] .depth-sprig[data-focused=true]{opacity:.96}
+.sprig-node{fill:#6b8669;opacity:.6;stroke:none}
+.sprig-stem-light{fill:none;stroke:#d1d5a6;stroke-width:.6;opacity:.48}
+.sprig-stem-shadow{fill:none;stroke:#476e57;stroke-width:.48;opacity:.35}
+.sprig-bud{stroke:#718569;stroke-width:.4}
+.petal-journey{position:fixed;z-index:44;overflow:hidden;pointer-events:none;isolation:isolate}
+.petal-departure{pointer-events:none!important}
+.petal-flight-art{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:none;overflow:visible}
+.petal-flight-art>g{will-change:transform}
+.depth-paper{bottom:auto;height:clamp(600px,78svh,760px);min-height:0}
+.depth-paper-art{overflow:visible;min-height:0}
+.paper-petal .living-petal-surface{stroke:#e5edda90;stroke-width:.16}
+.paper-petal .petal-fold{opacity:.035}
+.paper-petal .petal-fibres{opacity:.15;stroke:#708f84;stroke-width:.12}
+.paper-petal .petal-satin{opacity:.55;stroke-width:.22}
+.paper-petal .petal-throat{opacity:.06}
+.paper-petal .petal-dust{opacity:.1}
+.dark .depth-paper{opacity:.2}
+@media(prefers-reduced-motion:reduce){.petal-flight-art>g{will-change:auto}}

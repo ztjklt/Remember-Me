@@ -1,0 +1,7 @@
+{
+  "version": "0.8.2-internal",
+  "camera_survives_return_and_tabs": true,
+  "single_finger_page_scroll_at_100": true,
+  "scene_preview_and_selection": true,
+  "emulator": true
+}

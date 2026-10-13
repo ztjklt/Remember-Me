@@ -1,0 +1,9 @@
+{
+  "api_draft_setup": true,
+  "draft_text_from_actual_sources": true,
+  "app_confirmation_clicked": true,
+  "confirmed_flower_clicked": true,
+  "reader_organized_flower_clicked": true,
+  "new_narrative_model_call": false,
+  "emulator": true
+}

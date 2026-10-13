@@ -1,0 +1,1378 @@
+{
+  "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+  "role": "reader",
+  "records": [
+    {
+      "id": "nr_3d0cabff453f4f118d1b",
+      "kind": "person",
+      "title": "陈岚",
+      "text": "陈岚是陈守义的女儿。小时候放学回家，她把书包放在门边，去厨房找妈妈孙玉琴；吃饭时愿意讲学校的事。后来她问父亲为什么总说“平安回家比多跑一趟重要”，父亲先想了想，再用厨房留灯的日常回应。她提议陪父亲去老车队，但时间和父亲当天是否愿意出门都还没定。",
+      "evidence_ids": [
+        "ev_da25f6dedecf40fe",
+        "ev_afc9280f22d247af",
+        "ev_b0b9ccb798ea44a0",
+        "ev_735212b22d994af5",
+        "ev_140acf3cef8e4fff",
+        "ev_47d01b9d66e74bad"
+      ],
+      "facets": [
+        "RELATIONSHIPS"
+      ],
+      "time_text": "",
+      "place_text": "南京",
+      "aliases": [
+        "陈岚"
+      ],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 5,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T02:47:15.716791+00:00",
+      "updated_at": "2026-10-11T03:09:30.385930+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_afc9280f22d247af",
+          "excerpt": "那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": "历史记载，后来已有变化，不代表当前状态。变化时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_b0b9ccb798ea44a0",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_735212b22d994af5",
+          "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_140acf3cef8e4fff",
+          "excerpt": "陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_47d01b9d66e74bad",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_c3b871d49f494f57a59a",
+      "kind": "story",
+      "title": "女儿放学后到厨房找妈妈",
+      "text": "讲述者回忆陈岚小时候放学一回来就把书包放在门边，到厨房找她妈妈孙玉琴，讲述者平时喊玉琴。",
+      "evidence_ids": [
+        "ev_da25f6dedecf40fe"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "RELATIONSHIPS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:37.640615+00:00",
+      "updated_at": "2026-10-11T03:09:30.474407+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_2871aa6a6603420b9de6",
+      "kind": "story",
+      "title": "南京鼓楼老小区的饭桌闲话",
+      "text": "住在南京鼓楼时，女儿在饭桌上很愿意讲学校的事。陈守义有时想着车队排班，嘴上答应却没仔细听。如今他觉得可惜：不是怪女儿不肯讲，而是自己听得不够仔细；那些闲话不像成绩单一样能留下来。",
+      "evidence_ids": [
+        "ev_afc9280f22d247af",
+        "ev_d1e3ebf36ad14c70",
+        "ev_8e91cacda3534bd4",
+        "ev_6c1d2f7dbb3f48d7"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "RELATIONSHIPS",
+        "FEELINGS"
+      ],
+      "time_text": "",
+      "place_text": "南京鼓楼的老小区",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:37.644430+00:00",
+      "updated_at": "2026-10-11T03:09:30.562105+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_afc9280f22d247af",
+          "excerpt": "那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": "历史记载，后来已有变化，不代表当前状态。变化时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_d1e3ebf36ad14c70",
+          "excerpt": "今天碰到什么事，我有时还想着车队第二天怎么排班，嘴上答应着，其实没听进去。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_8e91cacda3534bd4",
+          "excerpt": "现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_6c1d2f7dbb3f48d7",
+          "excerpt": "成绩单还能留下来，那些饭桌上的闲话过去了就过去了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_bfd2259f86c54aadb9f1",
+      "kind": "story",
+      "title": "搬家时先带上旧车票盒",
+      "text": "讲述者从鼓楼搬到江宁后，搬家时带了装旧车票的小盒子，先放在眼前怕落下，别的东西一箱一箱收。",
+      "evidence_ids": [
+        "ev_79ff284adac040ba",
+        "ev_a9292ffe955a475c"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "PRACTICES"
+      ],
+      "time_text": "2024年以后",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:37.645681+00:00",
+      "updated_at": "2026-10-11T03:09:30.660678+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_79ff284adac040ba",
+          "excerpt": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_a9292ffe955a475c",
+          "excerpt": "搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_320d44814c814ecda332",
+      "kind": "story",
+      "title": "搬到江宁后的方便与不习惯",
+      "text": "讲述者说搬到江宁离陈岚近些觉得方便，但原来地方住惯了，新家有些东西放哪儿刚开始还得找；搬了家不是一下就轻松，离女儿近是好事，可换个地方总要慢慢习惯。",
+      "evidence_ids": [
+        "ev_79ff284adac040ba",
+        "ev_a41834d9afe94c7a",
+        "ev_ba59c282555a4530",
+        "ev_355682edb8f946de"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "FEELINGS",
+        "VALUES"
+      ],
+      "time_text": "2024年以后",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:37.646835+00:00",
+      "updated_at": "2026-10-11T03:09:30.760447+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_79ff284adac040ba",
+          "excerpt": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_a41834d9afe94c7a",
+          "excerpt": "搬过去离陈岚近些，这个我觉得方便。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_ba59c282555a4530",
+          "excerpt": "原来的地方住惯了新家，有些东西放哪儿，刚开始还得找。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        },
+        {
+          "evidence_id": "ev_355682edb8f946de",
+          "excerpt": "要说搬了家是不是一下就轻松了，也不是，离女儿近是好事，可换个地方总要慢慢习惯。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d",
+          "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_83990b6812004598a02d",
+      "kind": "observation",
+      "title": "喝茶口味偏好",
+      "text": "讲述者说喝茶还是喜欢淡一点，太甜了反而喝不惯，并认为这是自己的口味，不是谁规定只能这么喝。",
+      "evidence_ids": [
+        "ev_23a1435afe794db8"
+      ],
+      "facets": [
+        "PRACTICES"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:50.003245+00:00",
+      "updated_at": "2026-10-11T03:09:31.260502+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_79046a47c6184a21b214",
+      "kind": "story",
+      "title": "陈岚提议去老车队",
+      "text": "陈岚提议有空陪父亲去老车队看看，父亲听着高兴。不过陈岚何时有空、父亲当天想不想出门，都还要商量，目前没有确定行程。",
+      "evidence_ids": [
+        "ev_140acf3cef8e4fff",
+        "ev_47d01b9d66e74bad"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "RELATIONSHIPS",
+        "FEELINGS",
+        "WISHES"
+      ],
+      "time_text": "前两天",
+      "place_text": "老车队",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:50.005097+00:00",
+      "updated_at": "2026-10-11T03:09:31.362164+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_140acf3cef8e4fff",
+          "excerpt": "陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_47d01b9d66e74bad",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_bef5bd8eebab48f4948a",
+      "kind": "observation",
+      "title": "出门与听玉琴讲旧事",
+      "text": "讲述者说那天想不想出门都得再商量，别现在就忙着安排；在家听玉琴慢慢讲以前的事也挺好。",
+      "evidence_ids": [
+        "ev_47d01b9d66e74bad",
+        "ev_31960e3ea7f74480"
+      ],
+      "facets": [
+        "PRACTICES",
+        "RELATIONSHIPS",
+        "WISHES"
+      ],
+      "time_text": "那天",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:50.006363+00:00",
+      "updated_at": "2026-10-11T03:09:31.458753+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_47d01b9d66e74bad",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_31960e3ea7f74480",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_48163064779d48949687",
+      "kind": "observation",
+      "title": "希望一个一个问",
+      "text": "讲述者说不喜欢几个人一块问，刚想着这一句又有人问，下一句就接不上，一个一个说自己能听清楚些。",
+      "evidence_ids": [
+        "ev_cf8288c3766a4752",
+        "ev_90ea015d35af4e49"
+      ],
+      "facets": [
+        "PRACTICES",
+        "FEELINGS",
+        "EXPRESSION"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:03:50.007631+00:00",
+      "updated_at": "2026-10-11T03:09:31.558778+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_cf8288c3766a4752",
+          "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_90ea015d35af4e49",
+          "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_ad137b748cdd42e0a2ec",
+      "kind": "story",
+      "title": "被问起口头禅时停顿",
+      "text": "陈岚问讲述者为什么总把平安回家比多跑一趟重要挂在嘴边；讲述者说这句话自己说惯了，被认真一问却停住了，不是不愿意告诉对方，而是一时不知道从哪儿讲起，便先记着这个问题，等把想到的事理一理再单独说。",
+      "evidence_ids": [
+        "ev_b0b9ccb798ea44a0",
+        "ev_89d5105bb63f4cf4",
+        "ev_0f96334dc4794e79"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "FEELINGS",
+        "WISHES"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": true,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:04:18.771073+00:00",
+      "updated_at": "2026-10-11T03:09:31.661407+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_b0b9ccb798ea44a0",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_89d5105bb63f4cf4",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_0f96334dc4794e79",
+          "excerpt": "我先把他这个问题记着，等我把想到的那些事理一理，再单独跟他说一段，今天先不急着答。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_518bf1beef8f49189818",
+      "kind": "story",
+      "title": "厨房里留着的那盏灯",
+      "text": "以前收车回家，有时厨房的小灯还亮着，玉琴还在等。想到有人惦记自己回家，陈守义会松一口气。他说“平安回家比多跑一趟重要”，主要想到这些平常日子；并非玉琴每天都等到很晚，也不是在讲一场事故。这是后来录给陈岚的解释。",
+      "evidence_ids": [
+        "ev_735212b22d994af5",
+        "ev_7ca26040d5dc4bd0",
+        "ev_485241868c56488b",
+        "ev_c4a65f3f9e2946b0"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "RELATIONSHIPS",
+        "VALUES",
+        "FEELINGS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:04:18.772513+00:00",
+      "updated_at": "2026-10-11T03:09:31.759539+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_735212b22d994af5",
+          "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_485241868c56488b",
+          "excerpt": "一天的活忙完了，有个人惦记着我回家，心里会松下来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_cbf92b24f76b40ac8555",
+      "kind": "person",
+      "title": "孙玉琴",
+      "text": "孙玉琴是陈岚的妈妈，陈守义平时叫她玉琴。陈岚小时候放学会去厨房找她。以前陈守义收车回家，有时厨房的小灯亮着，玉琴还在等；不是每一天都等到很晚。",
+      "evidence_ids": [
+        "ev_da25f6dedecf40fe",
+        "ev_7ca26040d5dc4bd0",
+        "ev_c4a65f3f9e2946b0"
+      ],
+      "facets": [
+        "RELATIONSHIPS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [
+        "孙玉琴",
+        "玉琴"
+      ],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:04:18.775823+00:00",
+      "updated_at": "2026-10-11T03:09:31.858339+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_2b40ab0867a8414eb810",
+      "kind": "story",
+      "title": "第一次独立跑十二路",
+      "text": "第一次独立跑十二路是在1987年，原先暂记的1986年已被更正，具体月日仍没确定。出车前，车队王建国帮忙整理出车记录，车是陈守义自己开的。收车后他在站房坐了一会儿，肩膀才慢慢放松；同事说了什么、当时都有谁，已经记不全。几次讲述指向同一次出车。",
+      "evidence_ids": [
+        "ev_9d727e9afc9b47e1",
+        "ev_43a06d5e1d6f4151",
+        "ev_c33e6b4ace534c2a",
+        "ev_caa8381ae1924863",
+        "ev_c2a671db2ae34609",
+        "ev_c3f0eece4a284e18",
+        "ev_9bf748bf5cc24b90",
+        "ev_c2870c7df0584495"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "IDENTITY",
+        "RELATIONSHIPS",
+        "FEELINGS"
+      ],
+      "time_text": "1987年",
+      "place_text": "站房",
+      "aliases": [],
+      "same_event": true,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:05:50.903964+00:00",
+      "updated_at": "2026-10-11T03:09:31.956690+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_9d727e9afc9b47e1",
+          "excerpt": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c33e6b4ace534c2a",
+          "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_caa8381ae1924863",
+          "excerpt": "陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c2a671db2ae34609",
+          "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c3f0eece4a284e18",
+          "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_9bf748bf5cc24b90",
+          "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c2870c7df0584495",
+          "excerpt": "昨天又说，到那天我才想起还有他帮忙，这件事不能漏了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_1e1ead53288141909ea8",
+      "kind": "observation",
+      "title": "对同一次收车记忆的补充与不确定",
+      "text": "讲述者说同事在边上说话，自己心里想的是当天总算平平安安跑完；但不记得他们说了什么、当时都有谁，年份也还没核实，工作证没找到。后来表示工作证找到了，两个年份挨得近记混了，收车后坐在站房这件事还记得。",
+      "evidence_ids": [
+        "ev_c2a671db2ae34609",
+        "ev_c33e6b4ace534c2a"
+      ],
+      "facets": [
+        "EXPERIENCE",
+        "FEELINGS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:05:50.905453+00:00",
+      "updated_at": "2026-10-11T03:09:32.058805+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_c2a671db2ae34609",
+          "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_d71b512711fa4c58",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_c33e6b4ace534c2a",
+          "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_3a52b23b3b274b109584",
+      "kind": "person",
+      "title": "车队王建国",
+      "text": "车队同事王建国在陈守义第一次独立出车前帮忙整理出车记录。他与隔壁王老师不是同一个人。王建国说自己父亲以前在铁路工作；这是陈守义听他说的，陈守义没有见过这位父亲。",
+      "evidence_ids": [
+        "ev_c3f0eece4a284e18",
+        "ev_9bf748bf5cc24b90",
+        "ev_bd5fa74999d04490"
+      ],
+      "facets": [
+        "RELATIONSHIPS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [
+        "车队的王建国"
+      ],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 3,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:05:56.212337+00:00",
+      "updated_at": "2026-10-11T03:09:32.161250+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_c3f0eece4a284e18",
+          "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_9bf748bf5cc24b90",
+          "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_bd5fa74999d04490",
+          "excerpt": "后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_dc6ad400826b4ef98fe4",
+      "kind": "observation",
+      "title": "与王建国聊得来但了解有限",
+      "text": "讲述者觉得和王建国聊得来，工作话题是其中一部分；但王建国更早的家庭情况，讲述者表示不知道。",
+      "evidence_ids": [
+        "ev_bd5fa74999d04490",
+        "ev_56daaccbcbdd4933"
+      ],
+      "facets": [
+        "RELATIONSHIPS",
+        "FEELINGS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "narrative-evidence-v5",
+      "created_at": "2026-10-11T03:05:56.213589+00:00",
+      "updated_at": "2026-10-11T03:09:32.261773+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_bd5fa74999d04490",
+          "excerpt": "后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_56daaccbcbdd4933",
+          "excerpt": "我觉得我们聊得来，也有这些工作上的话题在里头，不过他家更早的事我就不知道了。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_bc929e2f2f5245f49a58",
+      "kind": "person",
+      "title": "隔壁王老师",
+      "text": "隔壁王老师名叫王建国，是以前的邻居，偶尔来串门。他与车队里也叫王建国的同事是两个人。",
+      "evidence_ids": [
+        "ev_5ccf2dda41a14962",
+        "ev_5dd3001b5d834708"
+      ],
+      "facets": [
+        "RELATIONSHIPS"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [
+        "王老师",
+        "王建国"
+      ],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "owner",
+      "prompt_version": "owner",
+      "created_at": "2026-10-11T03:09:29.958425+00:00",
+      "updated_at": "2026-10-11T03:09:32.356623+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_5ccf2dda41a14962",
+          "excerpt": "隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        },
+        {
+          "evidence_id": "ev_5dd3001b5d834708",
+          "excerpt": "后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_85ef4b85a8aa4e40876d",
+      "kind": "letter",
+      "title": "留给陈岚：平安回家",
+      "text": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。",
+      "evidence_ids": [
+        "ev_c4a65f3f9e2946b0"
+      ],
+      "facets": [
+        "EXPRESSION",
+        "VALUES"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "陈岚",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "owner",
+      "prompt_version": "owner",
+      "created_at": "2026-10-11T03:09:30.061768+00:00",
+      "updated_at": "2026-10-11T03:09:32.460641+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    },
+    {
+      "id": "nr_cef1b0f78f154432b74b",
+      "kind": "style",
+      "title": "慢慢讲清楚",
+      "text": "好多话平时说不出口，慢慢讲反倒能讲清一点。",
+      "evidence_ids": [
+        "ev_69a8866969064470"
+      ],
+      "facets": [
+        "EXPRESSION"
+      ],
+      "time_text": "",
+      "place_text": "",
+      "aliases": [],
+      "same_event": false,
+      "recipient_label": "",
+      "status": "confirmed",
+      "revision": 2,
+      "model_version": "owner",
+      "prompt_version": "owner",
+      "created_at": "2026-10-11T03:09:30.161088+00:00",
+      "updated_at": "2026-10-11T03:09:32.560660+00:00",
+      "evidence": [
+        {
+          "evidence_id": "ev_69a8866969064470",
+          "excerpt": "好多话平时说不出口，慢慢讲反倒能讲清一点。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_55d7960102d74610",
+          "temporal_context": ""
+        }
+      ],
+      "label": "本人审核的系统整理",
+      "historical": false,
+      "source_valid": true
+    }
+  ],
+  "understandings": [],
+  "views": [
+    {
+      "title": "人生足迹",
+      "records": [
+        "nr_c3b871d49f494f57a59a",
+        "nr_2871aa6a6603420b9de6",
+        "nr_bfd2259f86c54aadb9f1",
+        "nr_320d44814c814ecda332",
+        "nr_79046a47c6184a21b214",
+        "nr_48163064779d48949687",
+        "nr_ad137b748cdd42e0a2ec",
+        "nr_518bf1beef8f49189818",
+        "nr_2b40ab0867a8414eb810",
+        "nr_1e1ead53288141909ea8",
+        "nr_dc6ad400826b4ef98fe4"
+      ]
+    },
+    {
+      "title": "重要的人",
+      "records": [
+        "nr_3d0cabff453f4f118d1b",
+        "nr_c3b871d49f494f57a59a",
+        "nr_2871aa6a6603420b9de6",
+        "nr_79046a47c6184a21b214",
+        "nr_bef5bd8eebab48f4948a",
+        "nr_518bf1beef8f49189818",
+        "nr_cbf92b24f76b40ac8555",
+        "nr_2b40ab0867a8414eb810",
+        "nr_3a52b23b3b274b109584",
+        "nr_dc6ad400826b4ef98fe4",
+        "nr_bc929e2f2f5245f49a58"
+      ]
+    },
+    {
+      "title": "在意与选择",
+      "records": [
+        "nr_bfd2259f86c54aadb9f1",
+        "nr_320d44814c814ecda332",
+        "nr_83990b6812004598a02d",
+        "nr_79046a47c6184a21b214",
+        "nr_bef5bd8eebab48f4948a",
+        "nr_48163064779d48949687",
+        "nr_ad137b748cdd42e0a2ec",
+        "nr_518bf1beef8f49189818",
+        "nr_85ef4b85a8aa4e40876d"
+      ]
+    },
+    {
+      "title": "声音与表达",
+      "records": [
+        "nr_48163064779d48949687",
+        "nr_85ef4b85a8aa4e40876d",
+        "nr_cef1b0f78f154432b74b"
+      ]
+    }
+  ],
+  "facets": [
+    {
+      "id": "EXPERIENCE",
+      "title": "经历与转折",
+      "count": 9
+    },
+    {
+      "id": "RELATIONSHIPS",
+      "title": "人物与关系",
+      "count": 11
+    },
+    {
+      "id": "IDENTITY",
+      "title": "身份与角色",
+      "count": 1
+    },
+    {
+      "id": "PRACTICES",
+      "title": "偏好、习惯与做事方法",
+      "count": 4
+    },
+    {
+      "id": "VALUES",
+      "title": "价值、信念与选择理由",
+      "count": 3
+    },
+    {
+      "id": "FEELINGS",
+      "title": "感受与当时状态",
+      "count": 9
+    },
+    {
+      "id": "WISHES",
+      "title": "愿望、计划与牵挂",
+      "count": 3
+    },
+    {
+      "id": "EXPRESSION",
+      "title": "原话、表达与寄语",
+      "count": 3
+    }
+  ],
+  "source_evidence": [
+    {
+      "evidence_id": "ev_da25f6dedecf40fe",
+      "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_7451b1b903c0449e",
+      "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_afc9280f22d247af",
+      "excerpt": "那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": "历史记载，后来已有变化，不代表当前状态。变化时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_d1e3ebf36ad14c70",
+      "excerpt": "今天碰到什么事，我有时还想着车队第二天怎么排班，嘴上答应着，其实没听进去。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_8e91cacda3534bd4",
+      "excerpt": "现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_6c1d2f7dbb3f48d7",
+      "excerpt": "成绩单还能留下来，那些饭桌上的闲话过去了就过去了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_5ccf2dda41a14962",
+      "excerpt": "隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_5dd3001b5d834708",
+      "excerpt": "后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_a331afcab3ad4dc8",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_9d727e9afc9b47e1",
+      "excerpt": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_d71b512711fa4c58",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_c2a671db2ae34609",
+      "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_d71b512711fa4c58",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_5e223bed5e2f4a63",
+      "excerpt": "同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_d71b512711fa4c58",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_5107386610a141e6",
+      "excerpt": "这两天总想起这件事，就再补这几句。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_d71b512711fa4c58",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_43a06d5e1d6f4151",
+      "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_facb2f3eebb340ab",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_c33e6b4ace534c2a",
+      "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_facb2f3eebb340ab",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_caa8381ae1924863",
+      "excerpt": "陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_facb2f3eebb340ab",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_79ff284adac040ba",
+      "excerpt": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_303547a2ffee457d",
+      "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_a41834d9afe94c7a",
+      "excerpt": "搬过去离陈岚近些，这个我觉得方便。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_303547a2ffee457d",
+      "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_ba59c282555a4530",
+      "excerpt": "原来的地方住惯了新家，有些东西放哪儿，刚开始还得找。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_303547a2ffee457d",
+      "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_a9292ffe955a475c",
+      "excerpt": "搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_303547a2ffee457d",
+      "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_355682edb8f946de",
+      "excerpt": "要说搬了家是不是一下就轻松了，也不是，离女儿近是好事，可换个地方总要慢慢习惯。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_303547a2ffee457d",
+      "temporal_context": "变化后的记载；时间：2024年以后，具体月份不确定"
+    },
+    {
+      "evidence_id": "ev_c3f0eece4a284e18",
+      "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_f043b29ec18c48cf",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_9bf748bf5cc24b90",
+      "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_f043b29ec18c48cf",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_c2870c7df0584495",
+      "excerpt": "昨天又说，到那天我才想起还有他帮忙，这件事不能漏了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_f043b29ec18c48cf",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_bd5fa74999d04490",
+      "excerpt": "后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_f043b29ec18c48cf",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_56daaccbcbdd4933",
+      "excerpt": "我觉得我们聊得来，也有这些工作上的话题在里头，不过他家更早的事我就不知道了。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_f043b29ec18c48cf",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_23a1435afe794db8",
+      "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_92116f4f6dde42c4",
+      "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_140acf3cef8e4fff",
+      "excerpt": "陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_47d01b9d66e74bad",
+      "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_31960e3ea7f74480",
+      "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_cf8288c3766a4752",
+      "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_90ea015d35af4e49",
+      "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_ed240efd5e804a3f",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_b0b9ccb798ea44a0",
+      "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_82de72274ae44a0b",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_89d5105bb63f4cf4",
+      "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_82de72274ae44a0b",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_0f96334dc4794e79",
+      "excerpt": "我先把他这个问题记着，等我把想到的那些事理一理，再单独跟他说一段，今天先不急着答。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_82de72274ae44a0b",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_735212b22d994af5",
+      "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_7ca26040d5dc4bd0",
+      "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_485241868c56488b",
+      "excerpt": "一天的活忙完了，有个人惦记着我回家，心里会松下来。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_c4a65f3f9e2946b0",
+      "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_80a3cc0922af42cb",
+      "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_e642b001110c4429",
+      "excerpt": "这段我先录下来，过后再听一遍。\n\n",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    },
+    {
+      "evidence_id": "ev_69a8866969064470",
+      "excerpt": "好多话平时说不出口，慢慢讲反倒能讲清一点。",
+      "source_type": "SUBJECT",
+      "episode_id": "ep_55d7960102d74610",
+      "temporal_context": ""
+    }
+  ],
+  "style": {
+    "enabled": false,
+    "revision": 0
+  },
+  "next_question": null,
+  "notice": "空白表示尚无已审核材料；分类数量不代表人格完整度。"
+}

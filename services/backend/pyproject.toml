@@ -1,0 +1,53 @@
+[project]
+name = "remember-me-backend"
+version = "0.1.0"
+description = "Remember Me Backend — Phase 1 service foundation (see docs/architecture/backend-adr.md)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "sqlalchemy>=2.0.30",
+    "alembic>=1.13",
+    "pydantic-settings>=2.3",
+    # Multipart form parsing, which FastAPI requires for the audio upload.
+    "python-multipart>=0.0.32",
+    # Outbound calls to AI Core. A timeout is part of the failure model, so the
+    # client is a real HTTP client rather than the stdlib.
+    "httpx>=0.27",
+    # Cross-process serial pacing of the shared cloud audio relay quota.
+    "filelock>=3.16,<5",
+    # Deterministic simplified-Chinese review text; raw ASR is retained.
+    "opencc-python-reimplemented==0.1.7",
+    # The S3-compatible object store backend used in deployment.
+    "boto3>=1.34",
+]
+
+[project.optional-dependencies]
+deployment = ["psycopg[binary]>=3.2,<4"]
+retrieval = ["sentence-transformers>=3.0,<6", "torch>=2.0,<3"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    # Exercises the S3-compatible object store in-process, so the deployment
+    # backend is tested without a server.
+    "moto[s3]>=5.0",
+    "jsonschema>=4.23",
+]
+
+[tool.uv]
+# The service is deployed as an application, not installed as a library.
+package = false
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

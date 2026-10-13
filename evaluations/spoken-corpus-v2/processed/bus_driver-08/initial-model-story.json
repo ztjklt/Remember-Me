@@ -1,0 +1,138 @@
+{
+  "episode_id": "ep_ed240efd5e804a3f",
+  "status": "ready",
+  "recorded_at": "2026-09-24T08:00:00+00:00",
+  "duration_ms": 46880,
+  "transcript": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+  "machine_transcript": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。陈岚前两天说有空陪我去劳车队看看，我听着挺高兴，不过还没说定他什么时候有空。我那天想不想出门都得再商量，别现在就忙着安排在家听玉器，慢慢将以前的事也挺好。我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_60b0a537cf41417a",
+      "content": "本人喝茶喜欢淡一点，喝不惯太甜的。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "PREFERENCES",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_f678d7c905264a51",
+      "content": "本人强调喝茶口味是自己的偏好，不是别人规定只能这么喝。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "VALUES_BELIEFS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_92116f4f6dde42c4",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_af5758143643440b",
+      "content": "陈岚前两天说有空陪本人去老车队看看，本人听着挺高兴，但还没说定他什么时候有空。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_140acf3cef8e4fff",
+          "excerpt": "陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_bbaef67a4be34c33",
+      "content": "本人那天想不想出门还得再商量，现在不要忙着安排。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "DECISION_PATTERNS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_47d01b9d66e74bad",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_773055a48bb24bfe",
+      "content": "本人觉得在家听玉琴慢慢讲以前的事也挺好。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "PREFERENCES",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_31960e3ea7f74480",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_fe00f73038d54d07",
+      "content": "本人不太喜欢几个人一块问，刚想着这一句又有人问，下一句就接不上了。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "PREFERENCES",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_cf8288c3766a4752",
+          "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_6b4d0c50abc14710",
+      "content": "本人表示一个一个说能听清楚些。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_90ea015d35af4e49",
+          "excerpt": "我不太喜欢几个人一块问，刚想着这一句，又有人问，下一句就接不上了，一个一个说我能听清楚些。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_ed240efd5e804a3f"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

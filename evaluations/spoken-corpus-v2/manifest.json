@@ -1,0 +1,108 @@
+{
+  "version": "spoken-corpus-v2-20261010",
+  "fictional": true,
+  "not_asr_ground_truth": true,
+  "old_results_not_comparable": true,
+  "episodes": [
+    {
+      "id": "bus_driver-01",
+      "title": "第一条线路",
+      "script": "scripts/bus_driver-01.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-01.txt",
+      "sha256": "c9c34d9f4f19fd1ca9fc65f37d16b8f5ae6cea8a403e02ef2bac04a729990454",
+      "characters": 430,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 1
+    },
+    {
+      "id": "bus_driver-02",
+      "title": "一起吃饭的人",
+      "script": "scripts/bus_driver-02.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-02.txt",
+      "sha256": "69e2d010fa83cefeedbbb3867ea03b1a5155799edf18541ee78ea421033c101d",
+      "characters": 242,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 3
+    },
+    {
+      "id": "bus_driver-03",
+      "title": "把老故事再讲一遍",
+      "script": "scripts/bus_driver-03.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-03.txt",
+      "sha256": "bc0e5e069f69603e6aa75523ea27a6ad13ee824db78c92c09ce54611253beb4e",
+      "characters": 158,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 6
+    },
+    {
+      "id": "bus_driver-04",
+      "title": "那年其实说错了",
+      "script": "scripts/bus_driver-04.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-04.txt",
+      "sha256": "27ff7af84130c803090a71d7ccec81a693aa71fa515ddcda69b9f2bf9880a2fb",
+      "characters": 137,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 9
+    },
+    {
+      "id": "bus_driver-05",
+      "title": "住处后来变了",
+      "script": "scripts/bus_driver-05.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-05.txt",
+      "sha256": "4f00b94702b0e7ae3691710374abc1cc90620b560031c3ecc0a06a88cffa23d3",
+      "characters": 176,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 12
+    },
+    {
+      "id": "bus_driver-06",
+      "title": "车队的王建国",
+      "script": "scripts/bus_driver-06.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-06.txt",
+      "sha256": "b097362198beb2c250ac963495bd2bad4053f13fade82e7f71e3ded15bf18fe3",
+      "characters": 197,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 16
+    },
+    {
+      "id": "bus_driver-07",
+      "title": "留给自己的信",
+      "script": "scripts/bus_driver-07.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-07.txt",
+      "sha256": "7e8809d5813f62d8b4a89cfb9036be64aa576a8a69a68dcd02315584fdea10d6",
+      "characters": 175,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 20
+    },
+    {
+      "id": "bus_driver-08",
+      "title": "茶和一个没定的打算",
+      "script": "scripts/bus_driver-08.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-08.txt",
+      "sha256": "005aa6ffd901beca5b542a5b5e982645c5a457ba62fae4b8d45bcd9f2abb85c8",
+      "characters": 173,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 24
+    },
+    {
+      "id": "bus_driver-09",
+      "title": "女儿想问的缘由",
+      "script": "scripts/bus_driver-09.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-09.txt",
+      "sha256": "be86aa24e3d964c09ac2ad7e59999c8c861af5a6e1ad6ace8120a748ec293b34",
+      "characters": 115,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 27
+    },
+    {
+      "id": "bus_driver-10",
+      "title": "回答女儿",
+      "script": "scripts/bus_driver-10.txt",
+      "prior_script": "../monthly-integration-v1/scripts/bus_driver-10.txt",
+      "sha256": "f8b58b129a9c58417344a0c2943411e323860c401f09f7eefabd2cc24af9c070",
+      "characters": 213,
+      "status": "authored_text_only_not_audio_or_ASR",
+      "simulated_day": 30
+    }
+  ]
+}

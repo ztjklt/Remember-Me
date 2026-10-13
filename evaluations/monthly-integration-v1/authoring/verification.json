@@ -1,0 +1,263 @@
+{
+  "script_count": 30,
+  "qa_count": 60,
+  "expanded_count": 27,
+  "han_count_rule": "BMP unified Han codepoints U+4E00..U+9FFF; punctuation/whitespace excluded",
+  "total_character_range": [
+    1066,
+    1150
+  ],
+  "han_character_range": [
+    953,
+    1037
+  ],
+  "first_three_hashes_preserved": true,
+  "rebuild_identical": true,
+  "original_core_bodies_preserved": true,
+  "qa_private_answers_not_in_reader_expectations": true,
+  "premature_episode10_reason_phrases_absent": true,
+  "live_audio_duration_verified": false,
+  "cloud_model_verified": false,
+  "episodes": [
+    {
+      "id": "bus_driver-01",
+      "characters": 961,
+      "han_characters": 865,
+      "script_sha256": "3d40e3b79fbd97ba613eab3136a1a7526da236af7b205a310f4dd668f0ca2d1e",
+      "file_bytes_sha256": "1ee54576441cff00f0800dee6bc53a3395b6ae4b4a77dc7b8a440165ff9920be",
+      "first_script_locked": true
+    },
+    {
+      "id": "bus_driver-02",
+      "characters": 1118,
+      "han_characters": 1000,
+      "script_sha256": "cafa763bb2888dba89bd560d70289c6fccb416dd7f4fa3acf880350e74830455",
+      "file_bytes_sha256": "cafa763bb2888dba89bd560d70289c6fccb416dd7f4fa3acf880350e74830455",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-03",
+      "characters": 1149,
+      "han_characters": 1037,
+      "script_sha256": "e81db0d02285bdb950e255139a62856b3e8754ea8acf14b787cd247d86a9304d",
+      "file_bytes_sha256": "e81db0d02285bdb950e255139a62856b3e8754ea8acf14b787cd247d86a9304d",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-04",
+      "characters": 1120,
+      "han_characters": 1007,
+      "script_sha256": "e7bdfc0f15a61a13b5e7c919ae292575876fc104f32fae1e1b52b779ac91c4ba",
+      "file_bytes_sha256": "e7bdfc0f15a61a13b5e7c919ae292575876fc104f32fae1e1b52b779ac91c4ba",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-05",
+      "characters": 1093,
+      "han_characters": 983,
+      "script_sha256": "edd469f0d7eba004b24a249d9a33997dde77ac16e84e14f202ca5b41afa1a87a",
+      "file_bytes_sha256": "edd469f0d7eba004b24a249d9a33997dde77ac16e84e14f202ca5b41afa1a87a",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-06",
+      "characters": 1150,
+      "han_characters": 1033,
+      "script_sha256": "e3678393e3cd79ba96f22c944b7e7e48b907df4429aab5d3aa899613e547367f",
+      "file_bytes_sha256": "e3678393e3cd79ba96f22c944b7e7e48b907df4429aab5d3aa899613e547367f",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-07",
+      "characters": 1066,
+      "han_characters": 953,
+      "script_sha256": "e3bb64b79cd6d4738227a66e5ec759f810d1baa52f3828e4a3de7ad9f2b27f69",
+      "file_bytes_sha256": "e3bb64b79cd6d4738227a66e5ec759f810d1baa52f3828e4a3de7ad9f2b27f69",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-08",
+      "characters": 1081,
+      "han_characters": 966,
+      "script_sha256": "ed32205390b4639120abfbc7d7275e7aa317b7174cd271c4e68bd47f39c73c39",
+      "file_bytes_sha256": "ed32205390b4639120abfbc7d7275e7aa317b7174cd271c4e68bd47f39c73c39",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-09",
+      "characters": 1068,
+      "han_characters": 960,
+      "script_sha256": "a82dfd3f03a57484209268795615aac531ad0e7c28ab6b0c6762416b6364e411",
+      "file_bytes_sha256": "a82dfd3f03a57484209268795615aac531ad0e7c28ab6b0c6762416b6364e411",
+      "first_script_locked": false
+    },
+    {
+      "id": "bus_driver-10",
+      "characters": 1094,
+      "han_characters": 980,
+      "script_sha256": "3ca4d614b8ec45aa2eb94792db005a02300ac80e190e03660320bb1949bfaaae",
+      "file_bytes_sha256": "3ca4d614b8ec45aa2eb94792db005a02300ac80e190e03660320bb1949bfaaae",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-01",
+      "characters": 927,
+      "han_characters": 837,
+      "script_sha256": "49df0fabc2b5c51017b10ad9e53bb176c9a93696a10f9beb23194c23639f9877",
+      "file_bytes_sha256": "74913af01e56a70519850d29f6eca24d78bad4ecfb6d2ecde49df8d006cd2333",
+      "first_script_locked": true
+    },
+    {
+      "id": "firefighter-02",
+      "characters": 1090,
+      "han_characters": 975,
+      "script_sha256": "e2e1005cb9e3b286ee3129cc7b33c7f35c8bd9610b5df7149a50dc89635a4954",
+      "file_bytes_sha256": "e2e1005cb9e3b286ee3129cc7b33c7f35c8bd9610b5df7149a50dc89635a4954",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-03",
+      "characters": 1088,
+      "han_characters": 977,
+      "script_sha256": "f52f15adcf082edc6a8cf0eb2b25bc83c7239fc1e4c38d52cef18df8be78766f",
+      "file_bytes_sha256": "f52f15adcf082edc6a8cf0eb2b25bc83c7239fc1e4c38d52cef18df8be78766f",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-04",
+      "characters": 1105,
+      "han_characters": 997,
+      "script_sha256": "57d108bb5c6d6aeaef0536e89c08b5d75d4eaedf909a2e9b272b270ce70f210f",
+      "file_bytes_sha256": "57d108bb5c6d6aeaef0536e89c08b5d75d4eaedf909a2e9b272b270ce70f210f",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-05",
+      "characters": 1094,
+      "han_characters": 983,
+      "script_sha256": "8a935ad8fda46e23ebb1dd598cf8fa20bdd3bb79f778d74d1a84593100730d3d",
+      "file_bytes_sha256": "8a935ad8fda46e23ebb1dd598cf8fa20bdd3bb79f778d74d1a84593100730d3d",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-06",
+      "characters": 1111,
+      "han_characters": 1004,
+      "script_sha256": "94b8c2329f30d8d40d7c37b9878f1493786b563b8c8f7a9201d34dfa4e2b76d0",
+      "file_bytes_sha256": "94b8c2329f30d8d40d7c37b9878f1493786b563b8c8f7a9201d34dfa4e2b76d0",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-07",
+      "characters": 1076,
+      "han_characters": 970,
+      "script_sha256": "eb293baef2345ae005fb52cb28a089782d01e57cae7ce3dc1ccc04c4665f6f28",
+      "file_bytes_sha256": "eb293baef2345ae005fb52cb28a089782d01e57cae7ce3dc1ccc04c4665f6f28",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-08",
+      "characters": 1066,
+      "han_characters": 957,
+      "script_sha256": "0a25c1b26b1bb7c29c58c9d732827d9e2a7bc609222926ecba845ecb7511e09b",
+      "file_bytes_sha256": "0a25c1b26b1bb7c29c58c9d732827d9e2a7bc609222926ecba845ecb7511e09b",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-09",
+      "characters": 1089,
+      "han_characters": 973,
+      "script_sha256": "411b82c133f34281d721c49efafcac2db00bc193ac4bdd4cc06397be5d7ef946",
+      "file_bytes_sha256": "411b82c133f34281d721c49efafcac2db00bc193ac4bdd4cc06397be5d7ef946",
+      "first_script_locked": false
+    },
+    {
+      "id": "firefighter-10",
+      "characters": 1132,
+      "han_characters": 1019,
+      "script_sha256": "38fe0c1a264e9acc79b74705e1192aa024288d81c778e5afb0f6be6bcc892e10",
+      "file_bytes_sha256": "38fe0c1a264e9acc79b74705e1192aa024288d81c778e5afb0f6be6bcc892e10",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-01",
+      "characters": 938,
+      "han_characters": 848,
+      "script_sha256": "6e3a9bc4498a3395b1d00bd10e673c19d4a696d0211d99c8a0921e74e7854981",
+      "file_bytes_sha256": "2c9c1372c05453b0bb2b5da2a57a439a46a0e852acd40fb1790970ff247048a6",
+      "first_script_locked": true
+    },
+    {
+      "id": "life_review-02",
+      "characters": 1129,
+      "han_characters": 1013,
+      "script_sha256": "0406f635dd5c0b5be57e2b33ef1e9331bd271fc46c76e346a0283a8a7e9e1e86",
+      "file_bytes_sha256": "0406f635dd5c0b5be57e2b33ef1e9331bd271fc46c76e346a0283a8a7e9e1e86",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-03",
+      "characters": 1123,
+      "han_characters": 1012,
+      "script_sha256": "6d533336c06869f980bb8986db89985a438564452523014bcc48a533793616b4",
+      "file_bytes_sha256": "6d533336c06869f980bb8986db89985a438564452523014bcc48a533793616b4",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-04",
+      "characters": 1099,
+      "han_characters": 980,
+      "script_sha256": "db6709119d90ddb0f015b9f556fc2adcaf11aaf6545fac2bdef5c933ac531d13",
+      "file_bytes_sha256": "db6709119d90ddb0f015b9f556fc2adcaf11aaf6545fac2bdef5c933ac531d13",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-05",
+      "characters": 1094,
+      "han_characters": 983,
+      "script_sha256": "5b91c3d94c1e2aa7ed66e9f676832c743f0f46b41b54a69683ec0bbe0ee92088",
+      "file_bytes_sha256": "5b91c3d94c1e2aa7ed66e9f676832c743f0f46b41b54a69683ec0bbe0ee92088",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-06",
+      "characters": 1118,
+      "han_characters": 1002,
+      "script_sha256": "7b9103c39cbd1cb96866c55fc7f9e978e9c4c21d0640a84a92acfeabb0b252f7",
+      "file_bytes_sha256": "7b9103c39cbd1cb96866c55fc7f9e978e9c4c21d0640a84a92acfeabb0b252f7",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-07",
+      "characters": 1103,
+      "han_characters": 989,
+      "script_sha256": "aa600676426b51405ddffab294cbf7bbd888a3975694bffe5f123ef00334c99e",
+      "file_bytes_sha256": "aa600676426b51405ddffab294cbf7bbd888a3975694bffe5f123ef00334c99e",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-08",
+      "characters": 1094,
+      "han_characters": 976,
+      "script_sha256": "ce5881852cafdf5bced56e0ae1bb56716bb5ae3a1584e72e5ef33f07554cb458",
+      "file_bytes_sha256": "ce5881852cafdf5bced56e0ae1bb56716bb5ae3a1584e72e5ef33f07554cb458",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-09",
+      "characters": 1074,
+      "han_characters": 957,
+      "script_sha256": "f3bdd0c5f1b50584a17cf8c80d99f6449672fedebf5fbfaa9c085bbbac674af6",
+      "file_bytes_sha256": "f3bdd0c5f1b50584a17cf8c80d99f6449672fedebf5fbfaa9c085bbbac674af6",
+      "first_script_locked": false
+    },
+    {
+      "id": "life_review-10",
+      "characters": 1124,
+      "han_characters": 1014,
+      "script_sha256": "f7b26d4644c43a968891ec43341de42db89185b131558f7e4b56673e324c25bf",
+      "file_bytes_sha256": "f7b26d4644c43a968891ec43341de42db89185b131558f7e4b56673e324c25bf",
+      "first_script_locked": false
+    }
+  ]
+}

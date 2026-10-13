@@ -1,0 +1,37 @@
+name: Demo HTTPS connectivity
+
+on:
+  pull_request:
+    paths:
+      - 'tools/delivery/**'
+      - '.github/workflows/demo-connectivity.yml'
+      - 'infra/demo-access.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  connectivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Test network configuration guards
+        run: python3 -m unittest discover -s tools/delivery -p test_delivery.py -v
+      - name: Read owner-approved network mode
+        id: mode
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          path=Path('infra/demo-access.json')
+          enabled=path.exists() and json.loads(path.read_text()).get('public_https') is True
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('public=' + str(enabled).lower() + '\n')
+          if not enabled:
+              print('Restricted-network mode: external connectivity check is not executed.')
+          PY
+      - name: Verify certificate and public demo API from a separate network
+        if: steps.mode.outputs.public == 'true'
+        run: python3 tools/delivery/check_connection.py --external-boundaries
