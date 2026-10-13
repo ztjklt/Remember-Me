@@ -55,6 +55,18 @@ class ContinuousVoiceLiveTest {
             assertNull(model.ui.value.error)
             val engine=checkNotNull(model.voiceCall.value)
             assertTrue(engine.ui.value.ready);shot("01-listening")
+            if(InstrumentationRegistry.getArguments().getString("lifecycleOnly")=="true"){
+                scenario.moveToState(Lifecycle.State.CREATED)
+                ui.waitUntil(10000){engine.ui.value.paused}
+                scenario.moveToState(Lifecycle.State.RESUMED)
+                ui.waitUntil(10000){ui.onAllNodes(hasText("继续") and hasClickAction()).onFirst().isDisplayed()}
+                ui.waitForIdle();Thread.sleep(1000) // allow the resumed window animation to finish before capture
+                assertTrue(engine.ui.value.paused);shot("04-return-paused")
+                report.put("background_remains_paused",true).put("resumed_controls_visible",true)
+                click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
+                report.put("ended",true).put("ok",true)
+                return
+            }
             File(folder,"ready").writeText("inject synthetic question now")
             ui.waitUntil(150000){engine.ui.value.answer.isNotBlank()||engine.ui.value.error.isNotBlank()}
             assertEquals("",engine.ui.value.error)
@@ -74,7 +86,9 @@ class ContinuousVoiceLiveTest {
             click("继续");ui.waitUntil(15000){!engine.ui.value.paused}
             scenario.moveToState(Lifecycle.State.CREATED)
             ui.waitUntil(10000){engine.ui.value.paused}
-            scenario.moveToState(Lifecycle.State.RESUMED);ui.waitForIdle()
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            ui.waitUntil(10000){ui.onAllNodes(hasText("继续") and hasClickAction()).onFirst().isDisplayed()}
+            ui.waitForIdle();Thread.sleep(1000)
             assertTrue(engine.ui.value.paused)
             report.put("background_remains_paused",true);shot("04-return-paused")
             click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
