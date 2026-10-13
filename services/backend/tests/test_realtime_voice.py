@@ -476,3 +476,49 @@ def test_disconnected_websocket_cleanup_does_not_raise_again(ready,client,app,mo
     ws=Socket();asyncio.run(realtime_listen.proxy_listen(ws,identifier))
     assert ws.close_attempted and upstream.closed
     assert [event['type'] for event in ws.sent]==['ready','error']
+
+
+def test_segment_diagnostics_show_receive_send_and_final_without_private_content(ready,client,app,monkeypatch,caplog):
+    import asyncio,logging
+    from types import SimpleNamespace
+    import aiohttp
+    from app import realtime_listen
+    from app.logging_config import JsonFormatter
+    identifier=start(client,app,ready).json()['call_id'];sent=asyncio.Event()
+    monkeypatch.setenv('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS','1')
+    caplog.set_level(logging.INFO,logger='app.realtime_listen')
+    class Upstream:
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        async def send_json(self,event):self.task_id=event['header']['task_id']
+        async def receive_json(self):return {'header':{'event':'task-started','task_id':self.task_id}}
+        async def send_bytes(self,data):sent.set()
+        def __aiter__(self):return self.messages()
+        async def messages(self):
+            await sent.wait()
+            yield SimpleNamespace(type=aiohttp.WSMsgType.TEXT,data=json.dumps({
+                'header':{'event':'result-generated','task_id':self.task_id},
+                'payload':{'output':{'sentence':{'text':'private synthetic speech','sentence_end':True,'begin_time':69000,'end_time':72000}}}}))
+    class ProviderSession:
+        def __init__(self,**kwargs):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        def ws_connect(self,*args,**kwargs):return Upstream()
+    monkeypatch.setattr(realtime_listen,'aiohttp',SimpleNamespace(ClientSession=ProviderSession,
+        ClientTimeout=aiohttp.ClientTimeout,WSMsgType=aiohttp.WSMsgType,ClientError=aiohttp.ClientError))
+    class Socket:
+        headers=internal()
+        def __init__(self):self.app=app
+        async def accept(self):pass
+        async def send_json(self,data):pass
+        async def iter_bytes(self):
+            yield (300).to_bytes(2,'little',signed=True)*1600
+            await asyncio.Event().wait()
+        async def close(self,**kwargs):pass
+    asyncio.run(realtime_listen.proxy_listen(Socket(),identifier))
+    records=[r for r in caplog.records if r.name=='app.realtime_listen']
+    stages=[r.extra_fields['stage'] for r in records]
+    assert 'backend_receive.start' in stages and 'provider_send.start' in stages and 'provider_final' in stages
+    formatted='\n'.join(JsonFormatter().format(r) for r in records)
+    assert '69000' in formatted and 'private synthetic speech' not in formatted and identifier not in formatted
+    assert 'Bearer' not in formatted

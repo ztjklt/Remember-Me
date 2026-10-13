@@ -45,3 +45,11 @@ The agent's Docker build succeeded and runtime logs confirmed registration. A re
 The continuous recognizer clocks 16 kHz PCM through DTX and muted gaps, consumes authenticated final results directly rather than depending on SDK manual-turn transcript events, and uses backend application-level heartbeats during silence. VAD still interrupts playout. SDK private warning extras are redacted. See the dated verification for observed interruption/audio/quiet-period checks; no actual person’s clone was tested automatically.
 
 Startup authorization is bounded: eight-second HTTP connect timeout, ten-second whole-attempt budget and at most one retry for connection failures only. Denials and read timeouts do not retry; failed authorization, room validation or RTC connection releases the Backend HTTP client. Normal answer reads retain their 120-second budget.
+
+## Frontend call completion 2026-10-14
+
+Authorized by the Product / Integration Owner implementation request. ProxySTT now uses zero SDK retries and nonretryable failures; a lost recognizer ends the call instead of silently resuming. Continuous PCM and the existing 65-second quiet-period behavior are preserved. Backend PCM writes have a two-second bound. The public v0.6/v0.7 contracts and database schema are unchanged.
+
+Opt-in REMEMBER_REALTIME_NETWORK_DIAGNOSTICS records independent numeric speech-burst observations for RTC/worker input and ASR send, final arrival, Twin request/answer and first playout frame. Backend records input/provider-send/final with the same hashed numeric call reference. Stage segment numbers do not prove identity across stages; no PCM, transcripts, tokens or actor/subject identities enter these diagnostics. Diagnostics stay off in normal operation.
+
+The reusable tools/verification/realtime_voice_probe.py requires a dedicated synthetic preset fixture and a protected credential directory. Default dispatch uses the original ticket unchanged; an explicit --qa-agent-name is restricted to a staging test and preserves all microphone-only grants and identity claims. Reports contain only states, counters and times. A separate finally controller must clear the preset reference before revoking the test VOICE grant, so provider maintenance never tries to delete a system preset. Never use a person's voice profile for this regression.

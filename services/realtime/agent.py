@@ -6,6 +6,8 @@ import asyncio
 import json
 import os
 import logging
+import time
+import hashlib
 import re
 import array
 import socket
@@ -20,6 +22,53 @@ from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, st
 from livekit.plugins import silero
 
 TOPIC='remember.twin.voice.v1'
+
+
+class SegmentDiagnostics:
+    """Opt-in numeric observations, never transcripts, PCM or credentials.
+
+    Segment numbers are local to each stage: timestamps/counts establish where
+    a burst arrived, not a claim that two independently observed bursts match.
+    """
+    def __init__(self, enabled=False, clock=None, call_number=0):
+        self.enabled=enabled;self.clock=clock or time.monotonic
+        self.started=self.clock();self.stages={};self.turn_count=0
+        self.call_number=call_number
+
+    def mark(self,stage,**numbers):
+        if not self.enabled:return
+        safe={key:value for key,value in numbers.items()
+              if key in {'segment','packets','pcm_bytes','duration_ms','turn_number','frames'}
+              and type(value) in {int,float}}
+        logging.getLogger(__name__).info('Realtime segment diagnostic',extra={
+            'stage':stage,'call_number':self.call_number,'elapsed_ms':round((self.clock()-self.started)*1000),**safe})
+
+    def observe(self,stage,data):
+        if not self.enabled:return
+        now=self.clock();entry=self.stages.setdefault(stage,{'number':0,'active':None})
+        active=entry['active']
+        if active and now-active['last']>=.6:
+            self.mark(stage+'.end',segment=entry['number'],packets=active['packets'],
+                      pcm_bytes=active['bytes'],duration_ms=round((active['last']-active['start'])*1000))
+            entry['active']=active=None
+        if not pcm_has_speech(data):return
+        if active is None:
+            entry['number']+=1
+            active={'start':now,'last':now,'packets':0,'bytes':0};entry['active']=active
+            self.mark(stage+'.start',segment=entry['number'])
+        active['last']=now;active['packets']+=1;active['bytes']+=len(data)
+
+    def close_stage(self,stage):
+        if not self.enabled:return
+        entry=self.stages.get(stage);active=entry and entry['active']
+        if active:
+            self.mark(stage+'.end',segment=entry['number'],packets=active['packets'],
+                      pcm_bytes=active['bytes'],duration_ms=round((active['last']-active['start'])*1000))
+            entry['active']=None
+
+
+def segment_diagnostics(backend):
+    return getattr(backend,'diagnostics',None)
 
 
 class PrivateLogFilter(logging.Filter):
@@ -48,6 +97,8 @@ class Backend:
         self.headers={'Authorization':'Bearer '+secret}
         self.client=httpx.AsyncClient(timeout=httpx.Timeout(120,connect=8),follow_redirects=False,trust_env=False)
         self.diagnostic_requests=0
+        self.diagnostics=SegmentDiagnostics(os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')=='1',
+            call_number=int(hashlib.sha256(call_id.encode()).hexdigest()[:12],16))
 
     async def connection_trace(self):
         """Opt-in transport stages only; never log headers, URLs or payloads."""
@@ -117,7 +168,9 @@ class ProxySTT(stt.STT):
     async def _recognize_impl(self,buffer,*,language=None,conn_options):
         raise NotImplementedError('Streaming only')
     def stream(self,*,language=None,conn_options=DEFAULT_API_CONNECT_OPTIONS):
-        return ProxyStream(stt=self,conn_options=conn_options,sample_rate=16000)
+        # A failed recognizer ends the call. Never restart/replay it invisibly.
+        return ProxyStream(stt=self,conn_options=APIConnectOptions(
+            max_retry=0,timeout=conn_options.timeout,retry_interval=conn_options.retry_interval),sample_rate=16000)
 
 
 async def pcm_chunks(source):
@@ -201,10 +254,8 @@ class ProxyStream(stt.RecognizeStream):
     async def _run(self):
         try:await self._connection()
         except (aiohttp.ClientError,asyncio.TimeoutError,RuntimeError):
-            # Recheck the live owner/grants before the SDK's bounded reconnect.
-            # Consumed PCM is never replayed; only subsequent live input remains.
-            await self._stt.backend.request('GET','/authorize')
-            raise APIConnectionError('Realtime recognition transport unavailable') from None
+            self._stt.ready.clear()
+            raise APIConnectionError('Realtime recognition transport unavailable',retryable=False) from None
 
     async def _connection(self):
         backend=self._stt.backend
@@ -229,6 +280,7 @@ class ProxyStream(stt.RecognizeStream):
                     async for data in clocked_pcm(self._input_ch,live_after=self._audio_live_after):
                         before=asyncio.get_running_loop().time()
                         await send_pcm(ws,data);counters['pcm_bytes']+=len(data)
+                        if segment_diagnostics(backend):segment_diagnostics(backend).observe('asr_send',data)
                         if diagnostic and pcm_has_speech(data):counters['speech_packet_count']+=1
                         counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
                 async def receive():
@@ -243,6 +295,7 @@ class ProxyStream(stt.RecognizeStream):
                         identifier=data.get('sentence_id','')
                         if kind=='final':
                             counters['final_events']+=1
+                            if segment_diagnostics(backend):segment_diagnostics(backend).mark('asr_final_received',frames=counters['final_events'])
                             if identifier in seen: continue
                             seen.add(identifier);counters['final_count']+=1
                             if len(seen)>10000: raise RuntimeError('ASR turn limit')
@@ -256,6 +309,8 @@ class ProxyStream(stt.RecognizeStream):
                     done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
                     for task in done:task.result()
                 finally:
+                    self._stt.ready.clear()
+                    if segment_diagnostics(backend):segment_diagnostics(backend).close_stage('asr_send')
                     for task in tasks:task.cancel()
                     await asyncio.gather(*tasks,return_exceptions=True)
                     logging.getLogger(__name__).info('Realtime ASR transport summary',extra={
@@ -272,6 +327,8 @@ async def listen_microphone(recognizer, participant):
     counts={'mic_input_frame_count':0,'mic_input_speech_frame_count':0}
     async def feed():
         async for event in audio:
+            if segment_diagnostics(getattr(recognizer,'backend',None)):
+                segment_diagnostics(recognizer.backend).observe('rtc_worker_receive',bytes(event.frame.data))
             if diagnostic:
                 counts['mic_input_frame_count']+=1
                 if pcm_has_speech(bytes(event.frame.data)):counts['mic_input_speech_frame_count']+=1
@@ -289,6 +346,8 @@ async def listen_microphone(recognizer, participant):
         for task in tasks:task.cancel()
         await asyncio.gather(*tasks,return_exceptions=True)
         if diagnostic:logging.getLogger(__name__).info('Realtime microphone input summary',extra=counts)
+        if segment_diagnostics(getattr(recognizer,'backend',None)):
+            segment_diagnostics(recognizer.backend).close_stage('rtc_worker_receive')
         await stream.aclose();await audio.aclose()
 
 
@@ -319,27 +378,42 @@ class CallController:
     def question(self,text):
         if self.closed or not text.strip():return
         self.interrupt();turn=uuid4().hex;self.turn_id=turn
-        self.task=asyncio.create_task(self.respond(text,turn))
+        trace=segment_diagnostics(self.backend)
+        if trace:trace.turn_count+=1;trace.mark('twin_question',turn_number=trace.turn_count)
+        self.task=asyncio.create_task(self.respond(text,turn,trace.turn_count if trace else 0))
 
     def manual_interrupt(self,turn_id):
         if self.closed or not turn_id or turn_id != self.turn_id:return False
         self.interrupt();return True
 
-    async def respond(self,text,turn):
+    async def respond(self,text,turn,turn_number=0):
         try:
             await self.publish({'type':'question','turn_id':turn,'text':text})
             await self.publish({'type':'state','turn_id':turn,'state':'thinking'})
             answer=await self.backend.request('POST','/answers',json={'question':text,'turn_id':turn})
             if self.closed or self.turn_id!=turn:return
+            if segment_diagnostics(self.backend):segment_diagnostics(self.backend).mark('twin_answer',turn_number=turn_number)
             await self.publish({'type':'answer','turn_id':turn,'answer':answer})
             if answer['stale'] or answer['response_type']=='UNKNOWN':
                 await self.publish({'type':'state','turn_id':turn,'state':'listening'});return
             await self.publish({'type':'state','turn_id':turn,'state':'speaking'})
             audio=self.backend.frames(answer['answer_id'],turn)
+            async def observed_audio():
+                first=True;count=0
+                try:
+                    async for frame in audio:
+                        count+=1
+                        if first and segment_diagnostics(self.backend):
+                            segment_diagnostics(self.backend).mark('playout_first_frame',turn_number=turn_number)
+                        first=False;yield frame
+                finally:
+                    await audio.aclose()
+                    if segment_diagnostics(self.backend):segment_diagnostics(self.backend).mark('playout_stream_closed',turn_number=turn_number,frames=count)
+            observed=observed_audio()
             try:
-                handle=self.session.say(answer['answer'],audio=audio,allow_interruptions=True,add_to_chat_ctx=False)
+                handle=self.session.say(answer['answer'],audio=observed,allow_interruptions=True,add_to_chat_ctx=False)
             except Exception:
-                await audio.aclose();raise
+                await observed.aclose();await audio.aclose();raise
             # LiveKit's forwarding task owns and closes this iterator, including
             # on interruption. Closing it here races that task while it is reading.
             await handle

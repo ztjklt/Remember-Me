@@ -1,6 +1,10 @@
 """Service-authenticated streaming ASR proxy, with live authorization checks."""
 import asyncio
+import array
 import json
+import logging
+import os
+import hashlib
 from uuid import uuid4
 import aiohttp
 from fastapi import WebSocketDisconnect
@@ -13,6 +17,25 @@ from .realtime_provider import task_message
 async def proxy_listen(ws, call_id):
     from .api.realtime import worker_authorization
     app=ws.app
+    diagnostics=os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')=='1'
+    clock=asyncio.get_running_loop().time;started=clock();segments={}
+    call_number=int(hashlib.sha256(call_id.encode()).hexdigest()[:12],16)
+    def record(stage,**numbers):
+        logging.getLogger(__name__).info('Realtime backend segment',extra={'extra_fields':{
+            'stage':stage,'call_number':call_number,'elapsed_ms':round((clock()-started)*1000),**numbers}})
+    def observe(stage,data):
+        if not diagnostics:return
+        now=clock();entry=segments.setdefault(stage,{'number':0,'active':None})
+        active=entry['active']
+        if active and now-active['last']>=.6:
+            record(stage+'.end',segment=entry['number'],packets=active['packets'],pcm_bytes=active['bytes'])
+            entry['active']=active=None
+        samples=array.array('h',data)
+        if not samples or sum(value*value for value in samples)/len(samples)<=200*200:return
+        if active is None:
+            entry['number']+=1;active={'last':now,'packets':0,'bytes':0};entry['active']=active
+            record(stage+'.start',segment=entry['number'])
+        active['last']=now;active['packets']+=1;active['bytes']+=len(data)
     def authorize():
         with app.state.database.session() as session:
             check_call(session,call_id,app.state.settings,app.state.realtime_provider)
@@ -41,10 +64,12 @@ async def proxy_listen(ws, call_id):
                         if not data or len(data)>32000 or len(data)%2: raise ValueError('Invalid PCM frame')
                         count+=len(data)
                         if count>16000*2*1800: raise ValueError('Call audio limit')
+                        observe('backend_receive',data)
                         # The watchdog checks live grants every second. Running
                         # eight SQL lookups for each 20 ms PCM frame makes the
                         # recognizer fall behind real-time input on CloudBase.
-                        await upstream.send_bytes(data)
+                        await asyncio.wait_for(upstream.send_bytes(data),2)
+                        observe('provider_send',data)
                 async def receive_text():
                     async for packet in upstream:
                         if packet.type!=aiohttp.WSMsgType.TEXT: raise RuntimeError('ASR disconnected')
@@ -61,6 +86,10 @@ async def proxy_listen(ws, call_id):
                             # queue provider events behind the live microphone.
                             if sentence.get('heartbeat') or not sentence.get('sentence_end') or not text.strip(): continue
                             if len(text)>1000: raise ValueError('Question too long')
+                            if diagnostics:
+                                record('provider_final',
+                                    audio_begin_ms=sentence.get('begin_time') if type(sentence.get('begin_time')) is int else -1,
+                                    audio_end_ms=sentence.get('end_time') if type(sentence.get('end_time')) is int else -1)
                             await run_in_threadpool(authorize)
                             await ws.send_json({'type':'final',
                                                 'text':text,'sentence_id':str(sentence.get('begin_time',0))})
@@ -80,5 +109,9 @@ async def proxy_listen(ws, call_id):
     finally:
         for task in tasks: task.cancel()
         await asyncio.gather(*tasks,return_exceptions=True)
+        if diagnostics:
+            for stage,entry in segments.items():
+                if active:=entry['active']:
+                    record(stage+'.end',segment=entry['number'],packets=active['packets'],pcm_bytes=active['bytes'])
         try: await ws.close()
         except (RuntimeError,WebSocketDisconnect): pass

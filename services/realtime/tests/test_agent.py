@@ -358,7 +358,7 @@ async def test_independent_microphone_reader_releases_both_streams_on_asr_failur
 
 
 @pytest.mark.asyncio
-async def test_asr_transport_reconnect_requires_fresh_authorization(monkeypatch):
+async def test_asr_transport_failure_is_nonretryable_and_clears_ready(monkeypatch):
     from types import SimpleNamespace
     from agent import ProxyStream
     from livekit.agents import APIConnectionError
@@ -366,22 +366,25 @@ async def test_asr_transport_reconnect_requires_fresh_authorization(monkeypatch)
     async def dropped(self):raise RuntimeError('ASR socket closed code=1000')
     async def authorized(method,path):checks.append((method,path));return {}
     monkeypatch.setattr(ProxyStream,'_connection',dropped)
-    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=authorized))
-    with pytest.raises(APIConnectionError,match='transport unavailable'):await stream._run()
-    assert checks==[('GET','/authorize')]
+    ready=asyncio.Event();ready.set()
+    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=authorized),ready=ready)
+    with pytest.raises(APIConnectionError,match='transport unavailable') as error:await stream._run()
+    assert checks==[] and not ready.is_set() and not error.value.retryable
 
 
 @pytest.mark.asyncio
 async def test_revoked_call_is_not_reconnected(monkeypatch):
     from types import SimpleNamespace
     from agent import ProxyStream
+    from livekit.agents import APIConnectionError
     async def dropped(self):raise RuntimeError('ASR connection ended')
     async def denied(method,path):
         response=httpx.Response(403,request=httpx.Request('GET','https://fixture.invalid/authorize'))
         response.raise_for_status()
     monkeypatch.setattr(ProxyStream,'_connection',dropped)
-    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=denied))
-    with pytest.raises(httpx.HTTPStatusError):await stream._run()
+    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=denied),ready=asyncio.Event())
+    with pytest.raises(APIConnectionError) as error:await stream._run()
+    assert not error.value.retryable
 
 
 @pytest.mark.asyncio
@@ -505,7 +508,7 @@ async def test_backend_handshake_controls_ready_and_logs_only_stages_and_speech_
     with pytest.raises(RuntimeError):await running
     phases=[record.phase for record in caplog.records if record.getMessage()=='Realtime ASR handshake']
     assert phases==(['connecting','connected','ready'] if response_kind=='ready' else ['connecting','connected'])
-    assert recognizer.ready.is_set()==(response_kind=='ready')
+    assert not recognizer.ready.is_set()  # A closed socket is never ready.
     if response_kind=='ready':
         summary=next(record for record in caplog.records if record.getMessage()=='Realtime ASR transport summary')
         assert summary.speech_packet_count==1 and summary.pcm_bytes==6400
@@ -604,3 +607,52 @@ async def test_entrypoint_ready_timeout_has_registered_cleanup_and_never_publish
     assert reader_stopped==[True] and ended==[True] and closed==[True]
     await callbacks[0]()
     assert ended==[True] and closed==[True]  # SDK shutdown cannot clean up twice.
+
+
+def test_segment_diagnostics_observe_third_burst_after_65_seconds(caplog):
+    import logging,json
+    from agent import SegmentDiagnostics
+    now=[0.0];trace=SegmentDiagnostics(True,clock=lambda:now[0])
+    caplog.set_level(logging.INFO,logger='agent')
+    speech=(300).to_bytes(2,'little',signed=True)*1600
+    for at in [0,2,69]:
+        now[0]=at
+        trace.observe('rtc_worker_receive',speech)
+        trace.observe('asr_send',speech)
+        now[0]=at+.7
+        trace.observe('rtc_worker_receive',b'\0'*3200)
+        trace.observe('asr_send',b'\0'*3200)
+    records=[record for record in caplog.records if record.getMessage()=='Realtime segment diagnostic']
+    for stage in ['rtc_worker_receive','asr_send']:
+        assert [r.segment for r in records if r.stage==stage+'.start']==[1,2,3]
+        third=next(r for r in records if r.stage==stage+'.end' and r.segment==3)
+        assert third.packets==1 and third.pcm_bytes==3200 and third.elapsed_ms==69700
+    trace.mark('twin_answer',turn_number=3,transcript='private text',token='private-token',pcm=speech)
+    assert all(value not in json.dumps([vars(r) for r in caplog.records],default=str)
+               for value in ['private text','private-token'])
+
+
+def test_disabled_segment_diagnostics_never_read_energy_or_log(monkeypatch,caplog):
+    import agent
+    monkeypatch.setattr(agent,'pcm_has_speech',lambda data:pytest.fail('Disabled diagnostics read audio'))
+    trace=agent.SegmentDiagnostics(False)
+    trace.observe('asr_send',b'private-pcm');trace.mark('twin_answer',turn_number=1)
+    assert not trace.stages and not caplog.records
+
+
+@pytest.mark.asyncio
+async def test_proxy_stt_disables_sdk_reconnect_and_attempts_only_once(monkeypatch):
+    from types import SimpleNamespace
+    from agent import ProxySTT,ProxyStream
+    from livekit.agents import APIConnectOptions,APIConnectionError
+    attempts=[]
+    async def disconnected(self):
+        attempts.append(1);raise RuntimeError('ASR disconnected')
+    recognizer=ProxySTT(SimpleNamespace());recognizer.ready.set()
+    monkeypatch.setattr(ProxyStream,'_connection',disconnected)
+    stream=recognizer.stream(conn_options=APIConnectOptions(max_retry=5,timeout=.01))
+    stream.push_frame(__import__('livekit').rtc.AudioFrame.create(sample_rate=16000,num_channels=1,samples_per_channel=320))
+    with pytest.raises(APIConnectionError):
+        async for _ in stream:pass
+    assert attempts==[1] and stream._conn_options.max_retry==0 and not recognizer.ready.is_set()
+    await stream.aclose()
