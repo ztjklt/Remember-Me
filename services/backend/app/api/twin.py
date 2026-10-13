@@ -277,8 +277,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
             if payload.mode=='persona':
-                result=request.app.state.twin_client.persona(dict(question=question,candidates=limited,
-                    understandings=understandings,examples=examples,contributions=contributions))
+                from ..persona_context import require_persona_budget
+                persona_payload=dict(question=question,candidates=limited,
+                    understandings=understandings,examples=examples,contributions=contributions)
+                require_persona_budget(persona_payload)
+                result=request.app.state.twin_client.persona(persona_payload)
             else:
                 result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
