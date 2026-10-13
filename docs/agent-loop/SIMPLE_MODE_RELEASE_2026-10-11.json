@@ -1,0 +1,175 @@
+{
+  "version": "0.9.3-internal",
+  "version_code": 20261017,
+  "baseline": "ce9382b075b2c34da5443f55750f8a6f9820b767",
+  "source_commit": "See release provenance.json and tag demo-android-0.9.3-20261011",
+  "apk_sha256": "08be1477a7ce9a6b2c1edb53fb2573967d6e1b8524ae6c2ce4cec65a70377ad2",
+  "apk_bytes": 163334750,
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "source_files_fingerprint": "40e4f59ece3bbb11096ace9854dc74c51b882b72f176d31553991b157c3c3bf5",
+  "unit_tests": {
+    "tests": 83,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "simple_mode_live": {
+    "owner100": {
+      "real_ecs": true,
+      "owner": true,
+      "episodes": 10,
+      "source_playback": true,
+      "mode_restored": true,
+      "font_scale": 1,
+      "emulator_recording_only": true,
+      "human_asr_test": false,
+      "elder_usability_test": false,
+      "elapsed_seconds": 27.897
+    },
+    "owner200": {
+      "real_ecs": true,
+      "owner": true,
+      "episodes": 10,
+      "source_playback": true,
+      "mode_restored": true,
+      "font_scale": 2,
+      "emulator_recording_only": true,
+      "human_asr_test": false,
+      "elder_usability_test": false,
+      "elapsed_seconds": 28.525
+    },
+    "reader100": {
+      "real_ecs": true,
+      "owner": false,
+      "episodes": 8,
+      "source_playback": true,
+      "mode_restored": true,
+      "font_scale": 1,
+      "emulator_recording_only": false,
+      "human_asr_test": false,
+      "elder_usability_test": false,
+      "elapsed_seconds": 19.576
+    },
+    "reader200": {
+      "real_ecs": true,
+      "owner": false,
+      "episodes": 8,
+      "source_playback": true,
+      "mode_restored": true,
+      "font_scale": 2,
+      "emulator_recording_only": false,
+      "human_asr_test": false,
+      "elder_usability_test": false,
+      "elapsed_seconds": 21.194
+    }
+  },
+  "standard_mode_live": {
+    "passed": true,
+    "elapsed_seconds": 56.578
+  },
+  "server_code_changed": false,
+  "new_asr_or_llm_acceptance": false,
+  "physical_phone": false,
+  "elder_participant_test": false,
+  "ios": false,
+  "screenshots": [
+    {
+      "file": "01-owner100-01-home.png",
+      "title": "简明模式记录者首页",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "f5b30419ca7effda45f946402593479ffa592e823887022361b71e8786ee8903"
+    },
+    {
+      "file": "02-owner100-02-recorder.png",
+      "title": "录音入口与安全区域内的按钮",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "fd527d218b836dc0f106b1b64ba365cec9617712cede8d9f0678d8e2ffc766aa"
+    },
+    {
+      "file": "03-owner100-03-paused.png",
+      "title": "暂停后继续或保存",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "78f3e216f068e05091f4bf6a1e1f87d40d5287e65edcd48f3d9d9b7c65181b6d"
+    },
+    {
+      "file": "04-owner100-04-saved.png",
+      "title": "原音先保存在手机",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "a895f2ac96a61abe7daf0716a27379344ce2bdb5a3830602987a4ccfe4eedb7f"
+    },
+    {
+      "file": "05-owner100-06-stories.png",
+      "title": "一键听真实故事原音",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "6ec2933da3c30713d6af8ed884a7d21cd3d80386735163a0ed5f834a740bd4f9"
+    },
+    {
+      "file": "06-owner100-07-player.png",
+      "title": "原音播放、暂停与重听",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "fac96e784499424a8658419b23b588d108318c46d45ff71632ff98dbd61ff587"
+    },
+    {
+      "file": "07-owner100-08-garden.png",
+      "title": "保留真实故事花田",
+      "case": "owner100",
+      "capture": "adb physical taps, UI hierarchy checked, same APK and owner100",
+      "sha256": "703f513bf0fbe20f5ded5e1f4558aa564c66fc79cf5822fc87e9e46cb9800130"
+    },
+    {
+      "file": "08-reader100-01-home.png",
+      "title": "亲友简明首页",
+      "case": "reader100",
+      "capture": "instrumentation",
+      "sha256": "57812d680e6884bad6ab6f60221ec85dff8dc8f4fdb53a75966f00e884837b91"
+    },
+    {
+      "file": "09-reader100-06-stories.png",
+      "title": "亲友获授权的故事",
+      "case": "reader100",
+      "capture": "instrumentation",
+      "sha256": "c56ec0dc3721c6a44aa4a67b2a243bcbb8e09cc415d3e77c0b96dd72dc19a094"
+    },
+    {
+      "file": "10-reader100-07-player.png",
+      "title": "亲友来源播放",
+      "case": "reader100",
+      "capture": "instrumentation",
+      "sha256": "e4ddb8251840e0873bcc649314dbb56c77f1829c281474bef6421ec5913c0d0c"
+    },
+    {
+      "file": "11-owner200-02-recorder.png",
+      "title": "200% 字号录音入口",
+      "case": "owner200",
+      "capture": "instrumentation",
+      "sha256": "862f631a0fcf889c3e1f7048e0fab4ec22ce75342031077ce7e7d9c2bd3cf125"
+    },
+    {
+      "file": "12-owner200-03-paused.png",
+      "title": "200% 字号完整保存按钮",
+      "case": "owner200",
+      "capture": "instrumentation",
+      "sha256": "c83d4791189e7f5a53472146f12ac3902affaa6f444120512e24c50b7394c462"
+    },
+    {
+      "file": "13-reader200-07-player.png",
+      "title": "200% 字号播放控制",
+      "case": "reader200",
+      "capture": "instrumentation",
+      "sha256": "7690a9de820bcedf34bb1dfbb3a83275f6f350a6439303fcb2160e4c9c7ef67b"
+    },
+    {
+      "file": "14-owner100-10-full-mode.png",
+      "title": "恢复完整模式",
+      "case": "owner100",
+      "capture": "instrumentation",
+      "sha256": "1e537ba9a0e88c045d030f1bb75d5580a618765c6c72b29287af398f1ffae068"
+    }
+  ]
+}
