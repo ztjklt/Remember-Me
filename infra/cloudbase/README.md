@@ -1,3 +1,5 @@
+> 2026-10-13 最新生产源码：`codex/twin-chat-memory` / `df7b22b`，CloudRun018，包含实时Voice和旧聊天长期记忆。迁移head为0020_chat_memory；后续发布从此基线继续。验证见 docs/verification/IOS_CHAT_MEMORY_2026_10_13.md。
+
 # iOS 独立 CloudBase 内测后端
 
 > 2026-10-13 当前生产源码在 `codex/ios-realtime-livekit`，已包含获准的连续会话、Twin 身份和实时声音接口。后续后端修改应先合入这份源码再发布，保留实时迁移、适配器及运行参数；下面早期“未部署声音克隆”段落是历史状态。验证见 [实时 Voice 记录](../../docs/verification/IOS_REALTIME_VOICE_2026_10_13.md)。
