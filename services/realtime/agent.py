@@ -8,6 +8,8 @@ import os
 import logging
 import re
 import socket
+import ssl
+import ipaddress
 from urllib.parse import urlsplit
 from uuid import uuid4
 import aiohttp
@@ -331,6 +333,42 @@ async def connect_authorized(ctx,backend):
         raise
 
 
+async def probe_backend_endpoints(url):
+    """Operator-only empty-room diagnostic. No credential is sent on probes."""
+    parsed=urlsplit(url)
+    if parsed.scheme!='https' or not parsed.hostname:raise ValueError('HTTPS diagnostic target required')
+    host=parsed.hostname;loop=asyncio.get_running_loop()
+    records=await asyncio.wait_for(loop.getaddrinfo(host,443,family=socket.AF_INET,type=socket.SOCK_STREAM),5)
+    resolved=sorted({item[4][0] for item in records})
+    controls=os.environ.get('REMEMBER_REALTIME_DIAGNOSTIC_IPS','').split(',')
+    addresses=list(dict.fromkeys(resolved+[value for value in controls if value]))[:6]
+    logger=logging.getLogger(__name__)
+    for address in addresses:
+        ip=ipaddress.ip_address(address)
+        if ip.version!=4 or not ip.is_global:raise ValueError('Only public IPv4 diagnostic addresses are allowed')
+        began=loop.time();phase='tcp';sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM);sock.setblocking(False);writer=None
+        result={'target_host':host,'address':address,'from_dns':address in resolved}
+        try:
+            await asyncio.wait_for(loop.sock_connect(sock,(address,443)),5)
+            result['tcp_ms']=round((loop.time()-began)*1000);phase='tls'
+            reader,writer=await asyncio.wait_for(asyncio.open_connection(sock=sock,
+                ssl=ssl.create_default_context(),server_hostname=host),5)
+            result['tls_ms']=round((loop.time()-began)*1000);phase='http'
+            writer.write(('GET /health HTTP/1.1\r\nHost: '+host+'\r\nConnection: close\r\n\r\n').encode())
+            await writer.drain()
+            header=await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'),8)
+            result['status']=int(header.split(b' ',2)[1])
+        except Exception as exc:result.update(failure_phase=phase,error_type=type(exc).__name__)
+        finally:
+            if writer:
+                writer.close()
+                try:await asyncio.wait_for(writer.wait_closed(),1)
+                except Exception:pass
+            else:sock.close()
+        result['elapsed_ms']=round((loop.time()-began)*1000)
+        logger.info('Realtime endpoint diagnostic',extra=result)
+
+
 def agent_name():
     name=os.environ.get('REMEMBER_LIVEKIT_AGENT_NAME','remember-twin')
     if len(name)>64 or re.fullmatch(r'[A-Za-z0-9_.-]+',name) is None:
@@ -347,6 +385,9 @@ async def entrypoint(ctx: JobContext):
     metadata=json.loads(ctx.job.metadata)
     call_id=metadata['call_id']
     if not isinstance(call_id,str) or not call_id.startswith('vc_') or len(call_id)>64:raise ValueError('Invalid call')
+    if os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')=='1' and metadata.get('network_probe') is True:
+        await asyncio.wait_for(probe_backend_endpoints(os.environ['REMEMBER_REALTIME_BACKEND_URL']),55)
+        return
     backend=Backend(os.environ['REMEMBER_REALTIME_BACKEND_URL'],os.environ['REMEMBER_REALTIME_WORKER_SECRET'],call_id)
     authorized=await connect_authorized(ctx,backend)
     # Manual turn submission prevents any generic LLM from bypassing Backend validation.
