@@ -3,7 +3,7 @@
 Protocol acknowledgements below simulate consumption and are NEVER phone/headphone
 measurements. Credentials are read from a private JSON file, never in results.
 """
-import argparse,asyncio,base64,hashlib,json,subprocess,time,wave
+import argparse,asyncio,base64,hashlib,json,ssl,subprocess,time,wave
 from pathlib import Path
 import httpx
 from websockets.asyncio.client import connect
@@ -34,14 +34,19 @@ async def main(args):
     settings=Settings(_env_file=args.env)
     credentials=json.loads(Path(args.credentials).read_text())
     rows=[]
-    async with httpx.AsyncClient(base_url=args.base,timeout=130,trust_env=False) as http:
+    tls=ssl.create_default_context(cafile=args.ca_file) if args.ca_file else ssl.create_default_context()
+    async with httpx.AsyncClient(base_url=args.base,timeout=130,trust_env=False,verify=tls) as http:
         def ok(response): response.raise_for_status();return response.json()
         login=ok(await http.post('/api/v1/accounts/login',json=credentials))
         token=login['actor_token'];http.headers['Authorization']='Bearer '+token
         spaces=ok(await http.get('/api/v1/workbench/spaces'))['items']
-        subject=next(s['subject_id'] for s in spaces if s['role']=='owner' and '陈守义' in s.get('display_name',s.get('name','')))
-        consents=ok(await http.get('/api/v1/consents',params={'subject_id':subject}))
-        consent=next(c['consent_id'] for c in consents if c['scope']=='CLOUD_TWIN' and c['status']=='granted')
+        subject=next(s['subject_id'] for s in spaces if s['role']==args.role and '陈守义' in s.get('display_name',s.get('name','')))
+        if args.role=='owner':
+            consents=ok(await http.get('/api/v1/consents',params={'subject_id':subject}))
+            consent=next(c['consent_id'] for c in consents if c['scope']=='CLOUD_TWIN' and c['status']=='granted')
+        else:
+            grants=ok(await http.get(f'/api/v1/workbench/subjects/{subject}/grants'))['items']
+            consent=next(g['grant_id'] for g in grants if g['cloud_processing_allowed'] and not g.get('revoked_at'))
         ws=None;call=None;silence_task=None;injecting=False
         async def keep_audio(connection):
             while True:
@@ -61,10 +66,11 @@ async def main(args):
                         silence_task.cancel();await asyncio.gather(silence_task,return_exceptions=True)
                     if ws: await ws.close()
                     call=ok(await http.post(f'/api/v1/subjects/{subject}/voice-sessions',json=dict(
-                        cloud_consent_id=consent,mode='evidence',policy='continuous-voice-v1',
+                        cloud_consent_id=consent,mode=args.mode,policy='continuous-voice-v1',
                         cloud_asr_allowed=True,cloud_tts_allowed=True)))
                     ws=await connect(args.base.replace('http','ws',1)+call['websocket_path'],
-                        additional_headers={'Authorization':'Bearer '+token},proxy=None,max_size=1_000_000)
+                        additional_headers={'Authorization':'Bearer '+token},proxy=None,max_size=1_000_000,
+                        **({'ssl':tls} if args.base.startswith('https://') else {}))
                     ready=json.loads(await asyncio.wait_for(ws.recv(),20));assert ready['type']=='ready',ready
                     silence_task=asyncio.create_task(keep_audio(ws))
                 digest=hashlib.sha256(question.encode()).hexdigest()[:16]
@@ -130,5 +136,8 @@ async def main(args):
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8895')
     p.add_argument('--env',required=True);p.add_argument('--credentials',required=True)
+    p.add_argument('--mode',choices=['evidence','persona'],default='evidence')
+    p.add_argument('--role',choices=['owner','reader'],default='owner')
+    p.add_argument('--ca-file')
     p.add_argument('--output',required=True);p.add_argument('--limit',type=int,default=15)
     asyncio.run(main(p.parse_args()))

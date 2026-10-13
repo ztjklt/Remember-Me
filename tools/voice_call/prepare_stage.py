@@ -42,7 +42,7 @@ for name in ['ai','api']:
         with engine.connect() as connection:
             columns=[r[0] for r in connection.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='accounts'"))]
             # Resolve by existing public demo usernames; never write account rows.
-            actors=[r[0] for r in connection.execute(text("SELECT actor_id FROM accounts WHERE username IN ('chensy08','reader08')"))]
+            actors=[r[0] for r in connection.execute(text("SELECT actor_id FROM accounts WHERE username IN ('chensy08','chenly08')"))]
         assert actors, 'No demo accounts found'
         env.update(REMEMBER_DATABASE_URL='postgresql+psycopg:///'+restore['database'],
             REMEMBER_OBJECT_STORE_ROOT=str(snapshot/'restored-audio/audio'),

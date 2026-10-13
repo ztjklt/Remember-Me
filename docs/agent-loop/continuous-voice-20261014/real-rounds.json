@@ -1,0 +1,446 @@
+{
+  "synthetic_input": true,
+  "playback_ack": "protocol simulation; not human hearing",
+  "rows": [
+    {
+      "index": 1,
+      "group": "short",
+      "question": "你好，可以和我聊聊吗？",
+      "asr": "你好，可以和我聊聊吗？",
+      "transport_ok": true,
+      "answer": "可以，你想聊哪段故事？",
+      "response_type": "SIMULATION",
+      "model": "call-controls-v1",
+      "evidence": [],
+      "asr_final_after_input_end_ms": 763,
+      "retrieval_ms": 0,
+      "answer_reviewed_ms": 75,
+      "first_audio_after_input_end_ms": 1417,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "control",
+      "review_note": "固定服务问候，不是记忆回答速度"
+    },
+    {
+      "index": 2,
+      "group": "short",
+      "question": "你喜欢喝什么茶？",
+      "asr": "你喜欢喝什么茶？",
+      "transport_ok": true,
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "response_type": "ORIGINAL",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 527,
+      "retrieval_ms": 18094,
+      "answer_reviewed_ms": 25488,
+      "first_audio_after_input_end_ms": 26989,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "pass",
+      "review_note": "口味与来源一致；冷检索18.094秒"
+    },
+    {
+      "index": 3,
+      "group": "short",
+      "question": "刚才说的茶，浓一点还是淡一点？",
+      "asr": "刚才说的茶浓一点还是淡一点？",
+      "transport_ok": true,
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "response_type": "ORIGINAL",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 918,
+      "retrieval_ms": 1461,
+      "answer_reviewed_ms": 6286,
+      "first_audio_after_input_end_ms": 7788,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "pass",
+      "review_note": "承接上一轮茶的浓淡"
+    },
+    {
+      "index": 4,
+      "group": "short",
+      "question": "你想和女儿说些什么？",
+      "asr": "你想和女儿说些什么？",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n”\n核对文字：“以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n”\n核对文字：“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_735212b22d994af5",
+          "excerpt": "陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 763,
+      "retrieval_ms": 1482,
+      "answer_reviewed_ms": 6967,
+      "first_audio_after_input_end_ms": 8592,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "partial",
+      "review_note": "相关寄语有依据，但仍逐段拼接引文，偏长"
+    },
+    {
+      "index": 5,
+      "group": "short",
+      "question": "刚才那件事，能再简单讲一句吗？",
+      "asr": "刚才那件事能再简单讲一句吗？",
+      "transport_ok": false,
+      "answer": null,
+      "response_type": null,
+      "model": null,
+      "evidence": [],
+      "asr_final_after_input_end_ms": 902,
+      "retrieval_ms": null,
+      "answer_reviewed_ms": null,
+      "first_audio_after_input_end_ms": null,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": "TWIN_UNAVAILABLE",
+      "content_grade": "failed",
+      "review_note": "语义审阅超时，没有保存为成功回答"
+    },
+    {
+      "index": 6,
+      "group": "memory",
+      "question": "第一次独立跑十二路是哪一年？",
+      "asr": "第一次独立跑12路是哪一年？",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n核对文字：“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c33e6b4ace534c2a",
+          "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 943,
+      "retrieval_ms": 1494,
+      "answer_reviewed_ms": 5859,
+      "first_audio_after_input_end_ms": 7617,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "pass",
+      "review_note": "1987纠正保留，未复活1986"
+    },
+    {
+      "index": 7,
+      "group": "memory",
+      "question": "为什么有一条记录说是一九八六年？",
+      "asr": "为什么有一条记录说是1986年？",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n核对文字：“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c33e6b4ace534c2a",
+          "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 740,
+      "retrieval_ms": 1554,
+      "answer_reviewed_ms": 6301,
+      "first_audio_after_input_end_ms": 7639,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "pass",
+      "review_note": "解释原来记混年份"
+    },
+    {
+      "index": 8,
+      "group": "memory",
+      "question": "旧水杯有什么故事？",
+      "asr": "旧水杯有什么故事？",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n核对文字：“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n核对文字：“所以这个旧杯子我换了新的以后也没急着扔。”\n核对文字：“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_554298c7655c4701",
+          "excerpt": "今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_76f894ab452c445e",
+          "excerpt": "这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_860856ff282447cc",
+          "excerpt": "所以这个旧杯子我换了新的以后也没急着扔。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_524ff8493e8342c3",
+          "excerpt": "我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 660,
+      "retrieval_ms": 1545,
+      "answer_reviewed_ms": 6354,
+      "first_audio_after_input_end_ms": 7683,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "partial",
+      "review_note": "购买与不确定年限保留；转写中“她”指杯子仍不自然"
+    },
+    {
+      "index": 9,
+      "group": "memory",
+      "question": "他银行卡的密码是什么？",
+      "asr": "他银行卡的密码是什么？",
+      "transport_ok": true,
+      "answer": "现有记录还不足以确定。",
+      "response_type": "UNKNOWN",
+      "model": "Deepseek-v4-flash",
+      "evidence": [],
+      "asr_final_after_input_end_ms": 639,
+      "retrieval_ms": 1487,
+      "answer_reviewed_ms": 6828,
+      "first_audio_after_input_end_ms": 8048,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "pass",
+      "review_note": "正确保留未知"
+    },
+    {
+      "index": 10,
+      "group": "memory",
+      "question": "关于喝茶，亲友有什么不同的回忆？",
+      "asr": "关于喝茶，亲友有什么不同的回忆？",
+      "transport_ok": true,
+      "answer": "现有记录还不足以确定。",
+      "response_type": "UNKNOWN",
+      "model": "Deepseek-v4-flash",
+      "evidence": [],
+      "asr_final_after_input_end_ms": 816,
+      "retrieval_ms": 1435,
+      "answer_reviewed_ms": 15051,
+      "first_audio_after_input_end_ms": 16473,
+      "interrupt_protocol_ack_ms": null,
+      "error_code": null,
+      "content_grade": "unverified",
+      "review_note": "返回未知；本轮没有证明存在适用且已授权的亲友补记，不能验收正向署名能力"
+    },
+    {
+      "index": 11,
+      "group": "interrupt",
+      "question": "请讲讲公交工作中的故事。",
+      "asr": "请讲讲公交工作中的故事。",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n核对文字：“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”\n核对文字：“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_9d727e9afc9b47e1",
+          "excerpt": "又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n",
+          "episode_id": "ep_d71b512711fa4c58",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_9bf748bf5cc24b90",
+          "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 788,
+      "retrieval_ms": 1509,
+      "answer_reviewed_ms": 6624,
+      "first_audio_after_input_end_ms": 8948,
+      "interrupt_protocol_ack_ms": 3,
+      "error_code": null,
+      "content_grade": "protocol_only",
+      "review_note": "五轮手动协议打断验证，不是实际声学打断"
+    },
+    {
+      "index": 12,
+      "group": "interrupt",
+      "question": "先不说工作了，你喜欢什么茶？",
+      "asr": "钱不说工作了，你喜欢什么茶？",
+      "transport_ok": true,
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "response_type": "ORIGINAL",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 653,
+      "retrieval_ms": 1576,
+      "answer_reviewed_ms": 6039,
+      "first_audio_after_input_end_ms": 7442,
+      "interrupt_protocol_ack_ms": 1,
+      "error_code": null,
+      "content_grade": "protocol_only",
+      "review_note": "ASR把先识别为钱；仍回应茶，旧轮退出"
+    },
+    {
+      "index": 13,
+      "group": "interrupt",
+      "question": "第一次跑十二路是哪一年？",
+      "asr": "第一次跑12路是哪一年？",
+      "transport_ok": true,
+      "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "response_type": "ORIGINAL",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 918,
+      "retrieval_ms": 1519,
+      "answer_reviewed_ms": 5696,
+      "first_audio_after_input_end_ms": 7612,
+      "interrupt_protocol_ack_ms": 2,
+      "error_code": null,
+      "content_grade": "protocol_only",
+      "review_note": "旧轮取消后的年份来源正确"
+    },
+    {
+      "index": 14,
+      "group": "interrupt",
+      "question": "请详细说说旧水杯的故事。",
+      "asr": "请详细说说旧水杯的故事。",
+      "transport_ok": true,
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n核对文字：“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n核对文字：“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”\n核对文字：“所以这个旧杯子我换了新的以后也没急着扔。”\n核对文字：“陈岚以前问过我换新杯子了，怎么还留着这个？”",
+      "response_type": "SIMULATION",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_554298c7655c4701",
+          "excerpt": "今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_76f894ab452c445e",
+          "excerpt": "这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_524ff8493e8342c3",
+          "excerpt": "我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_860856ff282447cc",
+          "excerpt": "所以这个旧杯子我换了新的以后也没急着扔。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_75f359949b2b4c11",
+          "excerpt": "陈岚以前问过我换新杯子了，怎么还留着这个？",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 747,
+      "retrieval_ms": 1486,
+      "answer_reviewed_ms": 7154,
+      "first_audio_after_input_end_ms": 8444,
+      "interrupt_protocol_ack_ms": 2,
+      "error_code": null,
+      "content_grade": "protocol_only",
+      "review_note": "正文有据但较长"
+    },
+    {
+      "index": 15,
+      "group": "interrupt",
+      "question": "先停一下，你女儿叫什么名字？",
+      "asr": "先停一下。你女儿叫什么名字？",
+      "transport_ok": true,
+      "answer": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+      "response_type": "ORIGINAL",
+      "model": "Deepseek-v4-flash",
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "asr_final_after_input_end_ms": 637,
+      "retrieval_ms": 1538,
+      "answer_reviewed_ms": 6211,
+      "first_audio_after_input_end_ms": 7449,
+      "interrupt_protocol_ack_ms": 1,
+      "error_code": null,
+      "content_grade": "protocol_only",
+      "review_note": "女儿陈岚归属正确"
+    }
+  ]
+}

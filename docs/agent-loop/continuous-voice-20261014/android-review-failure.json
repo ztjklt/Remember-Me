@@ -1,0 +1,8 @@
+{
+  "physical_phone": false,
+  "synthetic_microphone_injection": true,
+  "server": "https:\/\/39.108.183.47",
+  "version": "0.11.0-internal",
+  "ok": false,
+  "failure_type": "ComparisonFailure"
+}

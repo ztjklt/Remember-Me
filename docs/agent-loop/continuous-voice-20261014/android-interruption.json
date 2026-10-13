@@ -1,0 +1,14 @@
+{
+  "physical_phone": false,
+  "synthetic_microphone_injection": true,
+  "server": "https:\/\/39.108.183.47",
+  "version": "0.11.0-internal",
+  "recognized": "旧水杯有什么故事？",
+  "answer": "根据现有材料，相关表述如下：\n核对文字：“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n核对文字：“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n核对文字：“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”",
+  "audio_track_advanced": true,
+  "interrupted_answer": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+  "old_track_stopped": true,
+  "background_remains_paused": true,
+  "ended": true,
+  "ok": true
+}

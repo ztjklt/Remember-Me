@@ -1,0 +1,137 @@
+[
+  {
+    "index": 1,
+    "ok": true,
+    "asr": "你好，可以和我聊聊吗？",
+    "answer": "现有记录还不足以确定。",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 40237
+  },
+  {
+    "index": 2,
+    "ok": false,
+    "asr": "你喜欢喝什么茶？",
+    "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+    "error": "TTS_TEXT_INVALID",
+    "exception": null,
+    "first_audio_after_input_end_ms": 27001
+  },
+  {
+    "index": 3,
+    "ok": false,
+    "asr": "刚才说的茶浓一点还是淡一点？",
+    "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+    "error": "TTS_TEXT_INVALID",
+    "exception": null,
+    "first_audio_after_input_end_ms": 8174
+  },
+  {
+    "index": 4,
+    "ok": true,
+    "asr": "你想和女儿说些什么？",
+    "answer": "根据现有材料，相关表述如下：\n核对文字：“陈岚，前几天你问我那句话，我想好了，从你妈妈那盏灯讲起吧。\n\n”\n核对文字：“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 11543
+  },
+  {
+    "index": 5,
+    "ok": true,
+    "asr": "刚才那件事能再简单讲一句吗？",
+    "answer": "根据现有材料，相关表述如下：\n核对文字：“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n核对文字：“这两天总想起这件事，就再补这几句。”",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 18571
+  },
+  {
+    "index": 6,
+    "ok": false,
+    "asr": "第一次独立跑12路是哪一年？",
+    "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+    "error": "TTS_TEXT_INVALID",
+    "exception": null,
+    "first_audio_after_input_end_ms": 11561
+  },
+  {
+    "index": 7,
+    "ok": false,
+    "asr": "为什么有一条记录说是1986年？",
+    "answer": "根据现有材料，相关表述如下：\n核对文字：“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n核对文字：“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+    "error": "ASR_TASK_FAILED",
+    "exception": null,
+    "first_audio_after_input_end_ms": 54940
+  },
+  {
+    "index": 8,
+    "ok": false,
+    "asr": null,
+    "answer": null,
+    "error": null,
+    "exception": "ConnectionClosedOK",
+    "first_audio_after_input_end_ms": null
+  },
+  {
+    "index": 9,
+    "ok": true,
+    "asr": "他银行卡的密码是什么？",
+    "answer": "现有记录还不足以确定。",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 8268
+  },
+  {
+    "index": 10,
+    "ok": true,
+    "asr": "关于喝茶，亲友有什么不同的回忆？",
+    "answer": "现有记录还不足以确定。",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 12717
+  },
+  {
+    "index": 11,
+    "ok": true,
+    "asr": "请讲讲公交工作中的故事。",
+    "answer": "根据现有材料，相关表述如下：\n核对文字：“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n核对文字：“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”\n核对文字：“第一次收车，我没立刻回家，在站房坐了一会儿，同事们在旁边聊白天的事，我就听着，具体聊什么已经记不住了，倒是那一下松口气的感觉。”\n核对文字：“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n核对文字：“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n核对文字：“以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n”\n核对文字：“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 9110
+  },
+  {
+    "index": 12,
+    "ok": true,
+    "asr": "钱不说工作了，你喜欢什么茶？",
+    "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 7972
+  },
+  {
+    "index": 13,
+    "ok": true,
+    "asr": "第一次跑12路是哪一年？",
+    "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 8488
+  },
+  {
+    "index": 14,
+    "ok": true,
+    "asr": "请详细说说旧水杯的故事。",
+    "answer": "根据现有材料，相关表述如下：\n核对文字：“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n核对文字：“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n核对文字：“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 8151
+  },
+  {
+    "index": 15,
+    "ok": true,
+    "asr": "先停一下。你女儿叫什么名字？",
+    "answer": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+    "error": null,
+    "exception": null,
+    "first_audio_after_input_end_ms": 57566
+  }
+]

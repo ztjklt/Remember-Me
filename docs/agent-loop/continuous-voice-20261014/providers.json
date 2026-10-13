@@ -1,0 +1,94 @@
+{
+  "tts": {
+    "first_chunk_ms": 774,
+    "ok": true,
+    "model": "mimo-v2.5-tts",
+    "voice": "白桦",
+    "chunks": 12,
+    "total_ms": 1408,
+    "audio_seconds": 3.84
+  },
+  "asr": {
+    "handshake_ms": 215,
+    "events": [
+      {
+        "type": "transcript",
+        "text": "这时屋",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 1458
+      },
+      {
+        "type": "transcript",
+        "text": "这时屋",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 1747
+      },
+      {
+        "type": "transcript",
+        "text": "这时勿枉我",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 2272
+      },
+      {
+        "type": "transcript",
+        "text": "这时勿枉我的语音",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 2677
+      },
+      {
+        "type": "transcript",
+        "text": "这时勿枉我的语音测试",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 3190
+      },
+      {
+        "type": "transcript",
+        "text": "这时勿枉我的语音测试。我",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 3693
+      },
+      {
+        "type": "transcript",
+        "text": "这时勿枉我的语音测试。我喜欢喝",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 4257
+      },
+      {
+        "type": "transcript",
+        "text": "这是乌忘我的语音测试，我喜欢喝淡一点",
+        "final": false,
+        "begin_ms": 0,
+        "end_ms": null,
+        "elapsed_ms": 4878
+      },
+      {
+        "type": "transcript",
+        "text": "这是乌忘我的语音测试，我喜欢喝淡一点的茶。",
+        "final": true,
+        "begin_ms": 0,
+        "end_ms": 3780,
+        "elapsed_ms": 5544
+      },
+      {
+        "type": "asr_finished",
+        "elapsed_ms": 6082
+      }
+    ],
+    "ok": true
+  },
+  "fictional_probe": true
+}
