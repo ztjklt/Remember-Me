@@ -32,12 +32,15 @@ import json, os
 from pathlib import Path
 from sqlalchemy import create_engine,text
 from app.models import Base
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 root=Path(os.environ['SNAPSHOT'])
 engine=create_engine(os.environ['REMEMBER_DATABASE_URL'])
 with engine.connect() as c:
     counts={t.name:c.execute(text('SELECT count(*) FROM "'+t.name+'"')).scalar_one() for t in Base.metadata.sorted_tables}
     revision=c.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-assert revision=='0016_share_invitations'
+expected_heads=ScriptDirectory.from_config(Config('alembic.ini')).get_heads()
+assert expected_heads==[revision], (revision,expected_heads)
 original=Path('/var/lib/remember-me/audio')
 restored=root/'restored-audio/audio'
 import hashlib

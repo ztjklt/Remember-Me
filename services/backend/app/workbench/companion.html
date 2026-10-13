@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>慢慢了解 · 勿忘我</title>
+  <link rel="stylesheet" href="companion.css">
+  <script src="companion.js" defer></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/workbench/" aria-label="返回勿忘我工作台"><span class="brand-mark" aria-hidden="true">✳</span> 勿忘我</a><div class="account"><button id="identity" class="quiet" aria-label="查看当前账号信息" hidden></button><button id="logout" class="quiet" hidden>退出</button></div></header>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <main>
+    <section id="login" class="login-card" hidden>
+      <p class="eyebrow">从一段真实的讲述开始</p><h1>把了解，慢慢留下来。</h1><p class="muted">登录后，继续阅读你的故事与亲友留下的话。</p>
+      <form id="loginForm"><label>账号<input id="username" autocomplete="username" required maxlength="64"></label><label>密码<input id="password" type="password" autocomplete="current-password" required minlength="8" maxlength="128"></label><button type="submit">登录</button></form>
+      <a class="text-link" href="/workbench/">注册账号或回到记录工作台</a>
+    </section>
+    <div id="workspace" hidden>
+      <section class="hero"><div><p class="eyebrow">故事有出处 · 了解有分寸 <span id="sampleLabel" class="pill" hidden>虚构样例</span></p><h1 id="spaceTitle">慢慢了解</h1><p id="spaceHint" class="muted"></p></div><div class="space-controls"><label>正在阅读的空间<select id="space" aria-label="选择人物空间"></select></label><button id="refresh" class="secondary">刷新内容</button></div><span class="sprig" aria-hidden="true">❧</span></section>
+      <nav class="section-tabs" aria-label="陪伴内容"><button data-section="person" aria-current="page">了解这个人</button><button data-section="dialogue">聊一聊</button><button data-section="family">亲友补记</button><button data-section="foryou">留给你</button></nav>
+      <section id="person" class="page">
+        <div class="section-head"><div><p class="eyebrow">从故事里认识一个人</p><h2>经历、牵挂，也有例外。</h2><p class="muted">每一项理解都可以回到原文；空白处，留给还没有讲过的事。</p></div><label class="check" id="reviewToggleWrap"><input type="checkbox" id="reviewToggle">查看待核对建议</label></div>
+        <div id="understandings" class="understandings"></div>
+        <div id="viewTabs" class="view-tabs" role="group" aria-label="四种阅读视角"></div>
+        <details id="facetDetails" class="facet-details"><summary>记忆侧面</summary><div id="facets" class="facets" aria-label="人物的八个侧面"></div></details>
+        <div id="narrativeNotice" hidden></div><div id="records" class="cards"></div><div id="nextQuestion"></div>
+      </section>
+      <section id="dialogue" class="page" hidden>
+        <div class="section-head"><div><p class="eyebrow">带着了解，继续聊聊</p><h2>你想说些什么？</h2></div></div>
+        <div id="personaSettings" class="panel" hidden></div>
+        <form id="questionForm" class="panel"><label>对话方式<select id="questionMode"><option value="evidence">查找记录</option><option value="persona">与 AI 分身聊聊</option></select></label><label>想说的话<textarea id="questionText" rows="3" maxlength="2000" required></textarea></label><label class="check"><input id="questionCloud" type="checkbox">同意这次云端文字处理</label><button type="submit">发送</button></form>
+        <div id="answer" aria-live="polite"></div><div id="voiceSettings" class="panel" hidden></div>
+      </section>
+      <section id="family" class="page" hidden>
+        <div class="section-head"><div><p class="eyebrow">每个人，都有自己的视角</p><h2>亲友署名补记</h2><p class="muted">亲历、转述与个人看法分别标明。本人审核后，仍保留提供者署名。</p></div></div>
+        <div id="grantPanel" class="panel" hidden><h3>谁可以补记</h3><p class="muted">补记许可与故事阅读许可分别设置。</p><form id="grantForm" class="inline-form"><div id="grantRecipient"></div><label class="check"><input id="grantEnabled" type="checkbox" checked>允许提交补记</label><button type="submit">保存许可</button></form><div id="grants" class="grant-list"></div></div>
+        <form id="noteForm" class="panel" hidden><h3>留下你知道的那一段</h3><label>这段话来自<select id="noteClassification"><option value="firsthand">我亲身经历</option><option value="reported">我听他人讲过</option><option value="opinion">我的个人看法</option></select></label><div id="contributionAudio" class="audio-draft"></div><details><summary>关联一段故事（可选）</summary><div id="noteLinks"></div></details><label>补记正文<textarea id="noteText" rows="5" maxlength="5000" required placeholder="写下具体的事情，也可以保留不确定。"></textarea></label><p class="muted">提交后先由本人审核；问答参考需要你与本人分别同意。</p><button type="submit">署名提交，等待审核</button></form>
+        <p id="notePermission" class="muted"></p><div id="notes" class="cards"></div>
+      </section>
+      <section id="foryou" class="page" hidden>
+        <div class="section-head"><div><p class="eyebrow">有些话，想留给特定的人</p><h2>一封信，一份此刻的记忆。</h2><p class="muted">专属信与只读封存版，都由本人选择内容和接收账号。</p></div></div>
+        <form id="letterForm" class="panel" hidden><h3>写一封专属信</h3><div id="letterRecipient"></div><label>标题<input id="letterTitle" maxlength="120" required placeholder="给你的一封信"></label><div id="letterAudio" class="audio-draft"></div><label>想说的话<textarea id="letterText" rows="6" maxlength="10000" required></textarea></label><p class="muted">先保存私密草稿，再单独确认发送。可以附上为这封信单独录下的声音。</p><button type="submit">保存私密草稿</button></form><div id="letters" class="cards"></div>
+        <div class="section-head compact"><div><h2>保存一个只读版本</h2><p class="muted">保存选定且已核对的内容。以后聊天不会改写它；来源删除或撤权后，相关内容仍会失效。</p></div></div>
+        <form id="snapshotForm" class="panel" hidden><h3>挑选要留下的内容</h3><div id="snapshotSources" class="source-selection"></div><h3>选择接收账号</h3><div id="snapshotRecipients"></div><p class="muted">接收人须已获所有所选来源的阅读许可。</p><button type="submit">预览选定内容</button></form><div id="snapshotPreview" class="panel" hidden></div><div id="snapshots" class="cards"></div>
+      </section>
+      <footer>这里只保存本人主动选择的内容与版本。<a href="/workbench/">回到故事与录音</a></footer>
+    </div>
+  </main>
+  <dialog id="detailDialog"><div id="detailBody"></div><button id="closeDetail" class="secondary">关闭</button></dialog>
+</body>
+</html>

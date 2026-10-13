@@ -1,5 +1,9 @@
 # Remember Me
 
+> **2026-10-13 Android 0.10.0 云端交付：** [下载安装、账号与双角色体验](docs/agent-loop/ANDROID_0100_QUICK_START_2026-10-13.md) · [部署、验证结果与剩余事项](docs/agent-loop/CLOUD_TWIN_DELIVERY_2026-10-13.md) · [录音豆 SDK 接入准备](apps/android/docs/WORK_3200_PREPARATION.md)。ECS 已升级 Twin 与亲友/声音接口，签名内测 APK 直连公网 HTTPS。设备 SDK 仍是接入准备，不是录音豆实机通过。
+
+> **2026-10-12 Twin 与交互融合交接（历史）：** [本次功能、进展与待解决项](docs/agent-loop/TWIN_TEAM_HANDOFF_2026-10-12.md) · [新电脑本地运行](docs/agent-loop/TWIN_LOCAL_SETUP_2026-10-12.md) · [10 张 Android 实跑截图](docs/agent-loop/screenshots/twin-20261012/README.md)。已融合右侧两批按钮与音频交互；该日期的结果仅为本地评审。ECS 后续升级见上方 10 月 13 日记录。CI APK 仍默认连接模拟器宿主机 `10.0.2.2:8891`，不要与签名云端包混用。
+
 > **Android 0.9.3：** [下载并开启简明模式](docs/agent-loop/ANDROID_093_QUICK_START.md) · [范围、实跑结果与截图](docs/agent-loop/SIMPLE_MODE_2026-10-11.md)。记录者可直接讲述、听故事和继续整理，亲友直达原音；保留完整模式和花田。客户端更新，ECS 沿用现有版本；真人长辈试用仍待进行。
 
 > **Android 0.9.2：** [安装与双角色体验](docs/agent-loop/ANDROID_092_QUICK_START.md) · [人物理解、真实问答与 ECS 修复](docs/agent-loop/PROFILE_VALIDITY_FIX_2026-10-11.md) · [模拟器验收与截图](docs/agent-loop/PROFILE_ANDROID_ACCEPTANCE_2026-10-11.md)。修复新增问答同意导致人物理解失效，以及 Android 15 页面重建白边；ECS 已更新，数据库与权限范围不变。

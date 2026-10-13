@@ -21,9 +21,9 @@ def seed(session):
     return seed_development_data(session, subject_name='客户端测试', actor_name='本人')
 
 
-def capture(client, own, payload=None, *, key='client-asr', audio=AUDIO, route='client-transcribed', metadata=None):
+def capture(client, own, payload=None, *, key='client-asr', audio=AUDIO, route='client-transcribed', metadata=None, source='IMPORT'):
     data = {'subject_id': own.subject_id, 'recording_consent_id': own.consent_id,
-            'idempotency_key': key, 'source': 'IMPORT', 'recorded_at': '2026-10-08T09:00:00+08:00',
+            'idempotency_key': key, 'source': source, 'recorded_at': '2026-10-08T09:00:00+08:00',
             'audio_ref': 'fiction.wav', 'metadata': json.dumps(metadata or {})}
     if payload is None:
         payload = {'text': RAW, 'audio_sha256': hashlib.sha256(audio).hexdigest(),
@@ -40,13 +40,15 @@ class NoServerASR:
         raise AssertionError('Server ASR must never run for client transcripts')
 
 
-def test_client_asr_is_saved_and_waits_for_review_then_reuses_pipeline(app, client, session):
+@pytest.mark.parametrize('source', ['IMPORT', 'WORK_3200'])
+def test_client_asr_is_saved_and_waits_for_review_then_reuses_pipeline(app, client, session, source):
     own = seed_development_data(session, subject_name='客户端样本', actor_name='本人')
     app.state.settings.stt_backend = 'groq'  # This path needs no server ASR key.
-    result = capture(client, own, metadata={'cloud_asr_receipt': {'actor_id': 'forged'}})
+    result = capture(client, own, metadata={'cloud_asr_receipt': {'actor_id': 'forged'}}, source=source)
     assert result.status_code == 201, result.text
     eid = result.json()['episode_id']
     ep = session.get(Episode, eid)
+    assert ep.source == source
     job = session.scalar(select(Job).where(Job.episode_id == eid))
     assert ep.stt_transcript == RAW and ep.transcript == '我没有去过北京。'
     assert ep.stt_backend == 'client' and ep.stt_model_version == 'client-reported/groq/whisper-large-v3'

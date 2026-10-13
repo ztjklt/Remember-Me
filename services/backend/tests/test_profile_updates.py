@@ -99,6 +99,22 @@ def test_additional_recording_requires_explicit_target_revalidation(app,client,s
     assert len(approved_traits(session,owner.subject_id))==1
 
 
+def test_explicit_change_can_reclassify_kind_without_merging_old_trait(app,client,session):
+    owner,oh,rh,ep,cloud,root=prepare(app,client,session)
+    old=session.get(ProfileCandidate,'target');old.kind='trait';session.commit()
+    assert proposal(client,root,oh,'SUPPORT').status_code==422
+    response=proposal(client,root,oh,'CHANGE')
+    assert response.status_code==201,response.text
+    response=client.post(root+'/updates/'+response.json()['update_id']+'/confirm',headers=oh)
+    assert response.status_code==200,response.text
+    session.expire_all()
+    assert session.get(ProfileCandidate,'target').kind=='trait'
+    assert session.get(ProfileCandidate,'target').status=='superseded'
+    current=approved_traits(session,owner.subject_id)
+    assert len(current)==1 and current[0].kind=='habit'
+    assert current[0].statement=='新理解next'
+
+
 def test_inflight_twin_cannot_publish_after_profile_change(app,client,session):
     owner,oh,rh,ep,cloud,root=prepare(app,client,session)
     r=proposal(client,root,oh);assert r.status_code==201,r.text

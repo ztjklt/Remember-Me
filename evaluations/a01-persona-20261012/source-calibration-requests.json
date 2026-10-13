@@ -1,0 +1,62 @@
+{
+  "schema": "a01-source-and-calibration-requests-v1",
+  "executed": false,
+  "source_update": {
+    "method": "PATCH",
+    "path": "/api/v1/subjects/subject_92b1690705074918a90981e5280a22c5/memories/<current-memory-id>",
+    "json": {
+      "content": "<separately reviewed owner correction; never a gold/reference answer>"
+    },
+    "effect": "Owner CALIBRATION audit; original episode audio remains, old dependent answers invalidated.",
+    "readback": [
+      "/api/v1/subjects/subject_92b1690705074918a90981e5280a22c5/memories",
+      "/api/v1/subjects/subject_92b1690705074918a90981e5280a22c5/twin/answers/<previous-answer-id>"
+    ]
+  },
+  "calibration": [
+    {
+      "method": "POST",
+      "path": "/api/v1/subjects/subject_92b1690705074918a90981e5280a22c5/calibrations",
+      "json": {
+        "twin_answer_id": "<current saved non-UNKNOWN owner answer>",
+        "cloud_consent_id": "<existing owner CLOUD_TWIN>"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/episodes",
+      "multipart": {
+        "subject_id": "subject_92b1690705074918a90981e5280a22c5",
+        "recording_consent_id": "<existing RECORDING>",
+        "idempotency_key": "<new unique key>",
+        "source": "IMPORT",
+        "recorded_at": "<actual new recording time with offset>",
+        "metadata": {
+          "calibration_id": "<returned calibration id>",
+          "cloud_asr_policy": "<current capabilities policy>"
+        },
+        "file": "<new later human-answer audio; do not reuse old A01 audio>"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/episodes/<new-episode-id>/transcript-review"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/episodes/<new-episode-id>/transcript-review",
+      "json": {
+        "transcript": "<review of newly returned ASR, never expected answer>"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/subjects/subject_92b1690705074918a90981e5280a22c5/calibrations/<calibration-id>/complete",
+      "json": {
+        "cloud_consent_id": "<existing owner CLOUD_TWIN>"
+      },
+      "precondition": "New linked episode ready and reviewed; locked answer source remains current."
+    }
+  ],
+  "boundary": "Preparing requests does not perform a source update or complete calibration. Existing material alone cannot satisfy a later human-answer recording."
+}

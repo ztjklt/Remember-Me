@@ -99,7 +99,8 @@ def test_profile_never_publishes_invalid_or_changed_sources(app,client,session,m
     assert result['items']==[] and result['jobs'][0]['status']=='failed'
 
 
-def test_android_stops_after_stt_until_explicit_confirmation(app,client,session):
+@pytest.mark.parametrize('source', ['ANDROID_MIC', 'WORK_3200'])
+def test_capture_stops_after_stt_until_explicit_confirmation(app,client,session,source):
     from app.worker import ProcessingWorker
     from app.ai_core import FakeAiCoreClient
     from app.models import Job
@@ -111,20 +112,28 @@ def test_android_stops_after_stt_until_explicit_confirmation(app,client,session)
             return super().process(payload)
     ai=Count()
     r=client.post('/api/v1/episodes',headers=oh,data={'subject_id':owner.subject_id,
-        'recording_consent_id':owner.consent_id,'source':'ANDROID_MIC','recorded_at':'2026-10-07T12:00:00Z',
+        'recording_consent_id':owner.consent_id,'source':source,'recorded_at':'2026-10-07T12:00:00Z',
         'audio_ref':'phone.m4a','idempotency_key':'android-review'},files={'file':('phone.m4a',b'TEST','audio/mp4')})
     assert r.status_code==201
     episode=r.json()['episode_id']
+    assert client.patch(f'/api/v1/episodes/{episode}/transcript-review',headers=oh,json={'transcript':'提前核对'}).status_code==422
     worker=ProcessingWorker(app.state.database,app.state.object_store,app.state.stt_provider,ai,backoff_seconds=0)
     worker.run_once();worker.run_once();worker.run_once()
     assert ai.calls==0
+    session.expire_all()
+    job=session.scalar(select(Job).where(Job.episode_id==episode))
+    assert (job.stage,job.state)==('extract','waiting')
+    assert session.scalar(select(MemoryItem).where(MemoryItem.episode_id==episode)) is None
+    assert client.get(f'/api/v1/episodes/{episode}/transcript-review',headers=rh).status_code==404
+    assert client.patch(f'/api/v1/episodes/{episode}/transcript-review',headers=rh,json={'transcript':'冒充本人'}).status_code==404
     assert client.get(f'/api/v1/episodes/{episode}/transcript-review',headers=oh).json()['state']=='reviewing'
     assert client.patch(f'/api/v1/episodes/{episode}/transcript-review',headers=oh,json={'transcript':'我不喜欢夜跑。'}).status_code==200
     worker.run_once();worker.run_once()
     assert ai.calls==1
     session.expire_all()
     saved=session.get(Episode,episode)
-    assert saved.source=='ANDROID_MIC' and saved.transcript=='我不喜欢夜跑。'
+    assert saved.source==source and saved.transcript=='我不喜欢夜跑。'
+    assert saved.transcript_reviewed_by==owner.actor_id
     assert saved.stt_transcript!=saved.transcript
 
 

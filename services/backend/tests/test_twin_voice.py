@@ -160,7 +160,8 @@ def test_spoken_query_is_transient(app, client, session):
 
 
 @pytest.mark.parametrize('edit_during_compare',[False,True])
-def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(app, client, session,edit_during_compare):
+@pytest.mark.parametrize('source', ['IOS_MIC', 'WORK_3200'])
+def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(app, client, session,edit_during_compare,source):
     own = seed_development_data(session, subject_name="Own", actor_name="Own")
     other = seed_development_data(session, subject_name="Other", actor_name="Other")
     headers = {"Authorization": "Bearer " + own.actor_token}
@@ -189,13 +190,13 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
     metadata = json.dumps({"calibration_id": run["calibration_id"]})
     wrong = client.post("/api/v1/episodes", headers=headers,
         data={"subject_id": other.subject_id, "recording_consent_id": own.consent_id,
-              "idempotency_key": "bad-calibration", "source": "IOS_MIC",
+              "idempotency_key": "bad-calibration", "source": source,
               "recorded_at": "2026-09-27T09:00:00Z", "audio_ref": "answer.m4a", "metadata": metadata},
         files={"file": ("answer.m4a", b"HUMAN", "audio/mp4")})
     assert wrong.status_code != 201
     upload = client.post("/api/v1/episodes", headers=headers,
         data={"subject_id": own.subject_id, "recording_consent_id": own.consent_id,
-              "idempotency_key": "human-calibration", "source": "IOS_MIC",
+              "idempotency_key": "human-calibration", "source": source,
               "recorded_at": "2026-09-27T09:00:00Z", "audio_ref": "answer.m4a", "metadata": metadata},
         files={"file": ("answer.m4a", b"HUMAN", "audio/mp4")})
     assert upload.status_code == 201, upload.text
@@ -204,6 +205,8 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
     worker = ProcessingWorker(app.state.database, app.state.object_store,
                               app.state.stt_provider, app.state.ai_client, backoff_seconds=0)
     worker.run_once()
+    assert worker.run_once() is None
+    assert client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud}).status_code == 409
     assert client.patch(f"/api/v1/episodes/{human_id}/transcript-review", headers=headers,
                         json={"transcript": "我更喜欢游泳，因为我觉得自由"}).status_code == 200
     worker.run_once()

@@ -1,0 +1,76 @@
+{
+  "product_source": "6f6d0e6ae1f2649e71d80573ba3f415e32153caa",
+  "app_version": "0.10.0-internal",
+  "server_release_id": "6f6d0e6ae1f2649e71d80573ba3f415e32153caa",
+  "emulator": true,
+  "physical_phone": false,
+  "font_scale": 1,
+  "new_microphone_asr": false,
+  "adb_reverse": false,
+  "owner": {
+    "stories": 10,
+    "confirmed_understandings": 2,
+    "status": "passed",
+    "source_played": true,
+    "logout_cache_cleared": true,
+    "playback": [
+      {
+        "source": "answer:ta_c457daeb97b74da0",
+        "duration_ms": 27200,
+        "position_ms": 1241
+      },
+      {
+        "source": "ep_55d7960102d74610",
+        "duration_ms": 69120,
+        "position_ms": 1063
+      }
+    ],
+    "answer": {
+      "answer_id": "ta_c457daeb97b74da0",
+      "question": "临近收车，考虑要不要再多跑一趟时，你会看重什么？",
+      "answer": "如果是平常这种收车时候要不要多跑一趟，我大概会先想到平安回家比多跑一趟重要；以前收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我，一天的活忙完了，有个人惦记着我回家，心里会松下来。",
+      "mode": "persona",
+      "response_type": "SIMULATION",
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "persona-conditional-reviewed-v8",
+      "understanding_ids": [
+        "pc_2c7c411504e2be4c56c6a31fa1674f7c5639630c"
+      ],
+      "coverage": "complete"
+    },
+    "new_questions": 1
+  },
+  "reader": {
+    "stories": 8,
+    "confirmed_understandings": 1,
+    "status": "passed",
+    "source_played": true,
+    "logout_cache_cleared": true,
+    "playback": [
+      {
+        "source": "answer:ta_87eeaa59f6ad445a",
+        "duration_ms": 39360,
+        "position_ms": 1140
+      },
+      {
+        "source": "ep_55d7960102d74610",
+        "duration_ms": 69120,
+        "position_ms": 1016
+      }
+    ],
+    "answer": {
+      "answer_id": "ta_87eeaa59f6ad445a",
+      "question": "临近收车，考虑要不要再多跑一趟时，你会看重什么？",
+      "answer": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。一天的活忙完了，有个人惦记着我回家，心里会松下来。",
+      "mode": "persona",
+      "response_type": "SIMULATION",
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "persona-conditional-reviewed-v8",
+      "understanding_ids": [],
+      "coverage": "complete"
+    },
+    "new_questions": 1,
+    "first_attempt": "Question and API readback passed; duplicate quote UI selector failed before speech.",
+    "resume": "Same saved answer; zero new questions; one synthesis; UI playback and logout passed."
+  }
+}

@@ -53,9 +53,10 @@ class BackendClient(private val gate: SessionGate) {
         }
         return json(session, "/api/v1/consents", "POST", JSONObject().put("subject_id", subject).put("scope", scope)).getString("consent_id")
     }
-    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null): String {
+    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC"): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
+        require(source in setOf("ANDROID_MIC", "IMPORT", "WORK_3200"))
         transcript?.requireMatches(file)
         val boundary = "remember-${UUID.randomUUID()}"
         val endpoint = if(transcript == null) "/api/v1/episodes" else "/api/v1/episodes/client-transcribed"
@@ -64,15 +65,18 @@ class BackendClient(private val gate: SessionGate) {
             connection.setChunkedStreamingMode(64 * 1024)
             connection.outputStream.use { output ->
                 fun write(value: String) { output.write(value.toByteArray(Charsets.UTF_8)) }
-                val fields = mutableMapOf("subject_id" to subject, "source" to "ANDROID_MIC", "recorded_at" to audio.createdAt,
+                val fields = mutableMapOf("subject_id" to subject, "source" to source, "recorded_at" to audio.createdAt,
                     "audio_ref" to file.name, "duration_ms" to audio.durationMillis.toString(),
                     "idempotency_key" to key, "recording_consent_id" to consent,
                     "metadata" to JSONObject().put("capture_client", "native-android").apply {
                         cloudAsrPolicy?.let { put("cloud_asr_policy", it) }
+                        if(calibrationId.isNotBlank()) put("calibration_id", calibrationId)
                     }.toString())
                 transcript?.let { fields["client_transcript"] = it.toJson().toString() }
                 fields.forEach { (name, value) -> write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n") }
-                write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.m4a\"\r\nContent-Type: audio/mp4\r\n\r\n")
+                val extension = file.extension.filter { it.isLetterOrDigit() }.take(8).ifBlank { "m4a" }
+                val mime = audio.mimeType.takeIf { it.matches(Regex("audio/[a-zA-Z0-9.+-]+")) } ?: "application/octet-stream"
+                write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.$extension\"\r\nContent-Type: $mime\r\n\r\n")
                 file.inputStream().use { it.copyTo(output) }
                 write("\r\n--$boundary--\r\n")
             }
@@ -83,6 +87,30 @@ class BackendClient(private val gate: SessionGate) {
     }
     fun audio(session: BackendSession, subject: String, episode: String): ByteArray =
         request(session, "$WORKBENCH/${segment(subject)}/stories/${segment(episode)}/audio")
+
+    fun media(session: BackendSession, path: String): ByteArray = request(session, path)
+
+    fun companionOriginal(session: BackendSession, subject: String, contribution: String): JSONObject =
+        json(session, "$WORKBENCH/${segment(subject)}/companion/contributions/${segment(contribution)}")
+
+    fun uploadCompanionAudio(session: BackendSession, subject: String, purpose: String, file: File, mime: String, key: String): JSONObject {
+        require(purpose in setOf("contribution", "letter") && file.isFile && file.length() > 0) { "请先录音或选择音频。" }
+        val boundary = "remember-${UUID.randomUUID()}"
+        val c = connection(session, "$WORKBENCH/${segment(subject)}/companion/audio", "POST", "multipart/form-data; boundary=$boundary")
+        try {
+            c.setChunkedStreamingMode(64 * 1024)
+            c.outputStream.use { out ->
+                fun write(value: String) { out.write(value.toByteArray(Charsets.UTF_8)) }
+                mapOf("purpose" to purpose, "idempotency_key" to key).forEach { (name,value) -> write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n") }
+                val extension = file.extension.filter { it.isLetterOrDigit() }.take(8).ifBlank { "m4a" }
+                val contentType = mime.takeIf { it.matches(Regex("audio/[a-zA-Z0-9.+-]+")) } ?: "application/octet-stream"
+                write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.$extension\"\r\nContent-Type: $contentType\r\n\r\n")
+                file.inputStream().use { it.copyTo(out) }; write("\r\n--$boundary--\r\n")
+            }
+            val result = readResponse(c); gate.requireCurrent(session)
+            return JSONObject(result.toString(Charsets.UTF_8))
+        } finally { c.disconnect() }
+    }
 
     private fun request(session: BackendSession, path: String, method: String = "GET", type: String? = null, body: ByteArray? = null): ByteArray {
         val c = connection(session, path, method, type)

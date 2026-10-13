@@ -135,6 +135,13 @@ def start(subject_id: str, body: StartCalibration,
         _check_source(session, existing)
         session.commit()
         return _view(existing)
+    # Starting a comparison requires a current answer. Once locked, its frozen
+    # answer is intentionally kept while a later human recording is collected.
+    from ..twin_validity import get_current_answer
+    try:
+        get_current_answer(session, subject_id, actor.actor_id, answer.answer_id)
+    except AppError as exc:
+        raise CalibrationNotReady('资料或授权已变化，请重新提问后开始核对。') from exc
     snapshot = _snapshot(session, subject_id, answer.memory_item_ids)
     if not snapshot or not answer.evidence_ids:
         raise CalibrationNotReady("Twin 回答缺少有效的原始记忆证据。")

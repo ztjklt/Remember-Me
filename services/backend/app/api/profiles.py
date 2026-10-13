@@ -40,7 +40,7 @@ class UpdateInput(BaseModel):
         return self
 
 
-def update_inputs(session,subject,actor,candidate_id,target_id,basis):
+def update_inputs(session,subject,actor,candidate_id,target_id,basis,action=None):
     candidate=session.get(ProfileCandidate,candidate_id)
     if candidate is None or candidate.subject_id!=subject: raise Hidden('人物候选不存在。')
     if candidate.status!='pending' or candidate.source_basis!=basis:
@@ -51,8 +51,8 @@ def update_inputs(session,subject,actor,candidate_id,target_id,basis):
         target=session.get(ProfileCandidate,target_id)
         if target is None or target.subject_id!=subject: raise Hidden('目标理解不存在。')
         if target.status!='confirmed': raise ProfileChanged('旧理解已退出当前使用，请重新选择。')
-        if (target.domain,target.kind)!=(candidate.domain,candidate.kind):
-            raise RequestInvalid('新旧理解的领域和种类不同，不能直接关联。')
+        if target.domain!=candidate.domain or (target.kind!=candidate.kind and action!='CHANGE'):
+            raise RequestInvalid('补充印证须属于同一领域和种类；明确说明后来变化时，可以更新同领域的理解种类。')
         valid_snapshot(session,subject,actor,target,require_saved=target.source_basis!=basis)
     return candidate,target
 
@@ -68,7 +68,7 @@ def updates(subject_id:str,actor=Depends(current_actor),session=Depends(get_sess
 def propose_update(subject_id:str,body:UpdateInput,actor=Depends(current_actor),session=Depends(get_session)):
     publication_lock(session,subject_id);require_owner(session,subject_id,actor.actor_id)
     basis=profile_source_basis(session,subject_id)
-    update_inputs(session,subject_id,actor.actor_id,body.candidate_id,body.target_candidate_id,basis)
+    update_inputs(session,subject_id,actor.actor_id,body.candidate_id,body.target_candidate_id,basis,body.action)
     # Material resolution can create stable source IDs; capture after its flush.
     full_basis=source_basis(session,subject_id)
     existing=session.scalar(select(ProfileUpdate).where(ProfileUpdate.subject_id==subject_id,
@@ -92,7 +92,7 @@ def decide_update(subject_id,update_id,status,request,actor,session):
         if row.base_source_version!=source_basis(session,subject_id):
             raise ProfileChanged('资料、权限或人物理解已变化，请重新核对更新。')
         basis=profile_source_basis(session,subject_id)
-        candidate,target=update_inputs(session,subject_id,actor.actor_id,row.candidate_id,row.target_candidate_id,basis)
+        candidate,target=update_inputs(session,subject_id,actor.actor_id,row.candidate_id,row.target_candidate_id,basis,row.action)
         apply_update(session,row,candidate,target,basis,actor.actor_id)
         invalidate_answers(session,request.app.state.object_store,subject_id)
     row.status=status;row.decided_at=utcnow();session.commit()

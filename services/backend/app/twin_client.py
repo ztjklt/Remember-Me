@@ -36,6 +36,19 @@ class TwinClient:
         except (httpx.HTTPError,ValueError):
             return {'status':'unavailable','text':'','model_version':'','prompt_version':'expression-v1'}
 
+    def persona(self, payload):
+        try:
+            response=httpx.post(self.url.removesuffix('/twin')+'/persona',json=payload,
+                timeout=self.timeout,follow_redirects=False,trust_env=False)
+            if response.is_error:
+                try: code=response.json().get('error_code')
+                except (ValueError,AttributeError): code=None
+                if code in {'AI_SCHEMA_INVALID','EVIDENCE_INVALID','AI_AUTH_FAILED'}: raise TwinRejected(code)
+            response.raise_for_status()
+            return response.json()
+        except (httpx.HTTPError,ValueError) as exc:
+            raise TwinUnavailable('分身暂时未能完成回答，请重试。') from exc
+
     def answer(self, question: str, candidates: list[dict]) -> dict:
         try:
             response = httpx.post(self.url, json={"question": question, "candidates": candidates},

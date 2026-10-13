@@ -76,6 +76,14 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
     voice_url: str = "http://127.0.0.1:8300"
     voice_timeout_seconds: float = 180.0
+    # Disabled until the server operator explicitly binds the fictional A01
+    # reference to one Subject. Clients cannot supply references or provider keys.
+    voice_synthetic_backend: Literal["disabled", "xiaomi"] = "disabled"
+    xiaomi_voice_api_key: SecretStr = SecretStr("")
+    xiaomi_voice_base_url: str = "https://api.xiaomimimo.com/v1"
+    xiaomi_voice_model: Literal["mimo-v2.5-tts-voiceclone"] = "mimo-v2.5-tts-voiceclone"
+    a01_voice_subject_id: str = ""
+    a01_voice_reference_path: str = ""
 
     # A placeholder provider is refused outside development and test. This is the
     # explicit way to say "yes, here too" — bringing an environment up end to end

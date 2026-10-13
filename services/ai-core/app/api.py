@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from threading import BoundedSemaphore
+from time import monotonic
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -18,6 +19,7 @@ from .profile_proposals import ProfileProposalInput, ProfileProposalOutput, Prof
 from .profile_relations import RelationInput, RelationOutput
 from .narrative import NarrativeInput
 from .expression import ExpressionInput, ExpressionProvider
+from .persona import PersonaInput, PersonaOutput, PersonaProvider
 from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, WeixinCalibrationProvider
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
@@ -71,6 +73,7 @@ def create_app(
     twin_provider: DeepSeekTwinProvider | None = None,
     calibration_provider: DeepSeekCalibrationProvider | None = None,
     profile_provider: ProfileProposalProvider | None = None,
+    persona_provider: PersonaProvider | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
@@ -83,11 +86,16 @@ def create_app(
         model=settings.model, timeout_seconds=settings.timeout_seconds,
     ) if settings.provider == "deepseek" else None)
     active_profile = profile_provider
+    active_persona = persona_provider
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
         active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers, structured_answers=settings.twin_structured_answers, quote_answers=settings.twin_quote_answers)
         active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
-        active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key))
+        active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key),verify_candidates=settings.profile_verify_candidates)
+        active_persona = persona_provider or PersonaProvider(WeixinChat(api_key=key),
+            total_timeout_seconds=settings.persona_total_timeout_seconds,
+            call_timeout_seconds=settings.persona_call_timeout_seconds,
+            fictional_debug_trace=settings.persona_fictional_debug_trace)
     slots = BoundedSemaphore(settings.max_concurrent_requests)
 
     @asynccontextmanager
@@ -106,6 +114,8 @@ def create_app(
                 active_profile.close()
             if calibration_provider is None and active_calibration is not None:
                 active_calibration.close()
+            if persona_provider is None and active_persona is not None:
+                active_persona.close()
 
     app = FastAPI(title="Remember Me AI Core", version="0.2.0", lifespan=lifespan)
     app.add_middleware(RequestSizeLimit, max_bytes=settings.max_request_bytes)
@@ -179,6 +189,20 @@ def create_app(
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
             return active_calibration.compare(payload)
+        finally:
+            slots.release()
+
+    @app.post("/persona", response_model=PersonaOutput)
+    def answer_persona(payload: PersonaInput) -> PersonaOutput:
+        if active_persona is None:
+            raise ProviderUnavailable("Persona requires the configured Weixin adapter")
+        started = monotonic()
+        if not slots.acquire(timeout=min(15, active_persona.total_timeout_seconds)):
+            if monotonic() - started >= active_persona.total_timeout_seconds:
+                raise ProviderTimeout("Persona request budget exhausted waiting for capacity")
+            raise ProviderUnavailable("AI Core capacity is busy")
+        try:
+            return active_persona.answer(payload, started_at=started)
         finally:
             slots.release()
 

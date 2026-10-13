@@ -1,0 +1,58 @@
+{
+  "kind": "Android emulator native UI",
+  "font_scale": 1.0,
+  "fixture": false,
+  "capture_scope": "existing data readback; no new recording or question during these screenshots",
+  "items": [
+    {
+      "file": "01-owner-garden.png",
+      "title": "记录者花田",
+      "sha256": "21721deb2147f3430b5db76bd74478f695941c20a84362f12c0b5fb97db26cca"
+    },
+    {
+      "file": "02-owner-understandings.png",
+      "title": "已确认人物理解",
+      "sha256": "97b3ca9c2d6dc85b232533c9e7d2c664dc03cdb9e9987abe78c9cbeba7ceea4c"
+    },
+    {
+      "file": "03-understanding-evidence.png",
+      "title": "理解的适用情境与依据",
+      "sha256": "91cff9b5181dc4e26e4a7f2ba60899b246a12da1cc0d7e0e1832fab3806eb4c8"
+    },
+    {
+      "file": "04-twin-mode.png",
+      "title": "查原话与分身模式",
+      "sha256": "382cddbd10b2eea00863aadb1710a5e2414f723201830cfcdec83e62ecb0f4a8"
+    },
+    {
+      "file": "05-owner-contribution-original.png",
+      "title": "记录者读取署名补记",
+      "sha256": "ee0cb41e643944e947b5c17f67c5beb88fc00c8f17bb4755430347423f6e4f17"
+    },
+    {
+      "file": "06-dedicated-letter.png",
+      "title": "专属留言入口",
+      "sha256": "8cb379ed94ad97d544deedff1c0da6f677ef87ac7f8f2ad8beef482611bc4fac"
+    },
+    {
+      "file": "07-saved-twin-answer.png",
+      "title": "真实保存的分身回答",
+      "sha256": "388414c6422ad57fb3bd89a25f4a0d3f74364aa48b90b6dcce186c41e75adea3"
+    },
+    {
+      "file": "08-answer-playback.png",
+      "title": "分身回答音频实际播放",
+      "sha256": "39d03f2551721d4d71f20337ab2cc04adb83cb02e771af75995472bca2ba9e99"
+    },
+    {
+      "file": "09-reader-contribution-original.png",
+      "title": "亲友读取署名补记",
+      "sha256": "cf9cdc34b7d71faefeb6bc135145947d0ea2cc75391ef47fb44a5d41a9a69baa"
+    },
+    {
+      "file": "10-reader-understandings.png",
+      "title": "亲友人物页",
+      "sha256": "e7f8ef213ceeb7cb350abfdc50d83b629cd00004d2e5c2fc98e5a7d08240ca0a"
+    }
+  ]
+}

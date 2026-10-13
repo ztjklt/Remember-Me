@@ -35,7 +35,7 @@ import me.remember.app.core.designsystem.RememberMeBrand
 fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearance: AppearanceChoice,
     updateAppearance: (AppearanceChoice) -> Unit, openPeople: () -> Unit, openPending: () -> Unit,
     resetScroll: () -> Unit,
-    confirm: (String, () -> Unit) -> Unit) {
+    confirm: ConfirmAction) {
     var section by rememberSaveable(state.actor, state.subject) { mutableStateOf("home") }
     LaunchedEffect(section) { resetScroll() }
     val enabled = !state.busy && !state.recording
@@ -49,15 +49,9 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
                     Text(if(state.owner) "留下故事的人" else "被邀请的亲友", style = MaterialTheme.typography.bodyMedium) }
             }
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                Row(Modifier.fillMaxWidth().toggleable(value = appearance.simpleMode, role = Role.Switch,
-                    onValueChange = { updateAppearance(appearance.copy(simpleMode = it)) }).padding(16.dp).heightIn(min = 60.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text("简明模式", style = MaterialTheme.typography.titleMedium)
-                        Text(if(appearance.simpleMode) "已开启 · 点此恢复完整模式" else "更清楚的文字，更直接的操作", style = MaterialTheme.typography.bodySmall)
-                    }
-                    Switch(appearance.simpleMode, onCheckedChange = null)
-                }
+                RememberToggle("简明模式", appearance.simpleMode,
+                    { updateAppearance(appearance.copy(simpleMode=it)) }, modifier=Modifier.padding(horizontal=16.dp),
+                    supporting=if(appearance.simpleMode) "更清楚的文字，更直接的操作" else "按你的阅读习惯切换")
             }
             SettingsEntry("账号与空间", "当前身份、换号与退出", Icons.Outlined.AccountCircle) { section = "account" }
             SettingsEntry("外观与阅读", "${appearance.theme.title} · ${appearance.scene.title}", Icons.Outlined.Palette) { section = "appearance" }
@@ -79,7 +73,7 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
                 }
             }
             Text("内测账号由管理员准备；需要修改密码时请联系管理员。新设密码可用 8 位，现有密码仍有效。", style = MaterialTheme.typography.bodySmall)
-            Button(onClick = { confirm("退出将停止播放并清除本机访问内容，保留按账号隔离的本机原音。再次登录需输入账号密码。") { model.logout() } },
+            Button(onClick = { confirm("退出将停止播放并清除本机访问内容，保留按账号隔离的本机原音。再次登录需输入账号密码。", false) { model.logout() } },
                 enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("退出登录 / 换个账号") }
         }
         "appearance" -> {
@@ -88,10 +82,8 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             ThemeChoice.entries.forEach { value -> ChoiceRow(value.title, appearance.theme == value) { updateAppearance(appearance.copy(theme = value)) } }
             Text("自然背景", style = MaterialTheme.typography.titleMedium)
             GardenSceneOptions(appearance.scene) { updateAppearance(appearance.copy(scene = it)) }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) { Text("简化花田动效"); Text("减少花朵与阅读页的过渡。", style = MaterialTheme.typography.bodySmall) }
-                Switch(appearance.reduceMotion, { updateAppearance(appearance.copy(reduceMotion = it)) })
-            }
+            RememberToggle("减少动态效果", appearance.reduceMotion,
+                { updateAppearance(appearance.copy(reduceMotion=it)) }, supporting="花田与按钮直接切换状态")
             Text("文字大小跟随手机系统设置。外观选择只保存在这台设备上。", style = MaterialTheme.typography.bodySmall)
         }
         "permissions" -> DevicePermissions(state, model)
@@ -101,7 +93,8 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("我的用词", style = MaterialTheme.typography.headlineMedium)
             Text("写下人名、方言与意思。只有核对时明确带入故事，才用于理解和分享。")
             OutlinedTextField(text, { if(it.length <= 3000) text = it }, label = { Text("人名与方言解释") }, minLines = 4, modifier = Modifier.fillMaxWidth())
-            Button(onClick = { model.saveVocabulary(text) }, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("保存我的用词") }
+            RememberActionButton("保存我的用词", enabled, filled=true, icon=Icons.Outlined.Check,
+                pendingLabel="正在保存…", successLabel="已保存") { model.saveVocabulary(text) }
         }
         "pending" -> {
             Text("待处理与核对", style = MaterialTheme.typography.headlineMedium)
@@ -113,8 +106,8 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("数据与帮助", style = MaterialTheme.typography.headlineMedium)
             Text("原音是录制的声音；机器稿是识别结果；核对稿是本人修正的文字；“再补充一点”是另外写下的信息。它们分开保留。")
             Text("允许麦克风不代表同意上传、云端分析或分享；每个环节仍需要主动确认。撤权限制后续访问，不能收回他人已经保存的文件。")
-            OutlinedButton(onClick = { confirm("仅清理可重新下载的来源音频，并停止当前原音播放；不删除本机录音、登录或云端记忆。") { model.clearSourceCache() } }, enabled = enabled) { Text("清理下载缓存") }
-            OutlinedButton(onClick = model::refresh, enabled = enabled) { Text("刷新云端资料") }
+            OutlinedButton(onClick = { confirm("仅清理可重新下载的来源音频，并停止当前原音播放；不删除本机录音、登录或云端记忆。", false) { model.clearSourceCache() } }, enabled = enabled) { Text("清理下载缓存") }
+            RememberActionButton("刷新云端资料",enabled,pendingLabel="正在刷新…",successLabel="资料已刷新",onClick=model::refresh)
             OutlinedButton(onClick = model::checkConnection, enabled = enabled) { Text("检查服务连接") }
             Text(state.connectionCheck.message, style = MaterialTheme.typography.bodySmall)
             Text("应用版本：${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall)
@@ -129,8 +122,13 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
     Surface(onClick = open, shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = .88f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f))) {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
-            Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.titleMedium); Text(subtitle, style = MaterialTheme.typography.bodySmall) }
+            Surface(shape=RoundedCornerShape(14.dp),color=MaterialTheme.colorScheme.primaryContainer) {
+                Box(Modifier.size(44.dp),contentAlignment=Alignment.Center) {Icon(icon,null,tint=MaterialTheme.colorScheme.onPrimaryContainer)}
+            }
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                Text(title,style=MaterialTheme.typography.titleMedium)
+                Text(subtitle,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Icon(Icons.Outlined.ChevronRight, null)
         }
     }
@@ -168,14 +166,11 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             .onFailure { model.report("系统设置暂时无法打开，请在手机设置中管理应用权限。") }
     }) { Text("打开系统权限设置") }
     Text("通知：${if(notifications) "已允许" else "未允许或系统已关闭"}", style = MaterialTheme.typography.titleMedium)
-    if(state.owner) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) { Text("每日提醒"); Text("上午 9 点左右的通用本机通知，不含私密内容，不调用模型。", style = MaterialTheme.typography.bodySmall) }
-        Switch(state.dailyReminder, { enabled ->
-            if(!enabled) model.setDailyReminder(false)
-            else if(Build.VERSION.SDK_INT >= 33 && !notifications) requestNotification.launch(Manifest.permission.POST_NOTIFICATIONS)
-            else model.setDailyReminder(true)
-        }, enabled = !state.busy && !state.recording)
-    }
+    if(state.owner) RememberToggle("每日提醒", state.dailyReminder, { enabled ->
+        if(!enabled) model.setDailyReminder(false)
+        else if(Build.VERSION.SDK_INT >= 33 && !notifications) requestNotification.launch(Manifest.permission.POST_NOTIFICATIONS)
+        else model.setDailyReminder(true)
+    }, supporting="上午 9 点，提醒留下一段故事", enabled=!state.busy && !state.recording)
     Text("提醒默认关闭；退出、换号或切换空间会取消。系统电池策略可能延迟通知。", style = MaterialTheme.typography.bodySmall)
     Text("亲友能看哪些内容，请到“亲友与分享”管理；这与手机系统权限不同。", style = MaterialTheme.typography.bodySmall)
 }

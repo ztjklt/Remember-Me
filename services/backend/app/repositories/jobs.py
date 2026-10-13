@@ -142,7 +142,7 @@ class JobRepository:
         }
         awaiting_transcript_review = (
             JobStage(job.stage) is JobStage.TRANSCRIBE
-            and episode.source in {"IOS_MIC", "IMPORT", "ANDROID_MIC"}
+            and episode.source in {"IOS_MIC", "IMPORT", "ANDROID_MIC", "WORK_3200"}
         )
         if awaiting_transcript_review:
             values.update(

@@ -96,14 +96,15 @@ def test_inflight_correction_rejects_answer(app, client, session,round_number):
     assert response.json()['error_code'] == 'SOURCE_CHANGED'
 
 
-def test_import_waits_for_review_and_revision_confirmation(app, client, session):
+@pytest.mark.parametrize('source', ['IMPORT', 'WORK_3200'])
+def test_recording_waits_for_review_and_revision_confirmation(app, client, session, source):
     from app.worker import ProcessingWorker
     owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
     root = f'/api/v1/workbench/subjects/{owner.subject_id}'
     old = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == ep))
     uploaded = client.post('/api/v1/episodes', headers=oh, data={
         'subject_id': owner.subject_id, 'recording_consent_id': owner.consent_id,
-        'idempotency_key': 'new-correction', 'source': 'IMPORT',
+        'idempotency_key': 'new-correction', 'source': source,
         'recorded_at': '2026-10-07T12:00:00Z', 'audio_ref': 'correction.webm'},
         files={'file': ('correction.webm', b'EXPLICIT-TEST-AUDIO', 'audio/webm')})
     assert uploaded.status_code == 201, uploaded.text

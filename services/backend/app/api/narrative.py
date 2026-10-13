@@ -147,19 +147,8 @@ def overview(subject_id:str,actor=Depends(current_actor),session=Depends(get_ses
     sources=material_map(session,subject_id,actor.actor_id)
     rows=visible_records(session,subject_id,actor.actor_id,sources=sources)
     active=[r for r in rows if r['status']=='confirmed']
-    from ..profiles import approved_traits,candidate_view
-    basis=profile_source_basis(session,subject_id)
-    understanding=[]
-    # Reader sees reviewed story observations, never the owner's private profile cache.
-    candidates=session.scalars(select(ProfileCandidate).where(ProfileCandidate.subject_id==subject_id)) if owner else []
-    for c in candidates:
-        refs=c.evidence_ids+c.counter_evidence_ids
-        if not all(e in sources for e in refs): continue
-        view=candidate_view(c,basis)
-        view.update(evidence=[sources[e] for e in c.evidence_ids],counter_evidence=[sources[e] for e in c.counter_evidence_ids],
-                    independent_events=event_support(session,subject_id,c.evidence_ids,sources))
-        view['label']='本人确认的情境化理解' if view['status']=='confirmed' else '待本人核对的观察'
-        understanding.append(view)
+    from ..person_context import visible_understandings
+    understanding=visible_understandings(session,subject_id,actor.actor_id,sources,include_pending=owner)
     pref=session.get(NarrativePreference,subject_id)
     views=[dict(title=title,records=[r['id'] for r in active if set(r['facets'])&facets]) for title,facets in VIEW_FACETS]
     # Evidence-only fallback preserves all original material while organization is pending.

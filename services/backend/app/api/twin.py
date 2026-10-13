@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from uuid import uuid4
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
@@ -21,6 +22,8 @@ from ..twin_client import TwinUnavailable
 from ..stt import SttProvider
 from ..access import visible_episodes, is_owner, require_cloud, source_basis, publication_lock, altered_story_ids
 from ..materials import effective_materials, ContextTooLarge
+from ..rag_contract import (AuthorizedSnapshot, AuthorizedSource, ContextGroup,
+                            RagContextIncomplete, build_rag_provider, retrieve_context)
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}", tags=["twin"])
 
@@ -44,6 +47,8 @@ class TwinQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=1000)
     cloud_consent_id: str = Field(min_length=1)
+    mode: Literal['evidence','persona'] = 'evidence'
+    retrieval_mode: Literal['full','local'] = 'full'
 
 
 @router.post("/twin/transcribe-query")
@@ -93,6 +98,9 @@ def require_subject(session: Session, subject_id: str, actor: Actor) -> None:
 
 
 def answer_view(session: Session, row: TwinAnswer) -> dict:
+    from ..persona_models import PersonaAnswerContext
+    meta=session.get(PersonaAnswerContext,row.answer_id)
+    review=meta.review_summary if meta and row.invalidated_at is None else {}
     sources = [session.get(Evidence, identifier) for identifier in row.evidence_ids]
     return {
         "answer_id": row.answer_id, "subject_id": row.subject_id,
@@ -102,6 +110,12 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
         "source_version": row.source_basis,
         "created_at": row.created_at.isoformat(),
         "stale": row.invalidated_at is not None,
+        "mode": meta.mode if meta else 'evidence',
+        "understanding_ids": meta.understanding_ids if meta and row.invalidated_at is None else [],
+        "contribution_ids": meta.contribution_ids if meta and row.invalidated_at is None else [],
+        "prompt_version": meta.prompt_version if meta else '',
+        "coverage": review.get('coverage'),
+        "omitted_points": review.get('omitted_points'),
         "expression": row.expression if row.invalidated_at is None else None,
         "evidence": [{"evidence_id": source.evidence_id, "excerpt": source.excerpt,
                       "episode_id": source.episode_id, "source_type": source.source_type}
@@ -138,25 +152,82 @@ def search_memories(subject_id: str, q: str, request: Request,
 def ask(subject_id: str, payload: TwinQuestion, request: Request,
         actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     actor_id = actor.actor_id
-    publication_lock(session, subject_id)
-    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
-    ids = visible_episodes(session, subject_id, actor_id, cloud=True)
-    reader = not is_owner(session, subject_id, actor_id)
-    if reader:
-        ids -= altered_story_ids(session, ids)
-    candidates = effective_materials(session, subject_id, ids)
     from ..narrative import visible_records,contextual_sources
     from ..models import NarrativePreference
-    from ..profiles import approved_traits
-    sources = contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
-    organized = [r for r in visible_records(session,subject_id,actor_id,sources=sources)
-                 if r['status']=='confirmed' and r['source_valid']]
-    for trait in (approved_traits(session, subject_id) if not reader else []):
+    from ..person_context import persona_understandings
+    loaded={}
+    def load_snapshot():
+        # Transactions guard snapshots, never the retrieval or model call.
+        publication_lock(session,subject_id)
+        require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+        ids=visible_episodes(session,subject_id,actor_id,cloud=True)
+        reader=not is_owner(session,subject_id,actor_id)
+        if reader: ids-=altered_story_ids(session,ids)
+        candidates=effective_materials(session,subject_id,ids,enforce_budget=payload.retrieval_mode=='full')
+        sources=contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
+        organized=[r for r in visible_records(session,subject_id,actor_id,sources=sources)
+                   if r['status']=='confirmed' and r['source_valid']]
+        understandings=persona_understandings(session,subject_id,actor_id,sources)
+        groups=[ContextGroup('story',tuple(r['evidence_ids'])) for r in organized
+                if r['kind'] in {'story','person','observation'} and r['evidence_ids']]
+        groups.extend(ContextGroup('understanding',tuple(dict.fromkeys(u['evidence_ids']+u['counter_evidence_ids'])))
+                      for u in understandings if u['evidence_ids'])
+        if payload.retrieval_mode=='local':
+            from ..models import MemoryRevision, MemoryItem
+            from collections import defaultdict
+            by_episode=defaultdict(set)
+            for source in sources.values(): by_episode[source['episode_id']].add(source['evidence_id'])
+            for update in session.scalars(select(MemoryRevision).where(
+                    MemoryRevision.subject_id==subject_id,MemoryRevision.status=='confirmed')):
+                old_memory=session.get(MemoryItem,update.target_memory_id)
+                old=by_episode.get(old_memory.episode_id,set()) if old_memory else set()
+                new=by_episode.get(update.episode_id,set())
+                if old and not new and update.kind in {'change','supplement'}:
+                    raise RagContextIncomplete('相关补充目前不可用，请先核对分享范围或处理状态。')
+                if old and new:
+                    groups.append(ContextGroup('correction',tuple(sorted(old|new))))
+        wrapped=[]
+        for source in sources.values():
+            episode=session.get(Episode,source['episode_id'])
+            if episode is None or episode.subject_id!=subject_id:
+                raise SourceChanged('资料归属已变化，请重新提问。')
+            wrapped.append(AuthorizedSource(episode.subject_id,source))
+        snapshot=AuthorizedSnapshot(subject_id,source_basis(session,subject_id),tuple(wrapped),tuple(groups))
+        loaded.update(ids=ids,reader=reader,candidates=candidates,sources=sources,
+                      organized=organized,understandings=understandings)
+        session.commit()
+        return snapshot
+    snapshot=load_snapshot()
+    retrieval_audit={'mode':'full'}
+    if payload.retrieval_mode=='local':
+        provider=build_rag_provider(session,request.app.state.embedding_encoder,
+            episode_ids=loaded['ids'],reader=loaded['reader'],sources=loaded['sources'])
+        selection=retrieve_context(payload.question,load_snapshot,provider)
+        retrieval_audit={'mode':'local','source_basis':selection.source_basis,
+            'retriever_version':selection.retriever_version,'hit_ids':list(selection.hit_ids),
+            'selected_evidence_ids':list(selection.selected_evidence_ids),
+            'expanded_ids':list(selection.expanded_ids),'character_count':selection.character_count}
+        selected=set(selection.selected_evidence_ids)
+        candidates=[dict(c,evidence=[e for e in c['evidence'] if e['evidence_id'] in selected])
+                    for c in loaded['candidates'] if any(e['evidence_id'] in selected for e in c['evidence'])]
+        sources=dict(selection.sources)
+        snapshot_basis=selection.source_basis
+    else:
+        candidates=loaded['candidates'];sources=loaded['sources'];snapshot_basis=snapshot.source_basis
+    organized=loaded['organized']
+    understandings=[u for u in loaded['understandings']
+                    if set(u['evidence_ids']+u['counter_evidence_ids'])<=sources.keys()]
+    publication_lock(session,subject_id)
+    if snapshot_basis!=source_basis(session,subject_id):
+        raise SourceChanged('资料或授权已变化，请重新提问。')
+    require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+    for trait in understandings:
         # Conditions and counterexamples need the same permission check as support.
-        if not set(trait.evidence_ids+trait.counter_evidence_ids)<=sources.keys(): continue
+        if not set(trait['evidence_ids']+trait['counter_evidence_ids'])<=sources.keys(): continue
         for candidate in candidates:
-            if set(trait.evidence_ids).intersection(e['evidence_id'] for e in candidate['evidence']):
-                candidate['traits'].append(f'本人确认的系统归纳：{trait.statement}；情境：{trait.context}；不得扩展为所有场景的人格。')
+            if set(trait['evidence_ids']).intersection(e['evidence_id'] for e in candidate['evidence']):
+                counters='；'.join(sources[e]['excerpt'] for e in trait['counter_evidence_ids'])
+                candidate['traits'].append(f"本人确认的理解：{trait['statement']}；情境：{trait['context']}；例外：{counters}；仅适用于所述情境。")
     for record in organized:
         if record['kind'] not in {'story','person','observation'}: continue
         for candidate in candidates:
@@ -164,6 +235,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 candidate['traits'].append('本人审核的故事整理（非原话，以证据为准）：'+record['text'])
     pref=session.get(NarrativePreference,subject_id)
     examples=[{'id':r['id'],'text':r['text']} for r in organized if r['kind']=='style'] if pref and pref.style_enabled else []
+    from ..errors import RequestInvalid
+    if payload.mode=='persona' and (not pref or not pref.style_enabled or not examples or not loaded['understandings']):
+        raise RequestInvalid('请先由本人开启分身表达，并确认可使用的人物理解和表达范例。')
+    from ..persona_context import visible_contributions
+    contributions=visible_contributions(session,subject_id,actor_id) if payload.mode=='persona' else []
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
@@ -193,14 +269,18 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     session.commit()
-    if not limited:
+    if not limited and not contributions:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
-            result = request.app.state.twin_client.answer(question, limited)
+            if payload.mode=='persona':
+                result=request.app.state.twin_client.persona(dict(question=question,candidates=limited,
+                    understandings=understandings,examples=examples,contributions=contributions))
+            else:
+                result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
             failure = TwinFailed(str(exc))
             if not exc.retryable:
@@ -208,7 +288,9 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 failure.http_status = 502
             raise failure from exc
     expression=None
-    if examples and result.get('response_type')=='SIMULATION' and style_over_budget:
+    if payload.mode=='persona':
+        pass
+    elif examples and result.get('response_type')=='SIMULATION' and style_over_budget:
         expression={'status':'unavailable','text':'','model_version':'','prompt_version':'expression-checked-v1',
                     'reason':'表达范例超过8条或4000字，本次仅提供有来源的回答。'}
     elif examples and result.get('response_type')=='SIMULATION':
@@ -225,10 +307,30 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
     valid = {source["evidence_id"]: (source, row) for row in candidates for source in row["evidence"]}
     kind = result.get("response_type")
+    used_traits=result.get('understanding_ids',[]) if payload.mode=='persona' else []
+    used_notes=result.get('contribution_ids',[]) if payload.mode=='persona' else []
+    if payload.mode=='persona':
+        def ids_valid(ids,rows):
+            return isinstance(ids,list) and all(isinstance(i,str) for i in ids) and len(ids)==len(set(ids)) and set(ids)<={r['id'] for r in rows}
+        if kind=='ORIGINAL' or not ids_valid(used_traits,understandings) or not ids_valid(used_notes,contributions):
+            raise TwinFailed('分身回答的依据不完整。')
+        required={e for u in understandings if u['id'] in used_traits for e in u['evidence_ids']+u['counter_evidence_ids']}
+        if not required<=set(result.get('evidence_ids',[])): raise TwinFailed('分身回答遗漏了理解的依据或例外。')
     cited = result.get("evidence_ids")
     content = result.get("answer")
     confidence = result.get("confidence")
     version = result.get("model_version")
+    review_summary={}
+    if payload.mode=='persona' and ('coverage' in result or 'omitted_points' in result):
+        coverage=result.get('coverage'); omitted=result.get('omitted_points')
+        if (coverage not in {'complete','partial'} or type(omitted) is not int
+                or not 0<=omitted<=4 or (coverage=='complete' and omitted!=0)
+                or (kind=='UNKNOWN' and omitted!=0)):
+            raise TwinFailed('回答覆盖状态不完整，本次未保存答案。')
+        review_summary={'coverage':coverage,'omitted_points':omitted}
+    if payload.mode=='persona' and kind=='UNKNOWN' and (cited or used_traits or used_notes):
+        raise TwinFailed('未知回答不能携带已被删除的事实或人物依据。')
+    review_summary['retrieval']=retrieval_audit
     if (kind not in {"ORIGINAL", "SIMULATION", "UNKNOWN"} or not isinstance(cited, list)
             or not isinstance(content, str) or len(content) > 500
             or not isinstance(confidence, (float, int)) or not 0 <= confidence <= 1
@@ -237,7 +339,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         raise TwinFailed("模型回答的证据格式不正确。")
     if kind == "UNKNOWN":
         content, cited, confidence = "现有记录还不足以确定。", [], 0
-    elif not cited or not content.strip():
+    elif (not cited and not used_notes) or not content.strip():
         raise TwinFailed("模型回答缺少可核对的证据。")
     if kind == "ORIGINAL":
         def verified_original(identifier: str) -> bool:
@@ -265,6 +367,12 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                      expression=expression,
                      created_at=utcnow())
     session.add(row)
+    session.flush()
+    from ..persona_models import PersonaAnswerContext
+    session.add(PersonaAnswerContext(answer_id=row.answer_id,mode=payload.mode,
+        cloud_consent_id=payload.cloud_consent_id,understanding_ids=used_traits,contribution_ids=used_notes,
+        prompt_version=result.get('prompt_version','') if payload.mode=='persona' else '',
+        review_summary=review_summary))
     session.commit()
     return answer_view(session, row)
 
