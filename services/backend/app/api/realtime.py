@@ -175,7 +175,7 @@ async def start_call(subject_id: str, payload: CallRequest, request: Request, ac
         .with_identity(row.participant).with_ttl(timedelta(minutes=2))
         .with_grants(api.VideoGrants(room_join=True,room=row.room,can_publish=True,can_subscribe=True,
                                     can_publish_data=True,can_publish_sources=['microphone'],can_update_own_metadata=False))
-        .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name='remember-twin',metadata=json.dumps({'call_id':identifier}))])).to_jwt())
+        .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=s.livekit_agent_name,metadata=json.dumps({'call_id':identifier}))])).to_jwt())
     return {'call_id':identifier,'room':row.room,'participant_identity':row.participant,
             'livekit_url':s.livekit_url,'token':token,'expires_at':row.expires_at.isoformat()}
 

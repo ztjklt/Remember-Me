@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     realtime_enabled: bool = False
     livekit_url: str = ""
     livekit_api_url: str = ""
+    livekit_agent_name: str = Field(default="remember-twin", min_length=1, max_length=64,
+                                  pattern=r"^[A-Za-z0-9_.-]+$")
     livekit_api_key: SecretStr = SecretStr("")
     livekit_api_secret: SecretStr = SecretStr("")
     realtime_worker_secret: SecretStr = SecretStr("")

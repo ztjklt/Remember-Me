@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import logging
+import re
 from urllib.parse import urlsplit
 from uuid import uuid4
 import aiohttp
@@ -299,10 +300,17 @@ async def connect_authorized(ctx,backend):
         raise
 
 
+def agent_name():
+    name=os.environ.get('REMEMBER_LIVEKIT_AGENT_NAME','remember-twin')
+    if len(name)>64 or re.fullmatch(r'[A-Za-z0-9_.-]+',name) is None:
+        raise ValueError('Invalid LiveKit agent name')
+    return name
+
+
 server=AgentServer()
 
 
-@server.rtc_session(agent_name='remember-twin')
+@server.rtc_session(agent_name=agent_name())
 async def entrypoint(ctx: JobContext):
     private_logs()
     metadata=json.loads(ctx.job.metadata)

@@ -8,6 +8,9 @@ import wave
 from urllib.parse import urlsplit,parse_qs
 import jwt
 import pytest
+import json
+from pydantic import ValidationError
+from app.config import Settings
 from sqlalchemy import select
 from app.models import TwinAnswer, DeviceCredential, utcnow
 from app.realtime_models import VoiceCall, RealtimeVoiceProfile
@@ -86,12 +89,39 @@ def test_ticket_is_room_scoped_short_lived_and_contains_no_actor_or_provider_sec
     assert claims['sub']==ticket['participant_identity']
     assert claims['video']['canPublishSources']==['microphone']
     assert claims['exp']-claims['nbf']==120
+    assert claims['roomConfig']['agents']==[{'agentName':'remember-twin',
+        'metadata':json.dumps({'call_id':ticket['call_id']})}]
     assert 'roomAdmin' not in claims['video']
     assert own.actor_token not in result.text and 'cosy-fixture' not in result.text
     assert not client.get('/internal/voice-calls/'+ticket['call_id']+'/authorize',headers=headers).is_success
     assert client.get('/internal/voice-calls/'+ticket['call_id']+'/authorize',headers=internal()).status_code==200
     assert client.post(f'/api/v1/subjects/{other.subject_id}/twin/voice/calls',headers=headers,
         json={'cloud_consent_id':cloud,'voice_consent_id':voice,'policy':policy(app.state.settings)}).status_code==404
+
+
+def test_configured_agent_dispatch_keeps_room_binding_and_only_call_metadata(ready,client,app,monkeypatch):
+    monkeypatch.setenv('REMEMBER_LIVEKIT_AGENT_NAME','remember-twin-us')
+    configured=Settings(_env_file=None)
+    app.state.settings.livekit_agent_name=configured.livekit_agent_name
+    response=start(client,app,ready);assert response.status_code==200,response.text
+    ticket=response.json()
+    claims=jwt.decode(ticket['token'],app.state.settings.livekit_api_secret.get_secret_value(),algorithms=['HS256'])
+    dispatch=claims['roomConfig']['agents']
+    assert len(dispatch)==1 and dispatch[0]['agentName']=='remember-twin-us'
+    assert json.loads(dispatch[0]['metadata'])=={'call_id':ticket['call_id']}
+    assert claims['video']['room']==ticket['room']==ticket['call_id']
+    assert claims['sub']==ticket['participant_identity']
+
+
+@pytest.mark.parametrize('name',['','has space','name/route','中文','a'*65,'name\n'])
+def test_invalid_agent_dispatch_configuration_is_rejected(name,monkeypatch):
+    monkeypatch.setenv('REMEMBER_LIVEKIT_AGENT_NAME',name)
+    with pytest.raises(ValidationError):Settings(_env_file=None)
+
+
+def test_agent_dispatch_configuration_accepts_ascii_punctuation_and_max_length(monkeypatch):
+    monkeypatch.setenv('REMEMBER_LIVEKIT_AGENT_NAME','Agent_0.'+'-'*56)
+    assert len(Settings(_env_file=None).livekit_agent_name)==64
 
 
 def test_recording_consent_never_authorizes_voice_or_changed_policy(ready,client,app):

@@ -90,6 +90,26 @@ def test_worker_refuses_remote_plain_http_or_missing_service_key():
     with pytest.raises(ValueError):Backend('https://fixture.invalid','short','vc_fixture')
 
 
+def test_worker_agent_name_defaults_without_configuration(monkeypatch):
+    from agent import agent_name
+    monkeypatch.delenv('REMEMBER_LIVEKIT_AGENT_NAME',raising=False)
+    assert agent_name()=='remember-twin'
+
+
+@pytest.mark.parametrize('name',['remember-twin-us','Agent_0.'+'-'*56])
+def test_worker_agent_name_reads_valid_dispatch_configuration(name,monkeypatch):
+    from agent import agent_name
+    monkeypatch.setenv('REMEMBER_LIVEKIT_AGENT_NAME',name)
+    assert agent_name()==name
+
+
+@pytest.mark.parametrize('name',['','has space','name/route','中文','a'*65,'name\n'])
+def test_worker_agent_name_rejects_invalid_configuration(name,monkeypatch):
+    from agent import agent_name
+    monkeypatch.setenv('REMEMBER_LIVEKIT_AGENT_NAME',name)
+    with pytest.raises(ValueError,match='Invalid LiveKit agent name'):agent_name()
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize('connection_error',[httpx.ConnectTimeout,httpx.ConnectError])
 async def test_startup_authorization_retries_only_connection_failures_before_rtc(connection_error):
