@@ -32,7 +32,7 @@ CASES=[
 async def main(args):
     out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
     settings=Settings(_env_file=args.env)
-    credentials=json.loads(Path(args.credentials).read_text())
+    credentials=json.loads(Path(args.credentials).read_text(encoding='utf-8-sig'))
     rows=[]
     tls=ssl.create_default_context(cafile=args.ca_file) if args.ca_file else ssl.create_default_context()
     async with httpx.AsyncClient(base_url=args.base,timeout=130,trust_env=False,verify=tls) as http:
@@ -57,7 +57,7 @@ async def main(args):
                 row=dict(index=index+1,group=group,input=question,synthetic_input=True,
                          playback_measurement='protocol simulation only',events=[],ok=False)
                 rows.append(row)
-                def save(): (out/'results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2))
+                def save(): (out/'results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
                 save()
                 # A new session per group; follow-up questions within a group share
                 # only the protocol-confirmed played answer, not a gold script.

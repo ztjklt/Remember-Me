@@ -1,0 +1,68 @@
+[
+  {
+    "role": "owner",
+    "connection": "Windows client -> public IP HTTPS/WSS -> ECS; certificate verified; no tunnel",
+    "rows": [
+      {
+        "index": 1,
+        "question": "你好，可以和我聊聊吗？",
+        "asr": "你好，可以和我聊聊吗？",
+        "protocol_ok": true,
+        "first_pcm_ms": 1605,
+        "model": "call-controls-v1",
+        "answer": "可以，你想聊哪段故事？"
+      },
+      {
+        "index": 2,
+        "question": "你喜欢喝什么茶？",
+        "asr": "你喜欢喝什么茶？",
+        "protocol_ok": true,
+        "first_pcm_ms": 5197,
+        "model": "Deepseek-v4-flash",
+        "answer": "现有记录还不足以确定。"
+      },
+      {
+        "index": 3,
+        "question": "刚才说的茶，浓一点还是淡一点？",
+        "asr": "刚才说的茶浓一点还是淡一点？",
+        "protocol_ok": true,
+        "first_pcm_ms": 4677,
+        "model": "Deepseek-v4-flash",
+        "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”"
+      }
+    ]
+  },
+  {
+    "role": "reader",
+    "connection": "Windows client -> public IP HTTPS/WSS -> ECS; certificate verified; no tunnel",
+    "rows": [
+      {
+        "index": 1,
+        "question": "你好，可以和我聊聊吗？",
+        "asr": "你好，可以和我聊聊吗？",
+        "protocol_ok": true,
+        "first_pcm_ms": 1501,
+        "model": "call-controls-v1",
+        "answer": "可以，你想聊哪段故事？"
+      },
+      {
+        "index": 2,
+        "question": "你喜欢喝什么茶？",
+        "asr": "你喜欢喝什么茶？",
+        "protocol_ok": true,
+        "first_pcm_ms": 5870,
+        "model": "Deepseek-v4-flash",
+        "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n"
+      },
+      {
+        "index": 3,
+        "question": "刚才说的茶，浓一点还是淡一点？",
+        "asr": "刚才说的茶浓一点还是淡一点？",
+        "protocol_ok": true,
+        "first_pcm_ms": 5682,
+        "model": "Deepseek-v4-flash",
+        "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n"
+      }
+    ]
+  }
+]

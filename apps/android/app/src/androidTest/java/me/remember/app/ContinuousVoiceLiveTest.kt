@@ -76,9 +76,16 @@ class ContinuousVoiceLiveTest {
             report.put("audio_track_advanced",true)
             click("字幕");shot("02-response")
             val oldTrack=trackField.get(engine) as AudioTrack
+            val oldAnswerId=checkNotNull(engine.ui.value.sources).getString("answer_id")
             File(folder,"interrupt-ready").writeText("inject second question during playback")
-            ui.waitUntil(150000){engine.ui.value.transcript.contains("女儿")&&engine.ui.value.answer.contains("陈岚")||engine.ui.value.error.isNotBlank()}
+            ui.waitUntil(150000){
+                val state=engine.ui.value
+                val answerId=state.sources?.optString("answer_id").orEmpty()
+                state.error.isNotBlank() || (state.transcript.contains("女儿") && state.answer.contains("陈岚") &&
+                    answerId.isNotBlank() && answerId!=oldAnswerId)
+            }
             assertEquals("",engine.ui.value.error)
+            report.put("new_answer_id",engine.ui.value.sources?.getString("answer_id"))
             assertTrue(runCatching{oldTrack.playState!=AudioTrack.PLAYSTATE_PLAYING}.getOrDefault(true))
             report.put("interrupted_answer",engine.ui.value.answer).put("old_track_stopped",true)
             shot("03-interrupted-response")
@@ -95,6 +102,9 @@ class ContinuousVoiceLiveTest {
             report.put("ended",true).put("ok",true)
         }catch(error:Throwable){
             report.put("ok",false).put("failure_type",error.javaClass.simpleName)
+            runCatching{model.voiceCall.value?.ui?.value}.getOrNull()?.let{state->
+                report.put("last_transcript",state.transcript).put("last_error",state.error)
+            }
             shot("failure");throw error
         }finally{File(folder,"result.json").writeText(report.toString(2));scenario.close()}
     }

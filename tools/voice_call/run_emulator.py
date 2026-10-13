@@ -1,7 +1,7 @@
 """Opt-in signed-APK cloud test; gRPC injects fictional sound into AudioRecord.
 No HTTP tunnelling, TLS override or direct transcript injection is used.
 """
-import argparse,json,os,subprocess,sys,threading,time,wave
+import argparse,atexit,json,os,subprocess,sys,threading,time,wave
 from pathlib import Path
 
 
@@ -16,17 +16,27 @@ def main(args):
     config=dict(line.split('=',1) for line in max((Path(os.environ['LOCALAPPDATA'])/'Temp/avd/running').glob('pid_*.ini'),key=lambda f:f.stat().st_mtime).read_text().splitlines() if '=' in line)
     channel=grpc.insecure_channel('127.0.0.1:'+config['grpc.port'],options=[('grpc.enable_http_proxy',0)])
     stub=rpc.EmulatorControllerStub(channel);metadata=[('authorization','Bearer '+config['grpc.token'])]
+    from google.protobuf.empty_pb2 import Empty
+    original_microphone=stub.getMicrophoneState(Empty(),metadata=metadata,timeout=10)
+    def restore_microphone():
+        try:stub.setMicrophoneState(original_microphone,metadata=metadata,timeout=10)
+        finally:channel.close()
+    atexit.register(restore_microphone)
     stub.setMicrophoneState(p.MicrophoneState(realAudioEnabled=False),metadata=metadata,timeout=10)
     pcm=out/'input-16k.wav'
     subprocess.run([args.ffmpeg,'-y','-loglevel','error','-i',args.audio,'-ar','16000','-ac','1','-c:a','pcm_s16le',str(pcm)],check=True)
     interrupted=out/'interrupt-16k.wav'
     subprocess.run([args.ffmpeg,'-y','-loglevel','error','-i',args.interrupt_audio,'-ar','16000','-ac','1','-c:a','pcm_s16le',str(interrupted)],check=True)
-    run('shell','rm','-f',remote+'/ready',remote+'/interrupt-ready',remote+'/result.json',remote+'/failure.png').check_returncode()
-    failures=[];videos=[]
+    # Remove only this test's known device artifacts; each local attempt is kept.
+    artifacts=('ready','interrupt-ready','result.json','failure.png','01-listening.png',
+        '02-response.png','03-interrupted-response.png','03-paused.png','04-return-paused.png')
+    run('shell','rm','-f',*(remote+'/'+name for name in artifacts)).check_returncode()
+    failures=[];videos=[];stop=threading.Event()
     def inject():
         try:
             deadline=time.monotonic()+170
             while time.monotonic()<deadline:
+                if stop.is_set():return
                 if run('shell','cat',remote+'/ready').returncode==0:break
                 time.sleep(.5)
             else:raise RuntimeError('Call did not become ready')
@@ -34,21 +44,41 @@ def main(args):
             def packets(path):
                 with wave.open(str(path),'rb') as f:
                     fmt=p.AudioFormat(samplingRate=16000,channels=p.AudioFormat.Mono,format=p.AudioFormat.AUD_FMT_S16)
+                    next_frame=time.monotonic()
+                    def frame(chunk):
+                        nonlocal next_frame
+                        time.sleep(max(0,next_frame-time.monotonic()))
+                        # Emulator injectAudio only buffers about 300ms. Do
+                        # not burst an entire file into the microphone ring.
+                        next_frame=time.monotonic()+len(chunk)/32000
+                        return p.AudioPacket(format=fmt,audio=chunk)
                     # Lead-in allows the call's microphone coroutine to start.
-                    for _ in range(30):yield p.AudioPacket(format=fmt,audio=bytes(640))
-                    while chunk:=f.readframes(320):yield p.AudioPacket(format=fmt,audio=chunk)
-                    for _ in range(80):yield p.AudioPacket(format=fmt,audio=bytes(640))
-            stub.injectAudio(packets(pcm),metadata=metadata,timeout=45)
-            deadline=time.monotonic()+170
-            while time.monotonic()<deadline:
-                if run('shell','cat',remote+'/interrupt-ready').returncode==0:break
-                time.sleep(.1)
-            else:raise RuntimeError('First playback did not start')
-            stub.injectAudio(packets(interrupted),metadata=metadata,timeout=45)
-            (out/'injection.json').write_text(json.dumps({'synthetic_audio':True,'through':'emulator microphone gRPC','input':pcm.name,'physical_microphone':False}))
+                    for _ in range(30):yield frame(bytes(640))
+                    while chunk:=f.readframes(320):yield frame(chunk)
+                    for _ in range(80):yield frame(bytes(640))
+            def conversation_packets():
+                # Keep one virtual microphone registered across both utterances.
+                # Reopening injectAudio can detach the device AudioRecord holds.
+                yield from packets(pcm)
+                deadline=time.monotonic()+170;next_check=0
+                fmt=p.AudioFormat(samplingRate=16000,channels=p.AudioFormat.Mono,format=p.AudioFormat.AUD_FMT_S16)
+                while time.monotonic()<deadline:
+                    if stop.is_set():return
+                    if time.monotonic()>=next_check:
+                        if run('shell','cat',remote+'/interrupt-ready').returncode==0:break
+                        next_check=time.monotonic()+.2
+                    yield p.AudioPacket(format=fmt,audio=bytes(640));time.sleep(.02)
+                else:raise RuntimeError('First playback did not start')
+                yield from packets(interrupted)
+            stub.injectAudio(conversation_packets(),metadata=metadata,timeout=230)
+            (out/'injection.json').write_text(json.dumps({'synthetic_audio':True,'through':'continuous paced emulator microphone gRPC','input':pcm.name,'physical_microphone':False}))
         except Exception as error:failures.append(type(error).__name__)
     worker=threading.Thread(target=inject,daemon=True);worker.start()
-    result=run('shell','am','instrument','-w','-e','class','me.remember.app.ContinuousVoiceLiveTest',package+'.test/androidx.test.runner.AndroidJUnitRunner',timeout=400)
+    try:
+        result=run('shell','am','instrument','-w','-e','class','me.remember.app.ContinuousVoiceLiveTest',package+'.test/androidx.test.runner.AndroidJUnitRunner',timeout=400)
+    finally:
+        stop.set()
+        worker.join(timeout=10)
     (out/'instrumentation.log').write_bytes(result.stdout+result.stderr)
     worker.join(timeout=5)
     run('pull',remote,str(out/'screens')).check_returncode()
