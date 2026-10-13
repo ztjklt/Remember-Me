@@ -26,6 +26,8 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
+2026-10-14 默认声音通话与音色状态：iOS **1.8.2 / 2026101405** 已覆盖安装到「黑幕」并核对启动。未复刻时也可用明确标注的默认声音通话；本人音色显示录制／提交／就绪状态，支持合成试听与后续切换。CloudBase023 / `6cb7c17` 的默认模式真实 RTC 单轮及试听检查通过（隔离测试账号与系统音色）；本人复刻仍由本人提交并试听确认。见[验证记录](docs/verification/IOS_DEFAULT_VOICE_AND_READINESS_2026_10_14.md)。
+
 The current integration branch includes ordinary accounts, owner-approved story sharing, transcript review, evidence-backed memories, profile candidates, reviewed story organization, Twin answers and locked-answer calibration. The ECS deployment uses Paraformer ASR and the Weixin DeepSeek adapter; credentials remain on the server. The default Android entry is the native shared-backend workbench. Use the internal build or an explicit service URL; the debug default remains local development.
 
 Android's legacy local prototype remains available in source, but its Mock graph/agent pages are not evidence for the connected product. The iOS project lives in [apps/ios](apps/ios/README.md); this handoff includes the earlier UI adoption, not automatic integration of the latest PR #86 or a new iOS device acceptance. Historical phase labels below describe authorization, not current test coverage. Current results and limitations are in the dated team handoff above.

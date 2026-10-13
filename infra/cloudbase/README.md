@@ -1,3 +1,5 @@
+> 2026-10-14 当前 iOS 生产为 CloudRun023，源码 `codex/twin-chat-memory` / `6cb7c17`，包含默认声音通话和本人音色试听。源包成员须显式 0644，容器非 root 用户必须能读取启动与源码文件；本次修正记录见 `docs/verification/IOS_DEFAULT_VOICE_AND_READINESS_2026_10_14.md`。旧版本记录保留为历史。
+
 > 2026-10-13 最新生产源码：`codex/twin-chat-memory` / `df7b22b`，CloudRun018，包含实时Voice和旧聊天长期记忆。迁移head为0020_chat_memory；后续发布从此基线继续。验证见 docs/verification/IOS_CHAT_MEMORY_2026_10_13.md。
 
 # iOS 独立 CloudBase 内测后端
