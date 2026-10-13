@@ -29,7 +29,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Install Android compile SDK
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+        run: |
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
       - name: Verify runner isolation
         shell: bash
         run: |
