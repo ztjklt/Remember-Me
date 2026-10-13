@@ -238,3 +238,17 @@ async def test_revoked_call_is_not_reconnected(monkeypatch):
     monkeypatch.setattr(ProxyStream,'_connection',dropped)
     stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=denied))
     with pytest.raises(httpx.HTTPStatusError):await stream._run()
+
+
+@pytest.mark.asyncio
+async def test_silence_clock_does_not_add_transport_wait_to_each_audio_interval():
+    from agent import clocked_pcm
+    from livekit import rtc
+    async def source():
+        yield rtc.AudioFrame(data=b'\0'*320,sample_rate=16000,num_channels=1,samples_per_channel=160)
+        await asyncio.sleep(.55)
+    count=0
+    async for packet in clocked_pcm(source()):
+        count+=1
+        await asyncio.sleep(.12)  # Model a transport send that takes over 100 ms.
+    assert count>=4  # A second 100 ms sleep after every send only emits three.

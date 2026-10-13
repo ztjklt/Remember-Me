@@ -111,12 +111,14 @@ async def clocked_pcm(source):
                     buffer.extend(bytes(frame.data))
                     while len(buffer)>=3200:
                         packet=bytes(buffer[:3200]);del buffer[:3200]
-                        yield packet
                         deadline=loop.time()+.1
+                        yield packet
                 elif buffer:
-                    yield bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
+                    packet=bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
+                    yield packet
             else:
-                yield bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
+                packet=bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
+                yield packet
     finally:
         if pending:
             pending.cancel();await asyncio.gather(pending,return_exceptions=True)
@@ -136,13 +138,15 @@ class ProxyStream(stt.RecognizeStream):
         url=backend.url.replace('https://','wss://',1).replace('http://','ws://',1)+'/internal/voice-calls/'+backend.call_id+'/listen'
         tasks=[]
         async with aiohttp.ClientSession(trust_env=False) as client:
-            async with client.ws_connect(url,headers=backend.headers,heartbeat=10,max_msg_size=128*1024) as ws:
+            async with client.ws_connect(url,headers=backend.headers,heartbeat=10,max_msg_size=128*1024,compress=15) as ws:
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
-                counters={'pcm_bytes':0,'heartbeat_count':0,'final_count':0};opened=asyncio.get_running_loop().time()
+                counters={'pcm_bytes':0,'heartbeat_count':0,'final_count':0,'final_events':0,'send_stall_max_ms':0,'compression_bits':ws.compress};opened=asyncio.get_running_loop().time()
                 async def send():
                     async for data in clocked_pcm(self._input_ch):
+                        before=asyncio.get_running_loop().time()
                         await ws.send_bytes(data);counters['pcm_bytes']+=len(data)
+                        counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
                 async def receive():
                     seen=set()
                     async for message in ws:
@@ -154,6 +158,7 @@ class ProxyStream(stt.RecognizeStream):
                         text=data.get('text','')
                         identifier=data.get('sentence_id','')
                         if kind=='final':
+                            counters['final_events']+=1
                             if identifier in seen: continue
                             seen.add(identifier);counters['final_count']+=1
                             if len(seen)>10000: raise RuntimeError('ASR turn limit')

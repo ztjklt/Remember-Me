@@ -315,8 +315,9 @@ def test_continuous_pcm_does_not_query_per_frame_and_revoke_closes_socket(ready,
         assert server.started
         async def probe():
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as http:
-                async with http.ws_connect(f'ws://127.0.0.1:{port}/internal/voice-calls/{identifier}/listen',headers=internal()) as ws:
+                async with http.ws_connect(f'ws://127.0.0.1:{port}/internal/voice-calls/{identifier}/listen',headers=internal(),compress=15) as ws:
                     assert (await ws.receive_json())['type']=='ready'
+                    assert ws.compress==15
                     for _ in range(50):await ws.send_bytes(b'\x01\x00'*320)
                     deadline=time.monotonic()+2
                     while len(upstream.audio)<50 and time.monotonic()<deadline:await asyncio.sleep(.01)
