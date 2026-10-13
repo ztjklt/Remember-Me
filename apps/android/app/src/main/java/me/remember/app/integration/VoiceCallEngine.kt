@@ -48,7 +48,8 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
     private var trackTurn=-1L
     private var receivedSamples=0L
     private var previousSequence=0
-    private val chunks=Channel<Pair<Long,ByteArray>>(32)
+    private val chunks=Channel<Pair<Long,ByteArray>>(128)
+    private var expectedSamples:Long?=null
     private var focus:AudioFocusRequest?=null
     private var oldMode=AudioManager.MODE_NORMAL
     private val noisy=object:BroadcastReceiver(){ override fun onReceive(c:Context?,i:Intent?){ pause("声音设备已变化") } }
@@ -94,7 +95,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                 if(!value)resumeCapture() }
             "interrupted","turn_started"->{
                 if(id<turn)return
-                turn=id;flush();outputSuppressed=false;receivedSamples=0;previousSequence=0
+                turn=id;flush();outputSuppressed=false;receivedSamples=0;previousSequence=0;expectedSamples=null
                 if(e.optString("type")=="turn_started")mutable.update{it.copy(status="正在想",transcript=e.optString("question"),answer="",sources=null)}
             }
             "transcript"->mutable.update{it.copy(transcript=e.optString("text"),status=if(e.optBoolean("final"))"正在想" else "我在听")}
@@ -103,10 +104,11 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                 val seq=e.getInt("sequence");require(seq==previousSequence+1)
                 val bytes=Base64.decode(e.getString("data"),Base64.NO_WRAP)
                 require(bytes.size%2==0&&bytes.size<=64_000&&e.getInt("sample_rate")==24_000)
-                receivedSamples+=bytes.size/2;require(receivedSamples==e.getLong("samples"))
+                receivedSamples+=bytes.size/2;require(receivedSamples==e.getLong("samples")&&receivedSamples<=24000L*120)
                 previousSequence=seq
                 check(chunks.trySend(id to bytes).isSuccess)
             }
+            "audio_end"->if(id==turn){expectedSamples=e.getLong("samples");acknowledge()}
             "error"->{flush();outputSuppressed=true;mutable.update{it.copy(status="本轮未完成",error=e.optString("message","请重试"),answer="",sources=null)}}
         }
     }
@@ -180,6 +182,8 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
         if(ownerTurn!=turn||closed)return
         val samples=runCatching{current.playbackHeadPosition.toLong() and 0xffffffffL}.getOrDefault(0)
         if(samples<=receivedSamples)send(JSONObject().put("type","playback").put("turn_id",ownerTurn).put("samples",samples))
+        if(expectedSamples!=null&&samples>=expectedSamples!!&&!inputPaused)
+            mutable.update{it.copy(status=if(it.inputEnabled)"我在听" else "播放完成")}
     }
     @Synchronized private fun flush(){
         val old=track;track=null

@@ -42,7 +42,11 @@ async def main(args):
         subject=next(s['subject_id'] for s in spaces if s['role']=='owner' and '陈守义' in s.get('display_name',s.get('name','')))
         consents=ok(await http.get('/api/v1/consents',params={'subject_id':subject}))
         consent=next(c['consent_id'] for c in consents if c['scope']=='CLOUD_TWIN' and c['status']=='granted')
-        ws=None;call=None
+        ws=None;call=None;silence_task=None;injecting=False
+        async def keep_audio(connection):
+            while True:
+                if not injecting:await connection.send(bytes(3200))
+                await asyncio.sleep(.1)
         try:
             for index,(group,question) in enumerate(CASES[:args.limit]):
                 row=dict(index=index+1,group=group,input=question,synthetic_input=True,
@@ -53,6 +57,8 @@ async def main(args):
                 # A new session per group; follow-up questions within a group share
                 # only the protocol-confirmed played answer, not a gold script.
                 if index%5==0 or ws is None:
+                    if silence_task:
+                        silence_task.cancel();await asyncio.gather(silence_task,return_exceptions=True)
                     if ws: await ws.close()
                     call=ok(await http.post(f'/api/v1/subjects/{subject}/voice-sessions',json=dict(
                         cloud_consent_id=consent,mode='evidence',policy='continuous-voice-v1',
@@ -60,6 +66,7 @@ async def main(args):
                     ws=await connect(args.base.replace('http','ws',1)+call['websocket_path'],
                         additional_headers={'Authorization':'Bearer '+token},proxy=None,max_size=1_000_000)
                     ready=json.loads(await asyncio.wait_for(ws.recv(),20));assert ready['type']=='ready',ready
+                    silence_task=asyncio.create_task(keep_audio(ws))
                 digest=hashlib.sha256(question.encode()).hexdigest()[:16]
                 source=out/(digest+'.wav')
                 if not source.exists():
@@ -70,11 +77,13 @@ async def main(args):
                 row['input_audio']=source.name;row['input_seconds']=len(pcm)/32000
                 started=time.monotonic();speech_end=None;frames=[]
                 async def send_audio():
-                    nonlocal speech_end
-                    for offset in range(0,len(pcm),3200):
-                        await ws.send(pcm[offset:offset+3200]);await asyncio.sleep(.1)
-                    speech_end=time.monotonic()
-                    for _ in range(16): await ws.send(bytes(3200));await asyncio.sleep(.1)
+                    nonlocal speech_end,injecting
+                    injecting=True
+                    try:
+                        for offset in range(0,len(pcm),3200):
+                            await ws.send(pcm[offset:offset+3200]);await asyncio.sleep(.1)
+                        speech_end=time.monotonic()
+                    finally:injecting=False
                 sending=asyncio.create_task(send_audio())
                 try:
                     async with asyncio.timeout(160):
@@ -112,6 +121,8 @@ async def main(args):
                 row['elapsed_ms']=round((time.monotonic()-started)*1000);save()
                 print(json.dumps({k:row.get(k) for k in ('index','ok','asr','reviewed_ms','first_audio_after_input_end_ms','exception','error')},ensure_ascii=False),flush=True)
         finally:
+            if silence_task:
+                silence_task.cancel();await asyncio.gather(silence_task,return_exceptions=True)
             if ws:await ws.close()
             if call:await http.delete('/api/v1/voice-sessions/'+call['session_id'])
 

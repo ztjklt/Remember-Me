@@ -8,6 +8,13 @@ import logging
 logger=logging.getLogger(__name__)
 
 
+def conversation_control(text):
+    """Only literal social controls. Never infer a person's facts or attitudes."""
+    key=re.sub(r'[\s，。！？,.!?]','',text)
+    return {'你好':'你好，你想聊哪段故事？','你好可以和我聊聊吗':'可以，你想聊哪段故事？',
+            '谢谢':'不客气。你可以接着问，也可以结束通话。'}.get(key)
+
+
 class VoiceTurns:
     def __init__(self, session_id, send, answer, tts, guard):
         self.session_id=session_id; self.send=send; self.answer=answer; self.tts=tts; self.guard=guard
@@ -71,6 +78,7 @@ class VoiceTurns:
             sentences=re.findall(r'.+?(?:[。！？!?](?:[”’」』])?|$)',answer['answer'],re.S)
             first=True
             for sentence in sentences:
+                if not sentence.strip(): continue
                 async for pcm in self.tts(sentence):
                     if self.closed or turn!=self.turn_id: return
                     await self.guard(answer)

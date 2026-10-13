@@ -1,6 +1,28 @@
 import asyncio
 import pytest
-from app.voice_turns import VoiceTurns
+from app.voice_turns import VoiceTurns, conversation_control
+
+
+def test_social_controls_cannot_answer_embedded_memory_questions():
+    assert conversation_control('你好，可以和我聊聊吗？')
+    assert conversation_control('你好，我女儿叫什么？') is None
+    assert conversation_control('谢谢，你最喜欢什么？') is None
+
+
+def test_source_whitespace_is_not_submitted_as_a_spoken_sentence():
+    async def run():
+        calls=[];events=[]
+        async def answer(q,h): return {'answer':'我喜欢淡茶。\n\n','answer_id':'a'}
+        async def tts(text):
+            assert text.strip()
+            calls.append(text);yield bytes(20)
+        async def send(e):events.append(e)
+        async def guard(a=None):pass
+        call=VoiceTurns('s',send,answer,tts,guard)
+        await call.submit('喝什么？');await call.task
+        assert events[-1]['type']=='audio_end'
+        assert calls==['我喜欢淡茶。']
+    asyncio.run(run())
 
 
 def test_cancelled_generation_and_audio_cannot_publish():

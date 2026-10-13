@@ -21,7 +21,7 @@ from ..models import Actor
 from ..repositories.actors import ActorRepository
 from ..security import current_actor
 from ..realtime_providers import ParaformerRealtime, XiaomiRealtime, RealtimeFailure
-from ..voice_turns import VoiceTurns
+from ..voice_turns import VoiceTurns, conversation_control
 from ..twin_client import TwinUnavailable
 from ..twin_validity import get_current_answer
 from .twin import TwinQuestion, generate_answer, SourceChanged
@@ -176,6 +176,9 @@ async def stream(websocket:WebSocket,session_id:str):
                 row=_run(session,call.subject,actor,call.payload.calibration_id)
                 if row.status!='complete' or not _check_source(session,row): raise SourceChanged('对照依据已变化。')
                 if answer and answer['answer']!=row.summary: raise SourceChanged('对照已变化。')
+            elif answer and answer.get('interaction'):
+                if answer['answer']!=conversation_control(answer.get('question','')):
+                    raise SourceChanged('通话状态已变化。')
             elif answer:
                 get_current_answer(session,call.subject,call.actor,answer['answer_id'])
             return source_basis(session,call.subject)
@@ -209,6 +212,12 @@ async def stream(websocket:WebSocket,session_id:str):
                     return {'answer':row.summary,'answer_id':'cal:'+row.calibration_id,
                             'source_version':initial_basis,'response_type':'SIMULATION','evidence':[]}
             return await asyncio.to_thread(report)
+        control=conversation_control(question)
+        if control:
+            return {'answer':control,'question':question,'interaction':True,
+                    'source_version':initial_basis,'response_type':'SIMULATION',
+                    'model_version':'call-controls-v1','evidence':[],
+                    'voice_timing':{'retrieval_ms':0}}
         loop=asyncio.get_running_loop(); cancelled=threading.Event()
         bridge=AsyncTwinBridge(loop,settings,history,cancelled)
         timing={};started=time.monotonic()
