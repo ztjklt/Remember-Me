@@ -318,22 +318,15 @@ def test_the_rule_is_about_the_actor_and_not_the_subject(client, seeded, auth, o
     VOICE consent for this subject. What it cannot do is make that grant usable
     by anyone else, or use anyone else's.
     """
-    theirs = grant(client, other["headers"], seeded.subject_id, "VOICE")
-
-    assert (
-        authorize(
-            client, other["headers"], seeded.subject_id, "VOICE", theirs["consent_id"]
-        ).status_code
-        == 200
-    )
-
-    refused = authorize(client, auth, seeded.subject_id, "VOICE", theirs["consent_id"])
+    refused = client.post('/api/v1/consents', headers=other['headers'],
+                          json={'subject_id': seeded.subject_id, 'scope': 'VOICE'})
     assert refused.status_code == 404
-    assert refused.json()["error_code"] == "CONSENT_NOT_FOUND"
+    assert authorize(client, auth, seeded.subject_id, 'RECORDING', seeded.consent_id).status_code == 200
 
 
 def test_listing_shows_only_the_callers_own_grants(client, seeded, auth, other):
-    grant(client, other["headers"], seeded.subject_id, "VOICE")
+    assert client.post('/api/v1/consents', headers=other['headers'],
+                       json={'subject_id': seeded.subject_id, 'scope': 'VOICE'}).status_code == 404
 
     mine = client.get(
         f"/api/v1/consents?subject_id={seeded.subject_id}", headers=auth
@@ -343,5 +336,5 @@ def test_listing_shows_only_the_callers_own_grants(client, seeded, auth, other):
     ).json()
 
     assert {consent["scope"] for consent in mine} == {"RECORDING"}
-    assert [consent["scope"] for consent in theirs] == ["VOICE"]
+    assert theirs == []
     assert all(consent["granted_by_actor_id"] == seeded.actor_id for consent in mine)

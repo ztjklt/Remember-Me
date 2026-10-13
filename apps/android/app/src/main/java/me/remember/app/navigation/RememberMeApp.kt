@@ -1,6 +1,17 @@
 package me.remember.app.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -18,6 +29,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.TopAppBarDefaults
+import me.remember.app.core.designsystem.NatureScene
+import me.remember.app.core.designsystem.atmosphere
 import me.remember.app.feature.AgentsDashboardScreen
 import me.remember.app.feature.ArchivePage
 import me.remember.app.feature.BottomTabs
@@ -40,6 +55,7 @@ fun RememberMeApp(model: MobileViewModel) {
     var recordingOpen by remember { mutableStateOf(false) }
     var detailPath by remember { mutableStateOf<String?>(null) }
     var memoryID by remember { mutableStateOf<String?>(null) }
+    val tabState = rememberSaveableStateHolder()
 
     fun go(destination: String) {
         when (destination) {
@@ -65,8 +81,9 @@ fun RememberMeApp(model: MobileViewModel) {
         })
         detailPath != null -> {
             val record = records.firstOrNull { it.audioPath == detailPath }
-            Scaffold(topBar = {
+            Scaffold(modifier = Modifier.atmosphere(scene = NatureScene.Forest), containerColor = Color.Transparent, topBar = {
                 TopAppBar(title = { Text(if (memoryID == null) "录音详情" else "记忆详情") },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                     navigationIcon = { IconButton(onClick = ::back) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "返回")
                     } })
@@ -80,17 +97,34 @@ fun RememberMeApp(model: MobileViewModel) {
                 }
             }
         }
-        route == Routes.Graph -> GraphDashboardScreen(::go)
-        route == Routes.Memories -> Scaffold(bottomBar = { BottomTabs(Routes.Memories, ::go) }) { padding ->
-            androidx.compose.foundation.layout.Box(Modifier.padding(padding)) {
-                ArchivePage(records, open = { detailPath = it.audioPath },
-                    openMemory = { recording, id -> detailPath = recording.audioPath; memoryID = id })
+        else -> Column(Modifier.fillMaxSize()) {
+            // The dock stays mounted. Only browse destinations take part in this transition;
+            // capture and detail retain a single instance above this branch.
+            AnimatedContent(targetState = route, modifier = Modifier.weight(1f),
+                transitionSpec = {
+                    val order = listOf(Routes.Portrait, Routes.Graph, Routes.Memories, Routes.Agents, Routes.Me, Routes.Twin)
+                    val direction = if (order.indexOf(targetState) >= order.indexOf(initialState)) 1 else -1
+                    (fadeIn(tween(260)) + slideInHorizontally(tween(280)) { direction * it / 24 }) togetherWith
+                        (fadeOut(tween(160)) + slideOutHorizontally(tween(240)) { -direction * it / 32 })
+                }, label = "browse destination") { destination ->
+                tabState.SaveableStateProvider(destination) {
+                    when (destination) {
+                        Routes.Graph -> GraphDashboardScreen(::go, showBottomTabs = false)
+                        Routes.Memories -> Scaffold(modifier = Modifier.atmosphere(scene = NatureScene.Lake), containerColor = Color.Transparent) { padding ->
+                            Box(Modifier.padding(padding)) {
+                                ArchivePage(records, open = { detailPath = it.audioPath },
+                                    openMemory = { recording, id -> detailPath = recording.audioPath; memoryID = id })
+                            }
+                        }
+                        Routes.Agents -> AgentsDashboardScreen(::go, showBottomTabs = false)
+                        Routes.Me -> MeDashboardScreen(::go, records, showBottomTabs = false)
+                        Routes.Twin -> ChatHistoryScreen(back = ::back, go = ::go, showBottomTabs = false)
+                        else -> PortraitScreen(::go, showBottomTabs = false)
+                    }
+                }
             }
+            BottomTabs(route, ::go)
         }
-        route == Routes.Agents -> AgentsDashboardScreen(::go)
-        route == Routes.Me -> MeDashboardScreen(::go, records)
-        route == Routes.Twin -> ChatHistoryScreen(back = ::back, go = ::go)
-        else -> PortraitScreen(::go)
     }
     if (message != null) AlertDialog(onDismissRequest = model::dismissMessage,
         title = { Text("操作未完成") }, text = { Text(message!!) },

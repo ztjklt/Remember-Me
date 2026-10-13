@@ -1,0 +1,92 @@
+{
+  "version": "memory-garden-demo-v1",
+  "source": "materials/zh-life-review-v1, E01–E03",
+  "points": "15 hand-curated excerpts; theme labels and titles are editorial demo choices",
+  "style_version": "remember-me-reverie-v1",
+  "entries": [
+    {
+      "episode": "E01",
+      "subject_id": "fictional-linlan-001",
+      "synthetic": true,
+      "image": {
+        "path": "images/library.png",
+        "dimensions": [
+          1536,
+          1024
+        ],
+        "sha256": "85df13248db79390ae647e8eed3b058bda85d614f1a331678c4d2645e3cf39f4",
+        "role": "AI-generated illustrative imagery, not a historical photograph"
+      },
+      "audio": {
+        "path": "audio/E01.mp3",
+        "sha256": "4fe8b46db022fb6e9af7bc640638255e1405d68b3ba41b022f5e7540aab45ecb",
+        "duration_seconds": 88.32,
+        "model": "mimo-v2.5-tts",
+        "voice": "茉莉",
+        "audio_listened": false,
+        "excerpt_timestamps_verified": false
+      },
+      "script": {
+        "path": "sources/E01.txt",
+        "sha256": "ebafd1719e1ef0752a56b436e5419c10ae7a20a03191d4a56b2d330068a91d0b",
+        "is_asr_transcript": false
+      }
+    },
+    {
+      "episode": "E02",
+      "subject_id": "fictional-linlan-001",
+      "synthetic": true,
+      "image": {
+        "path": "images/supper.png",
+        "dimensions": [
+          1536,
+          1024
+        ],
+        "sha256": "6f3417bf653ae0ca1e6c4420e89f30bb1c7deb66bd08817ada86a1b831225393",
+        "role": "AI-generated illustrative imagery, not a historical photograph"
+      },
+      "audio": {
+        "path": "audio/E02.mp3",
+        "sha256": "547214e739ec51d1345121fd8d4b1f42c77ba8ec2e405c3f84316a41a90b3bf5",
+        "duration_seconds": 76.48,
+        "model": "mimo-v2.5-tts",
+        "voice": "茉莉",
+        "audio_listened": false,
+        "excerpt_timestamps_verified": false
+      },
+      "script": {
+        "path": "sources/E02.txt",
+        "sha256": "a6c69de709d094998640500a705a6784ada3f3f81d5e186214690338d9a8303b",
+        "is_asr_transcript": false
+      }
+    },
+    {
+      "episode": "E03",
+      "subject_id": "fictional-linlan-001",
+      "synthetic": true,
+      "image": {
+        "path": "images/kitchen.png",
+        "dimensions": [
+          1536,
+          1024
+        ],
+        "sha256": "f8f7a1658193d7a40e11bab20a59dd24342fee0bd2b73a0c0d6cc6a5bbc40fc2",
+        "role": "AI-generated illustrative imagery, not a historical photograph"
+      },
+      "audio": {
+        "path": "audio/E03.mp3",
+        "sha256": "8c0d703ab00a70437f8a20ebfe56a8f503238cda8acfd1d78b9017ba7d057a31",
+        "duration_seconds": 78.72,
+        "model": "mimo-v2.5-tts",
+        "voice": "茉莉",
+        "audio_listened": false,
+        "excerpt_timestamps_verified": false
+      },
+      "script": {
+        "path": "sources/E03.txt",
+        "sha256": "7fef5387b2edb87969c0649ae7cca19d2e84bc8df08467ad722c9216c790dbb1",
+        "is_asr_transcript": false
+      }
+    }
+  ]
+}

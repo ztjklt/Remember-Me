@@ -43,6 +43,11 @@ def configure_logging(level: str) -> None:
     root.handlers[:] = [handler]
     root.setLevel(level.upper())
 
+    # Provider file URLs contain temporary credentials. Keep our redacted
+    # status/latency audit, not HTTP libraries' full request URL/header traces.
+    for name in ('httpx', 'httpcore'):
+        logging.getLogger(name).setLevel(logging.WARNING)
+
     for name in _SUPERSEDED_LOGGERS:
         superseded = logging.getLogger(name)
         superseded.handlers[:] = []

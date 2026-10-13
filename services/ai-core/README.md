@@ -123,3 +123,40 @@ failure state. It should call `POST /process` with `episode_id`, `subject_id`,
 `transcript`, `existing_model_version`, and optional `trace_id`. AI Core never
 creates or mutates `episode_id` and never writes a database. See
 `docs/team/02_KANGXIN_AI_CORE_HANDOFF.md` for the complete handoff checklist.
+
+## Weixin workbench provider (approved agent-loop integration)
+
+Set `AI_PROVIDER=weixin` and server-only `WEIXIN_CHAT_API_KEY` in ignored `.env`.
+The approved endpoint is `https://chatapi.weixin.qq.com/openai/v1`, requested model
+`Deepseek-v4-flash`. This provider uses JSON-object responses with local validation,
+45-second upstream timeouts and one shared service capacity slot. It sends no
+thinking, tools, temperature, or optional generation extensions. Adapters make one
+upstream attempt; backend jobs own the at-most-three transient-attempt policy.
+No fixture or alternate provider starts when a credential is missing.
+
+`POST /profile-proposals` accepts `{ "materials": [{ "evidence_id": "...",
+"episode_id": "...", "excerpt": "..." }] }`, with at most 128 unique evidence IDs
+and 24000 excerpt characters in total. It returns `candidates` (at most eight),
+actual envelope `model_version`, and fixed `prompt_version`
+`profile-proposals-evidence-v1`. Each candidate has one of the existing seven
+`domain` values, `statement`, `context`, `evidence_ids`, `counter_evidence_ids`,
+and `kind` (`trait` or `habit`). Candidates contain no status or confidence and
+cannot approve themselves. Every cited ID must occur in supplied material.
+
+Authentication errors are `AI_AUTH_FAILED` / HTTP 502; malformed, refused or
+truncated output is `AI_SCHEMA_INVALID` / HTTP 502. Transient errors are
+`AI_UNAVAILABLE` / HTTP 503 and `AI_TIMEOUT` / HTTP 504. Never retry authentication
+or output-validation failures. Logs contain requested/actual model, HTTP status,
+token counts, recognized finish reason and duration; no raw response or key.
+The official DeepSeek adapter remains available through explicit configuration.
+
+The JSON-object approach follows the colleague integration at `8627f03`; this
+bounded adapter keeps the canonical schema/provenance validators rather than
+importing the colleague experimental contracts or client-side credentials.
+
+Weixin compact extraction validates every candidate before grounding: unexpected
+fields, incorrect types/domains, blank quote/statement, invalid confidence and
+more than 24 candidates fail with `AI_SCHEMA_INVALID`; they do not become empty
+successes. Grounding still resolves transcript evidence locally. Weixin Twin
+answers have a local 200-Unicode-code-point limit (`len` in Python), counting all
+characters including whitespace, punctuation, emoji and combining marks.

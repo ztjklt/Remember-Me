@@ -1,0 +1,61 @@
+// Design artifacts only. Does not modify or import into the running prototype.
+const fs=require('node:fs'),path=require('node:path');
+const art=require('../../memory-garden/botanical-v14.js').render('flower');
+const out=__dirname;
+function groupAt(s,start){let depth=0;const re=/<\/?g\b[^>]*>/g;re.lastIndex=start;let m;while((m=re.exec(s))){depth+=m[0].startsWith('</')?-1:1;if(!depth)return s.slice(start,re.lastIndex);}throw Error('Unclosed drawing group');}
+const bloomStarts=[...art.matchAll(/<g class="living-bloom"/g)].map(m=>m.index);
+const central=groupAt(art,bloomStarts[4]);
+const petal=groupAt(central,central.indexOf('<g class="living-petal"'));
+const petalPath=petal.match(/class="living-petal-surface" d="([^"]+)"/)[1];
+let serial=0;
+const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;');
+function flower(x,y,scale=1,opacity=1,empty=false){const unique=`concept-${serial++}`;let drawing=central.replace(/^<g[^>]*>/,`<g id="${unique}" opacity="${opacity}" transform="translate(${x} ${y}) scale(${scale})">`).replaceAll('v14-p-',`${unique}-p-`);if(empty){let i=0;drawing=drawing.replaceAll('<g class="living-petal"',()=>`<g class="living-petal" opacity="${i++===4?.28:1}"`);}return drawing;}
+const text=(x,y,s,size=16,fill='#29483d',extra='')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${extra}>${esc(s)}</text>`;
+const lines=(x,y,ss,size=16,line=27,fill='#50675b',extra='')=>ss.map((s,i)=>text(x,y+i*line,s,size,fill,extra)).join('');
+const rect=(x,y,w,h,r,fill,opacity=1,stroke='none')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}" fill-opacity="${opacity}" stroke="${stroke}"/>`;
+const imageURI=p=>'data:image/png;base64,'+fs.readFileSync(path.join(__dirname,p)).toString('base64');
+const lake=imageURI('../../nature/lake-v8.png'),kitchen=imageURI('../../memory-garden/images/kitchen.png');
+const style=`text{font-family:'Microsoft YaHei','PingFang SC',sans-serif}.serif{font-family:'Songti SC','SimSun',serif}.living-petal-surface{stroke:#7893a252;stroke-width:.4}.living-veins{fill:none;stroke:#ecf2e5;stroke-width:.45;opacity:.35}.petal-lip{fill:none;stroke:#fff9e4;stroke-width:.8;opacity:.7}.petal-shadow{fill:#4b748b;opacity:.09}.living-grain{fill:#6a8999}.living-grain circle:nth-child(3n){fill:#f7f0d1}`;
+function start(w,h,title){return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-labelledby="title"><title id="title">${title}</title><defs><style>${style}</style><linearGradient id="paper" x2=".6" y2="1"><stop stop-color="#fcfbf5"/><stop offset="1" stop-color="#edf1e7"/></linearGradient><linearGradient id="petal-paper" x2=".4" y2="1"><stop stop-color="#d0e0e5"/><stop offset=".6" stop-color="#e8eee4"/><stop offset="1" stop-color="#f5f0db"/></linearGradient><image id="lake" width="390" height="844" preserveAspectRatio="xMidYMid slice" href="${lake}"/><image id="kitchen" width="326" height="216" preserveAspectRatio="xMidYMid slice" href="${kitchen}"/><clipPath id="screen"><rect width="390" height="844" rx="34"/></clipPath><clipPath id="picture"><rect x="32" y="216" width="326" height="216" rx="20"/></clipPath><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#849984" stroke-width="1.2"/></marker></defs>${rect(0,0,w,h,0,'url(#paper)')}`;}
+function scenery(){return `<use href="#lake" opacity=".5"/>${rect(0,0,390,844,0,'#f4f5ea',.35)}`;}
+function phone(x,y,content){return `<g transform="translate(${x} ${y})">${rect(-5,-5,400,854,39,'#fff',.8,'#d3ddce')}<g clip-path="url(#screen)">${scenery()}${text(26,30,'9:41',13)}${text(306,30,'▰ ▰ ▰',13)}${content}<path d="M145 827 H245" stroke="#304d3b" stroke-width="4" stroke-linecap="round"/></g></g>`;}
+function pill(x,y,w,label,small,active=false){return `${rect(x,y,w,small?58:36,18,active?'#fbf8e8':'#fafbf5',.9,active?'#b69c5f':'#d9e1d1')}${text(x+w/2,y+23,label,15,'#2e4c3f','text-anchor="middle"')}${small?text(x+w/2,y+44,small,11,'#586e5d','text-anchor="middle"'):''}`;}
+function branches(){return `<g fill="none" stroke="#8d9f81" stroke-linecap="round"><path d="M181 666 C218 571 170 407 212 298" stroke-width="2"/><path d="M192 600 Q65 575 86 453 M192 535 Q288 594 291 508" stroke-width="1.4"/></g><path d="M188 603 Q208 561 262 564 Q239 609 188 603 M192 539 Q150 501 128 533 Q149 552 192 539" fill="#9cba9a" opacity=".6"/>`;}
+function sceneOne(){return text(26,85,'记忆花园',29,'#2b483c','class="serif"')+text(26,117,'3 组往事 · 15 个记忆片段',14)+text(26,159,'轻触一朵花，走近一组回忆',14,'#677c69')+branches()+flower(212,294,1.18,1,true)+flower(86,453,.92,.88)+flower(291,508,.87,.83)+pill(135,370,183,'厨房里的往事','4 个片段 · 2018',true)+pill(20,520,156,'雨夜，留着灯','7 个片段')+pill(215,573,155,'那碗凉了的汤','4 个片段')+text(195,714,'每一朵，都有自己的故事',14,'#5b715e','text-anchor="middle"')+rect(18,760,354,54,27,'#fafbf6',.93)+rect(142,765,109,44,22,'#3c634e')+text(75,793,'今天',14,'#566c5b','text-anchor="middle"')+text(196,793,'花园',14,'#fff','text-anchor="middle"')+text(313,793,'我的',14,'#566c5b','text-anchor="middle"');}
+function sceneTwo(){return text(24,78,'‹  花园',16)+text(26,125,'厨房里的往事',28,'#2b483c','class="serif"')+text(26,157,'2018 · 4 个记忆片段',14)+text(195,218,'选一片花瓣，停留片刻',14,'#677c69','text-anchor="middle"')+`<path d="M192 678 Q220 570 195 421" fill="none" stroke="#91a588" stroke-width="2"/>`+flower(195,425,2.56,1,true)+pill(129,285,132,'妈妈的小本子',null,true)+pill(263,386,107,'不一样，也喜欢')+pill(230,526,131,'愿意慢下来')+pill(30,526,133,'玻璃上的小圈')+text(76,410,'待绽放',13,'#708371','text-anchor="middle"')+rect(24,676,342,87,22,'#fafbf4',.68)+text(44,708,'关于这组回忆',14)+text(44,737,'一锅汤、一个旧本子，和慢下来的时间',13,'#65795f')+text(195,795,'花园  /  厨房里的往事',12,'#586e5d','text-anchor="middle"');}
+function petalPaper(x=195,y=807,sx=5.75,sy=10.2,opacity=1){return `<path d="${petalPath}" transform="translate(${x} ${y}) scale(${sx} ${sy})" fill="url(#petal-paper)" stroke="#acc4c2" stroke-width=".16" opacity="${opacity}"/>`;}
+function sceneThree(){return petalPaper()+text(24,78,'‹  厨房里的往事',16)+text(26,126,'妈妈的小本子',28,'#2b483c','class="serif"')+text(26,158,'温暖 · 2018',13,'#65785f')+`<g clip-path="url(#picture)"><use href="#kitchen" x="32" y="216"/></g>`+text(48,457,'记忆意象 · AI 绘制，非历史照片',11,'#617364')+text(46,501,'当时说过的话',13,'#687c6d')+lines(46,538,['“这是妈妈的话，不是我发明的','做菜道理。”'],18,30,'#29483d','class="serif"')+text(46,602,'来源：《等汤自己变甜》 · 演示原稿',11,'#617364')+rect(30,635,330,112,24,'#fafbf2',.65,'#ffffffaa')+`<circle cx="62" cy="673" r="21" fill="#3f6550"/><path d="M57 666 L57 680 L69 673Z" fill="#fafbf3"/>`+text(98,669,'回听这段故事',15)+text(98,695,'整段合成示例 · 01:18',12,'#637967')+`<path d="M46 723 H342" stroke="#c4d0bd" stroke-width="2"/><path d="M46 723 H95" stroke="#4f7458" stroke-width="3"/>`+text(195,787,'花园  /  厨房往事  /  小本子',12,'#586e5d','text-anchor="middle"');}
+const d1=start(1600,1370,'勿忘我：花丛到花朵到花瓣的层级设计示意')+text(60,60,'REMEMBER ME  /  SPATIAL MEMORY',13,'#6a816f','letter-spacing="3"')+text(60,118,'一层一层，走近记忆',42,'#29483d','class="serif"')+text(60,158,'三个画面 · 两次深入 · 以同一朵花、同一片花瓣完成连续过渡',18,'#60775f')+text(1320,60,'交互概念 v15 · 待确认',13,'#6a816f')+
+  text(60,211,'01  花丛 · 回忆合集',21)+text(605,211,'02  花朵 · 组内片段',21)+text(1150,211,'03  花瓣 · 停留与回听',21)+
+  phone(60,242,sceneOne())+phone(605,242,sceneTwo())+phone(1150,242,sceneThree())+
+  `<path d="M477 534 H572 M1022 534 H1117" stroke="#849984" stroke-width="2" marker-end="url(#arrow)" fill="none"/>`+
+  lines(526,480,['点一朵花','原位放大'],15,26,'#5e765f','text-anchor="middle"')+lines(1071,480,['点一片花瓣','展开成底衬'],15,26,'#5e765f','text-anchor="middle"')+
+  text(526,567,'约 420 ms',12,'#77866f','text-anchor="middle"')+text(1071,567,'约 460 ms',12,'#77866f','text-anchor="middle"')+
+  lines(60,1140,['一朵花 = 一组相关回忆','花丛只呈现组名与数量','示例按原有 3 段故事组织'],18,30)+
+  lines(605,1140,['保留原来那朵花的形态与朝向','花瓣承载单个片段或相关小组','未收录的花瓣轻淡呈现'],18,30)+
+  lines(1150,1140,['花瓣成为柔软、通透的页面底衬','图片、原话、录音渐次出现','多条内容在本层上下浏览'],18,30)+
+  `<path d="M64 1254 H1536" stroke="#d3ddce"/>`+text(60,1292,'返回也沿原路径收回：花瓣 → 原花瓣位置，花朵 → 原花丛位置',19)+text(60,1328,'分组名称与布局为设计提案 · 引文和图片沿用本地虚构示例 · 静态分镜，不代表功能已经实现',13,'#728370')+'</svg>';
+fs.writeFileSync(path.join(out,'hierarchy.svg'),d1);
+
+function mini(x,y,inside){const id='mini-'+serial++;return `<g transform="translate(${x} ${y})"><defs><clipPath id="${id}"><rect width="390" height="550" rx="28"/></clipPath></defs><g transform="scale(.62)"><g clip-path="url(#${id})">${scenery()}${inside}</g>${rect(0,0,390,550,28,'none',1,'#c5d3c2')}</g></g>`;}
+const xs=[64,444,824,1204];
+const stages1=[
+  flower(210,267,1.1)+flower(92,399,.72,.8)+flower(301,427,.72,.8)+pill(139,340,154,'厨房里的往事'),
+  flower(203,289,1.65)+flower(18,481,.7,.23)+flower(369,524,.7,.2),
+  flower(197,315,2.22)+text(26,88,'厨房里的往事',22,'#547363','opacity=".55"'),
+  flower(195,330,2.55)+text(26,88,'厨房里的往事',22)+pill(129,190,132,'妈妈的小本子',null,true)
+];
+let d2=start(1600,1200,'勿忘我：两次空间递进的转场关键帧')+text(60,60,'MOTION STORYBOARD  /  关键帧示意',13,'#6a816f','letter-spacing="2"')+text(60,110,'让同一朵花、同一片花瓣连续展开',34,'#29483d','class="serif"')+text(60,155,'A  花丛 → 花朵    建议初值 420 ms，选中的花始终可见',18);
+stages1.forEach((content,i)=>{d2+=mini(xs[i],186,content)+text(xs[i],561,['0 ms · 点击反馈','100 ms · 周围退开','280 ms · 移动到中心','420 ms · 花瓣入口出现'][i],16);});
+d2+=text(60,624,'B  花朵 → 花瓣    建议初值 460 ms，瓣形延展，内容最后出现',18);
+const stages2=[
+  flower(195,352,2.55)+pill(128,212,134,'妈妈的小本子',null,true),
+  flower(195,445,2.55,.16)+petalPaper(195,442,3.1,5.3),
+  petalPaper(195,550,5.7,8.25)+rect(38,164,314,185,18,'#fff',.27)+text(42,398,'记忆慢慢显现',16,'#617364','opacity=".42"'),
+  petalPaper(195,550,5.7,8.25)+text(30,102,'妈妈的小本子',25,'#29483d','class="serif"')+`<use href="#kitchen" x="32" y="160"/>`+lines(42,427,['“这是妈妈的话，不是我发明的','做菜道理。”'],17,29)+rect(32,489,326,39,18,'#fcfcf5',.74)+text(51,514,'▷  回听这段故事',14)
+];
+stages2.forEach((content,i)=>{d2+=mini(xs[i],654,content)+text(xs[i],1029,['0 ms · 选中原花瓣','120 ms · 花瓣移出并展开','310 ms · 底衬铺开','460 ms · 图文与回听出现'][i],16);});
+d2+=`<path d="M64 1082 H1536" stroke="#d3ddce"/>`+text(60,1121,'返回采用反向路径约 300 ms · 可中断 · 不自动播放声音 · 减少动态时只做短淡入淡出',17)+text(60,1158,'本图表达关键帧和先后顺序；时长为提案值，尚未进行真机动效或帧率验收',13,'#728370')+'</svg>';
+fs.writeFileSync(path.join(out,'transitions.svg'),d2);
+fs.writeFileSync(path.join(out,'index.html'),`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>勿忘我 · 层层走近记忆｜设计示意</title><style>*{box-sizing:border-box}body{margin:0;background:#f5f5ed;color:#29483d;font:16px/1.8 'Microsoft YaHei',sans-serif}header,main{max-width:1640px;margin:auto;padding:28px 32px}header{padding-bottom:0}h1{font:32px/1.5 SimSun,serif;margin:8px 0}p{margin:8px 0;color:#536b5c}nav{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}a{color:#365e4a;text-underline-offset:5px}nav a{border:1px solid #c3d0bd;border-radius:22px;padding:7px 18px;text-decoration:none;background:#fff9}.notice{font-size:13px}section{margin:0 0 40px}img{display:block;width:100%;height:auto;border-radius:18px;border:1px solid #d6dfce}h2{font-weight:500;font-size:20px}.download{display:block;margin-top:8px}footer{padding:0 32px 32px;max-width:1640px;margin:auto;color:#6e806d;font-size:13px}@media(max-width:700px){header,main{padding:18px}h1{font-size:27px}}</style><header><div class="notice">设计探索 · 未修改现有 App 原型 · Figma 连接待完成</div><h1>一层一层，走近记忆</h1><p>已确认：一朵花代表一组相关回忆。下面先看三个画面的关系，再看两次连续转场。</p><nav><a href="#hierarchy">看层级示意</a><a href="#motion">看转场分镜</a><a href="../../prototype.html?demo=1#archive">返回现有 v14 原型</a></nav></header><main><section id="hierarchy"><h2>01 / 花丛 → 花朵 → 花瓣</h2><a href="hierarchy.svg" target="_blank"><img src="hierarchy.svg" alt="三个手机画面依次显示回忆花丛、放大的一朵花，以及由花瓣展开的记忆阅读页"></a><a class="download" href="hierarchy.svg" target="_blank">打开原尺寸 SVG，放大查看文字与图层 →</a></section><section id="motion"><h2>02 / 保留同一个对象，让变化连续发生</h2><a href="transitions.svg" target="_blank"><img src="transitions.svg" alt="两组各四个关键帧，展示花朵放大与花瓣展开的连续空间变化"></a><a class="download" href="transitions.svg" target="_blank">打开原尺寸转场分镜 →</a></section></main><footer>静态设计示意，图上的点击、音频与转场尚未接入产品。图片与原话来自既有虚构演示资料。</footer></html>`);
+console.log(JSON.stringify({artifacts:['hierarchy.svg','transitions.svg','index.html'].map(name=>({name,bytes:fs.statSync(path.join(out,name)).size})),productCodeChanged:false}));

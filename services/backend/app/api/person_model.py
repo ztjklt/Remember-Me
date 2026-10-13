@@ -31,6 +31,8 @@ class Correction(BaseModel):
 
 
 def _authorized(session: Session, subject_id: str, actor: Actor) -> None:
+    from ..access import require_owner
+    require_owner(session, subject_id, actor.actor_id)
     grant = session.scalar(select(Consent).where(
         Consent.subject_id == subject_id,
         Consent.granted_by_actor_id == actor.actor_id,
@@ -54,7 +56,8 @@ def _memory(session: Session, subject_id: str, memory_id: str) -> MemoryItem:
 def memories(subject_id: str, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
     _authorized(session, subject_id, actor)
     rows = session.execute(select(MemoryItem, Episode).join(Episode).where(
-        Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None)
+        Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None),
+        MemoryItem.review_state == 'active', Episode.status == 'ready'
     ).order_by(Episode.created_at.desc(), MemoryItem.ordinal)).all()
     items = []
     for memory, episode in rows:
@@ -152,6 +155,8 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
                          excerpt=content, confidence=1.0))
     memory.content = content
     memory.source_type = "CALIBRATION"
+    if (memory.item_metadata or {}).get('origin') == 'owner_supplement':
+        memory.item_metadata = {**memory.item_metadata, 'origin':'owner_correction'}
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
     embedding = session.get(MemoryEmbedding, memory_id)

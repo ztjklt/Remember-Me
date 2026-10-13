@@ -1,6 +1,7 @@
 """A real Episode is the only source of Twin evidence; Voice has a separate gate."""
 
 from sqlalchemy import select
+import pytest
 
 from app.models import CalibrationRun, Episode, Evidence, MemoryEmbedding, TwinAnswer, VoiceAsset, VoiceProfile
 from app.seed import seed_development_data
@@ -84,6 +85,10 @@ def test_evidence_answer_is_scoped_and_invalidated_after_correction(app, client,
     assert answer["response_type"] == "ORIGINAL"
     assert answer["answer"] == answer["evidence"][0]["excerpt"]
     assert answer["model_version"] == "deepseek-flash-test"
+    # Question answering now uses complete effective text; the independent
+    # local search endpoint still creates and invalidates its vector cache.
+    assert client.get(f'/api/v1/subjects/{own.subject_id}/memory-search',
+                      params={'q':'散步'}, headers=headers).status_code == 200
     assert session.scalar(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == own.subject_id))
     app.state.twin_client = BadTwin()
     assert client.post(path, headers=headers,
@@ -154,7 +159,8 @@ def test_spoken_query_is_transient(app, client, session):
     assert session.query(Episode).count() == 0
 
 
-def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(app, client, session):
+@pytest.mark.parametrize('edit_during_compare',[False,True])
+def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(app, client, session,edit_during_compare):
     own = seed_development_data(session, subject_name="Own", actor_name="Own")
     other = seed_development_data(session, subject_name="Other", actor_name="Other")
     headers = {"Authorization": "Bearer " + own.actor_token}
@@ -208,6 +214,9 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
             assert question == "我喜欢什么？"
             assert locked_answer == "我喜欢散步"
             assert human_answer == "我更喜欢游泳，因为我觉得自由"
+            if edit_during_compare:
+                source=session.get(TwinAnswer,answer['answer_id']).memory_item_ids[0]
+                assert client.delete(f'/api/v1/subjects/{own.subject_id}/memories/{source}',headers=headers).status_code==200
             return {"summary": "偏好与之前不同，值得继续确认。", "model_version": "deepseek-flash-test",
                     "suggested_question": "游泳为什么让你觉得自由？",
                     "dimensions": [{"dimension": dimension,
@@ -218,6 +227,10 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
                                                      "EMOTIONAL_REACTION", "EXPRESSION")]}
     app.state.calibration_client = Comparison()
     result = client.post(complete_path, headers=headers, json={"cloud_consent_id": cloud})
+    if edit_during_compare:
+        assert result.status_code==409, result.text
+        assert client.get(f"{path}/{run['calibration_id']}",headers=headers).json()['status']=='stale'
+        return
     assert result.status_code == 200, result.text
     assert result.json()["status"] == "complete"
     assert result.json()["human_episode_id"] == human_id

@@ -16,6 +16,10 @@ EXPECTED_TABLES = {
     "person_traits", "graph_facts", "capture_questions", "model_revisions",
     "memory_audit", "pairing_codes", "device_credentials",
     "memory_embeddings", "twin_answers", "voice_profiles", "voice_assets", "calibration_runs",
+    "story_grants", "memory_revisions", "question_requests",
+    "profile_candidates", "profile_refreshes", "profile_updates",
+    "subject_vocabulary", "accounts", "account_attempts", "share_invitations",
+    "narrative_records", "narrative_history", "narrative_preferences", "narrative_question_decisions",
 }
 
 

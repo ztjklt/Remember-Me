@@ -1,0 +1,155 @@
+{
+  "episode_id": "ep_a331afcab3ad4dc8",
+  "status": "ready",
+  "recorded_at": "2026-09-03T08:00:00+00:00",
+  "duration_ms": 79680,
+  "transcript": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？今天碰到什么事，我有时还想着车队第二天怎么排班，嘴上答应着，其实没听进去。\n\n现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n成绩单还能留下来，那些饭桌上的闲话过去了就过去了。\n\n隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+  "machine_transcript": "陈岚，小时候放学一回来就把书包放在门边，到厨房找他妈妈，他妈妈叫孙玉琴，我平时就喊玉琴。那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？今天碰到什么事，我有时还想着车队第二天怎么排班，嘴上答应着，其实没听进去。现在想起来挺可惜的，不是怪他不肯讲，他那时候很愿意讲，是我听得不够仔细。成绩单还能留下来，那些饭桌上的闲话过去了就过去了。隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_baeef000fc164bc0",
+      "content": "陈岚小时候放学回来会把书包放在门边，然后到厨房找她妈妈孙玉琴，本人平时喊孙玉琴为玉琴。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_ad0a41d0764b4f9f",
+      "content": "陈岚的母亲是孙玉琴。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_7451b1b903c0449e",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_7cdbda0468744c35",
+      "content": "本人一家那时候住在南京鼓楼的老小区，吃饭时女儿陈岚总有话讲，会讲学校里谁又做了什么。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_afc9280f22d247af",
+          "excerpt": "那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_d7a4f0b143ea431b",
+      "content": "本人有时还想着车队第二天怎么排班，女儿讲话时嘴上答应着，其实没听进去。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_d1e3ebf36ad14c70",
+          "excerpt": "今天碰到什么事，我有时还想着车队第二天怎么排班，嘴上答应着，其实没听进去。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_d50e6954318541ca",
+      "content": "本人现在想起来觉得挺可惜，不怪女儿不肯讲，她那时候很愿意讲，是本人听得不够仔细。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "VALUES_BELIEFS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_8e91cacda3534bd4",
+          "excerpt": "现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_5b3d03db3601485f",
+      "content": "本人认为成绩单还能留下来，而饭桌上的闲话过去了就过去了。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "VALUES_BELIEFS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_6c1d2f7dbb3f48d7",
+          "excerpt": "成绩单还能留下来，那些饭桌上的闲话过去了就过去了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_42198c679ddb423c",
+      "content": "隔壁王老师偶尔来串门，他叫王建国，是本人那儿的邻居。",
+      "memory_type": "PERSON",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_5ccf2dda41a14962",
+          "excerpt": "隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_c427e3d253f44dcc",
+      "content": "后来车队那个同事也叫王建国，不过是另一个人，不要听岔了。",
+      "memory_type": "PERSON",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_5dd3001b5d834708",
+          "excerpt": "后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_a331afcab3ad4dc8"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

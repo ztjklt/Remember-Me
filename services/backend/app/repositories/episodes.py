@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..errors import EpisodeNotFound
-from ..models import Episode, EpisodeStatus
+from ..models import Episode, EpisodeStatus, Subject
 from ..storage.base import StoredObject
 
 # The value sent as `aiCoreInput.existing_model_version` when a subject has no
@@ -66,9 +66,9 @@ class EpisodeRepository:
     def for_actor(self, episode_id: str, *, actor_id: str) -> Episode | None:
         """The Episode as this Actor may see it, or None when it is not theirs."""
         return self.session.scalars(
-            select(Episode).where(
+            select(Episode).join(Subject).where(
                 Episode.episode_id == episode_id,
-                Episode.actor_id == actor_id,
+                Subject.owner_actor_id == actor_id,
             )
         ).one_or_none()
 

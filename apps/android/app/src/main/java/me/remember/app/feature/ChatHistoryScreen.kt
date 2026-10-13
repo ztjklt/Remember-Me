@@ -16,12 +16,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import me.remember.app.R
 import me.remember.app.core.designsystem.RememberMeColors
+import me.remember.app.core.designsystem.NatureScene
+import me.remember.app.core.designsystem.atmosphere
 import me.remember.app.navigation.Routes
 import me.remember.app.ui.components.HugeIcon
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChatHistoryScreen(back: () -> Unit, go: (String) -> Unit) {
+fun ChatHistoryScreen(back: () -> Unit, go: (String) -> Unit, showBottomTabs: Boolean = true) {
     var query by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var asked by remember { mutableStateOf(false) }
@@ -31,7 +33,7 @@ fun ChatHistoryScreen(back: () -> Unit, go: (String) -> Unit) {
     var renameIndex by remember { mutableIntStateOf(-1) }
     var renameText by remember { mutableStateOf("") }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Coast).statusBarsPadding()) {
         Column(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(query, { query = it }, Modifier.weight(1f), singleLine = true, leadingIcon = { HugeIcon(R.drawable.hg_search, "Search chat history", Modifier.size(18.dp)) }, placeholder = { Text("Search chat history") })
@@ -65,31 +67,9 @@ fun ChatHistoryScreen(back: () -> Unit, go: (String) -> Unit) {
                 IconButton(onClick = { asked = true }, modifier = Modifier.size(52.dp)) { HugeIcon(R.drawable.hg_chat, "Send message", Modifier.size(24.dp), RememberMeColors.Moss) }
             }
         }
-        ChatBottomTabs(go)
+        if (showBottomTabs) BottomTabs(Routes.Twin, go)
     }
     if (renameOpen) {
         AlertDialog(onDismissRequest = { renameOpen = false }, title = { Text("Rename chat") }, text = { OutlinedTextField(renameText, { renameText = it }, singleLine = true) }, confirmButton = { TextButton({ history = history.mapIndexed { i, item -> if (i == renameIndex) renameText to item.second else item }; renameOpen = false }) { Text("Rename") } }, dismissButton = { TextButton({ renameOpen = false }) { Text("Cancel") } })
-    }
-}
-
-@Composable
-private fun ChatBottomTabs(go: (String) -> Unit) {
-    val tabs = listOf("Portrait" to Routes.Portrait, "Graphs" to Routes.Graph, "Memories" to Routes.Memories, "Agents" to Routes.Agents, "Me" to Routes.Me)
-    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        tabs.forEach { (label, route) ->
-            val icon = when (route) {
-                Routes.Portrait -> R.drawable.hg_home
-                Routes.Graph -> R.drawable.hg_chart
-                Routes.Memories -> R.drawable.hg_book
-                Routes.Agents -> R.drawable.hg_brain
-                else -> R.drawable.hg_user
-            }
-            TextButton(onClick = { go(route) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 1.dp, vertical = 6.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    HugeIcon(icon, label, Modifier.size(16.dp), RememberMeColors.Muted)
-                    Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
-                }
-            }
-        }
     }
 }

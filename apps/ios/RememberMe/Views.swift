@@ -20,13 +20,13 @@ private struct PressFeedbackStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundStyle(Ink.onPrimary)
-            .background(fill, in: RoundedRectangle(cornerRadius: 16))
+            .background(fill, in: RoundedRectangle(cornerRadius: 24))
             .background {
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 24)
                     .shadow(color: Ink.coral.opacity(enabled ? 0.20 : 0), radius: configuration.isPressed ? 2 : 5, y: configuration.isPressed ? 1 : 3)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(LinearGradient(colors: [Color.white.opacity(configuration.isPressed ? 0 : 0.10), Color.black.opacity(configuration.isPressed ? 0.12 : 0.03)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .allowsHitTesting(false)
             }
@@ -36,23 +36,33 @@ private struct PressFeedbackStyle: ButtonStyle {
     }
 }
 
+private enum NatureScene: String {
+    case meadow = "RmMeadow"
+    case lake = "RmLake"
+    case forest = "RmForest"
+    case coast = "RmCoast"
+}
+
 private struct AtmosphereBackground: View {
+    var immersive = false
+    var scene: NatureScene = .meadow
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
     private var dark: Bool { scheme == .dark }
-    private func color(_ light: UInt32, _ night: UInt32) -> Color {
-        let value = dark ? night : light
-        return Color(red: Double((value >> 16) & 255)/255, green: Double((value >> 8) & 255)/255, blue: Double(value & 255)/255)
-    }
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 Ink.paper
-                if !reduceTransparency && contrast != .increased {
-                    LinearGradient(colors: [color(0xD7E3F3,0x22324B), color(0xEEE5DE,0x202C34)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    RadialGradient(colors: [color(0xE6DFF0,0x302B43),color(0xE6DFF0,0x302B43).opacity(0)], center: UnitPoint(x: 1,y: 0.15), startRadius: 0, endRadius: max(geometry.size.width,geometry.size.height)*0.5)
-                    LinearGradient(stops: [.init(color: Ink.paper.opacity(0),location: 0),.init(color: Ink.paper.opacity(0.3),location: 0.28),.init(color: Ink.paper,location: 0.68),.init(color: Ink.paper,location: 1)], startPoint: .top, endPoint: .bottom)
+                if contrast != .increased {
+                    Image(scene.rawValue).resizable().scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                    LinearGradient(stops: [
+                        .init(color: Ink.paper.opacity(dark ? 0.88 : (reduceTransparency ? 0.68 : (immersive ? 0.58 : 0.64))), location: 0),
+                        .init(color: Ink.paper.opacity(dark ? 0.82 : (immersive ? 0.24 : 0.68)), location: 0.5),
+                        .init(color: Ink.paper.opacity(dark ? 0.94 : (immersive ? 0.50 : 0.82)), location: 1)
+                    ], startPoint: .top, endPoint: .bottom)
                 }
             }
         }.allowsHitTesting(false).accessibilityHidden(true)
@@ -84,7 +94,7 @@ private extension View {
     func journalCard() -> some View {
         self.padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 24))
     }
 }
 
@@ -124,25 +134,15 @@ struct RememberMeBrand: View {
             } else {
                 Canvas { context, canvas in
                     let mono = treatment == .monochrome
-                    let blue = darkBackground ? Color(red: 174/255, green: 196/255, blue: 1) : Color(red: 50/255, green: 92/255, blue: 203/255)
-                    var petal = Path()
-                    petal.move(to: CGPoint(x: 128, y: 125))
-                    petal.addCurve(to: CGPoint(x: 88, y: 71), control1: CGPoint(x: 111, y: 119), control2: CGPoint(x: 91, y: 96))
-                    petal.addCurve(to: CGPoint(x: 122, y: 22), control1: CGPoint(x: 85, y: 45), control2: CGPoint(x: 98, y: 23))
-                    petal.addCurve(to: CGPoint(x: 166, y: 70), control1: CGPoint(x: 148, y: 20), control2: CGPoint(x: 168, y: 43))
-                    petal.addCurve(to: CGPoint(x: 132, y: 125), control1: CGPoint(x: 164, y: 94), control2: CGPoint(x: 145, y: 118))
-                    petal.closeSubpath()
                     context.scaleBy(x: canvas.width / 256, y: canvas.height / 256)
-                    for i in 0..<5 {
-                        var layer = context
-                        layer.translateBy(x: 128, y: 128)
-                        layer.rotate(by: .degrees(Double(i) * 72))
-                        layer.translateBy(x: -128, y: -128)
-                        layer.fill(petal, with: .color(mono ? monochromeColor : blue))
+                    for layer in BotanicalBrandGeometry.layers {
+                        let color = mono ? monochromeColor : (darkBackground ? layer.dark : layer.light)
+                        if layer.stroke > 0 {
+                            context.stroke(layer.path, with: .color(color), style: StrokeStyle(lineWidth: layer.stroke, lineCap: .round, lineJoin: .round))
+                        } else {
+                            context.fill(layer.path, with: .color(color))
+                        }
                     }
-                    let r: CGFloat = mono ? 9 : 12
-                    let heart = Path(ellipseIn: CGRect(x: 128-r, y: 128-r, width: 2*r, height: 2*r))
-                    context.fill(heart, with: .color(mono ? monochromeColor : Color(red: 233/255, green: 184/255, blue: 91/255)))
                 }
             }
         }
@@ -239,17 +239,53 @@ private struct PairingView: View {
             }
             .padding(24)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(scene: .meadow).ignoresSafeArea())
     }
 }
 
 private struct MainTabs: View {
+    @State private var selected = 0
+    @Namespace private var dockSelection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private let destinations = [("今天", "sun.max"), ("档案", "books.vertical"),
+                                ("对话", "bubble.left.and.bubble.right"), ("我的", "person.crop.circle")]
     var body: some View {
-        TabView {
-            NavigationStack { HomeView() }.tabItem { Label("今天", systemImage: "sun.max") }
-            NavigationStack { ArchiveView() }.tabItem { Label("档案", systemImage: "books.vertical") }
-            NavigationStack { TwinView() }.tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
-            NavigationStack { ProfileView() }.tabItem { Label("我的", systemImage: "person.crop.circle") }
+        // Retain native tab stacks and their navigation state underneath the custom dock.
+        TabView(selection: $selected) {
+            NavigationStack { HomeView() }.tag(0).toolbar(.hidden, for: .tabBar)
+            NavigationStack { ArchiveView() }.tag(1).toolbar(.hidden, for: .tabBar)
+            NavigationStack { TwinView() }.tag(2).toolbar(.hidden, for: .tabBar)
+            NavigationStack { ProfileView() }.tag(3).toolbar(.hidden, for: .tabBar)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(destinations.indices, id: \.self) { index in
+                    Button {
+                        withAnimation(reduceMotion ? nil : .smooth(duration: 0.32)) { selected = index }
+                    } label: {
+                        VStack(spacing: 5) {
+                            Image(systemName: destinations[index].1).font(.system(size: 22, weight: selected == index ? .semibold : .regular))
+                                .offset(y: selected == index && !reduceMotion ? -2 : 0)
+                            Text(destinations[index].0).font(.caption.weight(selected == index ? .semibold : .medium))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 58).padding(.vertical, 3)
+                        .foregroundStyle(selected == index ? Ink.onPrimary : Ink.muted)
+                        .background {
+                            if selected == index {
+                                RoundedRectangle(cornerRadius: 23).fill(Ink.coral)
+                                    .matchedGeometryEffect(id: "dock-selection", in: dockSelection)
+                            }
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: 23))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected == index ? [.isSelected] : [])
+                }
+            }
+            .padding(7).background(Ink.cream, in: RoundedRectangle(cornerRadius: 30))
+            .overlay(RoundedRectangle(cornerRadius: 30).strokeBorder(Ink.muted.opacity(0.2), lineWidth: 1))
+            .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+            .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 8)
         }
     }
 }
@@ -257,15 +293,19 @@ private struct MainTabs: View {
 private struct ArchiveView: View {
     @State private var segment = 0
     @State private var query = ""
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         VStack(spacing: 0) {
             Picker("档案内容", selection: $segment) {
                 Text("录音").tag(0)
                 Text("记忆").tag(1)
             }.pickerStyle(.segmented).padding(.horizontal, 20).padding(.vertical, 12)
-            if segment == 0 { EpisodesView(query: query) } else { MemoriesView(query: query) }
+            Group {
+                if segment == 0 { EpisodesView(query: query).transition(.opacity) }
+                else { MemoriesView(query: query).transition(.opacity) }
+            }.animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: segment)
         }
-        .background(AtmosphereBackground())
+        .background(AtmosphereBackground(scene: .lake))
         .navigationTitle("档案")
         .searchable(text: $query, prompt: "搜索录音文字或记忆")
     }
@@ -281,7 +321,7 @@ private struct ProfileView: View {
             }
             Section("数据与授权") {
                 NavigationLink("系统如何理解我") { ModelView() }
-                NavigationLink("个人声音与独立授权") { ScrollView { VoiceSetupView().padding(20) }.navigationTitle("个人声音") }
+                NavigationLink("个人声音与独立授权") { ScrollView { VoiceSetupView().padding(20) }.background(AtmosphereBackground(scene: .coast).ignoresSafeArea()).navigationTitle("个人声音") }
                 if model.cloudConsentID != nil {
                     Button("撤销云端对话授权", role: .destructive) { Task { await model.revokeCloudTwin() } }
                 }
@@ -292,14 +332,34 @@ private struct ProfileView: View {
             Section("外观") { LabeledContent("颜色与字号", value: "跟随系统") }
             Section("连接") { Text(model.pairing == nil ? "尚未配对" : "已配对本机服务") }
         }
-        .scrollContentBackground(.hidden).background(AtmosphereBackground()).navigationTitle("我的")
+        .scrollContentBackground(.hidden).background(AtmosphereBackground(scene: .coast)).navigationTitle("我的")
     }
 }
 
 private struct RecordRowStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(configuration.isPressed ? Ink.coral.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+            .background(configuration.isPressed ? Ink.peach : Ink.cream, in: RoundedRectangle(cornerRadius: 20))
+    }
+}
+
+private struct EpisodeStatusBadge: View {
+    let status: String
+    private var color: Color { status == "failed" ? Color("RmFailure") : status == "reviewing" ? Color("RmAttention") : Ink.coral }
+    private var fill: Color { status == "failed" ? Color("RmFailureSurface") : status == "reviewing" ? Color("RmAttentionSurface") : Ink.peach }
+    private var symbol: String {
+        switch status {
+        case "ready": return "checkmark.circle"
+        case "failed": return "exclamationmark.circle"
+        case "reviewing": return "pencil.line"
+        default: return "clock"
+        }
+    }
+    var body: some View {
+        Label(statusLabel(status), systemImage: symbol)
+            .font(.caption.weight(.semibold)).foregroundStyle(color)
+            .padding(.horizontal, 9).padding(.vertical, 5)
+            .background(fill, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -310,15 +370,12 @@ private struct EpisodeRow: View {
             MemoryGlyph(kind: .voice,size: 24)
             VStack(alignment: .leading, spacing: 5) {
                 Text(episode.transcript?.isEmpty == false ? String((episode.transcript ?? "").prefix(48)) : "一段原始录音")
-                    .font(.body.weight(.medium)).foregroundStyle(Ink.text).lineLimit(2)
+                    .font(.body.weight(.semibold)).foregroundStyle(Ink.text).lineLimit(2)
                 Text(String(episode.recorded_at.prefix(10))).font(.subheadline).foregroundStyle(Ink.muted)
-                if episode.status != "ready" {
-                    Text(statusLabel(episode.status)).font(.subheadline)
-                        .foregroundStyle(episode.status == "reviewing" || episode.status == "failed" ? Ink.coral : Ink.muted)
-                }
+                EpisodeStatusBadge(status: episode.status)
             }.frame(maxWidth: .infinity,alignment: .leading)
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Ink.muted).accessibilityHidden(true)
-        }.multilineTextAlignment(.leading).padding(.vertical,14).frame(minHeight: 48)
+        }.multilineTextAlignment(.leading).padding(.vertical,14).padding(.horizontal,14).frame(minHeight: 48)
     }
 }
 
@@ -344,7 +401,7 @@ private struct EpisodesView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        // The archive parent owns the lake backdrop, including the search and segment bar.
         .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
@@ -387,7 +444,7 @@ private struct EpisodeDetailView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(scene: .forest).ignoresSafeArea())
         .navigationTitle("录音详情")
         .refreshable { await model.refresh() }
     }
@@ -403,85 +460,100 @@ private struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    RememberMeBrand(size: 32)
-                    Text("Remember Me").font(.body.weight(.medium)).foregroundStyle(Ink.text)
+                    RememberMeBrand(size: 40)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("勿忘我").font(.system(.title3, design: .serif).weight(.medium)).foregroundStyle(Ink.text)
+                        Text("REMEMBER ME").font(.system(.caption2, design: .default).weight(.medium)).tracking(1.2).foregroundStyle(Ink.muted)
+                    }
                     Spacer()
                     Text(Date().formatted(.dateTime.month(.wide).day()))
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 .padding(.top, 4)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("今天，想记住什么？").font(.title2.weight(.medium)).foregroundStyle(Ink.text)
-                    Text("一件小事，也可以慢慢说。").font(.subheadline).foregroundStyle(Ink.muted)
+                VStack(spacing: 16) {
+                    Text("留一点时间，给自己").font(.subheadline).foregroundStyle(Ink.text)
+                    Text("让此刻，\n慢慢留下来。")
+                        .font(.system(.largeTitle, design: .serif).weight(.regular))
+                        .lineSpacing(6).foregroundStyle(Ink.text)
+                    Text("不必整理好思绪。\n一件小事，也可以慢慢说。")
+                        .font(.subheadline).lineSpacing(5).foregroundStyle(Ink.text)
                 }
-                VStack(spacing: 6) {
+                .multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                .padding(.top, dynamicTypeSize.isAccessibilitySize ? 20 : 38)
+                .padding(.bottom, 12)
+                VStack(spacing: 14) {
                     ActionButton(title: "开始录音", icon: "mic") {
                         selectedQuestion = nil
                         showRecorder = true
                     }
                     Text("原音先留在手机 · 录音豆待连接")
-                        .font(.subheadline)
-                        .foregroundStyle(Ink.muted)
-                }
+                        .font(.footnote).foregroundStyle(Ink.text)
+                    Text("独处的灵感 · 一起的讨论 · 久违的闲聊")
+                        .font(.footnote).foregroundStyle(Ink.text)
+                        .multilineTextAlignment(.center)
+                }.padding(.bottom, 24)
 
-                if model.draft != nil || model.episodeID != nil {
-                    Button { showRecorder = true } label: {
-                        HStack(spacing: 12) {
-                            MemoryGlyph(kind: .review,size: 40)
-                            VStack(alignment: .leading,spacing: 4) {
-                                Text("继续查看或重试").font(.body.weight(.medium)).foregroundStyle(Ink.text)
-                                Text(model.processingStatus.isEmpty ? "原音已保存在手机" : statusLabel(model.processingStatus))
-                                    .font(.subheadline).foregroundStyle(Ink.muted)
-                            }.frame(maxWidth: .infinity,alignment: .leading)
-                            Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
-                        }.padding(.vertical,12).frame(minHeight: 48)
-                    }.buttonStyle(RecordRowStyle())
-                    Divider()
-                }
-
-                Text("最近记录").font(.headline.weight(.medium))
-                if model.episodes.isEmpty {
-                    MemoryGlyph(kind: .memory,size: 88)
-                    Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
-                }
-                ForEach(Array(model.episodes.prefix(3))) { episode in
-                    NavigationLink { EpisodeDetailView(initial: episode) } label: {
-                        EpisodeRow(episode: episode)
-                    }.buttonStyle(RecordRowStyle())
-                    Divider()
-                }
-                if let question = model.questions.first {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Eyebrow(text: "给你的一个小问题")
-                        Text(question.text)
-                            .font(.system(.title3, design: .default).weight(.semibold))
-                            .foregroundStyle(Ink.text)
-                        HStack(spacing: 12) {
-                            Button {
-                                let utterance = AVSpeechUtterance(string: question.text)
-                                utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
-                                speaker.speak(utterance)
-                            } label: {
-                                Label("听问题", systemImage: "speaker.wave.2")
-                            }
-                            .buttonStyle(.bordered)
-                            Button {
-                                selectedQuestion = question
-                                showRecorder = true
-                            } label: {
-                                Label("录下回答", systemImage: "mic")
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
+                VStack(alignment: .leading, spacing: 16) {
+                    if model.draft != nil || model.episodeID != nil {
+                        Button { showRecorder = true } label: {
+                            HStack(spacing: 12) {
+                                MemoryGlyph(kind: .review,size: 40)
+                                VStack(alignment: .leading,spacing: 4) {
+                                    Text("继续查看或重试").font(.body.weight(.medium)).foregroundStyle(Ink.text)
+                                    Text(model.processingStatus.isEmpty ? "原音已保存在手机" : statusLabel(model.processingStatus))
+                                        .font(.subheadline).foregroundStyle(Ink.muted)
+                                }.frame(maxWidth: .infinity,alignment: .leading)
+                                Image(systemName: "chevron.right").font(.caption).accessibilityHidden(true)
+                            }.padding(.vertical,12).frame(minHeight: 48)
+                        }.buttonStyle(RecordRowStyle())
+                        Divider()
                     }
-                    .padding(.vertical, 12)
-                }
 
+                    Text("最近记录").font(.headline.weight(.medium))
+                    if model.episodes.isEmpty {
+                        MemoryGlyph(kind: .memory,size: 88)
+                        Text("从第一段声音开始，不必准备完整的故事。").foregroundStyle(Ink.muted)
+                    }
+                    ForEach(Array(model.episodes.prefix(3))) { episode in
+                        NavigationLink { EpisodeDetailView(initial: episode) } label: {
+                            EpisodeRow(episode: episode)
+                        }.buttonStyle(RecordRowStyle())
+                        Divider()
+                    }
+                    if let question = model.questions.first {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Eyebrow(text: "给你的一个小问题")
+                            Text(question.text)
+                                .font(.system(.title3, design: .default).weight(.semibold))
+                                .foregroundStyle(Ink.text)
+                            HStack(spacing: 12) {
+                                Button {
+                                    let utterance = AVSpeechUtterance(string: question.text)
+                                    utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+                                    speaker.speak(utterance)
+                                } label: {
+                                    Label("听问题", systemImage: "speaker.wave.2")
+                                }
+                                .buttonStyle(.bordered)
+                                Button {
+                                    selectedQuestion = question
+                                    showRecorder = true
+                                } label: {
+                                    Label("录下回答", systemImage: "mic")
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
+                        }
+                        .padding(.vertical, 12)
+                    }
+
+                }
+                .journalCard()
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(immersive: true).ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: selectedQuestion, calibration: nil) }
         .refreshable { await model.refresh() }
@@ -530,7 +602,7 @@ private struct RecorderView: View {
                         TextEditor(text: $model.transcriptDraft)
                             .onChange(of: model.transcriptDraft) { _, _ in model.saveTranscriptDraft() }
                             .frame(minHeight: 220).padding(12)
-                            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+                            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 24))
                             .accessibilityLabel("核对并修改转写文字")
                     }
                     if !model.processingStatus.isEmpty {
@@ -540,13 +612,13 @@ private struct RecorderView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("操作未完成", systemImage: "exclamationmark.circle").font(.headline)
                             Text(error).font(.body)
-                        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+                        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 24))
                     }
                     Text("原音先留在手机。提交后传给配对的 Mac 转写；网络中断时可以重试，无需重录。")
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }.padding(20)
             }
-            .background(AtmosphereBackground().ignoresSafeArea())
+            .background(AtmosphereBackground(immersive: model.draft == nil && !model.isTranscriptReviewReady, scene: .forest).ignoresSafeArea())
             .navigationTitle("留下一段声音").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
                 Button("关闭") { if model.isRecording { showClose = true } else { dismiss() } }
@@ -630,7 +702,7 @@ private struct OriginalPlayer: View {
                     .frame(minHeight: 44).accessibilityLabel("原音播放进度")
                 HStack { Text(clock(model.playbackPosition)); Spacer(); Text(clock(model.playbackDuration)) }.font(.subheadline).foregroundStyle(Ink.muted).monospacedDigit()
             }
-        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 24))
     }
 }
 
@@ -691,7 +763,7 @@ private struct MemoriesView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        // The archive parent owns the lake backdrop, including the search and segment bar.
         .navigationTitle("档案")
         .refreshable { await model.refresh() }
     }
@@ -856,7 +928,7 @@ private struct TwinView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(scene: .coast).ignoresSafeArea())
         .navigationTitle("对话")
         .refreshable { await model.refresh() }
         .sheet(isPresented: $showCalibrationRecorder) {
@@ -980,7 +1052,7 @@ private struct MemoryDetailView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(scene: .forest).ignoresSafeArea())
         .navigationTitle("记忆详情")
         .confirmationDialog("删除这条记忆？原始录音和纠错记录仍会保留。", isPresented: $showDelete) {
             Button("删除记忆", role: .destructive) {
@@ -1043,7 +1115,7 @@ private struct ModelView: View {
             }
             .padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
+        .background(AtmosphereBackground(scene: .lake).ignoresSafeArea())
         .navigationTitle("关于我")
         .refreshable { await model.refresh() }
     }

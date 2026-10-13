@@ -1,0 +1,2 @@
+# Audio provenance locks the exact authored bytes; do not rewrite line endings.
+*.txt -text whitespace=cr-at-eol

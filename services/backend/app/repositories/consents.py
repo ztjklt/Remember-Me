@@ -121,6 +121,8 @@ class ConsentRepository:
                 f"Consent {consent_id} is not an active {scope} consent "
                 f"for subject {subject_id}"
             )
+        from ..access import require_owner
+        require_owner(self.session, subject_id, actor_id)
         return consent
 
     def revoke(self, consent: Consent, *, at: datetime | None = None) -> Consent:

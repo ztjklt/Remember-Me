@@ -29,16 +29,21 @@ class Settings(BaseSettings):
             "ENVIRONMENT",
         ),
     )
-    provider: Literal["fixture", "openai_compatible", "ollama", "deepseek"] = Field(
+    provider: Literal["fixture", "openai_compatible", "ollama", "deepseek", "weixin"] = Field(
         default="fixture",
         validation_alias="AI_PROVIDER",
     )
     model: str = Field(default=FixtureProvider.default_model_version, validation_alias="AI_MODEL")
+    twin_focus_hints: bool = Field(default=False, validation_alias="AI_TWIN_FOCUS_HINTS")
+    twin_verify_answers: bool = Field(default=True, validation_alias="AI_TWIN_VERIFY_ANSWERS")
+    twin_structured_answers: bool = Field(default=False, validation_alias="AI_TWIN_STRUCTURED_ANSWERS")
+    twin_quote_answers: bool = Field(default=False, validation_alias="AI_TWIN_QUOTE_ANSWERS")
     base_url: str = Field(
         default="http://127.0.0.1:8000/v1",
         validation_alias="AI_BASE_URL",
     )
     api_key: SecretStr = Field(default=SecretStr(""), validation_alias="AI_API_KEY")
+    weixin_api_key: SecretStr = Field(default=SecretStr(""), validation_alias="WEIXIN_CHAT_API_KEY")
     timeout_seconds: float = Field(
         default=30.0,
         gt=0,
@@ -63,6 +68,19 @@ class Settings(BaseSettings):
     max_concurrent_requests: int = Field(default=4, ge=1, validation_alias="AI_MAX_CONCURRENT_REQUESTS")
     max_request_bytes: int = Field(default=1_048_576, ge=1, validation_alias="AI_MAX_REQUEST_BYTES")
     max_response_bytes: int = Field(default=1_048_576, ge=1, validation_alias="AI_MAX_RESPONSE_BYTES")
+
+    @model_validator(mode="before")
+    @classmethod
+    def weixin_defaults(cls, values):
+        if isinstance(values, dict) and values.get("AI_PROVIDER", values.get("provider")) == "weixin":
+            values = dict(values)
+            for alias, field, default in [("AI_BASE_URL","base_url","https://chatapi.weixin.qq.com/openai/v1"),
+                    ("AI_MODEL","model","Deepseek-v4-flash"), ("AI_MODEL_VERSION","model_version","Deepseek-v4-flash")]:
+                if alias not in values and field not in values:
+                    values[alias] = default
+            values["AI_TIMEOUT_SECONDS"] = 45
+            values["AI_MAX_CONCURRENT_REQUESTS"] = 1
+        return values
 
     @field_validator("model", "model_version", "prompt_version", "schema_version")
     @classmethod
@@ -111,6 +129,11 @@ class Settings(BaseSettings):
                 raise ValueError("DeepSeek Flash requires its official model name")
             if not self.api_key.get_secret_value().strip():
                 raise ValueError("DeepSeek requires AI_API_KEY")
+        if self.provider == "weixin":
+            if self.base_url != "https://chatapi.weixin.qq.com/openai/v1" or self.model != "Deepseek-v4-flash":
+                raise ValueError("Weixin requires its approved HTTPS endpoint and exact model")
+            if not self.weixin_api_key.get_secret_value().strip():
+                raise ValueError("Weixin requires WEIXIN_CHAT_API_KEY")
         return self
 
 

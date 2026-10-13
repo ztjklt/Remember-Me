@@ -1,0 +1,70 @@
+{
+  "episode_id": "ep_82de72274ae44a0b",
+  "status": "ready",
+  "recorded_at": "2026-09-27T08:00:00+00:00",
+  "duration_ms": 31840,
+  "transcript": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n我先把他这个问题记着，等我把想到的那些事理一理，再单独跟他说一段，今天先不急着答。",
+  "machine_transcript": "陈澜问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿降起。我先把他这个问题记着，等我把想到的那些事理一理，再单独跟他说一段，今天先不急着打。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_09d3997c917c4c51",
+      "content": "陈岚问陈岚为什么总把“平安回家比多跑一趟重要”挂在嘴边，陈岚被认真一问时停住了，不是不愿意告诉陈岚，而是一时不知道从哪儿讲起。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_b0b9ccb798ea44a0",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_321a206554924a67",
+      "content": "陈岚习惯把“平安回家比多跑一趟重要”这句话挂在嘴边。",
+      "memory_type": "PREFERENCE",
+      "review_state": "active",
+      "domain": "EXPRESSION",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_89d5105bb63f4cf4",
+          "excerpt": "陈岚问我，怎么总把平安回家比多跑一趟重要挂在嘴边，这句话我说惯了，她认真一问，我倒停住了，不是不愿意告诉他，就是一时不知道从哪儿讲起。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_3fda8d403b8b4e79",
+      "content": "陈岚先把陈岚的问题记着，打算把想到的那些事理一理后，再单独跟陈岚说一段，今天先不急着答。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "DECISION_PATTERNS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_0f96334dc4794e79",
+          "excerpt": "我先把他这个问题记着，等我把想到的那些事理一理，再单独跟他说一段，今天先不急着答。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_82de72274ae44a0b"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

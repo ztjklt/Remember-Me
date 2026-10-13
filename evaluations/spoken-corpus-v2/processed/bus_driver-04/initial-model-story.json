@@ -1,0 +1,70 @@
+{
+  "episode_id": "ep_facb2f3eebb340ab",
+  "status": "ready",
+  "recorded_at": "2026-09-09T08:00:00+00:00",
+  "duration_ms": 36960,
+  "transcript": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。",
+  "machine_transcript": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。今天看着郑检才想明白，两个年份挨得近，我气混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_e62f4d51c2e14d86",
+      "content": "本人纠正：第一次独立开12路是1987年，不是1986年。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_23504f26f0334f10",
+      "content": "本人表示两个年份挨得近所以记混了，收车后在站房坐着，那件事记得但年头说错了。",
+      "memory_type": "EVENT",
+      "review_state": "pending",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_c33e6b4ace534c2a",
+          "excerpt": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_f30bca6e98d14c9f",
+      "content": "本人对陈岚说，以后要给家里人讲就说1987年具体几月几号，今天先不说，还要再看看。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "pending",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_caa8381ae1924863",
+          "excerpt": "陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_facb2f3eebb340ab"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

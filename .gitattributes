@@ -1,2 +1,5 @@
 # Preserve the handed-off source package byte-for-byte for its SHA-256 manifest.
 /assets/brand/forget-me-not/v1/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/infra/aws/*.sh text eol=lf
+/infra/aws/*.service text eol=lf
+/infra/aws/Caddyfile text eol=lf

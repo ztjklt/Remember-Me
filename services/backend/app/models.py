@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     DateTime,
     Float,
@@ -28,7 +29,7 @@ def as_utc(value: datetime) -> datetime:
     stored rather than guessing; without it the same field would serialize with
     an offset from one backend and without one from the other (ADR-0001 D3).
     """
-    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -169,9 +170,17 @@ class Subject(Base):
 
     subject_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    owner_actor_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
+
+
+class SubjectVocabulary(Base):
+    __tablename__ = 'subject_vocabulary'
+    subject_id: Mapped[str] = mapped_column(ForeignKey('subjects.subject_id'), primary_key=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False, default='')
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
 
 class Actor(Base):
@@ -429,6 +438,41 @@ class MemoryItem(Base):
         DateTime(timezone=True), nullable=False, default=utcnow
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    review_state: Mapped[str] = mapped_column(String(16), nullable=False, default="active", server_default="active")
+
+
+class StoryGrant(Base):
+    __tablename__ = "story_grants"
+    grant_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.episode_id"), nullable=False, index=True)
+    reader_actor_id: Mapped[str] = mapped_column(ForeignKey("actors.actor_id"), nullable=False, index=True)
+    cloud_processing_allowed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MemoryRevision(Base):
+    __tablename__ = "memory_revisions"
+    revision_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.subject_id"), nullable=False)
+    target_memory_id: Mapped[str] = mapped_column(ForeignKey("memory_items.memory_item_id"), nullable=False)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.episode_id"), nullable=False, unique=True)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    time_text: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class QuestionRequest(Base):
+    __tablename__ = "question_requests"
+    request_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey("subjects.subject_id"), nullable=False)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("actors.actor_id"), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    answer_episode_id: Mapped[str | None] = mapped_column(ForeignKey("episodes.episode_id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 PERSON_DOMAINS = (
@@ -456,6 +500,102 @@ class PersonTrait(Base):
     valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class ProfileCandidate(Base):
+    __tablename__ = 'profile_candidates'
+    candidate_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    domain: Mapped[str] = mapped_column(String(32), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    context: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    counter_evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    independent_episodes: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_basis: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='pending')
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProfileUpdate(Base):
+    __tablename__ = 'profile_updates'
+    update_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    candidate_id: Mapped[str] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=False)
+    target_candidate_id: Mapped[str | None] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=True)
+    result_candidate_id: Mapped[str | None] = mapped_column(String(64), ForeignKey('profile_candidates.candidate_id'), nullable=True)
+    action: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    time_text: Mapped[str] = mapped_column(Text, nullable=False)
+    base_source_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='pending')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    origin: Mapped[str] = mapped_column(String(16),nullable=False,default='owner')
+    model_version: Mapped[str | None] = mapped_column(String(128),nullable=True)
+    prompt_version: Mapped[str | None] = mapped_column(String(128),nullable=True)
+    suggestion_evidence_ids: Mapped[list | None] = mapped_column(JSON,nullable=True)
+
+
+class ProfileRefresh(Base):
+    __tablename__ = 'profile_refreshes'
+    job_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    consent_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16),nullable=False,default='candidates')
+    request_payload: Mapped[dict | None] = mapped_column(JSON,nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='queued')
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativeRecord(Base):
+    """Reviewed organization of existing evidence; never a second fact store."""
+    __tablename__ = 'narrative_records'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default='pending')
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    evidence_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    model_version: Mapped[str] = mapped_column(String(128), nullable=False, default='owner')
+    prompt_version: Mapped[str] = mapped_column(String(128), nullable=False, default='owner')
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativeHistory(Base):
+    __tablename__ = 'narrative_history'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    record_id: Mapped[str] = mapped_column(String(64), ForeignKey('narrative_records.id'), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(64), ForeignKey('actors.actor_id'), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    action: Mapped[str] = mapped_column(String(20), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class NarrativePreference(Base):
+    __tablename__ = 'narrative_preferences'
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), primary_key=True)
+    style_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class NarrativeQuestionDecision(Base):
+    __tablename__ = 'narrative_question_decisions'
+    id: Mapped[str] = mapped_column(String(192), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(String(64), ForeignKey('subjects.subject_id'), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class GraphFact(Base):
@@ -513,7 +653,42 @@ class DeviceCredential(Base):
     __tablename__ = "device_credentials"
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class Account(Base):
+    __tablename__ = 'accounts'
+    username: Mapped[str] = mapped_column(String(64), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(ForeignKey('actors.actor_id'), nullable=False, unique=True)
+    salt: Mapped[str] = mapped_column(String(64), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class AccountAttempt(Base):
+    __tablename__ = 'account_attempts'
+    attempt_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    ip_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class ShareInvitation(Base):
+    __tablename__ = 'share_invitations'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    subject_id: Mapped[str] = mapped_column(ForeignKey('subjects.subject_id'), index=True, nullable=False)
+    creator_actor_id: Mapped[str] = mapped_column(ForeignKey('actors.actor_id'), nullable=False)
+    recipient_actor_id: Mapped[str | None] = mapped_column(ForeignKey('actors.actor_id'), nullable=True)
+    code_hash: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='created')
+    selection: Mapped[dict] = mapped_column(JSON, nullable=False)
+    source_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    cloud_processing_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    grant_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    created_grant_ids: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class MemoryEmbedding(Base):
@@ -542,6 +717,8 @@ class TwinAnswer(Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     person_model_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_basis: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    expression: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
     invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

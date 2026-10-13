@@ -36,12 +36,25 @@ jobs:
           test -d "$ANDROID_SDK_ROOT"
           "$JAVA_HOME/bin/java" -version
           ./gradlew --version
-      - name: Test and build Android app
-        run: ./gradlew --no-daemon test assembleDebug --stacktrace
+      - name: Test and build ECS demo Android app
+        run: ./gradlew --no-daemon test assembleDebug -PrememberServiceUrl=https://39.108.183.47 --stacktrace
+      - name: Record APK checksum and source
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          apk = Path('app/build/outputs/apk/debug/app-debug.apk')
+          apk.with_suffix('.sha256').write_text(hashlib.sha256(apk.read_bytes()).hexdigest() + '  app-debug.apk\n')
+          apk.with_suffix('.json').write_text(json.dumps({
+              'build': 'debug-cloud-demo', 'server': 'https://39.108.183.47',
+              'source_commit': os.environ['GITHUB_SHA'], 'sha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
+              'requires_account': True, 'public_https': True, 'registration_allowed': False,
+          }, indent=2))
+          PY
       - name: Upload debug APK
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: remember-me-debug-${{ github.run_id }}
-          path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          name: remember-me-cloud-demo-${{ github.run_id }}
+          path: apps/android/app/build/outputs/apk/debug/app-debug.*
           if-no-files-found: error
           retention-days: 7

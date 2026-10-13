@@ -1,0 +1,205 @@
+{
+  "version": "0.9.1-internal",
+  "version_code": 20261015,
+  "baseline": "086ad51357f599dea6bfc4cf069eed5c7dc2cb15",
+  "source_commit": "See demo-android-0.9.1-20261011 tag and release provenance.json",
+  "apk_sha256": "5346cfefff1607b42e02c2749e7594fde9e7982449540914b94f8dd3f80298a0",
+  "apk_bytes": 163301982,
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "source_files_fingerprint": "566e7e734b5b045c1f276c600cd6e7991aa25244fd4437cdd052523e4ee06169",
+  "unit_tests": {
+    "tests": 79,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "owner100": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 68.553,
+      "log": "screenshots/garden-navigation-20261011/validation/owner100.log"
+    },
+    "reader100": {
+      "real_ecs": true,
+      "episodes": 8,
+      "playback": true,
+      "font_scale": 1,
+      "physical_phone": false,
+      "elapsed_seconds": 55.978,
+      "log": "screenshots/garden-navigation-20261011/validation/reader100.log"
+    },
+    "owner200": {
+      "real_ecs": true,
+      "episodes": 10,
+      "playback": true,
+      "font_scale": 2,
+      "physical_phone": false,
+      "elapsed_seconds": 56.672,
+      "log": "screenshots/garden-navigation-20261011/validation/owner200.log"
+    }
+  },
+  "screenshots": [
+    {
+      "file": "01-owner100-01-today.png",
+      "title": "右上角空间与角色",
+      "sha256": "761b57528afc86b9a25f5db8ac1a2d8646aa7737a10b018082167a52d1edf1b1",
+      "case": "owner100"
+    },
+    {
+      "file": "02-owner100-03-garden.png",
+      "title": "藤蔓与故事花径",
+      "sha256": "d4aa607c561b05d84aff4fb87443f6ef6f77a87e55eed13216b94438dfc438ba",
+      "case": "owner100"
+    },
+    {
+      "file": "03-owner100-04-flower.png",
+      "title": "固定花形与花瓣入口，无缩放条",
+      "sha256": "52ceb186877d2ed8c42fb5c9f21e8a7d0038298dd6546922b286dfb4d17bda58",
+      "case": "owner100"
+    },
+    {
+      "file": "04-owner100-05-memory-source.png",
+      "title": "真实记忆与来源",
+      "sha256": "e7cfd8d55871eb2c72cb55ae8b95d1344fa6377ff15afb22137ef9cd532eb3b2",
+      "case": "owner100"
+    },
+    {
+      "file": "05-owner100-06-playback.png",
+      "title": "完整原音实际播放后暂停",
+      "sha256": "23ff9a90c6aac0c6c6db1320fb994f158d3fc16aeca40f320f546bf32c7a711e",
+      "case": "owner100"
+    },
+    {
+      "file": "06-owner100-06b-list.png",
+      "title": "同一批故事的列表",
+      "sha256": "81d68e410002a5cd9ae734565359d08e38c2b15847e87ca4a589b05eba958352",
+      "case": "owner100"
+    },
+    {
+      "file": "07-owner100-08-view-0.png",
+      "title": "人生足迹：固定导航与单卡阅读",
+      "sha256": "14b6bfe7e60bd22fe09102de3f9d03c56de016cd5df68b30e1f095efdb8974c9",
+      "case": "owner100"
+    },
+    {
+      "file": "08-owner100-08-view-0-next.png",
+      "title": "横向翻页后，在卡片内上下阅读",
+      "sha256": "f388d5d9a4964b670524a1a7962b22cac98c8d4666a7c5b4f4f6468a15c5fd72",
+      "case": "owner100"
+    },
+    {
+      "file": "09-owner100-08-view-1.png",
+      "title": "重要的人：实际人物与共同经历",
+      "sha256": "8cc1b1ead765c1d8e246b0906004c43d4f7ab2a05c486e89f295fd6af7e02e2f",
+      "case": "owner100"
+    },
+    {
+      "file": "10-owner100-08-view-2.png",
+      "title": "在意选择：有来源的情境观察",
+      "sha256": "05eda8c7b762c8a69a430dbb9cd29446dbb45f1ef12e8a0fdfac0eeb71a57a53",
+      "case": "owner100"
+    },
+    {
+      "file": "11-owner100-08-view-3.png",
+      "title": "声音表达：原话与寄语",
+      "sha256": "0a95a21617cff416941650b6fec4dea2ccf42ac2947d6209248858cf2bc51ae8",
+      "case": "owner100"
+    },
+    {
+      "file": "12-owner100-09-sides.png",
+      "title": "统一暖白苔绿的八侧面",
+      "sha256": "2a1521447181e5e68c59898f96cd1f24d3721d79c136addf8e13f2a4da4106ae",
+      "case": "owner100"
+    },
+    {
+      "file": "13-reader100-03-garden.png",
+      "title": "亲友也能浏览获授权花田",
+      "sha256": "fa84710d99212ecaa7e8cdf06781adb71e4d22ebc7d570100a05f110131260ac",
+      "case": "reader100"
+    },
+    {
+      "file": "14-reader100-11-reader-restored-garden.png",
+      "title": "新客户端模型恢复会话及上次空间后进入花田",
+      "sha256": "912614c532a185e68d2719c7d3476cf5423d6c16ef67a4d49e421df880fb8b65",
+      "case": "reader100"
+    },
+    {
+      "file": "15-owner200-07-person.png",
+      "title": "200%字号：可横向滚动的导航与独立正文",
+      "sha256": "8d4ccd77cd562b83738dfc1609dff04407bc9d39eb58f44edfd5313313113ea2",
+      "case": "owner200"
+    },
+    {
+      "file": "16-owner200-04-flower.png",
+      "title": "200%字号：花瓣顺序入口",
+      "sha256": "311ab40117c0e0ace6268fb3f43d976c7ee88e5cae9b4dc351e6dd736bfa0b93",
+      "case": "owner200"
+    }
+  ],
+  "server_release": "garden-password8-c0e7a0f6",
+  "server_code_changed": false,
+  "database_migration": false,
+  "read_only_access_check": {
+    "checked_at": "2026-10-11T04:02:45.020105+00:00",
+    "roles": {
+      "owner": {
+        "spaces": [
+          {
+            "display_name": "陈守义 · 虚构人物",
+            "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+            "role": "owner"
+          }
+        ],
+        "visible_recordings": 10,
+        "confirmed_stories": 10,
+        "records_by_kind": {
+          "story": 10,
+          "person": 5,
+          "style": 2,
+          "observation": 7,
+          "letter": 1
+        }
+      },
+      "reader": {
+        "spaces": [
+          {
+            "display_name": "陈守义样例 · 亲友",
+            "subject_id": "subject_6570be9df82540c7b2beaaeefa3fd8e6",
+            "role": "owner"
+          },
+          {
+            "display_name": "陈守义 · 虚构人物",
+            "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+            "role": "reader"
+          }
+        ],
+        "visible_recordings": 8,
+        "confirmed_stories": 8,
+        "records_by_kind": {
+          "person": 4,
+          "story": 8,
+          "observation": 5,
+          "letter": 1,
+          "style": 1
+        }
+      }
+    },
+    "reader_private_audio_status": 404,
+    "reader_private_narrative_excluded": true
+  },
+  "models_rerun": false,
+  "profile_candidates": {
+    "current_valid_confirmed": 0,
+    "stale": 5,
+    "rejected": 1,
+    "known_bug": "Consent changes over-invalidate candidate source_basis; not fixed in this Android release"
+  },
+  "physical_android": "pending",
+  "ios_build": "pending",
+  "full_manual_listening": "pending",
+  "prior_60_question_set": "not rerun"
+}

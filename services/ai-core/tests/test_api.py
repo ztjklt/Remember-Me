@@ -34,7 +34,7 @@ def _payload() -> dict:
 
 def _client(*, extractor: MemoryExtractor | None = None) -> TestClient:
     app = create_app(
-        Settings(
+        Settings(_env_file=None,
             environment="test",
             provider="fixture",
             model="fixture-ai-v1",
@@ -116,4 +116,4 @@ def test_process_maps_provider_unavailable_to_503() -> None:
 
 def test_fixture_provider_is_refused_outside_development_and_test() -> None:
     with pytest.raises(ValueError, match="fixture"):
-        create_app(Settings(environment="staging", provider="fixture"))
+        create_app(Settings(_env_file=None, environment="staging", provider="fixture"))

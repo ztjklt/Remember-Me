@@ -51,7 +51,8 @@ def auth(seeded) -> dict[str, str]:
 
 
 @pytest.fixture
-def uploaded(client: TestClient, auth, seeded) -> str:
+def uploaded(client: TestClient, auth, seeded, app) -> str:
+    app.state.test_review_auth = auth
     response = client.post(
         "/api/v1/episodes",
         headers=auth,
@@ -75,13 +76,15 @@ def build_worker(app, *, stt=None, ai=None, **overrides) -> ProcessingWorker:  #
         "owner": "test-worker",
     }
     options.update(overrides)
-    return ProcessingWorker(
+    worker = ProcessingWorker(
         app.state.database,
         app.state.object_store,
         stt or app.state.stt_provider,
         ai or app.state.ai_client,
         **options,
     )
+    worker.test_app = app
+    return worker
 
 
 @pytest.fixture
@@ -110,8 +113,23 @@ def job_of(session, episode_id: str) -> Job:
 
 
 def advance(worker: ProcessingWorker, *, ticks: int = 6) -> list[str | None]:
-    """Run ticks until the queue is empty."""
-    return [worker.run_once() for _ in range(ticks)]
+    """Test actor explicitly confirms STT through API; never a production shortcut."""
+    results = []
+    for _ in range(ticks):
+        results.append(worker.run_once())
+        review_pending(worker)
+    return results
+
+
+def review_pending(worker):
+    with worker.test_app.state.database.session() as session:
+        pending = [(ep.episode_id, ep.transcript) for ep in session.scalars(
+            select(Episode).join(Job).where(Job.state == 'waiting'))]
+    for episode_id, text in pending:
+        with TestClient(worker.test_app) as client:
+            r = client.patch(f'/api/v1/episodes/{episode_id}/transcript-review',
+                headers=worker.test_app.state.test_review_auth, json={'transcript':text})
+            assert r.status_code == 200, r.text
 
 
 def test_one_tick_runs_one_stage_and_commits_it(worker, session, uploaded):
@@ -124,7 +142,7 @@ def test_one_tick_runs_one_stage_and_commits_it(worker, session, uploaded):
 
     job = job_of(session, uploaded)
     assert job.stage == str(JobStage.EXTRACT)
-    assert job.state == str(JobState.QUEUED)
+    assert job.state == str(JobState.WAITING)
     # The budget is per stage, so the stage that just succeeded hands the next
     # one a full set of attempts.
     assert job.attempts == 0
@@ -208,6 +226,7 @@ def test_each_stage_shows_the_status_of_the_work_in_flight(app, client, session,
     for _ in range(3):
         worker.run_once()
         seen.append(status_of(app.state.database, uploaded))
+        review_pending(worker)
 
     assert probe.during == {"transcribe": "transcribing", "extract": "extracting"}
     assert seen == ["uploaded", "transcribing", "extracting", "ready"]
@@ -270,6 +289,7 @@ def test_a_retryable_failure_is_retried_until_the_budget_is_gone(app, session, u
 
     for _ in range(8):
         worker.run_once()
+        review_pending(worker)
 
     job = job_of(session, uploaded)
     assert job.state == str(JobState.FAILED)
@@ -303,6 +323,7 @@ def test_ai_core_http_failure_persists_with_the_right_retry_budget(
 
     assert worker.run_once() == uploaded  # Transcription is committed first.
     assert episode_of(session, uploaded).transcript
+    review_pending(worker)
     for _ in range(attempts):
         worker.run_once()
 

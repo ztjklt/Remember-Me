@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..errors import ActorNotFound
-from ..models import Actor, DeviceCredential
+from ..models import Actor, DeviceCredential, as_utc, utcnow
 from ..tokens import hash_actor_token
 
 
@@ -35,4 +35,6 @@ class ActorRepository:
         if actor is not None:
             return actor
         credential = self.session.get(DeviceCredential, hash_actor_token(token))
-        return self.session.get(Actor, credential.actor_id) if credential else None
+        if credential and (credential.expires_at is None or as_utc(credential.expires_at) > utcnow()):
+            return self.session.get(Actor, credential.actor_id)
+        return None

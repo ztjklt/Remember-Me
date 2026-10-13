@@ -1,0 +1,104 @@
+{
+  "episode_id": "ep_303547a2ffee457d",
+  "status": "ready",
+  "recorded_at": "2026-09-12T08:00:00+00:00",
+  "duration_ms": 53760,
+  "transcript": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n搬过去离陈岚近些，这个我觉得方便。\n\n原来的地方住惯了新家，有些东西放哪儿，刚开始还得找。\n\n搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。\n\n要说搬了家是不是一下就轻松了，也不是，离女儿近是好事，可换个地方总要慢慢习惯。",
+  "machine_transcript": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。搬过去离陈兰近些，这个我觉得方便。原来的地方住惯了新家，有些东西放哪儿，刚开始还得找。搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。要说搬了家是不是一下就轻松了，也不是，离女儿近是好事，可换个地方总要慢慢习惯。",
+  "reviewed": true,
+  "waiting_for_review": false,
+  "can_reextract_empty": false,
+  "model_version": "Deepseek-v4-flash",
+  "stt_model_version": "bailian/paraformer-v2",
+  "error_code": null,
+  "error_message": null,
+  "unavailable": false,
+  "memories": [
+    {
+      "memory_item_id": "mi_37fa4b44cccf448c",
+      "content": "搬到离陈岚近些的地方，叙述者觉得方便。",
+      "memory_type": "RELATIONSHIP",
+      "review_state": "active",
+      "domain": "RELATIONSHIPS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_a41834d9afe94c7a",
+          "excerpt": "搬过去离陈岚近些，这个我觉得方便。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_4fac1e82f81e45d6",
+      "content": "叙述者从前住在鼓楼，后来搬到江宁，仍在南京；搬家是2024年以后的事，具体月份一时想不起来。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_79ff284adac040ba",
+          "excerpt": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_643a633caa9649f6",
+      "content": "搬家时，叙述者带了装旧车票的小盒子，别的物品一箱一箱收，这个先放在眼前，怕落下。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_a9292ffe955a475c",
+          "excerpt": "搬家时，我带了那个装旧车票的小盒子，别的东西一箱一箱收，这个先放在眼前，怕落下。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_a93f63fe5b8b444c",
+      "content": "在原来的地方住惯了，到新家后有些东西放哪儿，刚开始还得找。",
+      "memory_type": "EVENT",
+      "review_state": "active",
+      "domain": "EPISODIC_MEMORY",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_ba59c282555a4530",
+          "excerpt": "原来的地方住惯了新家，有些东西放哪儿，刚开始还得找。\n\n",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d"
+        }
+      ]
+    },
+    {
+      "memory_item_id": "mi_f791fd5e28f84de2",
+      "content": "叙述者认为搬家后并不是一下就轻松了；离女儿近是好事，但换个地方总要慢慢习惯。",
+      "memory_type": "VALUE",
+      "review_state": "active",
+      "domain": "VALUES_BELIEFS",
+      "source_type": "AI_INFERENCE",
+      "origin": "extracted",
+      "evidence": [
+        {
+          "evidence_id": "ev_355682edb8f946de",
+          "excerpt": "要说搬了家是不是一下就轻松了，也不是，离女儿近是好事，可换个地方总要慢慢习惯。",
+          "source_type": "SUBJECT",
+          "episode_id": "ep_303547a2ffee457d"
+        }
+      ]
+    }
+  ],
+  "notice": null
+}

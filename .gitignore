@@ -21,6 +21,16 @@ secrets.properties
 !.env.*.example
 *.p12
 *.pem
+# Public IP test certificate only; private keys remain ignored.
+!apps/android/app/src/internal/res/raw/remember_ecs_ip_demo.pem
+!apps/android/app/src/debug/res/raw/remember_ecs_ip_demo.pem
+# Public server certificates for the opt-in Android debug demo (never private keys).
+!apps/android/app/src/debug/res/raw/remember_ecs_internal.pem
+!apps/android/app/src/debug/res/raw/remember_ecs_ip_demo.pem
+/agent-loop-tests.log
+/services/backend/var/
+/services/ai-core/var/
+/.superpowers/
 
 # Downloaded sherpa-onnx model weights are too large for normal GitHub blobs.
 apps/android/app/src/main/assets/paraformer/model.int8.onnx

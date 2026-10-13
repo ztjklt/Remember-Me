@@ -1,0 +1,109 @@
+/* Tinted glass: let the real landscape supply colour, keep glyphs opaque.
+   One shared recipe prevents pale fills from accumulating across components. */
+.phone{
+  --frost-tint:rgb(40 60 47 / .26);
+  --frost-wash:linear-gradient(145deg,rgb(219 236 204 / .025),transparent 58%,rgb(19 43 35 / .035));
+  --frost-filter:blur(10px) saturate(1.12) brightness(.68);
+  --frost-card-tint:rgb(40 60 47 / .34);
+  --frost-card-filter:blur(14px) saturate(1.08) brightness(.62);
+  --frost-ink:#f6f7ed;--frost-muted:#f3f5eb;
+  --frost-edge:rgb(230 241 218 / .16);
+  --frost-line:rgb(227 239 219 / .2);
+  --frost-soft:rgb(230 242 211 / .12);
+  --frost-shadow:inset 0 1px 0 rgb(255 255 235 / .055),0 4px 16px rgb(17 39 27 / .055);
+}
+.phone.garden-night:has(.garden-depth){--frost-tint:rgb(22 44 43 / .18);--frost-filter:blur(10px) saturate(1.08) brightness(.8);--frost-edge:rgb(222 237 223 / .14)}
+.dark .phone{--frost-tint:rgb(22 42 32 / .3);--frost-filter:blur(12px) saturate(1.08) brightness(.72);--frost-card-tint:rgb(22 42 32 / .4);--frost-card-filter:blur(14px) saturate(1.08) brightness(.66)}
+
+:root .phone[data-page] :is(.bottomnav,.memory-shelf,.depth-controls,.depth-flower-label,.depth-petal-label:not(:disabled),.garden-scene-actions button,.depth-filters,.depth-group-list>button,.depth-petal-list>button,.depth-reading-top,.archive-search,.feature){
+  --ink:var(--frost-ink);--muted:var(--frost-muted);--meta:var(--frost-muted);
+  --primary:var(--frost-ink);--on:var(--frost-ink);--soft:var(--frost-soft);--line:var(--frost-line);
+  --depth-ink:var(--frost-ink);--depth-muted:var(--frost-muted);--depth-pane:var(--frost-soft);
+  --press:rgb(231 240 220 / .1);
+  color:var(--frost-ink)!important;
+  background:var(--frost-wash),var(--frost-tint);
+  border:1px solid var(--frost-edge);
+  box-shadow:var(--frost-shadow);
+  backdrop-filter:var(--frost-filter);-webkit-backdrop-filter:var(--frost-filter);
+  text-shadow:0 1px 3px rgb(13 31 23 / .28)!important;
+}
+:root .phone[data-page] :is(.memory-shelf,.feature){background:var(--frost-wash),var(--frost-card-tint);backdrop-filter:var(--frost-card-filter);-webkit-backdrop-filter:var(--frost-card-filter)}
+.phone .bottomnav:before{
+  background:linear-gradient(150deg,rgb(22 48 31 / .28),rgb(20 41 29 / .16));
+  border:1px solid rgb(240 249 228 / .18);
+  box-shadow:inset 0 1px 0 #ffffed12,0 2px 8px #12251a0d;
+}
+.phone .bottomnav button{color:var(--frost-muted)}
+.phone .bottomnav button[aria-current=page]{color:var(--frost-ink)}
+.phone .bottomnav button[aria-current=page] svg{stroke-width:2}
+.phone .bottomnav button:focus-visible{outline-color:var(--frost-ink)}
+.phone .bottomnav{padding:6px;margin-top:10px}
+.phone .bottomnav:before{left:6px;top:6px;bottom:6px;width:calc((100% - 12px)/var(--nav-count,3))}
+
+/* The small plaques borrow blue from petals and green from leaves behind them. */
+.depth-stage .depth-flower-label{padding:8px 12px;border-radius:17px}
+.depth-stage .depth-flower-label small,.depth-stage .depth-petal-label small{color:var(--frost-muted)}
+.depth-stage .depth-petal-label{border-radius:11px;min-height:26px!important;padding:4px 5px;max-width:86px;flex-wrap:nowrap}
+.depth-stage .depth-petal-label:nth-of-type(2){margin-top:-14px}
+.depth-stage .depth-petal-label:nth-of-type(4){margin-left:10px}
+.depth-stage .depth-petal-label:nth-of-type(5){margin-left:-7px}
+.depth-stage .depth-petal-label:has(small){flex-wrap:nowrap;max-width:90px}
+.depth-stage .depth-petal-label:has(small)>span{white-space:nowrap}
+.depth-stage .depth-petal-label small{display:grid;place-items:center;flex:none;width:11px;min-width:11px;height:11px;padding:0;border-radius:50%;background:rgb(22 44 31 / .2);font-size:6px;line-height:1}
+.depth-stage .depth-petal-label i{box-shadow:0 0 0 1px rgb(255 255 240 / .3)}
+.depth-stage .depth-petal-label:disabled{background:rgb(35 58 46 / .15);color:#eef2e4;text-shadow:0 1px 3px #183629;box-shadow:none}
+.depth-stage .depth-petal-label:focus-visible,.depth-flower-hit:focus-visible .depth-flower-label{outline:2px solid #f2f6df;outline-offset:3px}
+.phone .depth-controls{border-radius:24px}
+.phone .garden-scene-actions{gap:12px;margin-top:8px}
+.phone .garden-scene-actions button{font-size:11px}
+.phone .memory-shelf{box-shadow:var(--frost-shadow)}
+.phone .memory-shelf .resume>svg{color:var(--frost-muted)}
+.phone .memory-shelf .iconbox{background:var(--frost-soft);color:var(--frost-ink)}
+.phone :is(.memory-shelf,.feature) memory-glyph{filter:brightness(0) invert(1);opacity:.9}
+.phone :is(.memory-shelf,.feature) .secondary{background:rgb(17 39 27 / .22);color:var(--frost-ink);border:1px solid var(--frost-edge)}
+.phone :is(.memory-shelf,.feature) .primary{background:#e9f0df;color:#263e2f}
+.phone .memory-shelf .row-state.attention{color:#f4dfb1;background:rgb(100 73 27 / .54)}
+.phone .memory-shelf .row-state{color:#edf4df;background:rgb(42 72 43 / .5)}
+.phone .archive-search input{color:var(--frost-ink)}
+.phone .archive-search input::placeholder{color:var(--frost-muted);opacity:1}
+
+/* Long reading stays lighter and denser, with less chalk-white fill. */
+:root .phone .depth-reading :is(.reverie-reading,.garden-audio),:root .phone[data-page=profile] .notice{
+  --ink:#233f31;--muted:#3e5849;--depth-muted:#3e5849;
+  background:linear-gradient(135deg,rgb(215 226 200 / .69),rgb(203 219 191 / .72));
+  border:1px solid #edf5df66;color:var(--ink);box-shadow:inset 0 1px 0 #ffffed29;
+  backdrop-filter:blur(18px) saturate(.88);-webkit-backdrop-filter:blur(18px) saturate(.88);
+}
+:root .phone .depth-reading :is(.reverie-reading,.garden-audio) .garden-eyebrow{color:var(--muted)}
+.dark .phone .depth-reading :is(.reverie-reading,.garden-audio),:root.dark .phone[data-page=profile] .notice{--ink:#eef3e4;--muted:#d0ddc7;--depth-muted:#d0ddc7;background:rgb(28 48 37 / .88)}
+
+@media(hover:hover) and (pointer:fine){
+  .phone .depth-flower-hit:hover .depth-flower-label,.phone .depth-stage .depth-petal-label:not(:disabled):hover{border-color:rgb(240 249 224 / .46);box-shadow:inset 0 1px 0 #ffffed29,0 7px 18px #17332620}
+  .phone .bottomnav button:hover{background:rgb(227 240 211 / .06)}
+}
+
+/* Opaque modes use the same forest palette, so the fallback never becomes white.
+   The explicit design preview may override reduced transparency, not high contrast. */
+:root.solid-surfaces .phone{--frost-tint:#344b3d;--frost-card-tint:#344b3d;--frost-wash:none;--frost-filter:none;--frost-card-filter:none}
+.solid-controls .phone .bottomnav{--frost-tint:#344b3d;--frost-wash:none;--frost-filter:none}
+.solid-surfaces .phone .depth-reading :is(.reverie-reading,.garden-audio){background:#dbe5ce;backdrop-filter:none;-webkit-backdrop-filter:none}
+.solid-surfaces.dark .phone .depth-reading :is(.reverie-reading,.garden-audio){background:#243b2d}
+.solid-surfaces .phone[data-page=profile] .notice{background:#dbe5ce;backdrop-filter:none;-webkit-backdrop-filter:none}
+.solid-surfaces.dark .phone[data-page=profile] .notice{background:#243b2d}
+@media(prefers-reduced-transparency:reduce){
+  :root:not(.preview-translucency) .phone{--frost-tint:#344b3d;--frost-card-tint:#344b3d;--frost-wash:none;--frost-filter:none;--frost-card-filter:none}
+  html:not(.preview-translucency) .phone .depth-reading :is(.reverie-reading,.garden-audio){background:#dbe5ce;backdrop-filter:none;-webkit-backdrop-filter:none}
+  html.dark:not(.preview-translucency) .phone .depth-reading :is(.reverie-reading,.garden-audio){background:#243b2d}
+  html:not(.preview-translucency) .phone[data-page=profile] .notice{background:#dbe5ce;backdrop-filter:none;-webkit-backdrop-filter:none}
+  html.dark:not(.preview-translucency) .phone[data-page=profile] .notice{background:#243b2d}
+}
+@media(prefers-contrast:more){
+  :root .phone[data-page]{--frost-tint:#243b2d;--frost-card-tint:#243b2d;--frost-wash:none;--frost-filter:none;--frost-card-filter:none;--frost-edge:#e8f1df}
+  :root .phone .depth-reading :is(.reverie-reading,.garden-audio){background:#e4ecd9!important;color:#203b2d;--ink:#203b2d;--muted:#38523e;--depth-muted:#38523e;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  :root .phone[data-page=profile] .notice{background:#e4ecd9!important;--ink:#203b2d;--muted:#38523e;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  :root .phone[data-page]{--frost-tint:#344b3d;--frost-card-tint:#344b3d;--frost-wash:none;--frost-filter:none;--frost-card-filter:none}
+  :root .phone .depth-reading :is(.reverie-reading,.garden-audio),:root .phone[data-page=profile] .notice{background:#dbe5ce}
+  :root.dark .phone .depth-reading :is(.reverie-reading,.garden-audio),:root.dark .phone[data-page=profile] .notice{background:#243b2d}
+}

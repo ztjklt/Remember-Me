@@ -1,0 +1,9 @@
+{
+  "server": "https://39.108.183.47",
+  "public_https": true,
+  "owner_approved_on": "2026-10-10",
+  "registration_allowed": false,
+  "ordinary_account_required": true,
+  "ssh_and_database_public": false,
+  "scope": "Android team demo; named blog keeps its existing network boundary"
+}

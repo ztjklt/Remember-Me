@@ -1,0 +1,372 @@
+[
+  {
+    "id": "year",
+    "role": "reader",
+    "question": "陈守义第一次独立跑十二路是哪一年？具体几月几号？",
+    "result": {
+      "answer_id": "ta_5947d19a63f1499d",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "陈守义第一次独立跑十二路是哪一年？具体几月几号？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n其中部分问题尚无明确材料。",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:00.249195+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_43a06d5e1d6f4151",
+          "excerpt": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+          "episode_id": "ep_facb2f3eebb340ab",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 4.155
+  },
+  {
+    "id": "people",
+    "role": "reader",
+    "question": "两位王建国分别是谁？是谁帮忙整理出车记录？",
+    "result": {
+      "answer_id": "ta_2d4f4d6393e4461d",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "两位王建国分别是谁？是谁帮忙整理出车记录？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n”\n核对文字：“后来车队那个同事也叫王建国，不过是另一个人，别听岔了。”\n核对文字：“今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n”\n核对文字：“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:09.316224+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_5ccf2dda41a14962",
+          "excerpt": "隔壁王老师也偶尔来串门，他叫王建国，是我们那儿的邻居。\n\n",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_5dd3001b5d834708",
+          "excerpt": "后来车队那个同事也叫王建国，不过是另一个人，别听岔了。",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c3f0eece4a284e18",
+          "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_9bf748bf5cc24b90",
+          "excerpt": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 9.064
+  },
+  {
+    "id": "reported",
+    "role": "reader",
+    "question": "谁的父亲在铁路工作？陈守义见过这位父亲吗？",
+    "result": {
+      "answer_id": "ta_e402f186fddb4318",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "谁的父亲在铁路工作？陈守义见过这位父亲吗？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n”\n核对文字：“后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:13.434863+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_c3f0eece4a284e18",
+          "excerpt": "今天讲讲车队的王建国，不是咱们以前隔壁那个王老师。\n\n",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_bd5fa74999d04490",
+          "excerpt": "后来闲聊，他说他父亲以前在铁路上工作，我是听王建国说的，没见过他父亲。\n\n",
+          "episode_id": "ep_f043b29ec18c48cf",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 4.117
+  },
+  {
+    "id": "move",
+    "role": "reader",
+    "question": "陈守义以前住哪里，后来搬到哪里？哪一年搬的？",
+    "result": {
+      "answer_id": "ta_084e61cd112b4043",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "陈守义以前住哪里，后来搬到哪里？哪一年搬的？",
+      "answer": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+      "response_type": "ORIGINAL",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:17.448290+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_79ff284adac040ba",
+          "excerpt": "我们从前住鼓楼，后来我搬到江宁了，还是南京，是2024年以后的事，具体哪月我一时想不起来。\n\n",
+          "episode_id": "ep_303547a2ffee457d",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 4.033
+  },
+  {
+    "id": "plan",
+    "role": "reader",
+    "question": "去老车队的行程已经定下来了吗？",
+    "result": {
+      "answer_id": "ta_5407640b4b41455e",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "去老车队的行程已经定下来了吗？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n”\n核对文字：“我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:21.197294+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_140acf3cef8e4fff",
+          "excerpt": "陈岚前两天说有空陪我去老车队看看，我听着挺高兴，不过还没说定他什么时候有空。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_47d01b9d66e74bad",
+          "excerpt": "我那天想不想出门都得再商量，别现在就忙着安排在家听玉琴，慢慢讲以前的事也挺好。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 3.726
+  },
+  {
+    "id": "light",
+    "role": "reader",
+    "question": "玉琴每天都等到很晚吗？陈守义说平安回家，是因为经历过事故吗？",
+    "result": {
+      "answer_id": "ta_936ce96498a24734",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "玉琴每天都等到很晚吗？陈守义说平安回家，是因为经历过事故吗？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n”\n核对文字：“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:52.225265+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_c4a65f3f9e2946b0",
+          "excerpt": "所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 31.025
+  },
+  {
+    "id": "daughter",
+    "role": "reader",
+    "question": "女儿小时候不愿意讲学校的事吗？",
+    "result": {
+      "answer_id": "ta_4f5d95eed86a470d",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "女儿小时候不愿意讲学校的事吗？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？”\n核对文字：“现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:12:57.077059+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_afc9280f22d247af",
+          "excerpt": "那时候我们住在南京鼓楼的老小区，吃饭时女儿总有话讲，学校里谁又做了什么？",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_8e91cacda3534bd4",
+          "excerpt": "现在想起来挺可惜的，不是怪她不肯讲，她那时候很愿意讲，是我听得不够仔细。\n\n",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 4.857
+  },
+  {
+    "id": "private",
+    "role": "reader",
+    "question": "陈守义给妹妹写的信放在哪里？他们已经和好了吗？",
+    "result": {
+      "answer_id": "ta_f4b9802df50a43df",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "陈守义给妹妹写的信放在哪里？他们已经和好了吗？",
+      "answer": "现有记录还不足以确定。",
+      "response_type": "UNKNOWN",
+      "confidence": 0,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:13:22.799803+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": []
+    },
+    "elapsed_seconds": 25.715
+  },
+  {
+    "id": "tea",
+    "role": "reader",
+    "question": "他喜欢怎样的茶？是别人规定只能这样喝吗？",
+    "result": {
+      "answer_id": "ta_20cffe073da94473",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "他喜欢怎样的茶？是别人规定只能这样喝吗？",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "response_type": "ORIGINAL",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:13:26.268686+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 3.47
+  },
+  {
+    "id": "cup",
+    "role": "owner",
+    "question": "旧搪瓷杯是谁送的？",
+    "result": {
+      "answer_id": "ta_1f40c76a32e34445",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "旧搪瓷杯是谁送的？",
+      "answer": "这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。",
+      "response_type": "ORIGINAL",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:13:36.035231+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_76f894ab452c445e",
+          "excerpt": "这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。",
+          "episode_id": "ep_03ab92c8acdb4e9e",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 9.763
+  },
+  {
+    "id": "unknown",
+    "role": "reader",
+    "question": "陈守义最喜欢哪部电影？",
+    "result": {
+      "answer_id": "ta_e4955877799148a0",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "陈守义最喜欢哪部电影？",
+      "answer": "现有记录还不足以确定。",
+      "response_type": "UNKNOWN",
+      "confidence": 0,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:13:39.941810+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": []
+    },
+    "elapsed_seconds": 3.906
+  },
+  {
+    "id": "relation",
+    "role": "reader",
+    "question": "孙玉琴和玉琴是两个人吗？与陈岚是什么关系？",
+    "result": {
+      "answer_id": "ta_c2f5937dac974904",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "孙玉琴和玉琴是两个人吗？与陈岚是什么关系？",
+      "answer": "根据现有材料，相关表述如下：\n核对文字：“陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n”\n核对文字：“以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n”",
+      "response_type": "SIMULATION",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 15,
+      "source_version": "7e377f9bf775942fb2dcee5744ef06c2b2dacce886e66f1a5fca61e01c147f5e",
+      "created_at": "2026-10-11T03:13:44.052059+00:00",
+      "stale": false,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_da25f6dedecf40fe",
+          "excerpt": "陈岚，小时候放学一回来就把书包放在门边，到厨房找她妈妈，她妈妈叫孙玉琴，我平时就喊玉琴。\n\n",
+          "episode_id": "ep_a331afcab3ad4dc8",
+          "source_type": "SUBJECT"
+        },
+        {
+          "evidence_id": "ev_7ca26040d5dc4bd0",
+          "excerpt": "以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n",
+          "episode_id": "ep_55d7960102d74610",
+          "source_type": "SUBJECT"
+        }
+      ]
+    },
+    "elapsed_seconds": 4.129
+  }
+]

@@ -1,0 +1,170 @@
+{
+  "version": "0.8.2-internal",
+  "version_code": 20261013,
+  "application_id": "me.remember.app.internal",
+  "source_commit": "faf309f14e047367789e6846603c87064efabd46",
+  "apk_file": "remember-me-0.8.2-internal.apk",
+  "apk_sha256": "685eb584c1e5115ade61f47b232f32f14874fcc3ee2b2d9ed42122a017b7f854",
+  "apk_bytes": 161136634,
+  "signature_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "unit_tests": {
+    "tests": 74,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "instrumentation": {
+    "navigation": {
+      "passed": true,
+      "seconds": 18.627,
+      "fixture_only": false
+    },
+    "flow": {
+      "passed": true,
+      "seconds": 48.517,
+      "fixture_only": false
+    },
+    "large-font": {
+      "passed": true,
+      "seconds": 9.95,
+      "fixture_only": false
+    },
+    "multi-source": {
+      "passed": true,
+      "seconds": 4.829,
+      "fixture_only": true
+    },
+    "412dp": {
+      "passed": true,
+      "seconds": 15.66,
+      "fixture_only": false
+    },
+    "startup": {
+      "passed": true,
+      "seconds": 11.704,
+      "fixture_only": false
+    }
+  },
+  "emulator": true,
+  "physical_phone": false,
+  "ios": false,
+  "ecs_ip_https": true,
+  "new_asr": false,
+  "new_llm": false,
+  "screenshots": [
+    {
+      "file": "01-native-garden.png",
+      "capture_file": "01-native-garden.png",
+      "caption": "花田入口",
+      "sha256": "3470aece02bdcea9a4c096638d83c898a7a69d9053e12fd2d9d6752d479873e3"
+    },
+    {
+      "file": "02-flower-petals.png",
+      "capture_file": "02-flower-petals.png",
+      "caption": "真实记忆花瓣",
+      "sha256": "0b1a487065a246cb8832d6723cfe11e08eeac69e0f04b13d529462e2eb90581e"
+    },
+    {
+      "file": "03-memory-evidence.png",
+      "capture_file": "03-memory-evidence.png",
+      "caption": "记忆与完整依据",
+      "sha256": "b18e6f4f4f3ee8988d8ddc2f88899d5bf3852e904f3ffcfbf15d12ef586c1173"
+    },
+    {
+      "file": "04-source-player.png",
+      "capture_file": "04-source-player.png",
+      "caption": "原音播放、暂停与定位",
+      "sha256": "87a728ed8271cd9205fe5c517eb1ed42f720aafe0f36db681fcec96e694be099"
+    },
+    {
+      "file": "05-settings-home.png",
+      "capture_file": "05-settings-home.png",
+      "caption": "我的与设置",
+      "sha256": "a11c5b144b8d889a0448083766299f173ec3c5bca13b52f3db8bf97f46de7cde"
+    },
+    {
+      "file": "06-dark-appearance.png",
+      "capture_file": "06-dark-appearance.png",
+      "caption": "深色外观与场景预览",
+      "sha256": "0216310e727d576d9b3297a284cb705c93dfda7577b19ea12948ef8f0dae7e8d"
+    },
+    {
+      "file": "07-device-permissions.png",
+      "capture_file": "07-device-permissions.png",
+      "caption": "设备权限",
+      "sha256": "24f31f5cb1b3c4a9f94825e05929eaaf79d98a963f56da3fefa2a75121a138c9"
+    },
+    {
+      "file": "08-data-help.png",
+      "capture_file": "08-data-help.png",
+      "caption": "连接与缓存管理",
+      "sha256": "b8847e76f674e488eae87f60bcb12ab8cdb0fe40fc642cacb2aaeb844934066f"
+    },
+    {
+      "file": "09-reader-flower.png",
+      "capture_file": "09-reader-flower.png",
+      "caption": "亲友授权花朵",
+      "sha256": "d68522731629a5056c28dcbc3a9d1a2b61cb6c74e0ad9c4708bfea4ad7e9f60d"
+    },
+    {
+      "file": "10-revoked-garden.png",
+      "capture_file": "10-revoked-garden.png",
+      "caption": "撤权后不可见",
+      "sha256": "82849cc4b0f8c2601cd5013261a472dbb6315b78004ba7ef9026c907b8b2bff7"
+    },
+    {
+      "file": "11-session-expired.png",
+      "capture_file": "11-session-expired.png",
+      "caption": "会话失效回登录",
+      "sha256": "a79c58cf6ebf715203ad4fef247d2d3b74cdf5d80eececbea44df145d80cc715"
+    },
+    {
+      "file": "12-large-font-memory.png",
+      "capture_file": "12-large-font-memory.png",
+      "caption": "200%字号阅读",
+      "sha256": "9c8f4f78be6fd85798e76af343823a2cb043e21469d7079c1acedbff9369cc6e"
+    },
+    {
+      "file": "13-garden-412dp.png",
+      "capture_file": "16-garden-412dp.png",
+      "caption": "412dp花田",
+      "sha256": "35273c58c2e82e5320aa92d608f6822106bd3c8f30c057c95ac7821f92fdb3b3"
+    },
+    {
+      "file": "14-petals-412dp.png",
+      "capture_file": "17-petals-412dp.png",
+      "caption": "412dp花瓣",
+      "sha256": "61c168e43f6c76163ac535bc80e879920c96c6350fdd61f50b9d86ac523b7160"
+    },
+    {
+      "file": "15-memory-412dp.png",
+      "capture_file": "18-memory-412dp.png",
+      "caption": "412dp记忆阅读",
+      "sha256": "3310bb54eef4681b4272305c4d6cfa36d12dcc9214116c3de89d5a1e8ae72e02"
+    },
+    {
+      "file": "16-scene-preview.png",
+      "capture_file": "19-scene-preview.png",
+      "caption": "六种原稿背景预览",
+      "sha256": "2092a2189070e71a09dd1f6d6448a41c9689bc43f157b5963c48ebd6524a9ba2"
+    },
+    {
+      "file": "17-moon-garden.png",
+      "capture_file": "20-moon-garden.png",
+      "caption": "月下花田",
+      "sha256": "4ed68a626cdba111bc6a465f8a6173a2f4f9038c55957d2126d1b11f0382c9b5"
+    },
+    {
+      "file": "18-moon-flower.png",
+      "capture_file": "21-moon-flower.png",
+      "caption": "月下花朵",
+      "sha256": "9d87570907330c1de2ebc17803e87b0cb59474ffaac1f3b1085b7febb4f54e33"
+    },
+    {
+      "file": "19-multi-source-large-font.png",
+      "capture_file": "22-multi-source-large-font.png",
+      "caption": "布局测试：八段来源与200%字号（非模型结果）",
+      "sha256": "4be0f6eeef2dee36d4d565d561b0bd02c142bdfc9a9b4e75c04f6a13811898bb"
+    }
+  ]
+}

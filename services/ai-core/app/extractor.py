@@ -24,13 +24,13 @@ class MemoryExtractor:
         provider: StructuredModelProvider,
         model: str,
         model_version: str,
-        prompt_version: str = PROMPT_VERSION,
+        prompt_version: str | None = None,
         schema_version: str = SCHEMA_VERSION,
     ) -> None:
         self.provider = provider
         self.model = model
         self.model_version = model_version
-        self.prompt_version = prompt_version
+        self.prompt_version = prompt_version or getattr(provider, 'prompt_version', PROMPT_VERSION)
         self.schema_version = schema_version
 
     def process(self, payload: AICoreInput) -> AICoreOutput:

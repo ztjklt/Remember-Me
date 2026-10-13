@@ -1,5 +1,9 @@
 package me.remember.app.feature
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,6 +19,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import me.remember.app.core.designsystem.NatureScene
 import me.remember.app.core.designsystem.atmosphere
 import me.remember.app.core.designsystem.actionGradient
 import androidx.compose.foundation.clickable
@@ -115,7 +120,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     if (recordingOpen) {
         CapturePage(model, close={recordingOpen=false}, openDetail={detailPath=it.audioPath; recordingOpen=false})
     } else {
-        Scaffold(modifier=Modifier.atmosphere(),containerColor=Color.Transparent,
+        Scaffold(modifier=Modifier.atmosphere(scene = if(detailPath != null) NatureScene.Forest else when(tab) { 1 -> NatureScene.Lake; 2 -> NatureScene.Coast; else -> NatureScene.Meadow }),containerColor=Color.Transparent,
             topBar={ if(detailPath != null) TopAppBar(title={Text(if(memoryID == null) "录音详情" else "记忆详情")},
                 navigationIcon={IconButton(onClick={back()}){Icon(Icons.AutoMirrored.Outlined.ArrowBack,"返回")}}) },
             bottomBar={ if(detailPath == null) Surface(modifier=Modifier.navigationBarsPadding(),color=MaterialTheme.colorScheme.background) {
@@ -188,19 +193,63 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     }
 }
 @Composable private fun RecordingRow(record: AudioRecording,onClick:()->Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick=onClick,role=Role.Button)) {
+    Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surface).clickable(onClick=onClick,role=Role.Button).padding(horizontal=14.dp)) {
         Row(Modifier.padding(vertical=14.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
             MemoryGlyph(MemoryGlyphKind.Voice,size=24.dp)
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(5.dp)) {
                 Text(record.title,style=MaterialTheme.typography.titleMedium)
-                Muted("${dateLabel(record.createdAt)} · ${durationLabel(record.durationMillis)}")
-                Text(stageLabel(record.processingStage),style=MaterialTheme.typography.bodySmall,color=if(record.processingStage==ProcessingStage.NeedsReview || record.processingStage==ProcessingStage.Failed)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${dateLabel(record.createdAt)} · ${durationLabel(record.durationMillis)}", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ProcessingBadge(record.processingStage)
             }
             Icon(Icons.Outlined.ChevronRight,null,Modifier.size(16.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant)
         }
         HorizontalDivider(color=MaterialTheme.colorScheme.outlineVariant)
     }
 }
+@Composable private fun ProcessingBadge(stage: ProcessingStage) {
+    val colors = MaterialTheme.colorScheme
+    val (background, foreground) = when (stage) {
+        ProcessingStage.Failed -> colors.errorContainer to colors.onErrorContainer
+        ProcessingStage.NeedsReview -> colors.secondaryContainer to colors.onSecondaryContainer
+        ProcessingStage.Complete -> colors.primaryContainer to colors.onPrimaryContainer
+        else -> colors.surfaceVariant to colors.onSurfaceVariant
+    }
+    Row(Modifier.clip(RoundedCornerShape(8.dp)).background(background).padding(horizontal = 9.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Icon(when (stage) {
+            ProcessingStage.Complete -> Icons.Outlined.CheckCircle
+            ProcessingStage.Failed -> Icons.Outlined.ErrorOutline
+            ProcessingStage.NeedsReview -> Icons.Outlined.Edit
+            else -> Icons.Outlined.Schedule
+        }, null, Modifier.size(14.dp), tint = foreground)
+        Text(stageLabel(stage), color = foreground, style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable private fun ArchiveSelector(selected: Int, onSelect: (Int) -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
+        .background(MaterialTheme.colorScheme.surface).padding(5.dp)) {
+        val cellWidth = maxWidth / 2
+        val x by animateDpAsState(cellWidth * selected, tween(280), label = "archive category")
+        Box(Modifier.matchParentSize()) {
+            Box(Modifier.offset(x = x).width(cellWidth).fillMaxHeight().clip(RoundedCornerShape(13.dp))
+                .background(MaterialTheme.colorScheme.primary))
+        }
+        Row {
+            listOf("录音", "记忆").forEachIndexed { index, label ->
+                Box(Modifier.weight(1f).clip(RoundedCornerShape(13.dp))
+                    .selectable(selected == index, role = Role.Tab, onClick = { onSelect(index) })
+                    .heightIn(min = 48.dp).padding(10.dp), contentAlignment = Alignment.Center) {
+                    Text(label, style = MaterialTheme.typography.titleMedium,
+                        color = if (selected == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
 @Composable fun ArchivePage(records: List<AudioRecording>,open:(AudioRecording)->Unit,openMemory:(AudioRecording,String)->Unit) {
     var mode by rememberSaveable { mutableIntStateOf(0) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -208,10 +257,8 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     LazyColumn(Modifier.fillMaxSize(),contentPadding=PaddingValues(horizontal=pagePadding(),vertical=24.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
         item { Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)){MemoryGlyph(MemoryGlyphKind.Archive,size=48.dp);Heading("档案")} }
         item { Muted("说过的话，完整留着。") }
-        item { OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),label={Text("搜索标题、文字或记忆")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.medium) }
-        item { TabRow(selectedTabIndex=mode,containerColor=MaterialTheme.colorScheme.background) {
-            listOf("录音","记忆").forEachIndexed { i,label->Tab(selected=mode==i,onClick={mode=i},text={Text(label)}) }
-        } }
+        item { OutlinedTextField(query,{query=it},Modifier.fillMaxWidth(),colors=OutlinedTextFieldDefaults.colors(focusedContainerColor=MaterialTheme.colorScheme.surface,unfocusedContainerColor=MaterialTheme.colorScheme.surface),label={Text("搜索标题、文字或记忆")},leadingIcon={Icon(Icons.Outlined.Search,null)},singleLine=true,shape=MaterialTheme.shapes.medium) }
+        item { ArchiveSelector(mode) { mode = it } }
         if(mode==0) {
             if(matching.isEmpty()) item { Notice(if(query.isBlank()) "还没有录音" else "没有找到相关内容",if(query.isBlank()) "从今天页录下第一段声音。" else "换个词试试，或清空搜索。") }
             matching.groupBy { runCatching { Instant.parse(it.createdAt).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy年M月d日")) }.getOrDefault(it.createdAt.take(10)) }.forEach { (date,group)->
@@ -222,7 +269,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
             val memories=matching.flatMap { r->r.memories.filter { it.status=="active" && (query.isBlank() || (it.content+it.evidence+r.title).contains(query,ignoreCase=true)) }.map { r to it } }
             if(memories.isEmpty()) item { Notice("还没有可显示的记忆","原音仍在。核对文字并完成整理后，记忆会出现在这里。") }
             items(memories,key={it.first.audioPath+it.second.id}) { (record,memory)->
-                Column(Modifier.fillMaxWidth().clickable(role=Role.Button){openMemory(record,memory.id)}.padding(vertical=12.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.surface).clickable(role=Role.Button){openMemory(record,memory.id)}.padding(14.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
                     Muted(sourceLabel(memory.sourceType)); Text(memory.content,style=MaterialTheme.typography.titleMedium)
                     Muted("来自：${record.title}"); HorizontalDivider()
                 }
@@ -254,7 +301,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     val active=state.phase in listOf(CapturePhase.Recording,CapturePhase.Paused)
     fun requestClose() { if(active)closing=true else if(state.phase !in listOf(CapturePhase.Starting,CapturePhase.Saving))close() }
     BackHandler { requestClose() }
-    Scaffold(modifier=Modifier.atmosphere(),containerColor=Color.Transparent,topBar={TopAppBar(title={Text("留下一段声音")},navigationIcon={IconButton(onClick={requestClose()}){Icon(Icons.Outlined.Close,"关闭录音")}})},
+    Scaffold(modifier=Modifier.atmosphere(immersive = true, scene = NatureScene.Forest),containerColor=Color.Transparent,topBar={TopAppBar(title={Text("留下一段声音")},navigationIcon={IconButton(onClick={requestClose()}){Icon(Icons.Outlined.Close,"关闭录音")}})},
         bottomBar={ Surface(tonalElevation=2.dp) {
             Column(Modifier.navigationBarsPadding().padding(horizontal=20.dp,vertical=16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 when(state.phase) {
@@ -336,7 +383,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
     var text by rememberSaveable(record.audioPath,record.transcript) { mutableStateOf(record.reviewedTranscript ?: record.transcript) }
     var showConsent by remember { mutableStateOf(false) }
     var technical by rememberSaveable { mutableStateOf(false) }
-    Scaffold(bottomBar={ if(record.transcript.isNotBlank()) Surface(tonalElevation=2.dp) {
+    Scaffold(containerColor=Color.Transparent,bottomBar={ if(record.transcript.isNotBlank()) Surface(tonalElevation=2.dp) {
         Column(Modifier.imePadding().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
             Primary(if(busy)"处理中…" else if(model.canOrganize)"确认文字并整理记忆" else "保存核对文字",Icons.Outlined.CheckCircle,!busy&&text.isNotBlank(),"review.confirm") {
                 if(model.canOrganize)showConsent=true else model.saveReview(record.audioPath,text)
@@ -359,7 +406,7 @@ fun stageLabel(stage: ProcessingStage) = when (stage) {
         if(record.transcript.isBlank()) Primary(if(busy)"正在转成文字…" else "转成文字",Icons.Outlined.Description,!busy){model.transcribe(record.audioPath)}
         else {
             Section("核对文字")
-            OutlinedTextField(text,{text=it},Modifier.fillMaxWidth().heightIn(min=180.dp).testTag("review.text"),label={Text("核对并修改转写文字")},enabled=!busy,shape=MaterialTheme.shapes.medium)
+            OutlinedTextField(text,{text=it},Modifier.fillMaxWidth().heightIn(min=180.dp).testTag("review.text"),colors=OutlinedTextFieldDefaults.colors(focusedContainerColor=MaterialTheme.colorScheme.surface,unfocusedContainerColor=MaterialTheme.colorScheme.surface,disabledContainerColor=MaterialTheme.colorScheme.surface),label={Text("核对并修改转写文字")},enabled=!busy,shape=MaterialTheme.shapes.medium)
             if(record.reviewedAt!=null)Muted("已保存核对版本 · ${dateLabel(record.reviewedAt)}")
             if(record.memories.any { it.status=="active" }) {
                 Section("从这段声音留下的记忆")

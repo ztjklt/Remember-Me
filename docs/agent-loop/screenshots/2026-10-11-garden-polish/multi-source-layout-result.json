@@ -1,0 +1,9 @@
+{
+  "fixture_only": true,
+  "model_call": false,
+  "font_scale": 2,
+  "sources": 8,
+  "source_selection": true,
+  "play_control_visible": true,
+  "document_scrollable": true
+}
