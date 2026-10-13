@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-10-14 Android 0.11.0 连续语音试验版：** [下载安装与语音/校准操作](docs/agent-loop/ANDROID_0110_QUICK_START_2026-10-14.md) · [真实结果、延迟与未完成项](docs/agent-loop/CONTINUOUS_VOICE_RESULTS_2026-10-14.md) · [队长会议要求对照](docs/agent-loop/CONTINUOUS_VOICE_REQUIREMENTS_2026-10-14.md)。ECS与同签名APK已接入持续收音、流式播放和插话取消，先向两个陈守义演示账号开放。模型生成与审阅仍需数秒，尚未达到1—2秒自然接话；实体手机声学与耳机未验收。PR #94待团队评审，未合并。
+
 > **2026-10-13 Android 0.10.0 云端交付：** [下载安装、账号与双角色体验](docs/agent-loop/ANDROID_0100_QUICK_START_2026-10-13.md) · [部署、验证结果与剩余事项](docs/agent-loop/CLOUD_TWIN_DELIVERY_2026-10-13.md) · [录音豆 SDK 接入准备](apps/android/docs/WORK_3200_PREPARATION.md)。ECS 已升级 Twin 与亲友/声音接口，签名内测 APK 直连公网 HTTPS。设备 SDK 仍是接入准备，不是录音豆实机通过。
 
 > **2026-10-12 Twin 与交互融合交接（历史）：** [本次功能、进展与待解决项](docs/agent-loop/TWIN_TEAM_HANDOFF_2026-10-12.md) · [新电脑本地运行](docs/agent-loop/TWIN_LOCAL_SETUP_2026-10-12.md) · [10 张 Android 实跑截图](docs/agent-loop/screenshots/twin-20261012/README.md)。已融合右侧两批按钮与音频交互；该日期的结果仅为本地评审。ECS 后续升级见上方 10 月 13 日记录。CI APK 仍默认连接模拟器宿主机 `10.0.2.2:8891`，不要与签名云端包混用。
