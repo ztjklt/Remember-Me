@@ -2,50 +2,78 @@
 
 ## Scope and authorization
 
-The Product / Integration Owner requested own-voice real-time Twin conversation and interruption, selected LiveKit Cloud with Alibaba Cloud Model Studio CosyVoice, then explicitly approved creation of `Remember Me iOS Twin Backend` credentials, local private storage and backend/agent deployment. The earlier deferred iPhone installation preference remains respected.
+The Product / Integration Owner requested own-voice realtime Twin conversation with interruption, selected LiveKit Cloud and Alibaba Cloud Model Studio CosyVoice, and explicitly approved creation of backend credentials, private local storage and backend/Agent deployment. The earlier preference to defer this task’s iPhone installation remains respected.
 
-The iOS changes are in the original checkout. Backend/worker implementation is isolated in the attached `livekit-twin` worktree, starting at `b6ee30d` of the dedicated iOS CloudBase backend. The separately approved conversation work from `78574ea`, plus the approved `b35c1c2` Twin identity correction, is included; its source hashes are stored in the ignored integration report. Existing Android behavior and the user's other iOS changes remain intact.
+The native changes are in the original checkout. Backend and worker changes are isolated on `codex/ios-realtime-livekit` in the attached `livekit-twin` worktree. The approved conversation snapshot `78574ea` and Twin identity correction `b35c1c2` are included. Android’s working prototype and unrelated native changes were preserved. Contract v0.6 is additive; v0.5 remains unchanged. The approved scope is recorded in [the realtime proposal](../architecture/realtime-twin-voice-contract-proposal.md).
 
-## Implementation
+## Current acceptance status
 
-- iOS Twin phone entry: scoped service availability, separate purpose notice, dedicated 5–15 second recording, reviewed text and explicit own-voice confirmation, profile preparation/reconciliation, mute, automatic speech interruption, manual interruption and hang-up. Backgrounding, logout, scope change and consent loss stop the call. No provider credential is embedded in the App.
-- Backend v0.6: owner-scoped profile/capability/call routes, 2-minute microphone-only room JWT, 30-minute call limit, credential and consent rechecks, current validated Twin answers, generation-bound PCM streams, private signed enrollment sample reads, durable revocation and bounded deletion retries via the existing authenticated processing tick.
-- LiveKit worker `remember-twin`: streaming Paraformer proxy, Silero VAD, single active answer, canceled old streams and late-result rejection. Session recording is explicitly disabled. Voice turns reuse approved conversation context and do not create Episodes or Person Model evidence.
-- Migration `0019_realtime_voice` follows `0018_twin_conversations`, adds two tables and preserves existing data. The image includes FFmpeg and wsproto; a real Uvicorn WebSocket handshake test covers accepted worker authorization and rejection of anonymous access.
-- Public Tencent PostgreSQL CA certificates are bundled, preserving `verify-full` and fixed private schema. This avoids CloudBase's 5 KiB environment-variable cap; no private key is bundled.
+Native code, signed package and Backend deployment are available. The final Mumbai Agent passes local regression but repeated cloud calls fail before initial readiness. The account permits one Agent only; a request to create a separate US diagnostic Agent was rejected with quota 1/1 and created no deployment. Replacing the old Agent requires the owner’s explicit confirmation because its cloud versions/runtime records would be permanently deleted. Until that action is approved and verified, do not report final cloud realtime acceptance as complete.
 
-## Cloud resources and observed results
+## Delivered behavior
 
-LiveKit project: `Remember Me iOS Twin`, ID `p_52jfs83pq79`. WSS: `wss://remember-me-ios-twin-ot7lrl1c.livekit.cloud`. Agent: `CA_tPrXyGHActp3`, `ap-south`. The official Cloud Docker build succeeded; runtime logs confirmed registration as `remember-twin`. Agent Observability was disabled at project creation. Credentials are in ignored private files with mode 0600 and were not included in the bundle, App or new-key screenshots.
+- The iOS **孪生** page has a phone entry. It checks owner-scoped capabilities and separate VOICE consent, offers a dedicated 5–15 second sample recording, requires reviewed text and an explicit own-voice confirmation, prepares/reconciles the profile, and exposes mute, manual interruption and hang-up. User speech interrupts ongoing playback automatically. Backgrounding, logout, scope changes and consent loss stop the call.
+- The Backend keeps provider keys out of both clients. It issues 2-minute microphone-only LiveKit tickets, limits calls to 30 minutes, rechecks actor credentials and grants, validates source-bound Twin answers and PCM generations, signs short-lived private sample reads, and retries provider deletion through the existing authenticated processing tick.
+- The worker uses streaming Paraformer, Silero VAD and SDK-managed audio playback. Recognition reads only the authorized owner’s microphone independently of SDK manual turns. A single answer is active; interruption cancels its HTTP/provider stream and clears queued audio. A late old answer cannot resume playback. UNKNOWN remains text-only; SIMULATION includes its introduction.
+- Voice conversation reuses the approved Twin conversation context. It does not create Episodes or Person Model evidence. Session recording is explicitly disabled (`record=False`); Agent Observability is disabled.
+- The native fixes serialize mute updates and reject stale operations from earlier calls. Connecting-time interruption cannot bypass the readiness timeout. Sample restoration retains its actual owner and file protection; backgrounding invalidates pending microphone permission work.
 
-A genuine provider streaming test with the documented `longxiaochun_v3` preset returned 229,440 bytes of PCM; first audio chunk was 0.44 seconds in this one local probe. Streaming Paraformer returned the exact synthetic Chinese sentence. Enrollment listing returned HTTP 200. These checks do not establish a cloned person's voice or production latency.
+## Cloud deployment verified
 
-CloudBase source deployment initially exceeded the 5 KiB environment cap; no version was published by that rejected update. After bundling the public CA, `remember-ios-api-009` built and pushed successfully, but the release task reported a startup wait timeout. Read-only inspection of that instance subsequently confirmed `/health` 200 and `/ready` database/object-store `ok`. The prior working version retained traffic. A subsequent deployment includes wsproto; final rollout and transport observations will be appended after verification.
+[LiveKit project dashboard](https://cloud.livekit.io/projects/p_52jfs83pq79/overview): **Remember Me iOS Twin**, project `p_52jfs83pq79`, WSS `wss://remember-me-ios-twin-ot7lrl1c.livekit.cloud`. Agent `CA_tPrXyGHActp3` / dispatch `remember-twin` is **Running**, deployment `fsMd6dHUUYF8`, region `ap-south` (Mumbai). Project data region is United States. Credentials are ignored private files, directory mode 0700 and file mode 0600; no provider or LiveKit server secret is in the App, Git or project proof screenshot.
+
+CloudBase `remember-ios-api` in Shanghai serves **remember-ios-api-016** with **100% traffic** and status `normal`. `/health` and `/ready` return 200; readiness reports database and object store `ok`. `/api/v1/service-info` reports release **ios-realtime-1475135761e6**, API version `0.7.0`, registration disabled. Migration head is **0019_realtime_voice**, following `0018_twin_conversations` without dropping existing data.
+
+The source bundle is `build/realtime-cloudrun-v7-20261013.zip`, SHA-256 `1475135761e6e97ad244c618c08cb1d78211bddd5d5ad6679d0070bf8fe06b76`. CloudBase task `2348738` reported a startup wait timeout; it was not reported as successful. The desired version subsequently became active, independently verified through traffic records, readiness and the exact release marker. Earlier versions receive zero traffic. A later attempted runtime update was rejected as `ResourceInUse` and produced no configuration change.
+
+The image includes FFmpeg and wsproto. Public Tencent PostgreSQL CA certificates are bundled to fit CloudBase’s 5 KiB environment-variable limit; `verify-full` and the private schema remain enforced. Deployment starts wsproto with protocol Ping interval zero because the managed gateway repeatedly dropped protocol Ping/Pong sessions at approximately 40 seconds. The application watchdog still reauthorizes and heartbeats every second. Only final ASR text is submitted; PCM does not trigger a database query per 20 ms frame. Lossless WebSocket compression, 100 ms batches and a clock reset before transport waits prevent avoidable ASR backlog. SDK reconnects reauthorize and do not replay consumed PCM. A stalled send or live microphone sample delayed over two seconds ends recognition instead of eventually submitting stale speech. Startup authorization uses an eight-second connection timeout and ten-second whole-attempt budget, retries at most once for connection failures only, and releases its HTTP client before failing. Rejected authorization and read timeouts are not retried. Normal answer reads retain their 120-second budget.
+
+The approved AI Core source remains unchanged across the final v6/v7 transport deployments; 39 files were hash compared.
 
 ## Tests actually run
 
-- Backend targeted regression: 59 passed, including 14 realtime Voice cases, real Uvicorn WebSocket authorization and a continuous-PCM/revocation test.
-- Worker: 11 passed (late answer after interruption, UNKNOWN, close, PCM framing, insecure remote URL).
-- AI Core conversation/grounded: 38 passed against the final approved conversation-v2 / twin-identity-v1 prompt.
-- Contract: 21 passed, including additive v0.6 and unchanged v0.5 definitions.
-- iOS selected regression: 45 passed (26 connection, 13 recording, 6 voice-call tests); after profile-reconciliation UI refinement, the 6 voice tests passed again.
-- Simulator build and signed generic-device build passed. The earlier signed artifact was inspected as 1.5.0 / 2026101308; the final Voice signed artifact was inspected as 1.6.0 / 2026101309. No iPhone installation was performed. Initial device build ran out of disk space; only this task's generated scratch build and unused virtual environment were removed before successful retry. A simulator invocation with the wrong OS destination failed, then the existing iPhone 18 Pro / iOS 27 destination passed.
-- `git diff --check` passed. Upstream deprecation warnings are recorded; no failed checks are reported as passing.
+| Area | Observed result |
+| --- | --- |
+| Backend Voice, deployment, conversation, Twin and consent regression | 60 passed, 4 warnings |
+| Final compressed real-Uvicorn socket suite | 15 passed, 2 warnings; anonymous rejection, unchanged PCM forwarding and timely revocation closure |
+| Final worker regression | 36 passed; startup burst, silence clock, bounded stall/stale input, interruption, reconnect authorization and cleanup |
+| Regional dispatch configuration regression | Backend 23 passed, including 8 new checks; no production dispatch change |
+| AI Core conversation / grounded answers | 38 passed |
+| Shared contracts | 21 passed in both checkouts |
+| Final native Voice / local recording regression | 30 passed (10 Voice + 20 recording) |
+| Earlier native connection / recording / Voice regression | 45 passed; intermediate Voice suite also passed |
+| Final signed generic-device build | Passed; package Info.plist inspected as 1.6.2 / 2026101311 |
 
-## Remaining own-voice evidence
+Exact matching of seven private credential values found no matches in 1,322 backend/worker files, 571 non-ignored original-checkout files or 20 signed App package files. `git diff --check` passed. Upstream deprecation warnings were retained. Failed deployment/probe attempts are not counted as passing checks.
 
-The user must personally confirm the purpose notice and record 5–15 seconds containing only their own voice in the App. No personal voice sample was uploaded by the agent. Voice similarity, speakerphone echo cancellation, Bluetooth routing, cellular latency, physical-device automatic interruption and background transitions still require that focused device journey. Synthetic service/transport probes must be labeled as such.
+## Real provider and RTC evidence
+
+All automatic cloud tests used a synthetic QA account and documented system preset `longxiaochun_v3`. A temporary QA profile bypassed enrollment solely to exercise transport. This is not the owner’s cloned voice. No personal recording was uploaded and no provider clone was created.
+
+A direct CosyVoice probe returned 229,440 bytes of PCM with a first chunk at 0.44 seconds in that single local measurement. Streaming Paraformer returned the expected synthetic Chinese sentence; enrollment listing returned HTTP 200. A direct deployed-backend probe completed three utterances across 65 seconds of silence with 75 application heartbeats and HTTP 200 call end.
+
+The compressed RTC probe on the preceding worker deployment completed three CONVERSATION replies, received non-silent audio, changed turn IDs during barge-in and showed no old-turn restart. The interrupted audio gap contained zero non-silent frames. Manual interruption was confirmed against the backend’s cleared active turn. After 65 seconds of silence, the next utterance again produced speech. All 397 injected frames were sent and call end returned 200. This does not establish Doubao-equivalent latency.
+
+A subsequent probe against the final bounded worker failed before initial `listening`, without injecting speech. Cloud runtime logs show a Backend authorization `ConnectTimeout`; a timeout in the probe’s final DELETE initially obscured that startup failure. The QA runner was corrected to retain primary errors, phase, safe events and bounded cleanup results. The next repeat again timed out waiting for initial readiness, injected no speech, canceled its microphone producer cleanly and ended the call with HTTP 200. These are startup failures rather than recognition accuracy failures. The bounded-startup deployment `fsMd6dHUUYF8` repeated the same pre-readiness failure with no speech injected, clean producer shutdown and HTTP 200 call end. The attempted US diagnostic Agent was then blocked by quota 1/1; it was not created. No production route was switched. Final replacement decision and QA fixture cleanup are recorded below.
+
+## Native package and remaining own-voice journey
+
+The signed package is at `build/ios-livekit-1.6.2-final/RememberMe.app` in the original checkout. This task has not installed it, honoring the earlier defer-installation preference. A separately authorized one-tap recording task installed **1.6.1 / 2026101310**; its device registry reports that version and the signed package contains both `TwinVoiceCall` and `TwinVoiceCallView`. That installation does not verify the latest 1.6.2 fixes.
+
+After installing the final package, the owner must personally accept the purpose notice, record **10–15 seconds** of clear speech within the 5–15 second limit, review its actual text and confirm it is their own voice. The [official Model Studio guide](https://help.aliyun.com/zh/model-studio/voice-cloning-user-guide) recommends 10–20 seconds with at least five continuous seconds of clear speech. This deployment uses the selected Beijing `cosyvoice-v3-flash` endpoint.
+
+Voice similarity, physical-device barge-in, speakerphone echo cancellation, Bluetooth routing, cellular latency and the background transition still require that focused device journey. Cloud startup can fail across the Mumbai–Shanghai path, as observed above; successful probes are not a production availability guarantee.
 
 ## Credential incident and owner decision
 
-While inspecting old deployment parameters, an overly broad diagnostic print exposed existing backend credentials in tool output. The agent reported this immediately. The newly generated LiveKit Secret was not exposed. The owner chose to rotate all old credentials personally later; no credential was revoked or rotated on their behalf.
+An overly broad diagnostic print exposed existing backend credentials in earlier tool output. The agent reported this immediately. The newly generated LiveKit Secret was not exposed. The owner chose to rotate the old credentials personally later; none was revoked or rotated on their behalf.
 
-Private fields requiring coordinated updates: database password in `REMEMBER_DATABASE_URL`, Alibaba `REMEMBER_PARAFORMER_API_KEY` and `REMEMBER_COSYVOICE_API_KEY`, DeepSeek `AI_API_KEY`, storage `REMEMBER_CLOUDBASE_API_KEY`, and timer/API `CLOUDBASE_WORKER_TOKEN`. The timer and API token must be changed together; Alibaba ASR and CosyVoice currently share the selected application credential. Update the ignored runtime deployment configuration as well as the active cloud environment; never paste replacement values into chat.
+Coordinate updates to the database password in `REMEMBER_DATABASE_URL`, Alibaba `REMEMBER_PARAFORMER_API_KEY` and `REMEMBER_COSYVOICE_API_KEY`, DeepSeek `AI_API_KEY`, storage `REMEMBER_CLOUDBASE_API_KEY`, and timer/API `CLOUDBASE_WORKER_TOKEN`. Timer and API token values must change together; ASR and CosyVoice currently share the selected Alibaba credential. Update private local deployment configuration and the active cloud environment. Never paste replacements into chat.
 
-## Streaming follow-up
+## Dispatch configuration and packaging
 
-The initial genuine RTC test connected and answered, but the second utterance timed out. Each 20 ms PCM frame was synchronously checking the database; under sustained audio this delayed ASR and TTS. The worker now batches exactly preserved samples into 100 ms packets. Backend rechecks grants on initial connection, every second and before recognition text submission using a thread pool; every TTS chunk retains its current-answer/source check off the event loop. A real socket test forwards 50 frames without per-frame database queries and closes after revocation. Cloud re-test produced two conversation turns with non-silent audio, changed turn IDs and no old-turn restart. Final stronger interruption and latest-release verification is recorded below after completion.
+The branch adds the internal `REMEMBER_LIVEKIT_AGENT_NAME` option to Backend and worker, defaulting to `remember-twin`. Names are nonempty ASCII `[A-Za-z0-9_.-]`, at most 64 characters; room metadata remains only the call ID. Production Backend version 016 predates this optional configuration seam and still uses the same default dispatch. The US diagnostic context was prepared with a separate name, but its create request failed before allocation. Private synthetic QA can substitute only that dispatch in a correctly signed microphone-only ticket while retaining all other claims and not extending expiration; native tickets are untouched.
 
-SDK playout owns and closes the audio iterator, preventing a cancellation race. Shutdown still performs service cleanup after the SDK has closed. SDK warning extras marked `lk.pii.*` are redacted because disabling session recording alone did not suppress timeout warning transcripts. Speech-handle audio failures are now presented to the client.
+## Owner decision and synthetic cleanup
 
-Further strong RTC verification found an intermittent quiet-stream disconnect and later transcript suppression by SDK manual turns. The worker now consumes service-authenticated final ASR results directly, retains SDK VAD/playout, and clocks PCM through DTX/muted gaps without losing partial frames. Backend emits an application-level heartbeat after each authorization check. Eleven worker tests passed, including silence progression; source/voice validation still occurs before speech. A strengthened RTC test confirmed real audio from both replies, no non-silent old audio in the interrupted gap, and a database-confirmed turn-scoped manual interruption. Long-silence verification follows below.
+The owner requested an explanation before deciding on Agent replacement; deletion was not authorized or performed. The existing Mumbai Agent remains. A preliminary HTTP cleanup timed out, then narrowly scoped QA database cleanup cleared the preset reference and sample fields before revoking only the synthetic VOICE grant, and marked that grant’s calls ended. Independent proofs report `profile_cleared=true`, `qa_voice_revoked=true`, `qa_calls_ended=true`, and the selected QA LiveKit room absent. The system preset was not remotely deleted; existing CLOUD_TWIN/RECORDING grants and ordinary account data were preserved.

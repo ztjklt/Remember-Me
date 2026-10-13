@@ -1,5 +1,7 @@
 # iOS 独立 CloudBase 内测后端
 
+> 2026-10-13 当前生产源码在 `codex/ios-realtime-livekit`，已包含获准的连续会话、Twin 身份和实时声音接口。后续后端修改应先合入这份源码再发布，保留实时迁移、适配器及运行参数；下面早期“未部署声音克隆”段落是历史状态。验证见 [实时 Voice 记录](../../docs/verification/IOS_REALTIME_VOICE_2026_10_13.md)。
+
 2026-10-12 用户决定：iOS 独立后端，使用其腾讯云 CloudBase 账号新建环境。这里只复用已经交付的 API 和适配器实现；iOS 的账号、数据库、原音、授权、密钥和任务都属于新环境。Android ECS 不迁移、不部署。共享客户端 Contract 无修改。
 
 本次后台基线为 `origin/codex/team-handoff-20261010` 的 `a12354a`，包含普通账号、空间、核对文字、证据 Twin 和人物候选接口。原工作区未提交的 iOS 画像审核／AI 实验不在本部署源码中。环境创建、代码构建、真人端到端旅程分别报告。
@@ -38,7 +40,7 @@ python3 infra/cloudbase/package.py build/ios-cloudbase-context
 docker build --platform linux/amd64 -t remember-me-ios-cloudbase:20261012 build/ios-cloudbase-context
 ```
 
-bundle 同时生成 zip 和 tar.gz，仅复制白名单目录，包含内容哈希清单；不包含 iOS、Android、录音、数据库、`.env`、证书、模型密钥或用户样本。`Dockerfile.dockerignore` 只保证新 BuildKit 的完整 checkout 构建；旧 Docker builder 必须用最小 bundle。为降低磁盘消耗，uv 安装不保留下载缓存；不再在磁盘紧张的 Mac 上重新构建大镜像。
+bundle 同时生成 zip 和 tar.gz，仅复制白名单目录，包含内容哈希清单；不包含 iOS、Android、录音、数据库、`.env`、私密证书或密钥、模型凭据或用户样本；公开的 PostgreSQL CA `.crt` 是明确的运行时例外。`Dockerfile.dockerignore` 只保证新 BuildKit 的完整 checkout 构建；旧 Docker builder 必须用最小 bundle。为降低磁盘消耗，uv 安装不保留下载缓存；不再在磁盘紧张的 Mac 上重新构建大镜像。
 
 ## 网关与手机适配待验收
 
@@ -127,3 +129,8 @@ Backend 516 passed / 6 skipped，AI Core 285 passed，iOS 本轮 13 个 ECSConne
 平台环境变量总长限制为 5 KiB；公开的腾讯 PostgreSQL CA 链已作为 runtime 的 `.crt` 文件打包，启动仍强制 `verify-full`，不会关闭 TLS 或主机名校验。已有 PEM 配置仍可优先使用。镜像增加 FFmpeg 用于验证专用样本的实际时长和音量。未扩大既有网络或副本配置。实时迁移是增加两张表，未重置用户数据。
 
 本轮检查旧部署参数时发生凭据进入工具输出的失误；用户选择稍后自行轮换旧凭据。需要一起更新数据库密码、百炼 ASR/CosyVoice Key、DeepSeek Key、CloudBase 私有存储 Key、CloudBase 定时任务 token；token 在 API 与 timer 必须一致。新生成的 LiveKit Secret 未回显。详细部署及验证状态以新 dated report 为准。
+
+
+云托管代理后的 WebSocket 使用业务心跳保活：每秒重新检查通话本人、凭据和授权，再发心跳；完整识别问题提交前另行验证。Uvicorn 明确选择 wsproto，协议 Ping interval 为 0，避免网关处理控制帧时触发 40 秒 Ping 超时。识别端只向 Twin 提交完整句子，不为每个逐字中间结果执行一组 SQL。LiveKit Agent 独立读取本人麦克风，SDK 负责 VAD 和播放；短暂识别断流在重新验证授权后有限重连，不重放已消费音频。
+
+当前已验证发布为 `remember-ios-api-016`（100% 流量，release `ios-realtime-1475135761e6`）。RTC 识别采用无损 WebSocket 压缩与 100 ms PCM 批次；发送前推进时钟，避免网络等待重复补零。超过两秒的发送阻塞或已排队实时帧延迟会结束识别。跨 Mumbai／上海网络曾在初始授权发生 ConnectTimeout；该次启动失败保留于验证记录，不能由 Agent Running 推断每次连接成功。
