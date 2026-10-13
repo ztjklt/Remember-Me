@@ -16,11 +16,12 @@ def conversation_control(text):
 
 
 class VoiceTurns:
-    def __init__(self, session_id, send, answer, tts, guard):
+    def __init__(self, session_id, send, answer, tts, guard, *, prepare_audio=False):
         self.session_id=session_id; self.send=send; self.answer=answer; self.tts=tts; self.guard=guard
         self.turn_id=0; self.task=None; self.closed=False; self.history=[]
         self.current=None; self.segments=[]; self.samples=0; self.played=0; self.sequence=0
         self.timings={}; self.retired=set(); self.audio_complete=False
+        self.prepare_audio=prepare_audio
 
     async def emit(self, kind, turn=None, **fields):
         if self.closed: return
@@ -65,9 +66,18 @@ class VoiceTurns:
 
     async def _respond(self, turn, question, history):
         start=time.monotonic()
+        from .prepared_speech import PreparedSpeech, sentences as split_sentences
+        async def authorized_tts(text):
+            # Every NEW provider dispatch, including unpublished preparation,
+            # must still be authorized. Playback guards alone are too late.
+            await self.guard()
+            if self.closed or turn!=self.turn_id:raise asyncio.CancelledError
+            async for chunk in self.tts(text):yield chunk
+        speech=PreparedSpeech(authorized_tts)
         try:
             await self.guard()
-            answer=await self.answer(question,history)
+            answer=(await self.answer(question,history,speech.prepare) if self.prepare_audio
+                    else await self.answer(question,history))
             if self.closed or turn!=self.turn_id: return
             await self.guard(answer)
             self.current['answer']=answer
@@ -75,11 +85,11 @@ class VoiceTurns:
                             reviewed_ms=round((time.monotonic()-start)*1000))
             # Whole answer is reviewed first. Sentence boundaries are playback
             # accounting only; punctuation is never used to truncate meaning.
-            sentences=re.findall(r'.+?(?:[。！？!?](?:[”’」』])?|$)',answer['answer'],re.S)
+            sentences=split_sentences(answer['answer'])
             first=True
             for sentence in sentences:
                 if not sentence.strip(): continue
-                async for pcm in self.tts(sentence):
+                async for pcm in speech.stream(sentence):
                     if self.closed or turn!=self.turn_id: return
                     await self.guard(answer)
                     self.samples+=len(pcm)//2; self.sequence+=1
@@ -100,6 +110,8 @@ class VoiceTurns:
             # Client must stop and flush on ANY error; a source change may have
             # happened while already-sent chunks waited in its playback buffer.
             await self.emit('error',turn,code=code,message='本轮未完成，请重试。',stop_playback=True)
+        finally:
+            await speech.close()
 
     async def close(self):
         self.closed=True; self.turn_id+=1; self.history=[]; self.current=None

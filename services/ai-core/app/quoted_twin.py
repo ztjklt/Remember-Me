@@ -158,9 +158,9 @@ def render(raw,payload,model):
         selected=next(s for key,s in sources.items() if aliases[key]==ids[0])
         if quotes[0][1]==selected['text']:
             return TwinOutput(answer=quotes[0][1],response_type='ORIGINAL',evidence_ids=ids,confidence=.8,model_version=model),selection
-    lines=[('本人书面说明' if kind=='CALIBRATION' else '核对文字')+'：“'+text+'”' for kind,text in quotes]
+    lines=[('本人书面说明：' if kind=='CALIBRATION' else ('' if payload.voice_response else '核对文字：'))+'“'+text+'”' for kind,text in quotes]
     if unknown:lines.append('其中部分问题尚无明确材料。')
-    text='根据现有材料，相关表述如下：\n'+'\n'.join(lines)
+    text=('' if payload.voice_response else '根据现有材料，相关表述如下：\n')+'\n'.join(lines)
     if len(text)>500:raise AIOutputInvalid('Quoted answer exceeds display limit')
     return TwinOutput(answer=text,response_type='SIMULATION',evidence_ids=ids,confidence=.8,model_version=model),selection
 
@@ -234,6 +234,9 @@ class QuotedTwin:
                     'schema_errors':schema_errors(raw,SourceSelection)},reserve_review=True)
             output,selection=render_ids(raw,payload,model)
         if monotonic()-start>65:raise ProviderTimeout('Quote review budget exhausted')
+        if payload.voice_response:
+            from .voice_stream import prepare_draft
+            prepare_draft(output)
         def review():
             record['stage']='review'
             sources={s['id']:s for r in packet['recordings'] for s in r['sources']}
@@ -241,7 +244,10 @@ class QuotedTwin:
             request={**packet,'response_schema':Verdict.model_json_schema(),
                 'selection':selection.model_dump(),'cited_material':cited,
                 'rendered_answer':output.model_dump(exclude={'model_version','confidence'})}
-            checked,_=complete(REVIEW,request)
+            review_prompt=REVIEW
+            if payload.voice_response:
+                review_prompt+='\n语音审阅输出 v1：reasoning 用不超过90字概括问题要点、关键来源编号和有无不足，不抄写原文；核查项目、失败类型和修正要求保持不变。'
+            checked,_=complete(review_prompt,request)
             record['stage']='review_validation'
             try:verdict=Verdict.model_validate(checked)
             except ValidationError as exc:

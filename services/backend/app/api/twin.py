@@ -169,6 +169,16 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         ids=visible_episodes(session,subject_id,actor_id,cloud=True)
         reader=not is_owner(session,subject_id,actor_id)
         if reader: ids-=altered_story_ids(session,ids)
+        current_basis=source_basis(session,subject_id)
+        # Request-local, only after fresh authorization and a complete source
+        # fingerprint under the publication lock. Never cache across actors or
+        # skip the post-retrieval check. This avoids rebuilding the same archive
+        # three times while preserving detection of writes during retrieval.
+        previous=loaded.get('snapshot')
+        if (previous is not None and previous.source_basis==current_basis
+                and loaded['ids']==ids and loaded['reader']==reader):
+            session.commit()
+            return previous
         candidates=effective_materials(session,subject_id,ids,enforce_budget=payload.retrieval_mode=='full')
         sources=contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
         organized=[r for r in visible_records(session,subject_id,actor_id,sources=sources)
@@ -198,9 +208,11 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
             if episode is None or episode.subject_id!=subject_id:
                 raise SourceChanged('资料归属已变化，请重新提问。')
             wrapped.append(AuthorizedSource(episode.subject_id,source))
+        # effective_materials can register previously unextracted exact spans.
+        # Their persisted IDs are part of the snapshot, so fingerprint after it.
         snapshot=AuthorizedSnapshot(subject_id,source_basis(session,subject_id),tuple(wrapped),tuple(groups))
         loaded.update(ids=ids,reader=reader,candidates=candidates,sources=sources,
-                      organized=organized,understandings=understandings)
+                      organized=organized,understandings=understandings,snapshot=snapshot)
         session.commit()
         return snapshot
     snapshot=load_snapshot()
@@ -282,16 +294,17 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
     # Retrieval may update cached vectors. Release its transaction before the
     # network call so revocation can proceed while DeepSeek is working.
     session.commit()
+    on_retrieved()
+    cancel_check()
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
+    require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
     session.commit()
     if not limited and not contributions:
-        on_retrieved()
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
-        on_retrieved()
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:

@@ -6,6 +6,8 @@ import logging
 import hashlib
 import math
 from collections import Counter
+from contextvars import ContextVar, copy_context
+from contextlib import contextmanager, asynccontextmanager
 from time import perf_counter
 import httpx
 from typing import Literal
@@ -22,6 +24,7 @@ if not logger.handlers:
     logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 logger.propagate = True
+_transport_scope=ContextVar('weixin_transport_scope',default=None)
 
 
 def reject_constant(value):
@@ -68,11 +71,30 @@ class WeixinChat:
         # running in a background thread when the caller starts a bounded retry.
         return httpx.AsyncClient(timeout=45, trust_env=False)
 
+    @contextmanager
+    def transport_scope(self, *, timeout_seconds=None):
+        """One worker/request owns the loop and pool; cancellation still closes streams."""
+        with asyncio.Runner() as runner:
+            client=self._async_client()
+            token=_transport_scope.set((self,runner,client,timeout_seconds))
+            try:yield
+            finally:
+                runner.run(client.aclose())
+                _transport_scope.reset(token)
+
+    @asynccontextmanager
+    async def _request_client(self):
+        scope=_transport_scope.get()
+        if scope is not None and scope[0] is self:
+            yield scope[2]
+        else:
+            async with self._async_client() as client:yield client
+
     async def _bounded_bytes(self, body, headers, timeout_seconds, telemetry):
         # HTTPX timeout alone limits each I/O phase/read, not the whole request.
         # This scope cancels connection, headers and a slow/dripping response.
         async with asyncio.timeout(timeout_seconds):
-            async with self._async_client() as client:
+            async with self._request_client() as client:
                 async with client.stream('POST', self.base_url + '/chat/completions',
                         json=body, headers=headers, timeout=min(45, timeout_seconds),
                         follow_redirects=False) as response:
@@ -89,6 +111,9 @@ class WeixinChat:
         check_cancelled()
         if cancelled_request.get() is not None and timeout_seconds is None:
             timeout_seconds=45
+        scope=_transport_scope.get()
+        if scope is not None and scope[0] is self and scope[3] is not None:
+            timeout_seconds=min(timeout_seconds or 45,scope[3])
         started = perf_counter()
         telemetry = {'event':'weixin_chat', 'requested_model':self.model, 'status':None,
                      'endpoint': self.base_url + '/chat/completions',
@@ -99,9 +124,15 @@ class WeixinChat:
             if started < self._blocked_until:
                 telemetry['cooldown_remaining_seconds'] = round(self._blocked_until-started, 1)
                 raise ProviderRateLimited(self._blocked_until-started)
+            # Keep identical, authorized material at a stable prefix. All
+            # changing question/history fields remain present at the end; this
+            # enables provider prefix reuse if supported, without answer caching.
+            stable=('recordings','confirmed_understanding','understandings','examples','contributions','response_schema')
+            ordered={k:payload[k] for k in stable if k in payload}
+            ordered.update({k:v for k,v in payload.items() if k not in ordered})
             body = {'model': self.model, 'messages':[
                 {'role':'system','content':system},
-                {'role':'user','content':json.dumps(payload, ensure_ascii=False)}],
+                {'role':'user','content':json.dumps(ordered, ensure_ascii=False,separators=(',',':'))}],
                 'response_format':{'type':'json_object'}}
             headers={'Authorization':'Bearer ' + self.api_key, 'Content-Type':'application/json'}
             if timeout_seconds is not None:
@@ -110,7 +141,10 @@ class WeixinChat:
                 telemetry['timeout_seconds'] = timeout_seconds
                 # complete is synchronous; Persona's HTTP route runs in a worker
                 # thread. Existing unbudgeted consumers keep their sync client.
-                chunks = asyncio.run(cancellable(self._bounded_bytes(body, headers, timeout_seconds, telemetry)))
+                scope=_transport_scope.get()
+                operation=cancellable(self._bounded_bytes(body, headers, timeout_seconds, telemetry))
+                chunks=(scope[1].run(operation,context=copy_context()) if scope is not None and scope[0] is self
+                        else asyncio.run(operation))
             else:
                 with self.client.stream('POST', self.base_url + '/chat/completions', json=body,
                         headers=headers, timeout=45, follow_redirects=False) as response:
@@ -126,7 +160,7 @@ class WeixinChat:
                 raise AIOutputInvalid('Weixin model identity missing')
             telemetry['response_model'] = model
             usage = envelope.get('usage', {})
-            telemetry['usage'] = {k:v for k,v in usage.items() if k in {'prompt_tokens','completion_tokens','total_tokens'} and isinstance(v,int) and not isinstance(v,bool)} if isinstance(usage,dict) else {}
+            telemetry['usage'] = {k:v for k,v in usage.items() if k in {'prompt_tokens','completion_tokens','total_tokens','prompt_cache_hit_tokens','prompt_cache_miss_tokens'} and isinstance(v,int) and not isinstance(v,bool)} if isinstance(usage,dict) else {}
             choice = envelope['choices'][0]
             finish = choice.get('finish_reason')
             telemetry['finish_reason'] = finish if finish in {'stop','length','content_filter','tool_calls'} else 'unknown'

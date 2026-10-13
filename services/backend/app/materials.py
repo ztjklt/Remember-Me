@@ -29,13 +29,20 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
     changes = {r.target_memory_id: r for r in session.scalars(select(MemoryRevision).where(
         MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed',
         MemoryRevision.kind == 'change'))}
+    from collections import defaultdict
+    by_episode=defaultdict(list)
+    for memory in session.scalars(select(MemoryItem).where(
+            MemoryItem.episode_id.in_([ep.episode_id for ep in episodes])).order_by(MemoryItem.ordinal)):
+        by_episode[memory.episode_id].append(memory)
+    evidence_ids={id for rows in by_episode.values() for m in rows for id in m.evidence_ids}
+    evidence_map={e.evidence_id:e for e in session.scalars(select(Evidence).where(Evidence.evidence_id.in_(evidence_ids)))}
     for ep in episodes:
         text = ep.transcript or ''
-        memories = list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id == ep.episode_id).order_by(MemoryItem.ordinal)))
+        memories = by_episode[ep.episode_id]
         blocked, suppress = [], False
         for memory in memories:
             if memory.deleted_at or memory.review_state != 'active' or (memory.source_type == 'CALIBRATION' and not is_owner_supplement(memory)):
-                spans = [session.get(Evidence, id) for id in memory.evidence_ids]
+                spans = [evidence_map.get(id) for id in memory.evidence_ids]
                 if not spans or any(s is None or s.span_start is None or s.span_end is None or
                     text[s.span_start:s.span_end] != s.excerpt for s in spans):
                     suppress = True
@@ -50,7 +57,7 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
             evidence = []
             memory_covered = []
             for id in memory.evidence_ids:
-                source = session.get(Evidence, id)
+                source = evidence_map.get(id)
                 if source is None or source.episode_id != ep.episode_id or not source.excerpt:
                     continue
                 # Explicit human correction evidence remains valid while the old

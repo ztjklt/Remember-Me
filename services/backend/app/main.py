@@ -147,6 +147,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        if settings.embedding_warmup:
+            import asyncio
+            from .retrieval import EmbeddingUnavailable
+            try:
+                # Deployment readiness absorbs one-time model loading. No user
+                # archive, provider request or generated answer is involved.
+                await asyncio.to_thread(_app.state.embedding_encoder.encode,['记忆检索准备'])
+            except EmbeddingUnavailable:
+                logging.getLogger(__name__).warning('retrieval_warmup_unavailable')
         yield
         database.dispose()
 

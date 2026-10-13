@@ -55,6 +55,23 @@ def test_default_full_path_does_not_call_rag_provider(app,client,session,monkeyp
     assert picker.seen is None
 
 
+def test_unchanged_rag_snapshot_does_not_rebuild_whole_archive(app,client,session,monkeypatch):
+    """Repeated permission/version checks must not repeatedly expand the archive."""
+    import app.api.twin as twin
+    o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
+    provider(monkeypatch,source)
+    original=twin.effective_materials; expansions=[]
+    def material(*args,**kwargs):
+        result=original(*args,**kwargs);expansions.append(result);return result
+    monkeypatch.setattr(twin,'effective_materials',material)
+    response=client.post(f'/api/v1/subjects/{o.subject_id}/twin/answers',headers=oh,json={
+        'question':'这次会怎么考虑？','mode':'persona','retrieval_mode':'local',
+        'cloud_consent_id':cloud(client,o.subject_id,oh)})
+    assert response.status_code==200,response.text
+    assert len(expansions)==1
+    assert spy.payload['understandings'][0]['counter_evidence_ids']==[extra['evidence_id']]
+
+
 def test_modification_during_retrieval_prevents_model_call(app,client,session,monkeypatch):
     o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
     def modify():

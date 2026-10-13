@@ -25,6 +25,16 @@ def test_full_original_and_written_source_have_different_labels():
     answer,_=render(p,d,'actual')
     assert answer.response_type=='SIMULATION' and '本人书面说明' in answer.answer
 
+
+def test_voice_quote_starts_with_source_content_instead_of_a_generic_preface():
+    from app.quoted_twin import render
+    payload=data();payload.voice_response=True
+    answer,_=render(plan(),payload,'actual')
+    assert answer.answer.startswith('“同事老周告诉我')
+    assert '其中部分问题尚无明确材料' in answer.answer
+    payload.candidates[0].evidence[0].source_type='CALIBRATION'
+    assert '本人书面说明' in render(plan(),payload,'actual')[0].answer
+
 def test_unknown_cannot_smuggle_a_quote_and_known_cannot_have_no_source():
     from app.quoted_twin import render
     for p in [{'points':[{'known':False,'quotes':[{'source_id':'s1','text':'x'}]}]}, {'points':[{'known':True,'quotes':[]}]}]:

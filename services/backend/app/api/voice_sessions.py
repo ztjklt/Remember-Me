@@ -116,10 +116,11 @@ async def end(session_id:str,request:Request,actor:Actor=Depends(current_actor))
 
 class AsyncTwinBridge:
     """Synchronous orchestration, cancellable async transport on the call loop."""
-    def __init__(self,loop,settings,history,cancelled):
+    def __init__(self,loop,settings,history,cancelled,on_draft=None):
         self.loop=loop; self.settings=settings; self.history=history; self.cancelled=cancelled
         self.futures=set()
         self.lock=threading.Lock()
+        self.on_draft=on_draft
 
     def check(self):
         if self.cancelled.is_set(): raise RealtimeFailure('TURN_CANCELLED')
@@ -128,21 +129,41 @@ class AsyncTwinBridge:
         self.check()
         async with httpx.AsyncClient(timeout=110,trust_env=False,follow_redirects=False) as client:
             self.check()
+            if self.on_draft is not None:
+                async with client.stream('POST',self.settings.ai_core_url.rstrip('/')+path+'/voice-stream',json=payload) as response:
+                    if response.is_error:raise TwinUnavailable('本轮回答暂未完成。')
+                    size=0;drafts=0
+                    async for line in response.aiter_lines():
+                        self.check();size+=len(line)
+                        if size>100_000:raise TwinUnavailable('回答过长。')
+                        event=json.loads(line)
+                        if event.get('type')=='draft':
+                            text=event.get('text');drafts+=1
+                            if drafts>2 or not isinstance(text,str) or not 0<len(text)<=500:
+                                raise TwinUnavailable('声音准备内容无效。')
+                            await self.on_draft(text)
+                        elif event.get('type')=='final':
+                            if not isinstance(event.get('result'),dict):raise TwinUnavailable('回答无效。')
+                            return event['result']
+                        else:raise TwinUnavailable('本轮回答未通过核对。')
+                    raise TwinUnavailable('回答传输中断。')
             response=await client.post(self.settings.ai_core_url.rstrip('/')+path,json=payload)
             if response.is_error:
                 raise TwinUnavailable('本轮回答暂未完成。')
             if len(response.content)>100_000: raise TwinUnavailable('回答过长。')
             return response.json()
 
-    def request(self,path,payload):
+    def _blocking(self,function,*args):
         with self.lock:
             self.check()
-            future=asyncio.run_coroutine_threadsafe(self._request(path,payload),self.loop)
+            future=asyncio.run_coroutine_threadsafe(function(*args),self.loop)
             self.futures.add(future)
         try:
             result=future.result(timeout=115); self.check(); return result
         finally:
             with self.lock: self.futures.discard(future)
+
+    def request(self,path,payload):return self._blocking(self._request,path,payload)
 
     def persona(self,payload): return self.request('/persona',payload)
     def answer(self,question,candidates):
@@ -163,13 +184,24 @@ async def stream(websocket:WebSocket,session_id:str):
     if websocket.query_params or not call or call.connected or not token:
         await websocket.close(code=4403); return
 
-    def guard_sync(answer=None):
+    def guard_sync(answer=None, *, prepare_sources=False):
         with app.state.database.session() as session:
+            if prepare_sources:
+                from ..access import publication_lock
+                publication_lock(session,call.subject)
             actor=ActorRepository(session).find_by_token(token)
             if not actor or actor.actor_id!=call.actor or not enabled(settings,actor):
                 raise Hidden('通话已结束，请重新登录。')
             require_cloud(session,call.subject,call.actor,call.payload.cloud_consent_id)
-            visible_episodes(session,call.subject,call.actor,cloud=True)
+            ids=visible_episodes(session,call.subject,call.actor,cloud=True)
+            if prepare_sources and call.payload.purpose=='dialogue':
+                # Register deterministic spans of ALREADY reviewed recordings
+                # before freezing the call version. No ASR interim or model
+                # output enters the archive, and future preparation is read-only.
+                from ..materials import effective_materials
+                from ..access import is_owner,altered_story_ids
+                if not is_owner(session,call.subject,call.actor):ids-=altered_story_ids(session,ids)
+                effective_materials(session,call.subject,ids,enforce_budget=False)
             if call.payload.purpose=='calibration_report':
                 from .calibration import _run,_check_source,require_subject
                 require_subject(session,call.subject,actor)
@@ -181,9 +213,11 @@ async def stream(websocket:WebSocket,session_id:str):
                     raise SourceChanged('通话状态已变化。')
             elif answer:
                 get_current_answer(session,call.subject,call.actor,answer['answer_id'])
-            return source_basis(session,call.subject)
+            basis=source_basis(session,call.subject)
+            if prepare_sources:session.commit()
+            return basis
     try:
-        initial_basis=await asyncio.to_thread(guard_sync)
+        initial_basis=await asyncio.to_thread(guard_sync,prepare_sources=True)
         if call.stop.is_set() or time.monotonic()-call.created>settings.realtime_voice_max_seconds:
             raise Hidden('通话已过期。')
     except AppError:
@@ -201,7 +235,7 @@ async def stream(websocket:WebSocket,session_id:str):
         if basis!=initial_basis: raise SourceChanged('资料或授权已变化，请重新进入语音聊聊。')
         if call.stop.is_set(): raise RealtimeFailure('CALL_ENDED')
 
-    async def answer(question,history):
+    async def answer(question,history,on_draft=None):
         if call.payload.purpose=='calibration_report':
             def report():
                 from .calibration import _run
@@ -219,7 +253,7 @@ async def stream(websocket:WebSocket,session_id:str):
                     'model_version':'call-controls-v1','evidence':[],
                     'voice_timing':{'retrieval_ms':0}}
         loop=asyncio.get_running_loop(); cancelled=threading.Event()
-        bridge=AsyncTwinBridge(loop,settings,history,cancelled)
+        bridge=AsyncTwinBridge(loop,settings,history,cancelled,on_draft)
         timing={};started=time.monotonic()
         def generate():
             with app.state.database.session() as session:
@@ -232,12 +266,12 @@ async def stream(websocket:WebSocket,session_id:str):
                     request,actor,session,voice_context=history,cancel_check=bridge.check,
                     on_retrieved=lambda:timing.update(retrieval_ms=round((time.monotonic()-started)*1000)))
                 return dict(result,voice_timing=timing)
-        try: return await asyncio.to_thread(generate)
-        finally: bridge.cancel()
+        try:return await asyncio.to_thread(generate)
+        finally:bridge.cancel()
 
     async def tts(text):
         async for pcm in XiaomiRealtime(settings).stream(text): yield pcm
-    turns=VoiceTurns(call.id,send,answer,tts,guard)
+    turns=VoiceTurns(call.id,send,answer,tts,guard,prepare_audio=True)
     asr=None; asr_task=None; paused=False; tasks=[]
     async def stop_asr():
         nonlocal asr,asr_task

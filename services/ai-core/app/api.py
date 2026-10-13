@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from threading import BoundedSemaphore
 from time import monotonic
 
@@ -184,9 +184,18 @@ def create_app(
         if not slots.acquire(timeout=15):
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
-            return active_twin.answer(payload)
+            with (active_twin.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds)
+                  if payload.voice_response and hasattr(active_twin,'transport_scope') else nullcontext()):
+                return active_twin.answer(payload)
         finally:
             slots.release()
+
+    @app.post('/twin/voice-stream')
+    async def prepare_twin(payload: TwinInput):
+        if not payload.voice_response:
+            raise AIOutputInvalid('Voice input required')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_twin(payload))
 
     @app.post("/calibrate", response_model=CalibrationOutput)
     def calibrate(payload: CalibrationInput) -> CalibrationOutput:
@@ -216,9 +225,19 @@ def create_app(
                 raise ProviderTimeout("Persona request budget exhausted waiting for capacity")
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
-            return active_persona.answer(payload, started_at=started)
+            chat=getattr(active_persona,'chat',None)
+            with (chat.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds)
+                  if payload.voice_response and hasattr(chat,'transport_scope') else nullcontext()):
+                return active_persona.answer(payload, started_at=started)
         finally:
             slots.release()
+
+    @app.post('/persona/voice-stream')
+    async def prepare_persona(payload: PersonaInput):
+        if not payload.voice_response:
+            raise AIOutputInvalid('Voice input required')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_persona(payload))
 
     @app.post("/profile-proposals", response_model=ProfileProposalOutput)
     def profile_proposals(payload: ProfileProposalInput):

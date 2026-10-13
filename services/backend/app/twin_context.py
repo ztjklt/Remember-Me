@@ -4,13 +4,17 @@ Do not add raw neighboring text here: effective_materials may have masked it.
 Keep narrative fingerprints unchanged when evolving the internal Twin protocol.
 """
 from .models import Episode, Evidence, as_utc
+from sqlalchemy import select
 
 
 def contextual_evidence(session, sources):
     result = {}
+    episodes={e.episode_id:e for e in session.scalars(select(Episode).where(
+        Episode.episode_id.in_({s['episode_id'] for s in sources.values()})))}
+    evidence_map={e.evidence_id:e for e in session.scalars(select(Evidence).where(Evidence.evidence_id.in_(sources)))}
     for id, source in sources.items():
-        episode = session.get(Episode, source['episode_id'])
-        evidence = session.get(Evidence, id)
+        episode = episodes.get(source['episode_id'])
+        evidence = evidence_map.get(id)
         item = {k: source[k] for k in ('evidence_id','excerpt','source_type','episode_id','temporal_context')}
         item['recorded_at'] = as_utc(episode.recorded_at).isoformat()
         # A written correction belongs to this recording but is not an audio

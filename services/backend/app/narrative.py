@@ -49,6 +49,8 @@ def contextual_sources(session,subject,candidates,*,visible_episode_ids=None):
     changes={r.target_memory_id:r for r in session.scalars(select(MemoryRevision).where(
         MemoryRevision.subject_id==subject,MemoryRevision.status=='confirmed',MemoryRevision.kind=='change'))}
     contexts={};sources={}
+    memories={m.memory_item_id:m for m in session.scalars(select(MemoryItem).where(
+        MemoryItem.memory_item_id.in_([c['memory_item_id'] for c in candidates])))}
     for c in candidates:
         context=''
         if c['memory_item_id'] in changes:
@@ -56,7 +58,7 @@ def contextual_sources(session,subject,candidates,*,visible_episode_ids=None):
             context='历史记载，后来已有变化，不代表当前状态。'
             if visible_episode_ids is None or change.episode_id in visible_episode_ids:
                 context+='变化时间：'+(change.time_text or '未确定')
-        memory=session.get(MemoryItem,c['memory_item_id'])
+        memory=memories.get(c['memory_item_id'])
         if memory and (memory.item_metadata or {}).get('relation_kind')=='change':
             context+='变化后的记载；时间：'+str(memory.item_metadata.get('time_context') or '未确定')
         for e in c['evidence']:

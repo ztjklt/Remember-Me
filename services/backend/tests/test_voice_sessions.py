@@ -72,8 +72,14 @@ def test_optin_consent_and_socket_identity_are_required(app,client,session):
     assert client.delete('/api/v1/voice-sessions/'+created.json()['session_id'],headers=oh).status_code==200
 
 
-def test_pause_reopens_asr_and_expired_identity_ends_call(app,client,session,monkeypatch):
+@pytest.mark.parametrize('new_source',[False,True])
+def test_pause_reopens_asr_and_expired_identity_ends_call(app,client,session,monkeypatch,new_source):
     owner,oh,_,body=setup_call(app,client,session)
+    if new_source:
+        from sqlalchemy import select
+        from app.models import Episode,Evidence
+        episode=session.scalar(select(Episode).where(Episode.subject_id==owner.subject_id))
+        episode.transcript+='。这句新核对的原话还没有提取记忆。';session.commit()
     instances=[]
     class ASR:
         def __init__(self,*args): self.q=asyncio.Queue(); self.closed=False;instances.append(self)
@@ -89,6 +95,9 @@ def test_pause_reopens_asr_and_expired_identity_ends_call(app,client,session,mon
     result=client.post(f'/api/v1/subjects/{owner.subject_id}/voice-sessions',headers=oh,json=body).json()
     with client.websocket_connect(result['websocket_path'],headers=oh) as ws:
         assert ws.receive_json()['type']=='ready'
+        if new_source:
+            session.expire_all()
+            assert any('这句新核对' in e.excerpt for e in session.scalars(select(Evidence)))
         ws.send_json({'type':'pause'})
         assert ws.receive_json()['type']=='interrupted'
         assert ws.receive_json()==dict(type='paused',session_id=result['session_id'],turn_id=1,paused=True)

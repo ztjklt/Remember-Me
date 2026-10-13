@@ -9,6 +9,51 @@ def test_social_controls_cannot_answer_embedded_memory_questions():
     assert conversation_control('谢谢，你最喜欢什么？') is None
 
 
+def test_prepared_tts_never_reaches_client_if_answer_review_fails():
+    async def run():
+        events=[];produced=asyncio.Event();closed=asyncio.Event()
+        async def tts(text):
+            try:
+                produced.set();yield b'ab'
+                await asyncio.Event().wait()
+            finally:closed.set()
+        async def answer(q,h,prepare):
+            await prepare('错误草稿。')
+            await produced.wait()
+            raise RuntimeError('review rejected')
+        async def send(e):events.append(e)
+        async def guard(a=None):pass
+        call=VoiceTurns('s',send,answer,tts,guard,prepare_audio=True)
+        await call.submit('真实问题');await call.task
+        assert produced.is_set() and closed.is_set()
+        assert not any(e['type'] in {'audio','answer_ready'} for e in events)
+        assert events[-1]['type']=='error'
+        await call.close()
+    asyncio.run(run())
+
+
+def test_revoked_draft_is_not_sent_to_tts():
+    async def run():
+        events=[];synthesized=[];allowed=True
+        async def tts(text):
+            synthesized.append(text);yield b'ab'
+        async def answer(q,h,prepare):
+            nonlocal allowed
+            allowed=False
+            await prepare('已经撤权的草稿。')
+            await asyncio.sleep(0)
+            return {'answer':'已经撤权的草稿。','answer_id':'old'}
+        async def guard(a=None):
+            if not allowed:raise RuntimeError('revoked')
+        async def send(e):events.append(e)
+        call=VoiceTurns('s',send,answer,tts,guard,prepare_audio=True)
+        await call.submit('真实问题');await call.task
+        assert synthesized==[]
+        assert not any(e['type'] in {'audio','answer_ready'} for e in events)
+        await call.close()
+    asyncio.run(run())
+
+
 def test_source_whitespace_is_not_submitted_as_a_spoken_sentence():
     async def run():
         calls=[];events=[]

@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    embedding_warmup: bool = False
     voice_url: str = "http://127.0.0.1:8300"
     voice_timeout_seconds: float = 180.0
     # Disabled until the server operator explicitly binds the fictional A01

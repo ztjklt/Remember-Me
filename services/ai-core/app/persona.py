@@ -510,6 +510,9 @@ class PersonaProvider:
                 self._record_validation(repaired_exc, record)
                 raise
         record["stage"] = "semantic_review"
+        if payload.voice_response:
+            from .voice_stream import prepare_draft
+            prepare_draft(output)
         review_scope = []
         for index, p in enumerate(draft.points, 1):
             quote_match = "not_applicable"
