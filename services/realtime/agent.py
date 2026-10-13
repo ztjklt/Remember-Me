@@ -67,6 +67,7 @@ class ProxySTT(stt.STT):
     def __init__(self,backend):
         super().__init__(capabilities=stt.STTCapabilities(streaming=True,interim_results=True))
         self.backend=backend
+        self.on_final=None
     async def _recognize_impl(self,buffer,*,language=None,conn_options):
         raise NotImplementedError('Streaming only')
     def stream(self,*,language=None,conn_options=DEFAULT_API_CONNECT_OPTIONS):
@@ -86,6 +87,30 @@ async def pcm_chunks(source):
     if buffer:yield bytes(buffer)
 
 
+async def clocked_pcm(source):
+    """Preserve input and advance ASR time through Opus DTX/muted gaps."""
+    buffer=bytearray();ended=False
+    async def collect():
+        nonlocal ended
+        async for frame in source:
+            if not isinstance(frame,rtc.AudioFrame):continue
+            if frame.num_channels!=1 or frame.sample_rate!=16000:raise ValueError('ASR requires 16 kHz mono')
+            buffer.extend(bytes(frame.data))
+            if len(buffer)>64000:raise RuntimeError('ASR input fell behind by over two seconds')
+        ended=True
+    producer=asyncio.create_task(collect());loop=asyncio.get_running_loop();deadline=loop.time()+.1
+    try:
+        while True:
+            await asyncio.sleep(max(0,deadline-loop.time()))
+            if producer.done():producer.result()
+            if ended and not buffer:return
+            packet=bytes(buffer[:3200]);del buffer[:len(packet)]
+            yield packet.ljust(3200,b'\0')
+            deadline=max(deadline+.1,loop.time())
+    finally:
+        producer.cancel();await asyncio.gather(producer,return_exceptions=True)
+
+
 class ProxyStream(stt.RecognizeStream):
     async def _run(self):
         backend=self._stt.backend
@@ -96,7 +121,7 @@ class ProxyStream(stt.RecognizeStream):
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
                 async def send():
-                    async for data in pcm_chunks(self._input_ch):await ws.send_bytes(data)
+                    async for data in clocked_pcm(self._input_ch):await ws.send_bytes(data)
                 async def receive():
                     seen=set()
                     async for message in ws:
@@ -110,6 +135,7 @@ class ProxyStream(stt.RecognizeStream):
                             if identifier in seen: continue
                             seen.add(identifier)
                             if len(seen)>10000: raise RuntimeError('ASR turn limit')
+                            if self._stt.on_final:self._stt.on_final(text)
                         self._event_ch.send_nowait(stt.SpeechEvent(
                             type=stt.SpeechEventType.FINAL_TRANSCRIPT if kind=='final' else stt.SpeechEventType.INTERIM_TRANSCRIPT,
                             alternatives=[stt.SpeechData(language='zh',text=text)]))
@@ -201,14 +227,16 @@ async def entrypoint(ctx: JobContext):
     await ctx.connect()
     # Manual turn submission prevents any generic LLM from bypassing Backend validation.
     # VAD still emits speaking events: those immediately clear LiveKit's audio queue.
-    session=AgentSession(stt=ProxySTT(backend),vad=silero.VAD.load(),turn_detection='manual',allow_interruptions=True)
+    recognizer=ProxySTT(backend)
+    session=AgentSession(stt=recognizer,vad=silero.VAD.load(),
+        turn_handling={'turn_detection':'manual','interruption':{'enabled':True,'mode':'vad','resume_false_interruption':False}})
     async def publish(data):
         await ctx.room.local_participant.publish_data(json.dumps(data,ensure_ascii=False).encode(),reliable=True,
             destination_identities=[authorized['participant_identity']],topic=TOPIC)
     controller=CallController(backend,session,publish)
-    @session.on('user_input_transcribed')
-    def transcribed(event):
-        if event.is_final:controller.question(event.transcript)
+    # Manual SDK turns can suppress later transcript events after speech. Consume
+    # the authenticated final transcript directly; SDK retains its VAD/audio role.
+    recognizer.on_final=controller.question
     @session.on('user_state_changed')
     def user_state(event):
         if event.new_state=='speaking':controller.interrupt()

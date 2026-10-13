@@ -157,3 +157,17 @@ def test_sdk_warning_extras_do_not_persist_private_transcripts():
     assert PrivateLogFilter().filter(record)
     assert all(v=='[redacted]' for k,v in vars(record).items() if k.startswith('lk.pii.'))
     assert record.region=='ap-south' and record.getMessage()=='transcript timeout'
+
+
+@pytest.mark.asyncio
+async def test_clocked_asr_advances_silence_without_losing_partial_frames():
+    from agent import clocked_pcm
+    from livekit import rtc
+    original=b'\x03\x00'*160
+    async def source():
+        yield rtc.AudioFrame(data=original,sample_rate=16000,num_channels=1,samples_per_channel=160)
+        await asyncio.sleep(.35)
+    packets=[data async for data in clocked_pcm(source())]
+    assert len(packets)>=3 and all(len(p)==3200 for p in packets)
+    assert packets[0].startswith(original) and packets[0][len(original):]==b'\0'*(3200-len(original))
+    assert all(p==b'\0'*3200 for p in packets[1:])

@@ -65,6 +65,9 @@ async def proxy_listen(ws, call_id):
                     while True:
                         await asyncio.sleep(1)
                         await run_in_threadpool(authorize)
+                        # The managed gateway needs application-level traffic;
+                        # protocol ping/pong alone is insufficient during silence.
+                        await ws.send_json({'type':'heartbeat'})
                 tasks=[asyncio.create_task(f()) for f in [send_audio,receive_text,watchdog]]
                 done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
                 for task in done: task.result()
