@@ -417,3 +417,190 @@ async def test_old_live_microphone_frames_are_not_submitted_after_a_stall():
             userdata={'remember_received_at':now-3})
     with pytest.raises(ValueError,match='audio fell behind'):
         async for _ in clocked_pcm(source(),live_after=now-10):pytest.fail('Stale audio forwarded')
+
+
+@pytest.mark.asyncio
+async def test_listening_gate_waits_for_delayed_asr_ready():
+    from types import SimpleNamespace
+    from agent import wait_recognition_ready
+    recognizer=SimpleNamespace(ready=asyncio.Event())
+    recognition=asyncio.create_task(asyncio.Event().wait())
+    waiting=asyncio.create_task(wait_recognition_ready(recognizer,recognition,timeout=.2))
+    try:
+        await settle();assert not waiting.done()
+        recognizer.ready.set();await waiting
+        assert not recognition.done()
+    finally:
+        recognition.cancel();await asyncio.gather(recognition,return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_recognition_failure_wins_over_ready_signal():
+    from types import SimpleNamespace
+    from agent import wait_recognition_ready
+    recognizer=SimpleNamespace(ready=asyncio.Event())
+    async def stopped():
+        recognizer.ready.set()
+        raise ValueError('fixture ASR failure')
+    recognition=asyncio.create_task(stopped())
+    with pytest.raises(ValueError,match='fixture ASR failure'):
+        await wait_recognition_ready(recognizer,recognition,timeout=.2)
+
+
+@pytest.mark.asyncio
+async def test_recognition_ready_timeout_preserves_reader_for_caller_cleanup():
+    from types import SimpleNamespace
+    from agent import wait_recognition_ready
+    recognizer=SimpleNamespace(ready=asyncio.Event())
+    recognition=asyncio.create_task(asyncio.Event().wait())
+    try:
+        with pytest.raises(TimeoutError,match='startup timed out'):
+            await wait_recognition_ready(recognizer,recognition,timeout=.01)
+        assert not recognizer.ready.is_set() and not recognition.done()
+    finally:
+        recognition.cancel();await asyncio.gather(recognition,return_exceptions=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('response_kind',['ready','error'])
+async def test_backend_handshake_controls_ready_and_logs_only_stages_and_speech_counts(response_kind,monkeypatch,caplog):
+    import json,logging
+    from types import SimpleNamespace
+    import agent
+    from livekit import rtc
+    monkeypatch.setenv('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS','1')
+    gate=asyncio.Event();connected=asyncio.Event();sent=asyncio.Event();packets=[]
+    class Socket:
+        compress=15;close_code=1000
+        async def receive_json(self):
+            connected.set();await gate.wait();return {'type':response_kind}
+        async def send_bytes(self,data):
+            packets.append(len(data))
+            if len(packets)>=2:sent.set()
+        def __aiter__(self):return self.messages()
+        async def messages(self):
+            await sent.wait()
+            if False:yield None
+    class SocketContext:
+        async def __aenter__(self):return Socket()
+        async def __aexit__(self,*args):return False
+    class Client:
+        def __init__(self,**kwargs):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):return False
+        def ws_connect(self,*args,**kwargs):return SocketContext()
+    async def frames():
+        for value in [300,0]:
+            data=value.to_bytes(2,'little',signed=True)*1600
+            yield rtc.AudioFrame(data=data,sample_rate=16000,num_channels=1,samples_per_channel=1600)
+        await asyncio.Event().wait()
+    backend=SimpleNamespace(url='https://fixture.invalid',call_id='vc_private_fixture',headers={'Authorization':'Bearer private-fixture'})
+    recognizer=SimpleNamespace(backend=backend,ready=asyncio.Event())
+    stream=object.__new__(agent.ProxyStream);stream._stt=recognizer;stream._input_ch=frames()
+    monkeypatch.setattr(agent.aiohttp,'ClientSession',Client)
+    caplog.set_level(logging.INFO,logger='agent')
+    running=asyncio.create_task(stream._connection())
+    await connected.wait();assert not recognizer.ready.is_set()
+    gate.set()
+    with pytest.raises(RuntimeError):await running
+    phases=[record.phase for record in caplog.records if record.getMessage()=='Realtime ASR handshake']
+    assert phases==(['connecting','connected','ready'] if response_kind=='ready' else ['connecting','connected'])
+    assert recognizer.ready.is_set()==(response_kind=='ready')
+    if response_kind=='ready':
+        summary=next(record for record in caplog.records if record.getMessage()=='Realtime ASR transport summary')
+        assert summary.speech_packet_count==1 and summary.pcm_bytes==6400
+    serialized=json.dumps([vars(record) for record in caplog.records],default=str)
+    assert 'private-fixture' not in serialized and 'vc_private_fixture' not in serialized
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('diagnostic',[False,True])
+async def test_microphone_diagnostics_count_speech_without_recording_audio(diagnostic,monkeypatch,caplog):
+    import logging
+    from types import SimpleNamespace
+    from agent import listen_microphone
+    from livekit import rtc
+    monkeypatch.setenv('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS','1' if diagnostic else '0')
+    arrived=asyncio.Event();closed=[]
+    class Microphone:
+        def __aiter__(self):return self.frames()
+        async def frames(self):
+            for value in [0,300]:
+                frame=rtc.AudioFrame(data=value.to_bytes(2,'little',signed=True)*320,sample_rate=16000,num_channels=1,samples_per_channel=320)
+                yield SimpleNamespace(frame=frame)
+            arrived.set();await asyncio.Event().wait()
+        async def aclose(self):closed.append('microphone')
+    class Recognition:
+        def push_frame(self,frame):pass
+        def __aiter__(self):return self.events()
+        async def events(self):
+            await arrived.wait();raise RuntimeError('fixture disconnect')
+            yield
+        async def aclose(self):closed.append('recognition')
+    monkeypatch.setattr(rtc.AudioStream,'from_participant',lambda **kwargs:Microphone())
+    caplog.set_level(logging.INFO,logger='agent')
+    with pytest.raises(RuntimeError,match='fixture disconnect'):
+        await listen_microphone(SimpleNamespace(stream=lambda:Recognition()),object())
+    summaries=[record for record in caplog.records if record.getMessage()=='Realtime microphone input summary']
+    assert len(summaries)==int(diagnostic)
+    if diagnostic:assert summaries[0].mic_input_frame_count==2 and summaries[0].mic_input_speech_frame_count==1
+    assert sorted(closed)==['microphone','recognition']
+
+
+def test_diagnostic_pcm_threshold_excludes_silence_and_boundary_level():
+    from agent import pcm_has_speech
+    assert not pcm_has_speech(b'') and not pcm_has_speech(b'\0'*640)
+    assert not pcm_has_speech((200).to_bytes(2,'little',signed=True)*320)
+    assert pcm_has_speech((-201).to_bytes(2,'little',signed=True)*320)
+
+
+@pytest.mark.asyncio
+async def test_entrypoint_ready_timeout_has_registered_cleanup_and_never_publishes_false_listening(monkeypatch):
+    import json
+    from types import SimpleNamespace
+    import agent
+    callbacks=[];published=[];ended=[];closed=[];reader_stopped=[]
+    class Client:
+        async def aclose(self):closed.append(True)
+    class BackendFixture:
+        def __init__(self,*args):self.client=Client()
+        async def authorize_startup(self):return {'room':'fixture-room','participant_identity':'fixture-owner'}
+        async def request(self,method,path,**kwargs):
+            if path=='/end':ended.append(True)
+            return {}
+    class Recognizer:
+        def __init__(self,backend):self.ready=asyncio.Event();self.on_final=None
+    class NativeSession:
+        def __init__(self,**kwargs):self.handlers={}
+        def on(self,event):
+            def register(callback):self.handlers[event]=callback;return callback
+            return register
+        async def start(self,**kwargs):pass
+        def interrupt(self,**kwargs):pass
+        async def aclose(self):self.handlers['close'](None)
+    class Room:
+        def __init__(self):self.local_participant=self
+        def on(self,event):return lambda callback:callback
+        async def publish_data(self,value,**kwargs):published.append(json.loads(value))
+    class Context:
+        def __init__(self):self.room=Room();self.job=SimpleNamespace(metadata='{"call_id":"vc_fixture"}',room=SimpleNamespace(name='fixture-room'))
+        async def connect(self):pass
+        async def wait_for_participant(self,**kwargs):return object()
+        def add_shutdown_callback(self,callback):callbacks.append(callback)
+    async def microphone(*args):
+        try:await asyncio.Event().wait()
+        finally:reader_stopped.append(True)
+    original_wait=agent.wait_recognition_ready
+    async def short_startup(recognizer,recognition):
+        assert len(callbacks)==1 and not recognition.done()
+        await original_wait(recognizer,recognition,timeout=.01)
+    monkeypatch.setenv('REMEMBER_REALTIME_BACKEND_URL','https://fixture.invalid')
+    monkeypatch.setenv('REMEMBER_REALTIME_WORKER_SECRET','x'*32)
+    monkeypatch.setattr(agent,'Backend',BackendFixture);monkeypatch.setattr(agent,'ProxySTT',Recognizer)
+    monkeypatch.setattr(agent,'AgentSession',NativeSession);monkeypatch.setattr(agent.silero.VAD,'load',lambda:None)
+    monkeypatch.setattr(agent,'listen_microphone',microphone);monkeypatch.setattr(agent,'wait_recognition_ready',short_startup)
+    with pytest.raises(TimeoutError):await agent.entrypoint(Context())
+    assert published==[{'type':'ended','message':'实时识别尚未就绪，请重新发起通话。'}]
+    assert reader_stopped==[True] and ended==[True] and closed==[True]
+    await callbacks[0]()
+    assert ended==[True] and closed==[True]  # SDK shutdown cannot clean up twice.

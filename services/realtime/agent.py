@@ -7,6 +7,7 @@ import json
 import os
 import logging
 import re
+import array
 import socket
 import ssl
 import ipaddress
@@ -112,6 +113,7 @@ class ProxySTT(stt.STT):
         super().__init__(capabilities=stt.STTCapabilities(streaming=True,interim_results=False))
         self.backend=backend
         self.on_final=None
+        self.ready=asyncio.Event()
     async def _recognize_impl(self,buffer,*,language=None,conn_options):
         raise NotImplementedError('Streaming only')
     def stream(self,*,language=None,conn_options=DEFAULT_API_CONNECT_OPTIONS):
@@ -178,6 +180,23 @@ async def send_pcm(ws, data, *, timeout=2):
         raise ValueError('Realtime microphone transport fell behind') from None
 
 
+def pcm_has_speech(data):
+    samples=array.array('h',data)
+    return bool(samples) and sum(value*value for value in samples)/len(samples)>200*200
+
+
+async def wait_recognition_ready(recognizer,recognition,*,timeout=20):
+    waiting=asyncio.create_task(recognizer.ready.wait())
+    try:
+        done,_=await asyncio.wait({waiting,recognition},timeout=timeout,return_when=asyncio.FIRST_COMPLETED)
+        if recognition in done:
+            await recognition
+            raise RuntimeError('Microphone recognition ended before ready')
+        if waiting not in done:raise TimeoutError('Realtime recognition startup timed out')
+    finally:
+        waiting.cancel();await asyncio.gather(waiting,return_exceptions=True)
+
+
 class ProxyStream(stt.RecognizeStream):
     async def _run(self):
         try:await self._connection()
@@ -190,17 +209,27 @@ class ProxyStream(stt.RecognizeStream):
     async def _connection(self):
         backend=self._stt.backend
         url=backend.url.replace('https://','wss://',1).replace('http://','ws://',1)+'/internal/voice-calls/'+backend.call_id+'/listen'
+        diagnostic=os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')=='1'
+        loop=asyncio.get_running_loop();started=loop.time()
+        def handshake(phase):
+            if diagnostic:logging.getLogger(__name__).info('Realtime ASR handshake',extra={
+                'phase':phase,'elapsed_ms':round((loop.time()-started)*1000)})
         tasks=[]
+        handshake('connecting')
         async with aiohttp.ClientSession(trust_env=False) as client:
             async with client.ws_connect(url,headers=backend.headers,heartbeat=10,max_msg_size=128*1024,compress=15) as ws:
+                handshake('connected')
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
+                self._stt.ready.set();handshake('ready')
                 if not hasattr(self,'_audio_live_after'):self._audio_live_after=asyncio.get_running_loop().time()
                 counters={'pcm_bytes':0,'heartbeat_count':0,'final_count':0,'final_events':0,'send_stall_max_ms':0,'compression_bits':ws.compress};opened=asyncio.get_running_loop().time()
+                if diagnostic:counters['speech_packet_count']=0
                 async def send():
                     async for data in clocked_pcm(self._input_ch,live_after=self._audio_live_after):
                         before=asyncio.get_running_loop().time()
                         await send_pcm(ws,data);counters['pcm_bytes']+=len(data)
+                        if diagnostic and pcm_has_speech(data):counters['speech_packet_count']+=1
                         counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
                 async def receive():
                     seen=set()
@@ -239,8 +268,13 @@ async def listen_microphone(recognizer, participant):
     audio=rtc.AudioStream.from_participant(participant=participant,
         track_source=rtc.TrackSource.SOURCE_MICROPHONE,sample_rate=16000,num_channels=1)
     stream=recognizer.stream()
+    diagnostic=os.environ.get('REMEMBER_REALTIME_NETWORK_DIAGNOSTICS')=='1'
+    counts={'mic_input_frame_count':0,'mic_input_speech_frame_count':0}
     async def feed():
         async for event in audio:
+            if diagnostic:
+                counts['mic_input_frame_count']+=1
+                if pcm_has_speech(bytes(event.frame.data)):counts['mic_input_speech_frame_count']+=1
             event.frame.userdata['remember_received_at']=asyncio.get_running_loop().time()
             stream.push_frame(event.frame)
         stream.end_input()
@@ -254,6 +288,7 @@ async def listen_microphone(recognizer, participant):
     finally:
         for task in tasks:task.cancel()
         await asyncio.gather(*tasks,return_exceptions=True)
+        if diagnostic:logging.getLogger(__name__).info('Realtime microphone input summary',extra=counts)
         await stream.aclose();await audio.aclose()
 
 
@@ -430,7 +465,6 @@ async def entrypoint(ctx: JobContext):
             await publish({'type':'ended','message':'实时识别连接已结束，请重新发起通话。'})
             await session.aclose()
     recognition=asyncio.create_task(recognize())
-    await publish({'type':'state','state':'listening'})
     async def monitor():
         try:
             while True:
@@ -442,14 +476,32 @@ async def entrypoint(ctx: JobContext):
             await session.aclose()
             await ctx.room.disconnect()
     watchdog=asyncio.create_task(monitor())
-    async def shutdown():
+    cleanup_task=None
+    async def cleanup():
         watchdog.cancel();recognition.cancel()
         await asyncio.gather(watchdog,recognition,return_exceptions=True)
-        await controller.close()
-        try:await backend.request('POST','/end')
-        except httpx.HTTPError:pass
-        await backend.client.aclose()
+        try:
+            await controller.close()
+            try:await backend.request('POST','/end')
+            except httpx.HTTPError:pass
+        finally:await backend.client.aclose()
+    async def shutdown():
+        nonlocal cleanup_task
+        if cleanup_task is None:cleanup_task=asyncio.create_task(cleanup())
+        await asyncio.shield(cleanup_task)
     ctx.add_shutdown_callback(shutdown)
+    try:
+        await wait_recognition_ready(recognizer,recognition)
+        if controller.closed:raise RuntimeError('Microphone recognition ended before ready')
+        await publish({'type':'state','state':'listening'})
+    except BaseException:
+        try:
+            if not controller.closed:
+                controller.interrupt()
+                await publish({'type':'ended','message':'实时识别尚未就绪，请重新发起通话。'})
+            await session.aclose()
+        finally:await shutdown()
+        raise
 
 
 if __name__=='__main__':cli.run_app(server)
