@@ -282,7 +282,7 @@ def create_client_transcribed_episode(
     except ValidationError as error:
         # Never echo a transcript, arbitrary client field or secret into errors.
         raise RequestInvalid('客户端转写格式无效；需要原始机器稿、原音哈希、模型及外发确认。') from error
-    if form.source not in {CaptureSource.IMPORT, CaptureSource.ANDROID_MIC, CaptureSource.IOS_MIC}:
+    if form.source not in {CaptureSource.IMPORT, CaptureSource.ANDROID_MIC, CaptureSource.IOS_MIC, CaptureSource.WORK_3200}:
         raise RequestInvalid('客户端转写只接受支持核对的录音或文件导入来源。')
     return _create_episode(response, form, actor, store, settings, session, transcript)
 
@@ -332,6 +332,9 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
             f"The upload is typed {content_type or 'with no content type'}; "
             f"an {_AUDIO_PREFIX}* type is required"
         )
+    if (form.source == CaptureSource.WORK_3200
+            and content_type.partition(';')[0].strip() == 'audio/opus'):
+        raise AudioInvalid('录音豆原始 Opus 数据须在客户端真实解码为标准音频，不能改名为 WAV 后上传；请保留本机原音。')
 
     data = _read_upload(form.file, limit_bytes=settings.max_upload_bytes)
     checksum = checksum_of(data)
@@ -374,7 +377,7 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
     calibration = None
     calibration_id = (capture_metadata or {}).get("calibration_id")
     if calibration_id is not None:
-        if not isinstance(calibration_id, str) or form.source not in {CaptureSource.IOS_MIC, CaptureSource.IMPORT, CaptureSource.ANDROID_MIC}:
+        if not isinstance(calibration_id, str) or form.source not in {CaptureSource.IOS_MIC, CaptureSource.IMPORT, CaptureSource.ANDROID_MIC, CaptureSource.WORK_3200}:
             raise RequestInvalid("calibration_id requires a reviewed recording")
         calibration = session.scalar(select(CalibrationRun).where(
             CalibrationRun.calibration_id == calibration_id,
@@ -515,11 +518,11 @@ def read_transcript_review(
     actor: Actor = Depends(current_actor),
     session: Session = Depends(get_session),
 ) -> TranscriptReview:
-    """Expose STT text only to the capturing Actor while their iOS job waits."""
+    """Expose STT text only to the capturing Actor while their recording waits."""
     response.headers["Cache-Control"] = "private, no-store"
     episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
     job = JobRepository(session).for_episode(episode_id)
-    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC), str(CaptureSource.WORK_3200)}:
         state = "not_required"
     elif job is not None and job.state == str(JobState.WAITING):
         state = "reviewing"
@@ -551,8 +554,8 @@ def confirm_transcript(
     text = payload.transcript.strip()
     if not text:
         raise RequestInvalid("The confirmed transcript cannot be blank")
-    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC)}:
-        raise RequestInvalid("Transcript review requires iOS or imported capture")
+    if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC), str(CaptureSource.WORK_3200)}:
+        raise RequestInvalid("Transcript review requires a supported recording source")
     if episode.transcript_reviewed_at is not None:
         if episode.transcript == text and (episode.capture_metadata or {}).get('review_supplement','') == payload.supplement.strip():
             return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),

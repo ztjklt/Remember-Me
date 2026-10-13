@@ -56,7 +56,7 @@ class BackendClient(private val gate: SessionGate) {
     fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC"): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
-        require(source in setOf("ANDROID_MIC", "IMPORT"))
+        require(source in setOf("ANDROID_MIC", "IMPORT", "WORK_3200"))
         transcript?.requireMatches(file)
         val boundary = "remember-${UUID.randomUUID()}"
         val endpoint = if(transcript == null) "/api/v1/episodes" else "/api/v1/episodes/client-transcribed"

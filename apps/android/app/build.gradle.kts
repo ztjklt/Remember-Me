@@ -12,8 +12,8 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261017
-        versionName = "0.9.3-internal"
+        versionCode = 20261018
+        versionName = "0.10.0-internal"
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
         require(serviceUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+"))) { "rememberServiceUrl must be a service root URL" }
         buildConfigField("String", "SERVICE_URL", "\"$serviceUrl\"")
@@ -29,7 +29,7 @@ android {
     }
     buildTypes {
         debug {
-            versionNameSuffix = "-twin-integrated-r2-20261012"
+            versionNameSuffix = "-local-review-20261013"
             buildConfigField("String", "SERVICE_URL", "\"${providers.gradleProperty("rememberServiceUrl").orElse("http://10.0.2.2:8891").get()}\"")
         }
         release { isMinifyEnabled = false }

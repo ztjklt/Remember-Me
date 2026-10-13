@@ -238,7 +238,7 @@ def propose_revision(subject_id: str, body: RevisionInput, request: Request,
             raise RequestInvalid('这段录音已经关联另一项修订。')
         return view(previous)
     if (episode.transcript_reviewed_at is not None or episode.status not in {'uploaded', 'transcribing'}
-            or episode.source not in {'IMPORT', 'IOS_MIC', 'ANDROID_MIC'}):
+            or episode.source not in {'IMPORT', 'IOS_MIC', 'ANDROID_MIC', 'WORK_3200'}):
         raise RequestInvalid('请在确认转写前关联修订，避免已公开的结果被重新解释。')
     row = MemoryRevision(revision_id='rev_' + uuid4().hex[:16], subject_id=subject_id,
         target_memory_id=body.target_memory_id, episode_id=body.episode_id, kind=body.kind, time_text=body.time_text)

@@ -88,6 +88,31 @@ class BackendClientTest {
             assertEquals("retained original",file.readText())
         } finally { file.delete() }
     }
+    @Test fun work3200UploadKeepsHardwareSourceConsentAndOriginalBytesAcrossRetries() {
+        val file=File.createTempFile("decoded-device", ".wav").apply {writeText("decoded hardware audio fixture")}
+        val errors=mutableListOf<Throwable>();val bodies=mutableListOf<String>()
+        val server=TinyServer(2,errors) {headers,body ->
+            assertEquals("POST /api/v1/episodes HTTP/1.1",headers[":request-line"])
+            assertEquals("Bearer owner",headers["authorization"])
+            bodies+=body;ok("{\"episode_id\":\"device-episode\"}")
+        }
+        try {
+            server.use {
+                val gate=SessionGate();val session=gate.connect(server.url,"owner")
+                val recording=AudioRecording(file.absolutePath,2500,"audio/wav",file.length(),16000,1,"2026-10-13T00:00:00Z")
+                repeat(2) {assertEquals("device-episode",BackendClient(gate).upload(session,"subject","explicit-consent",recording,"same-device-key","agreed-policy",source="WORK_3200"))}
+            }
+            assertTrue(errors.toString(),errors.isEmpty());assertEquals(2,bodies.size)
+            bodies.forEach {body ->
+                assertTrue(body.contains("name=\"source\"\r\n\r\nWORK_3200"))
+                assertTrue(body.contains("name=\"recording_consent_id\"\r\n\r\nexplicit-consent"))
+                assertTrue(body.contains("\"cloud_asr_policy\":\"agreed-policy\""))
+                assertTrue(body.contains("same-device-key"));assertTrue(body.contains("Content-Type: audio/wav"))
+                assertTrue(body.contains("decoded hardware audio fixture"));assertFalse(body.contains(file.absolutePath))
+            }
+            assertEquals("decoded hardware audio fixture",file.readText())
+        } finally {file.delete()}
+    }
     @Test fun companionAudioIsDedicatedMultipartWithStableRetryIdentity() {
         val file=File.createTempFile("companion", ".m4a").apply {writeText("dedicated audio")}
         val errors=mutableListOf<Throwable>();val bodies=mutableListOf<String>()
@@ -164,6 +189,9 @@ class BackendClientTest {
             }
         }
         val url get() = "http://127.0.0.1:${socket.localPort}"
-        override fun close() { task.get(15, java.util.concurrent.TimeUnit.SECONDS); socket.close(); executor.shutdownNow() }
+        override fun close() {
+            try { task.get(15, java.util.concurrent.TimeUnit.SECONDS) }
+            finally { socket.close(); executor.shutdownNow() }
+        }
     }
 }

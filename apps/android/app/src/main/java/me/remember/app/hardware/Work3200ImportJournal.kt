@@ -1,0 +1,102 @@
+package me.remember.app.hardware
+
+import org.json.JSONObject
+import java.io.File
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.file.StandardOpenOption
+import java.security.MessageDigest
+import java.util.UUID
+
+data class HardwareImport(val importId: String, val idempotencyKey: String, val episodeId: String?)
+data class HardwareUploadCandidate(val file: File, val audio: PreparedHardwareAudio, val idempotencyKey: String, val episodeId: String?, val source: String = "WORK_3200")
+
+/** Pass a dedicated app-private root; vendor downloads and prepared derivatives have separate folders. */
+class Work3200ImportJournal(directory: File) {
+    private val root = directory.apply { require(mkdirs() || isDirectory) }.canonicalFile
+    val rawDirectory: File = File(root, "raw").apply { require(mkdirs() || isDirectory) }
+    val preparedDirectory: File = File(root, "prepared").apply { require(mkdirs() || isDirectory) }
+    private val entries = File(root, "entries").apply { require(mkdirs() || isDirectory) }
+
+    private fun within(file: File, parent: File): File = file.canonicalFile.also {
+        require(it.toPath().startsWith(parent.canonicalFile.toPath()) && it != parent.canonicalFile && it.isFile && it.length() > 0) { "File must remain inside its private import directory" }
+        require(parent.canonicalFile.toPath().startsWith(root.toPath())) { "Import directory escaped its private root" }
+    }
+    private fun sha(file: File): String = file.inputStream().use { stream ->
+        val digest = MessageDigest.getInstance("SHA-256"); val buffer = ByteArray(65536)
+        while (true) { val count = stream.read(buffer); if (count < 0) break; digest.update(buffer, 0, count) }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    }
+    private fun entryFile(id: String): File {
+        require(id.matches(Regex("[0-9a-f]{64}"))) { "Invalid import identifier" }
+        require(entries.canonicalFile.toPath().startsWith(root.toPath()))
+        return File(entries, "$id.json")
+    }
+    private fun view(row: JSONObject) = HardwareImport(row.getString("id"), row.getString("key"), row.optString("episode").takeIf { it.isNotBlank() })
+    private fun load(id: String): JSONObject = JSONObject(within(entryFile(id), entries).readText()).also { require(it.getString("id") == id) }
+    private fun requireScope(row: JSONObject, scope: HardwareScope) {
+        val identity = row.getJSONObject("identity")
+        require(identity.getString("server") == scope.server && identity.getString("actor") == scope.actorId && identity.getString("subject") == scope.subjectId) { "Import belongs to another account or subject" }
+    }
+    private fun save(row: JSONObject) {
+        val target = entryFile(row.getString("id"))
+        val pending = File(entries, "${UUID.randomUUID()}.pending")
+        try {
+            pending.outputStream().use { it.write(row.toString().toByteArray()); it.fd.sync() }
+            Files.move(pending.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        } finally { pending.delete() }
+    }
+    private fun <T> locked(block: () -> T): T = FileChannel.open(File(root, "journal.lock").toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use {
+        channel -> channel.lock().use { block() }
+    }
+    fun recordDownloaded(scope: HardwareScope, deviceKey: String, file: DeviceRecording, raw: File): HardwareImport = locked {
+        requireDeviceKey(deviceKey)
+        val original = within(raw, rawDirectory); val digest = sha(original)
+        val identity = JSONObject().put("server", scope.server).put("actor", scope.actorId).put("subject", scope.subjectId)
+            .put("device", deviceKey).put("file", file.fileId)
+        // Length-prefix components avoid delimiter collisions across account and device identities.
+        val identityBytes = listOf(scope.server, scope.actorId, scope.subjectId, deviceKey, file.fileId.toString())
+            .joinToString("") { "${it.toByteArray(Charsets.UTF_8).size}:$it" }.toByteArray(Charsets.UTF_8)
+        val id = MessageDigest.getInstance("SHA-256").digest(identityBytes).joinToString("") { "%02x".format(it) }
+        val target = entryFile(id)
+        if (target.exists()) {
+            val row = load(id)
+            require(row.getString("raw_sha256") == digest) { "Device file identifier conflicts with existing bytes" }
+            require(sha(within(File(root, row.getString("raw")), rawDirectory)) == digest) { "Retained original changed" }
+            view(row)
+        } else {
+            val row = JSONObject().put("id", id).put("key", "work3200-${UUID.randomUUID()}").put("identity", identity)
+                .put("raw", root.toPath().relativize(original.toPath()).toString()).put("raw_sha256", digest)
+                .put("end_time", file.endTime).put("size", file.sizeBytes).put("duration_ms", file.durationMs).put("code", file.code)
+            save(row); view(row)
+        }
+    }
+    fun prepare(id: String, scope: HardwareScope, audio: File, decoderVersion: String): HardwareImport = locked {
+        require(decoderVersion.isNotBlank())
+        val row = load(id); requireScope(row, scope)
+        require(!row.has("episode")) { "An uploaded import cannot be replaced" }
+        val output = within(audio, preparedDirectory)
+        Work3200Audio.inspectPcmWav(output)
+        val digest = sha(output)
+        require(!row.has("prepared_sha256") || row.getString("prepared_sha256") == digest) { "Prepared audio is immutable for this upload key" }
+        row.put("prepared", root.toPath().relativize(output.toPath()).toString()).put("prepared_sha256", digest).put("decoder_version", decoderVersion)
+        save(row); view(row)
+    }
+    fun uploadCandidate(id: String, scope: HardwareScope): HardwareUploadCandidate = locked {
+        val row = load(id); requireScope(row, scope); candidate(row)
+    }
+    private fun candidate(row: JSONObject): HardwareUploadCandidate {
+        require(row.has("prepared")) { "Raw SDK audio requires a verified decoder before upload" }
+        require(sha(within(File(root, row.getString("raw")), rawDirectory)) == row.getString("raw_sha256")) { "Retained original changed" }
+        val file = within(File(root, row.getString("prepared")), preparedDirectory)
+        require(sha(file) == row.getString("prepared_sha256")) { "Prepared audio changed" }
+        val entry = view(row)
+        return HardwareUploadCandidate(file, Work3200Audio.inspectPcmWav(file), entry.idempotencyKey, entry.episodeId)
+    }
+    fun markUploaded(id: String, scope: HardwareScope, episodeId: String): HardwareImport = locked {
+        require(episodeId.isNotBlank()); val row = load(id); requireScope(row, scope); candidate(row)
+        require(!row.has("episode") || row.getString("episode") == episodeId) { "Import already belongs to a different Episode" }
+        row.put("episode", episodeId); save(row); view(row)
+    }
+}
