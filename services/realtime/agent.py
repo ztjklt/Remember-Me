@@ -5,6 +5,7 @@ No generic voice LLM, provider key, sample or actor credential in this worker.
 import asyncio
 import json
 import os
+import logging
 from urllib.parse import urlsplit
 from uuid import uuid4
 import aiohttp
@@ -14,6 +15,22 @@ from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, st
 from livekit.plugins import silero
 
 TOPIC='remember.twin.voice.v1'
+
+
+class PrivateLogFilter(logging.Filter):
+    def filter(self,record):
+        # Disabling session recording does not remove SDK warning extras.
+        for key in list(vars(record)):
+            if key.startswith('lk.pii.') or key in {'transcript','user_input','question','answer'}:
+                record.__dict__[key]='[redacted]'
+        return True
+
+
+def private_logs():
+    guard=PrivateLogFilter()
+    logging.getLogger('livekit.agents').addFilter(guard)
+    for name in ['', 'livekit', 'livekit.agents']:
+        for handler in logging.getLogger(name).handlers:handler.addFilter(guard)
 
 
 class Backend:
@@ -56,6 +73,19 @@ class ProxySTT(stt.STT):
         return ProxyStream(stt=self,conn_options=conn_options,sample_rate=16000)
 
 
+async def pcm_chunks(source):
+    buffer=bytearray()
+    async for frame in source:
+        if isinstance(frame,rtc.AudioFrame):
+            if frame.num_channels!=1 or frame.sample_rate!=16000:raise ValueError('ASR requires 16 kHz mono')
+            buffer.extend(bytes(frame.data))
+            while len(buffer)>=3200:  # 100 ms, preserving every PCM sample
+                yield bytes(buffer[:3200]);del buffer[:3200]
+        elif buffer:  # RecognizeStream flush marker
+            yield bytes(buffer);buffer.clear()
+    if buffer:yield bytes(buffer)
+
+
 class ProxyStream(stt.RecognizeStream):
     async def _run(self):
         backend=self._stt.backend
@@ -66,10 +96,7 @@ class ProxyStream(stt.RecognizeStream):
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
                 async def send():
-                    async for frame in self._input_ch:
-                        if isinstance(frame,rtc.AudioFrame):
-                            if frame.num_channels!=1: raise ValueError('ASR requires mono')
-                            await ws.send_bytes(bytes(frame.data))
+                    async for data in pcm_chunks(self._input_ch):await ws.send_bytes(data)
                 async def receive():
                     seen=set()
                     async for message in ws:
@@ -109,7 +136,9 @@ class CallController:
             old_task=self.task;old_task.cancel();self.task=None
             self.cancelled_tasks.add(old_task)
             old_task.add_done_callback(self.cancelled_tasks.discard)
-        self.session.interrupt(force=True)
+        try:self.session.interrupt(force=True)
+        except RuntimeError:
+            if not self.closed:raise
         if old:
             async def cancel_remote():
                 try:await self.backend.request('POST','/interrupt',json={'turn_id':old})
@@ -139,8 +168,12 @@ class CallController:
             audio=self.backend.frames(answer['answer_id'],turn)
             try:
                 handle=self.session.say(answer['answer'],audio=audio,allow_interruptions=True,add_to_chat_ctx=False)
-                await handle
-            finally:await audio.aclose()
+            except Exception:
+                await audio.aclose();raise
+            # LiveKit's forwarding task owns and closes this iterator, including
+            # on interruption. Closing it here races that task while it is reading.
+            await handle
+            if handle.exception() is not None:raise RuntimeError('Validated answer audio failed')
             if self.turn_id==turn:
                 await self.publish({'type':'state','turn_id':turn,'state':'listening'})
         except asyncio.CancelledError:raise
@@ -158,6 +191,7 @@ server=AgentServer()
 
 @server.rtc_session(agent_name='remember-twin')
 async def entrypoint(ctx: JobContext):
+    private_logs()
     metadata=json.loads(ctx.job.metadata)
     call_id=metadata['call_id']
     if not isinstance(call_id,str) or not call_id.startswith('vc_') or len(call_id)>64:raise ValueError('Invalid call')
@@ -187,6 +221,9 @@ async def entrypoint(ctx: JobContext):
     @session.on('error')
     def error(event):
         if not event.error.recoverable:asyncio.create_task(session.aclose())
+    @session.on('close')
+    def closed(event):
+        controller.closed=True
     await session.start(room=ctx.room,agent=Agent(instructions='只播放 Remember Me 后端已校验的孪生回答。'),
         room_options=room_io.RoomOptions(participant_identity=authorized['participant_identity'],text_input=False,text_output=False,delete_room_on_close=True),record=False)
     await publish({'type':'state','state':'listening'})

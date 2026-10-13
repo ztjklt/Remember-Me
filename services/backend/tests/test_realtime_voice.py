@@ -274,3 +274,57 @@ def test_real_uvicorn_websocket_handshake_enforces_worker_authorization(ready,cl
     finally:
         server.should_exit=True;thread.join(timeout=5);listener.close()
         assert not thread.is_alive()
+
+
+def test_continuous_pcm_does_not_query_per_frame_and_revoke_closes_socket(ready,client,app,monkeypatch):
+    import asyncio
+    import socket
+    import threading
+    import time
+    from types import SimpleNamespace
+    import aiohttp
+    import uvicorn
+    from app import realtime_listen
+    checks=[];original=realtime_listen.check_call
+    def checked(*args):checks.append(time.monotonic());return original(*args)
+    monkeypatch.setattr(realtime_listen,'check_call',checked)
+    class Upstream:
+        def __init__(self):self.audio=[];self.task_id='';self.closed=False
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):self.closed=True
+        async def send_json(self,event):self.task_id=event['header']['task_id']
+        async def receive_json(self):return {'header':{'event':'task-started','task_id':self.task_id}}
+        async def send_bytes(self,data):self.audio.append(data)
+        def __aiter__(self):return self
+        async def __anext__(self):await asyncio.Event().wait()
+    upstream=Upstream()
+    class ProviderSession:
+        def __init__(self,**kwargs):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        def ws_connect(self,*args,**kwargs):return upstream
+    monkeypatch.setattr(realtime_listen,'aiohttp',SimpleNamespace(ClientSession=ProviderSession,
+        ClientTimeout=aiohttp.ClientTimeout,WSMsgType=aiohttp.WSMsgType,ClientError=aiohttp.ClientError))
+    identifier=start(client,app,ready).json()['call_id']
+    listener=socket.socket();listener.bind(('127.0.0.1',0));listener.listen(128);port=listener.getsockname()[1]
+    server=uvicorn.Server(uvicorn.Config(app,host='127.0.0.1',port=port,log_level='critical',access_log=False,lifespan='off'))
+    thread=threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True);thread.start()
+    try:
+        deadline=time.monotonic()+5
+        while not server.started and time.monotonic()<deadline:time.sleep(.01)
+        assert server.started
+        async def probe():
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as http:
+                async with http.ws_connect(f'ws://127.0.0.1:{port}/internal/voice-calls/{identifier}/listen',headers=internal()) as ws:
+                    assert (await ws.receive_json())['type']=='ready'
+                    for _ in range(50):await ws.send_bytes(b'\x01\x00'*320)
+                    deadline=time.monotonic()+2
+                    while len(upstream.audio)<50 and time.monotonic()<deadline:await asyncio.sleep(.01)
+                    assert len(upstream.audio)==50 and len(checks)<5
+                    result=client.post('/api/v1/consents/'+ready[4]+'/revoke',headers=ready[2]);assert result.status_code==200
+                    error=await asyncio.wait_for(ws.receive_json(),2.5)
+                    assert error['type']=='error'
+        asyncio.run(probe())
+    finally:
+        server.should_exit=True;thread.join(timeout=5);listener.close()
+        assert not thread.is_alive() and upstream.closed

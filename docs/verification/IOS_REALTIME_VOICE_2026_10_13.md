@@ -24,8 +24,8 @@ CloudBase source deployment initially exceeded the 5 KiB environment cap; no ver
 
 ## Tests actually run
 
-- Backend targeted regression: 58 passed, including all 13 realtime Voice cases and the real Uvicorn WebSocket handshake.
-- Worker: 6 passed (late answer after interruption, UNKNOWN, close, PCM framing, insecure remote URL).
+- Backend targeted regression: 59 passed, including 14 realtime Voice cases, real Uvicorn WebSocket authorization and a continuous-PCM/revocation test.
+- Worker: 10 passed (late answer after interruption, UNKNOWN, close, PCM framing, insecure remote URL).
 - AI Core conversation/grounded: 38 passed against the final approved conversation-v2 / twin-identity-v1 prompt.
 - Contract: 21 passed, including additive v0.6 and unchanged v0.5 definitions.
 - iOS selected regression: 45 passed (26 connection, 13 recording, 6 voice-call tests); after profile-reconciliation UI refinement, the 6 voice tests passed again.
@@ -41,3 +41,9 @@ The user must personally confirm the purpose notice and record 5–15 seconds co
 While inspecting old deployment parameters, an overly broad diagnostic print exposed existing backend credentials in tool output. The agent reported this immediately. The newly generated LiveKit Secret was not exposed. The owner chose to rotate all old credentials personally later; no credential was revoked or rotated on their behalf.
 
 Private fields requiring coordinated updates: database password in `REMEMBER_DATABASE_URL`, Alibaba `REMEMBER_PARAFORMER_API_KEY` and `REMEMBER_COSYVOICE_API_KEY`, DeepSeek `AI_API_KEY`, storage `REMEMBER_CLOUDBASE_API_KEY`, and timer/API `CLOUDBASE_WORKER_TOKEN`. The timer and API token must be changed together; Alibaba ASR and CosyVoice currently share the selected application credential. Update the ignored runtime deployment configuration as well as the active cloud environment; never paste replacement values into chat.
+
+## Streaming follow-up
+
+The initial genuine RTC test connected and answered, but the second utterance timed out. Each 20 ms PCM frame was synchronously checking the database; under sustained audio this delayed ASR and TTS. The worker now batches exactly preserved samples into 100 ms packets. Backend rechecks grants on initial connection, every second and before recognition text submission using a thread pool; every TTS chunk retains its current-answer/source check off the event loop. A real socket test forwards 50 frames without per-frame database queries and closes after revocation. Cloud re-test produced two conversation turns with non-silent audio, changed turn IDs and no old-turn restart. Final stronger interruption and latest-release verification is recorded below after completion.
+
+SDK playout owns and closes the audio iterator, preventing a cancellation race. Shutdown still performs service cleanup after the SDK has closed. SDK warning extras marked `lk.pii.*` are redacted because disabling session recording alone did not suppress timeout warning transcripts. Speech-handle audio failures are now presented to the client.

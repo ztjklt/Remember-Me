@@ -104,3 +104,56 @@ async def test_delayed_manual_interrupt_cannot_cancel_the_new_turn():
     assert session.spoken==['new']
     assert controller.manual_interrupt(new)
     await controller.close()
+
+
+@pytest.mark.asyncio
+async def test_shutdown_still_cleans_up_after_livekit_already_stopped():
+    class Stopped(Session):
+        def interrupt(self,**kwargs):raise RuntimeError('AgentSession is not running')
+    api=API()
+    async def publish(data):pass
+    controller=CallController(api,Stopped(),publish);controller.turn_id='completed-turn'
+    await controller.close()
+    assert controller.closed and api.cancelled==['completed-turn']
+
+
+@pytest.mark.asyncio
+async def test_asr_batches_preserve_samples_and_flush_partial_audio():
+    from agent import pcm_chunks
+    from livekit import rtc
+    original=b''.join(bytes([i,0])*320 for i in range(7))
+    async def source():
+        for i in range(7):
+            yield rtc.AudioFrame(data=original[i*640:(i+1)*640],sample_rate=16000,num_channels=1,samples_per_channel=320)
+    chunks=[data async for data in pcm_chunks(source())]
+    assert [len(data) for data in chunks]==[3200,1280]
+    assert b''.join(chunks)==original
+
+
+@pytest.mark.asyncio
+async def test_audio_failure_hidden_by_speech_handle_is_visible_to_user():
+    class FailedHandle:
+        def __await__(self):
+            async def done():return self
+            return done().__await__()
+        def exception(self):return RuntimeError('fixture audio failed')
+    class FailedAudio(Session):
+        def say(self,*args,**kwargs):return FailedHandle()
+    api=API();events=[]
+    async def publish(data):events.append(data)
+    controller=CallController(api,FailedAudio(),publish)
+    controller.question('test');await settle();api.pending['test'].set_result(answer('test'));await settle()
+    assert any(e['type']=='error' for e in events)
+    assert not any(e.get('state')=='listening' for e in events)
+    await controller.close()
+
+
+def test_sdk_warning_extras_do_not_persist_private_transcripts():
+    import logging
+    from agent import PrivateLogFilter
+    record=logging.makeLogRecord({'msg':'transcript timeout','levelno':logging.WARNING,
+        'lk.pii.interim_transcript':'private user sentence','lk.pii.user_input':'another private sentence',
+        'lk.pii.participant_identity':'private participant','region':'ap-south'})
+    assert PrivateLogFilter().filter(record)
+    assert all(v=='[redacted]' for k,v in vars(record).items() if k.startswith('lk.pii.'))
+    assert record.region=='ap-south' and record.getMessage()=='transcript timeout'

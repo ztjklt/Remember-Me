@@ -229,16 +229,18 @@ async def speech_call(call_id: str,answer_id: str,turn_id: str,request: Request,
     if result['response_type']=='SIMULATION': text='根据现有记录推测，'+text
     voice_id,model=profile.provider_voice_id,profile.model
     session.commit()
+    def still_authorized():
+        with request.app.state.database.session() as guard:
+            call,_,owner=check_call(guard,call_id,request.app.state.settings,request.app.state.realtime_provider)
+            current=read_answer(call.subject_id,answer_id,owner,guard)
+            return not current['stale'] and call.active_turn==turn_id and call.active_answer_id==answer_id
     async def audio():
         stream=request.app.state.realtime_provider.speech(text,voice_id,model)
         try:
             async for chunk in stream:
                 if await request.is_disconnected(): return
                 # Recheck before each audio packet; don't retain a transaction across a network wait.
-                with request.app.state.database.session() as guard:
-                    call,_,owner=check_call(guard,call_id,request.app.state.settings,request.app.state.realtime_provider)
-                    current=read_answer(call.subject_id,answer_id,owner,guard)
-                    if current['stale'] or call.active_turn != turn_id or call.active_answer_id != answer_id: return
+                if not await run_in_threadpool(still_authorized): return
                 yield chunk
         finally: await stream.aclose()
     return StreamingResponse(audio(),media_type='audio/pcm',headers={'X-Audio-Sample-Rate':'24000','X-Audio-Channels':'1','Cache-Control':'no-store'})

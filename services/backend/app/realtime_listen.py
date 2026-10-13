@@ -4,6 +4,7 @@ import json
 from uuid import uuid4
 import aiohttp
 from fastapi import WebSocketDisconnect
+from starlette.concurrency import run_in_threadpool
 from .errors import AppError
 from .realtime_access import check_call
 from .realtime_provider import task_message
@@ -17,7 +18,7 @@ async def proxy_listen(ws, call_id):
             check_call(session,call_id,app.state.settings,app.state.realtime_provider)
     try:
         worker_authorization(ws)
-        authorize()
+        await run_in_threadpool(authorize)
     except AppError:
         await ws.close(code=1008);return
     await ws.accept()
@@ -31,7 +32,8 @@ async def proxy_listen(ws, call_id):
                     'model':app.state.settings.realtime_asr_model,'parameters':{'format':'pcm','sample_rate':16000,
                     'semantic_punctuation_enabled':False,'max_sentence_silence':600},'input':{}}))
                 first=await asyncio.wait_for(upstream.receive_json(),15)
-                if first.get('header',{}).get('event')!='task-started': raise RuntimeError('ASR unavailable')
+                if (first.get('header',{}).get('event')!='task-started' or
+                    first.get('header',{}).get('task_id')!=task_id): raise RuntimeError('ASR unavailable')
                 await ws.send_json({'type':'ready'})
                 async def send_audio():
                     count=0
@@ -39,7 +41,9 @@ async def proxy_listen(ws, call_id):
                         if not data or len(data)>32000 or len(data)%2: raise ValueError('Invalid PCM frame')
                         count+=len(data)
                         if count>16000*2*1800: raise ValueError('Call audio limit')
-                        authorize()
+                        # The watchdog checks live grants every second. Running
+                        # eight SQL lookups for each 20 ms PCM frame makes the
+                        # recognizer fall behind real-time input on CloudBase.
                         await upstream.send_bytes(data)
                 async def receive_text():
                     async for packet in upstream:
@@ -54,13 +58,13 @@ async def proxy_listen(ws, call_id):
                             text=sentence.get('text','')
                             if sentence.get('heartbeat') or not text.strip(): continue
                             if len(text)>1000: raise ValueError('Question too long')
-                            authorize()
+                            await run_in_threadpool(authorize)
                             await ws.send_json({'type':'final' if sentence.get('sentence_end') else 'interim',
                                                 'text':text,'sentence_id':str(sentence.get('begin_time',0))})
                 async def watchdog():
                     while True:
                         await asyncio.sleep(1)
-                        authorize()
+                        await run_in_threadpool(authorize)
                 tasks=[asyncio.create_task(f()) for f in [send_audio,receive_text,watchdog]]
                 done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
                 for task in done: task.result()
