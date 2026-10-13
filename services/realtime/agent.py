@@ -41,11 +41,21 @@ class Backend:
         if len(secret)<32: raise ValueError('Service credential is required')
         self.url=url.rstrip('/'); self.call_id=call_id
         self.headers={'Authorization':'Bearer '+secret}
-        self.client=httpx.AsyncClient(timeout=120,follow_redirects=False,trust_env=False)
+        self.client=httpx.AsyncClient(timeout=httpx.Timeout(120,connect=8),follow_redirects=False,trust_env=False)
 
     async def request(self,method,path,**kwargs):
         response=await self.client.request(method,self.url+'/internal/voice-calls/'+self.call_id+path,headers=self.headers,**kwargs)
         response.raise_for_status();return response.json()
+
+    async def authorize_startup(self):
+        # Only the read-only startup authorization may retry a failed connection.
+        # Bound the whole attempt as well as HTTPX's individual I/O phases.
+        for attempt in range(2):
+            try:
+                return await asyncio.wait_for(self.request('GET','/authorize',
+                    timeout=httpx.Timeout(10,connect=8)),10)
+            except (httpx.ConnectTimeout,httpx.ConnectError):
+                if attempt==1:raise
 
     async def frames(self,answer_id,turn_id):
         url=self.url+'/internal/voice-calls/'+self.call_id+'/speech/'+answer_id
@@ -277,6 +287,18 @@ class CallController:
         await asyncio.gather(*self.interrupt_tasks,*self.cancelled_tasks,return_exceptions=True)
 
 
+async def connect_authorized(ctx,backend):
+    try:
+        authorized=await backend.authorize_startup()
+        if ctx.job.room.name!=authorized['room']:raise ValueError('Room mismatch')
+        await ctx.connect()
+        return authorized
+    except BaseException:
+        try:await backend.client.aclose()
+        except Exception:pass
+        raise
+
+
 server=AgentServer()
 
 
@@ -287,9 +309,7 @@ async def entrypoint(ctx: JobContext):
     call_id=metadata['call_id']
     if not isinstance(call_id,str) or not call_id.startswith('vc_') or len(call_id)>64:raise ValueError('Invalid call')
     backend=Backend(os.environ['REMEMBER_REALTIME_BACKEND_URL'],os.environ['REMEMBER_REALTIME_WORKER_SECRET'],call_id)
-    authorized=await backend.request('GET','/authorize')
-    if ctx.job.room.name!=authorized['room']:raise ValueError('Room mismatch')
-    await ctx.connect()
+    authorized=await connect_authorized(ctx,backend)
     # Manual turn submission prevents any generic LLM from bypassing Backend validation.
     # VAD still emits speaking events: those immediately clear LiveKit's audio queue.
     recognizer=ProxySTT(backend)

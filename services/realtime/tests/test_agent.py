@@ -91,6 +91,109 @@ def test_worker_refuses_remote_plain_http_or_missing_service_key():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('connection_error',[httpx.ConnectTimeout,httpx.ConnectError])
+async def test_startup_authorization_retries_only_connection_failures_before_rtc(connection_error):
+    from types import SimpleNamespace
+    from agent import connect_authorized
+    backend=Backend('https://fixture.invalid','x'*32,'vc_fixture')
+    assert backend.client.timeout.connect==8 and backend.client.timeout.read==120
+    await backend.client.aclose()
+    events=[]
+    async def reply(request):
+        assert request.method=='GET' and request.url.path.endswith('/authorize')
+        assert request.extensions['timeout']['connect']==8
+        assert request.extensions['timeout']['read']==10
+        events.append('authorize')
+        if len(events)==1:raise connection_error('fixture connection failure',request=request)
+        return httpx.Response(200,json={'room':'fixture-room'})
+    backend.client=httpx.AsyncClient(transport=httpx.MockTransport(reply))
+    async def connect():events.append('connect')
+    ctx=SimpleNamespace(job=SimpleNamespace(room=SimpleNamespace(name='fixture-room')),connect=connect)
+    try:
+        assert await connect_authorized(ctx,backend)=={'room':'fixture-room'}
+        assert events==['authorize','authorize','connect'] and not backend.client.is_closed
+    finally:await backend.client.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('status',[401,403])
+async def test_startup_authorization_denial_is_not_retried_and_releases_client(status):
+    from types import SimpleNamespace
+    from agent import connect_authorized
+    backend=Backend('https://fixture.invalid','x'*32,'vc_fixture');await backend.client.aclose()
+    attempts=[];connections=[]
+    def reply(request):
+        attempts.append(request.method)
+        return httpx.Response(status)
+    backend.client=httpx.AsyncClient(transport=httpx.MockTransport(reply))
+    async def connect():connections.append(True)
+    ctx=SimpleNamespace(job=SimpleNamespace(room=SimpleNamespace(name='fixture-room')),connect=connect)
+    with pytest.raises(httpx.HTTPStatusError) as error:await connect_authorized(ctx,backend)
+    assert error.value.response.status_code==status
+    assert attempts==['GET'] and not connections and backend.client.is_closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('failure,expected_attempts',[(httpx.ConnectTimeout,2),(httpx.ReadTimeout,1)])
+async def test_startup_transport_failure_is_bounded_and_releases_client(failure,expected_attempts):
+    from types import SimpleNamespace
+    from agent import connect_authorized
+    backend=Backend('https://fixture.invalid','x'*32,'vc_fixture');await backend.client.aclose()
+    attempts=[];connections=[]
+    def reply(request):
+        attempts.append(request.method)
+        raise failure('fixture transport failure',request=request)
+    backend.client=httpx.AsyncClient(transport=httpx.MockTransport(reply))
+    async def connect():connections.append(True)
+    ctx=SimpleNamespace(job=SimpleNamespace(room=SimpleNamespace(name='fixture-room')),connect=connect)
+    with pytest.raises(failure):await connect_authorized(ctx,backend)
+    assert len(attempts)==expected_attempts and not connections and backend.client.is_closed
+
+
+@pytest.mark.asyncio
+async def test_startup_whole_attempt_timeout_is_not_retried_and_releases_client(monkeypatch):
+    from types import SimpleNamespace
+    import agent
+    backend=Backend('https://fixture.invalid','x'*32,'vc_fixture');await backend.client.aclose()
+    attempts=[];connections=[];budgets=[]
+    async def reply(request):
+        attempts.append(request.method)
+        await asyncio.Event().wait()
+    backend.client=httpx.AsyncClient(transport=httpx.MockTransport(reply))
+    wait_for=asyncio.wait_for
+    async def short_fixture_budget(operation,timeout):
+        budgets.append(timeout)
+        return await wait_for(operation,.01)
+    monkeypatch.setattr(agent.asyncio,'wait_for',short_fixture_budget)
+    async def connect():connections.append(True)
+    ctx=SimpleNamespace(job=SimpleNamespace(room=SimpleNamespace(name='fixture-room')),connect=connect)
+    with pytest.raises(TimeoutError):await agent.connect_authorized(ctx,backend)
+    assert attempts==['GET'] and budgets==[10] and not connections and backend.client.is_closed
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('failure',['room_mismatch','rtc_connect'])
+async def test_startup_room_or_rtc_failure_releases_client_after_authorization(failure):
+    from types import SimpleNamespace
+    from agent import connect_authorized
+    backend=Backend('https://fixture.invalid','x'*32,'vc_fixture');await backend.client.aclose()
+    events=[]
+    def reply(request):
+        events.append('authorize')
+        return httpx.Response(200,json={'room':'fixture-room'})
+    backend.client=httpx.AsyncClient(transport=httpx.MockTransport(reply))
+    async def connect():
+        events.append('connect')
+        raise RuntimeError('fixture RTC failure')
+    room='wrong-room' if failure=='room_mismatch' else 'fixture-room'
+    ctx=SimpleNamespace(job=SimpleNamespace(room=SimpleNamespace(name=room)),connect=connect)
+    expected=ValueError if failure=='room_mismatch' else RuntimeError
+    with pytest.raises(expected):await connect_authorized(ctx,backend)
+    assert events==(['authorize'] if failure=='room_mismatch' else ['authorize','connect'])
+    assert backend.client.is_closed
+
+
+@pytest.mark.asyncio
 async def test_delayed_manual_interrupt_cannot_cancel_the_new_turn():
     api=API();session=Session();events=[]
     async def publish(data):events.append(data)
