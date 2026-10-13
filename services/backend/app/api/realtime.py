@@ -27,6 +27,8 @@ from .twin import require_subject, TwinNotFound, ask, read_answer, TwinQuestion
 
 router = APIRouter(tags=['realtime-voice'])
 PREFIX = '/api/v1/subjects/{subject_id}/twin/voice'
+# Room cleanup must not delay a durable hang-up behind network retries.
+_ROOM_DELETE_TIMEOUT_SECONDS = 3.0
 
 
 class CallRequest(BaseModel):
@@ -191,7 +193,7 @@ async def end_call(subject_id: str, call_id: str, request: Request, actor: Actor
     row=session.get(VoiceCall,call_id)
     if not row or row.actor_id!=actor.actor_id or row.subject_id!=subject_id: raise TwinNotFound('Not found')
     row.ended_at=utcnow();session.commit()
-    try: await remove_room(request.app,row.room)
+    try: await asyncio.wait_for(remove_room(request.app,row.room),timeout=_ROOM_DELETE_TIMEOUT_SECONDS)
     except Exception: pass  # Durable end denies all worker operations; its watchdog disconnects.
     return {'ended':True}
 

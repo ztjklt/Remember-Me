@@ -272,6 +272,40 @@ def test_call_hangup_is_owner_scoped_and_immediately_denies_worker(ready,client,
     assert client.get('/internal/voice-calls/'+identifier+'/authorize',headers=internal()).status_code==404
 
 
+def test_hangup_deadline_cancels_remote_cleanup_and_denies_worker_while_pending(ready,client,app,session,monkeypatch):
+    import asyncio
+    import httpx
+    from app.api import realtime
+    own,_,headers,*_=ready
+    identifier=start(client,app,ready).json()['call_id']
+    path=f'/api/v1/subjects/{own.subject_id}/twin/voice/calls/{identifier}'
+    monkeypatch.setattr(realtime,'_ROOM_DELETE_TIMEOUT_SECONDS',.25)
+    async def probe():
+        started=asyncio.Event();cancelled=asyncio.Event()
+        async def stalled_cleanup(_app,room):
+            assert room==identifier
+            started.set()
+            try: await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.set();raise
+        monkeypatch.setattr(realtime,'remove_room',stalled_cleanup)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://fixture') as http:
+            ending=asyncio.create_task(http.delete(path,headers=headers))
+            try:
+                await asyncio.wait_for(started.wait(),1)
+                denied=await http.get('/internal/voice-calls/'+identifier+'/authorize',headers=internal())
+                assert denied.status_code==404
+                assert not ending.done()  # Durable end applies before remote cleanup completes.
+                response=await asyncio.wait_for(ending,1)
+                assert response.status_code==200 and response.json()=={'ended':True}
+                assert cancelled.is_set()
+            finally:
+                ending.cancel();await asyncio.gather(ending,return_exceptions=True)
+    asyncio.run(probe())
+    session.expire_all()
+    assert session.get(VoiceCall,identifier).ended_at is not None
+
+
 def test_real_uvicorn_websocket_handshake_enforces_worker_authorization(ready,client,app):
     import asyncio
     import socket
@@ -402,3 +436,43 @@ def test_partial_recognition_does_not_delay_final_or_repeat_database_guards(read
     ws=Socket();asyncio.run(realtime_listen.proxy_listen(ws,identifier))
     assert [event['type'] for event in ws.sent]==['ready','final']
     assert len(checks)==2  # Initial access and final text; live watchdog is separate.
+
+
+def test_disconnected_websocket_cleanup_does_not_raise_again(ready,client,app,monkeypatch):
+    import asyncio
+    from types import SimpleNamespace
+    import aiohttp
+    from fastapi import WebSocketDisconnect
+    from app import realtime_listen
+    identifier=start(client,app,ready).json()['call_id']
+    class Upstream:
+        def __init__(self):self.task_id='';self.closed=False
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):self.closed=True
+        async def send_json(self,event):self.task_id=event['header']['task_id']
+        async def receive_json(self):return {'header':{'event':'task-started','task_id':self.task_id}}
+        def __aiter__(self):return self
+        async def __anext__(self):await asyncio.Event().wait()
+    upstream=Upstream()
+    class ProviderSession:
+        def __init__(self,**kwargs):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        def ws_connect(self,*args,**kwargs):return upstream
+    monkeypatch.setattr(realtime_listen,'aiohttp',SimpleNamespace(ClientSession=ProviderSession,
+        ClientTimeout=aiohttp.ClientTimeout,WSMsgType=aiohttp.WSMsgType,ClientError=aiohttp.ClientError))
+    class Socket:
+        headers=internal()
+        def __init__(self):self.app=app;self.close_attempted=False;self.sent=[]
+        async def accept(self):pass
+        async def send_json(self,data):
+            self.sent.append(data)
+            if data['type']=='error':raise WebSocketDisconnect(code=1006)
+        async def iter_bytes(self):
+            raise WebSocketDisconnect(code=1006)
+            if False:yield b''
+        async def close(self,**kwargs):
+            self.close_attempted=True;raise WebSocketDisconnect(code=1006)
+    ws=Socket();asyncio.run(realtime_listen.proxy_listen(ws,identifier))
+    assert ws.close_attempted and upstream.closed
+    assert [event['type'] for event in ws.sent]==['ready','error']

@@ -81,4 +81,4 @@ async def proxy_listen(ws, call_id):
         for task in tasks: task.cancel()
         await asyncio.gather(*tasks,return_exceptions=True)
         try: await ws.close()
-        except RuntimeError: pass
+        except (RuntimeError,WebSocketDisconnect): pass
