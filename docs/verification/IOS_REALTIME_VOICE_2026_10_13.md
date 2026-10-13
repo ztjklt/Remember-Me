@@ -25,7 +25,7 @@ CloudBase source deployment initially exceeded the 5 KiB environment cap; no ver
 ## Tests actually run
 
 - Backend targeted regression: 59 passed, including 14 realtime Voice cases, real Uvicorn WebSocket authorization and a continuous-PCM/revocation test.
-- Worker: 10 passed (late answer after interruption, UNKNOWN, close, PCM framing, insecure remote URL).
+- Worker: 11 passed (late answer after interruption, UNKNOWN, close, PCM framing, insecure remote URL).
 - AI Core conversation/grounded: 38 passed against the final approved conversation-v2 / twin-identity-v1 prompt.
 - Contract: 21 passed, including additive v0.6 and unchanged v0.5 definitions.
 - iOS selected regression: 45 passed (26 connection, 13 recording, 6 voice-call tests); after profile-reconciliation UI refinement, the 6 voice tests passed again.
