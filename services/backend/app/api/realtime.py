@@ -3,6 +3,8 @@ import asyncio
 import hashlib
 import hmac
 import json
+import io
+import wave
 import secrets
 from datetime import timedelta
 from uuid import uuid4
@@ -141,6 +143,46 @@ async def enroll_profile(subject_id: str, request: Request,
         if not profile.revoked_at: profile.status='enrollment_unknown' if not profile.provider_voice_id else 'failed'
         session.commit()
         raise
+
+
+@router.get(PREFIX + '/profile/preview')
+async def preview_profile(subject_id: str, request: Request, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+    require_subject(session, subject_id, actor)
+    s = request.app.state.settings
+    profile = profile_for(session, subject_id, actor.actor_id)
+    if not configured(s, request.app.state.realtime_provider):
+        raise RealtimeUnavailable('声音服务尚未配置。')
+    if not profile or profile.status != 'ready' or profile.model != s.cosyvoice_model or profile.accepted_policy != policy(s):
+        raise TwinNotFound('请等待本人音色就绪并确认当前声音用途。')
+    profile_id, voice_id, model, consent_id = profile.profile_id, profile.provider_voice_id, profile.model, profile.consent_id
+    actor_id = actor.actor_id
+    ConsentRepository(session).require_active(consent_id, subject_id=subject_id, scope=ConsentScope.VOICE, actor_id=actor_id)
+    session.commit()
+
+    def still_authorized():
+        with request.app.state.database.session() as guard:
+            require_subject(guard, subject_id, current_actor(request, guard))
+            ConsentRepository(guard).require_active(consent_id, subject_id=subject_id, scope=ConsentScope.VOICE, actor_id=actor_id)
+            current = profile_for(guard, subject_id, actor_id)
+            if not current or current.profile_id != profile_id or current.status != 'ready' or current.provider_voice_id != voice_id or current.accepted_policy != policy(s):
+                raise TwinNotFound('声音状态已变化，请刷新后重试。')
+
+    pcm = bytearray()
+    stream = request.app.state.realtime_provider.speech('你好，这是合成音色试听。你可以听听这段声音是否像自己。', voice_id, model)
+    try:
+        async for chunk in stream:
+            if await request.is_disconnected(): raise TwinNotFound('试听已取消。')
+            await run_in_threadpool(still_authorized)
+            pcm.extend(chunk)
+            if len(pcm) > 1024 * 1024: raise RealtimeUnavailable('音色试听超过长度限制。')
+    finally:
+        await stream.aclose()
+    await run_in_threadpool(still_authorized)
+    if not pcm or len(pcm) % 2: raise RealtimeUnavailable('音色试听未能生成，请稍后重试。')
+    audio = io.BytesIO()
+    with wave.open(audio, 'wb') as output:
+        output.setnchannels(1); output.setsampwidth(2); output.setframerate(24000); output.writeframes(pcm)
+    return Response(audio.getvalue(), media_type='audio/wav', headers={'Cache-Control': 'no-store'})
 
 
 @router.get('/api/v1/realtime-samples/{profile_id}', include_in_schema=False)

@@ -12,7 +12,7 @@ import json
 from pydantic import ValidationError
 from app.config import Settings
 from sqlalchemy import select
-from app.models import TwinAnswer, DeviceCredential, utcnow
+from app.models import TwinAnswer, DeviceCredential, Consent, utcnow
 from app.realtime_models import VoiceCall, RealtimeVoiceProfile
 from app.realtime_access import policy
 from app.realtime_provider import AlibabaVoice, RealtimeUnavailable, validate_sample
@@ -65,6 +65,43 @@ def start(client,app,ready):
     own,_,headers,cloud,voice,_=ready
     return client.post(f'/api/v1/subjects/{own.subject_id}/twin/voice/calls',headers=headers,
         json={'cloud_consent_id':cloud,'voice_consent_id':voice,'policy':policy(app.state.settings)})
+
+
+def test_voice_preview_is_private_wave_without_twin_or_saved_evidence(app, client, session, ready):
+    own, other, headers, cloud, voice, profile = ready
+    path = f'/api/v1/subjects/{own.subject_id}/twin/voice/profile/preview'
+    assert client.get(path).status_code == 401
+    assert client.get(path, headers={'Authorization': 'Bearer ' + other.actor_token}).status_code == 404
+    client.post('/api/v1/consents/' + cloud + '/revoke', headers=headers)
+    response = client.get(path, headers=headers)
+    assert response.status_code == 200
+    assert response.headers['cache-control'] == 'no-store'
+    with wave.open(io.BytesIO(response.content)) as audio:
+        assert audio.getframerate() == 24000 and audio.getnchannels() == 1
+        assert audio.getnframes() == 960
+    assert not list(session.scalars(select(VoiceCall)))
+    assert not list(session.scalars(select(TwinAnswer)))
+
+
+def test_voice_preview_withholds_audio_when_voice_revoked_during_generation(app, client, session, ready):
+    own, _, headers, _, voice, _ = ready
+    def revoke_during_generation():
+        grant = session.get(Consent, voice)
+        grant.status = 'revoked'; grant.revoked_at = utcnow(); session.commit()
+    app.state.realtime_provider.after_chunk = revoke_during_generation
+    response = client.get(f'/api/v1/subjects/{own.subject_id}/twin/voice/profile/preview', headers=headers)
+    assert response.status_code in (403, 404)
+    assert not response.content.startswith(b'RIFF')
+
+
+def test_voice_preview_does_not_generate_for_pending_or_changed_policy(app, client, session, ready):
+    own, _, headers, _, _, profile = ready
+    path = f'/api/v1/subjects/{own.subject_id}/twin/voice/profile/preview'
+    profile.status = 'enrolling'; session.commit()
+    assert client.get(path, headers=headers).status_code == 404
+    profile.status = 'ready'; profile.accepted_policy = 'old-policy'; session.commit()
+    assert client.get(path, headers=headers).status_code == 404
+    assert not app.state.realtime_provider.operations
 
 
 def internal():return {'Authorization':'Bearer '+'x'*32}
