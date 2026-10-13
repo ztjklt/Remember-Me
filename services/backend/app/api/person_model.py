@@ -70,6 +70,7 @@ def memories(subject_id: str, actor: Actor = Depends(current_actor), session: Se
             "model_version": memory.model_version, "prompt_version": memory.prompt_version,
             "schema_version": memory.schema_version,
             "recorded_at": as_utc(episode.recorded_at).isoformat(),
+            "capture_source": episode.source,
             "transcript": episode.transcript,
             "stt_model_version": episode.stt_model_version,
             "evidence": [{"evidence_id": source.evidence_id,

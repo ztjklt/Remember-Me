@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -46,6 +46,22 @@ class TwinQuestion(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=1000)
     cloud_consent_id: str = Field(min_length=1)
+    conversation_mode: bool = False
+    previous_answer_id: str | None = Field(default=None, min_length=1, max_length=64)
+    request_id: str | None = Field(default=None, min_length=1, max_length=64)
+
+
+class RememberMessage(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    cloud_consent_id: str = Field(min_length=1)
+    recording_consent_id: str = Field(min_length=1)
+    confirmed: StrictBool
+
+    @field_validator('confirmed')
+    @classmethod
+    def confirmed_true(cls, value):
+        if value is not True: raise ValueError('Owner confirmation is required')
+        return value
 
 
 @router.post("/twin/transcribe-query")
@@ -96,6 +112,8 @@ def require_subject(session: Session, subject_id: str, actor: Actor) -> None:
 
 def answer_view(session: Session, row: TwinAnswer) -> dict:
     sources = [session.get(Evidence, identifier) for identifier in row.evidence_ids]
+    remembered = session.scalar(select(Episode).where(Episode.subject_id == row.subject_id,
+        Episode.actor_id == row.actor_id, Episode.idempotency_key == 'chat:' + row.answer_id))
     return {
         "answer_id": row.answer_id, "subject_id": row.subject_id,
         "question": row.question, "answer": row.answer if row.invalidated_at is None else "回答依据或核对规则已更新，请重新提问。",
@@ -104,9 +122,15 @@ def answer_view(session: Session, row: TwinAnswer) -> dict:
         "source_version": row.source_basis,
         "created_at": row.created_at.isoformat(),
         "stale": row.invalidated_at is not None,
+        "conversation_id": row.conversation_id,
+        "parent_answer_id": row.parent_answer_id,
+        "context_turn_count": len(row.context_answer_ids or []),
+        "context_truncated": row.context_truncated,
+        "remembered_episode_id": remembered.episode_id if remembered else None,
         "expression": row.expression if row.invalidated_at is None else None,
         "evidence": [{"evidence_id": source.evidence_id, "excerpt": source.excerpt,
-                      "episode_id": source.episode_id, "source_type": source.source_type}
+                      "episode_id": source.episode_id, "source_type": source.source_type,
+                      "has_audio": bool(session.get(Episode, source.episode_id).audio_object_key)}
                      for source in sources if source is not None] if row.invalidated_at is None else [],
     }
 
@@ -143,6 +167,20 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     actor_id = actor.actor_id
     publication_lock(session, subject_id)
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    if payload.conversation_mode:
+        from ..access import require_owner
+        require_owner(session, subject_id, actor_id)
+    elif payload.previous_answer_id is not None:
+        raise SourceChanged('续聊需要启用会话模式。')
+    if payload.request_id:
+        existing = session.scalar(select(TwinAnswer).where(TwinAnswer.subject_id == subject_id,
+            TwinAnswer.actor_id == actor_id, TwinAnswer.request_id == payload.request_id))
+        if existing is not None:
+            if existing.question != payload.question.strip() or existing.parent_answer_id != payload.previous_answer_id or bool(existing.conversation_id) != payload.conversation_mode:
+                raise SourceChanged('重试编号已用于另一条消息，请重新发送。')
+            if existing.invalidated_at is not None or existing.source_basis != answer_basis(session, subject_id):
+                raise SourceChanged('上次回答的依据已变化，请重新发送。')
+            return answer_view(session, existing)
     ids = visible_episodes(session, subject_id, actor_id, cloud=True)
     reader = not is_owner(session, subject_id, actor_id)
     if reader:
@@ -176,12 +214,16 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     basis = source_basis(session, subject_id)
     revision = session.get(ModelRevision, subject_id)
     basis_version = revision.version if revision else 0
+    from ..twin_conversation import context, retrieval_question
+    turns, conversation_id, truncated = context(session, subject_id, actor_id,
+        payload.previous_answer_id, from_material_basis(basis)) if payload.conversation_mode else ([], None, False)
+    if payload.conversation_mode and conversation_id is None: conversation_id = 'tc_' + uuid4().hex
     session.commit()
     question = payload.question.strip()
     if not question:
         raise TwinNotFound("Question is empty")
     try:
-        plan = prepare(session, subject_id, question, candidates, request.app.state.embedding_encoder)
+        plan = prepare(session, subject_id, retrieval_question(question, turns), candidates, request.app.state.embedding_encoder)
     except EmbeddingUnavailable as exc:
         raise TwinFailed(str(exc)) from exc
     publication_lock(session, subject_id)
@@ -205,14 +247,18 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     session.commit()
-    if not limited:
+    if not limited and not payload.conversation_mode:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
-            result = request.app.state.twin_client.answer(question, limited)
+            dialogue_options = {'conversation_turns':turns, 'conversation_mode':True}
+            if examples and not style_over_budget:
+                dialogue_options['expression_examples'] = [e['text'] for e in examples]
+            result = (request.app.state.twin_client.answer(question, limited, **dialogue_options) if payload.conversation_mode else
+                      request.app.state.twin_client.answer(question, limited))
         except TwinUnavailable as exc:
             failure = TwinFailed(str(exc))
             if not exc.retryable:
@@ -241,7 +287,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     content = result.get("answer")
     confidence = result.get("confidence")
     version = result.get("model_version")
-    if (kind not in {"ORIGINAL", "SIMULATION", "UNKNOWN"} or not isinstance(cited, list)
+    allowed_kinds = {"ORIGINAL", "SIMULATION", "UNKNOWN"} | ({"CONVERSATION"} if payload.conversation_mode else set())
+    if (kind not in allowed_kinds or not isinstance(cited, list)
             or not isinstance(content, str) or len(content) > 500
             or not isinstance(confidence, (float, int)) or not 0 <= confidence <= 1
             or not isinstance(version, str) or not version or len(version) > 128
@@ -249,7 +296,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         raise TwinFailed("模型回答的证据格式不正确。")
     if kind == "UNKNOWN":
         content, cited, confidence = "现有记录还不足以确定。", [], 0
-    elif not cited or not content.strip():
+    elif (kind != 'CONVERSATION' and not cited) or not content.strip():
         raise TwinFailed("模型回答缺少可核对的证据。")
     if kind == "ORIGINAL":
         def verified_original(identifier: str) -> bool:
@@ -267,7 +314,18 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             raise TwinFailed("模型给出的原话无法在录音转写中定位。")
     if kind == "SIMULATION" and any(valid[identifier][1]["memory_item_id"] in unresolved for identifier in cited):
         kind, content, cited, confidence = "UNKNOWN", "现有记录有不同说法，还不能确定。", [], 0
+    if payload.request_id:
+        # A concurrent retry may have published while the provider was running.
+        existing = session.scalar(select(TwinAnswer).where(TwinAnswer.subject_id == subject_id,
+            TwinAnswer.actor_id == actor_id, TwinAnswer.request_id == payload.request_id))
+        if existing is not None:
+            if existing.question != question or existing.parent_answer_id != payload.previous_answer_id:
+                raise SourceChanged('重试编号已用于另一条消息。')
+            return answer_view(session, existing)
     row = TwinAnswer(answer_id="ta_" + uuid4().hex[:16], subject_id=subject_id,
+                     conversation_id=conversation_id, parent_answer_id=payload.previous_answer_id,
+                     request_id=payload.request_id, context_answer_ids=[t['answer_id'] for t in turns],
+                     context_truncated=truncated,
                      actor_id=actor.actor_id, question=question, answer=content,
                      response_type=kind, evidence_ids=cited,
                      memory_item_ids=list({valid[identifier][1]["memory_item_id"] for identifier in cited}),
@@ -281,6 +339,53 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     return answer_view(session, row)
 
 
+@router.post('/twin/answers/{answer_id}/remember', status_code=201)
+def remember_message(subject_id: str, answer_id: str, payload: RememberMessage, request: Request,
+                     actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+    from ..access import require_owner
+    from ..models import MemoryItem
+    from ..repositories.episodes import EpisodeRepository, new_episode_id
+    from ..repositories.person_model import PersonModelRepository
+    from ..language_support import store_supplement
+    from ..retrieval import invalidate_answers
+    publication_lock(session, subject_id)
+    require_owner(session, subject_id, actor.actor_id)
+    require_cloud(session, subject_id, actor.actor_id, payload.cloud_consent_id)
+    ConsentRepository(session).require_active(payload.recording_consent_id, subject_id=subject_id,
+        actor_id=actor.actor_id, scope=ConsentScope.RECORDING)
+    row = session.scalar(select(TwinAnswer).where(TwinAnswer.answer_id == answer_id,
+        TwinAnswer.subject_id == subject_id, TwinAnswer.actor_id == actor.actor_id))
+    if row is None: raise TwinNotFound('聊天消息不存在。')
+    existing = EpisodeRepository(session).find_by_idempotency(subject_id=subject_id,
+        actor_id=actor.actor_id, idempotency_key='chat:' + row.answer_id)
+    if existing is not None:
+        note = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == existing.episode_id))
+        if note is None or note.deleted_at is not None or note.review_state != 'active':
+            raise SourceChanged('这条文字记忆已经停用，不会自动重新创建。')
+        return {'episode_id': existing.episode_id, 'memory_item_id': note.memory_item_id,
+                'status': existing.status, 'source': 'IOS_TEXT'}
+    now = utcnow()
+    episode = Episode(episode_id=new_episode_id(), subject_id=subject_id, actor_id=actor.actor_id,
+        recording_consent_id=payload.recording_consent_id, idempotency_key='chat:' + row.answer_id,
+        source='IOS_TEXT', recorded_at=row.created_at, duration_ms=None,
+        capture_metadata={'origin':'confirmed_chat_message','twin_answer_id':row.answer_id,
+                          'conversation_id':row.conversation_id,'review_supplement':row.question},
+        audio_ref=None, audio_object_key=None, audio_size_bytes=0,
+        audio_content_type='text/plain', audio_checksum=None,
+        status='ready', trace_id='text_' + uuid4().hex,
+        transcript=row.question, stt_transcript=None, transcript_reviewed_at=now,
+        transcript_reviewed_by=actor.actor_id, stt_backend='owner-text', stt_model_version='owner-text-v1',
+        model_version='owner-input', created_at=now, updated_at=now)
+    session.add(episode); session.flush()
+    store_supplement(session, episode)
+    PersonModelRepository(session).rebuild(subject_id, include_episode_id=episode.episode_id)
+    invalidate_answers(session, request.app.state.object_store, subject_id)
+    note = session.scalar(select(MemoryItem).where(MemoryItem.episode_id == episode.episode_id))
+    session.commit()
+    return {'episode_id':episode.episode_id, 'memory_item_id':note.memory_item_id,
+            'status':'ready', 'source':'IOS_TEXT'}
+
+
 @router.get("/twin/answers/{answer_id}")
 def read_answer(subject_id: str, answer_id: str,
                 actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
@@ -292,6 +397,11 @@ def read_answer(subject_id: str, answer_id: str,
         TwinAnswer.actor_id == actor.actor_id))
     if row is None:
         raise TwinNotFound("Answer not found")
+    if row.conversation_id:
+        grant = session.scalar(select(Consent).where(Consent.subject_id == subject_id,
+            Consent.granted_by_actor_id == actor_id, Consent.scope == str(ConsentScope.CLOUD_TWIN),
+            Consent.status == 'granted', Consent.revoked_at.is_(None)))
+        if grant is None: raise TwinNotFound('会话授权已撤销。')
     if row.invalidated_at is None and row.source_basis != answer_basis(session,subject_id):
         row.invalidated_at=utcnow()
         session.commit()

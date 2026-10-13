@@ -27,7 +27,9 @@ def prepare_environment(source):
     database_options = dict(parse_qsl(database.query, keep_blank_values=True))
     database_options['options'] = '-csearch_path=remember_ios'
     database_options['sslmode'] = 'verify-full'
-    database_options['sslrootcert'] = '/tmp/remember-postgres-ca.pem' if env.get('REMEMBER_POSTGRES_CA_PEM') else '/etc/ssl/certs/ca-certificates.crt'
+    public_ca = ROOT / 'infra/cloudbase/runtime/tencent-postgres-ca.crt'
+    database_options['sslrootcert'] = ('/tmp/remember-postgres-ca.pem' if env.get('REMEMBER_POSTGRES_CA_PEM')
+        else str(public_ca) if public_ca.is_file() else '/etc/ssl/certs/ca-certificates.crt')
     env['REMEMBER_DATABASE_URL'] = urlunsplit(database._replace(query=urlencode(database_options)))
     if env.get('REMEMBER_OBJECT_STORE_BACKEND') not in {'s3', 'cloudbase'}:
         raise ValueError('Raw audio and ASR checkpoints require persistent object storage.')

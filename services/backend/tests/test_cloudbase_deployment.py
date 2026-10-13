@@ -79,6 +79,20 @@ def test_database_tls_and_schema_cannot_be_disabled_by_input():
     assert query['sslrootcert']==['/tmp/remember-postgres-ca.pem']
 
 
+def test_bundled_public_database_ca_keeps_hostname_verification():
+    import ssl
+    launch=load_file('cloudbase_launch',ROOT/'infra/cloudbase/runtime/launch.py')
+    source=env();source['REMEMBER_DATABASE_URL']+='?sslmode=disable&sslrootcert=/untrusted'
+    prepared=launch.prepare_environment(source)
+    query=parse_qs(urlsplit(prepared['REMEMBER_DATABASE_URL']).query)
+    assert query['sslmode']==['verify-full']
+    assert query['sslrootcert']==[str(ROOT/'infra/cloudbase/runtime/tencent-postgres-ca.crt')]
+    public_ca=Path(query['sslrootcert'][0])
+    assert 'PRIVATE KEY' not in public_ca.read_text()
+    context=ssl.create_default_context(cafile=str(public_ca))
+    assert context.verify_mode==ssl.CERT_REQUIRED and context.check_hostname
+
+
 def test_ticks_require_separate_worker_credential_and_reject_overlap(app, monkeypatch):
     monkeypatch.setenv('CLOUDBASE_WORKER_TOKEN',TOKEN)
     runtime=load_file('cloudbase_api',ROOT/'infra/cloudbase/runtime/api.py')

@@ -210,5 +210,8 @@ def revoke_consent(
             CalibrationRun.status != "stale",
         )):
             run.status = "stale"
+    from .realtime import revoke_realtime, delete_remote_profiles
+    revoke_realtime(request.app, session, consent_id)
     session.commit()
+    delete_remote_profiles(request.app)
     return ConsentResponse.of(consent)

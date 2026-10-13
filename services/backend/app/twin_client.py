@@ -36,9 +36,13 @@ class TwinClient:
         except (httpx.HTTPError,ValueError):
             return {'status':'unavailable','text':'','model_version':'','prompt_version':'expression-v1'}
 
-    def answer(self, question: str, candidates: list[dict]) -> dict:
+    def answer(self, question: str, candidates: list[dict], *, conversation_turns=None, conversation_mode=False, expression_examples=None) -> dict:
         try:
-            response = httpx.post(self.url, json={"question": question, "candidates": candidates},
+            payload = {"question": question, "candidates": candidates}
+            if conversation_mode:
+                payload.update(conversation_mode=True, conversation_turns=conversation_turns or [])
+                if expression_examples: payload['expression_examples'] = expression_examples
+            response = httpx.post(self.url, json=payload,
                                   timeout=self.timeout, follow_redirects=False, trust_env=False)
             if response.is_error:
                 try:

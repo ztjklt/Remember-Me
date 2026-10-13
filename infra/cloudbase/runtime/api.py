@@ -8,7 +8,7 @@ from app.worker import build_worker
 from app.profiles import run_profile_once
 
 
-def create_tick_router(database, settings, profile_client, token):
+def create_tick_router(database, settings, profile_client, token, realtime_maintenance=None):
     if len(token) < 32:
         raise ValueError('A worker credential is required.')
     worker = build_worker(database, settings)
@@ -24,6 +24,7 @@ def create_tick_router(database, settings, profile_client, token):
         authorize(authorization)
         try:
             worker.run_once()
+            if realtime_maintenance: realtime_maintenance()
             return {'tick_completed': True}
         finally:
             lock.release()
@@ -38,5 +39,7 @@ def create_tick_router(database, settings, profile_client, token):
     return router
 
 
+from app.api.realtime import delete_remote_profiles
 app.include_router(create_tick_router(app.state.database, app.state.settings,
-    app.state.profile_client, os.environ.get('CLOUDBASE_WORKER_TOKEN', '')))
+    app.state.profile_client, os.environ.get('CLOUDBASE_WORKER_TOKEN', ''),
+    realtime_maintenance=lambda: delete_remote_profiles(app)))

@@ -49,9 +49,18 @@ class TwinInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=1000)
     candidates: list[TwinCandidate] = Field(max_length=24000)
+    conversation_mode: bool = False
+    conversation_turns: list["ConversationTurn"] = Field(default_factory=list, max_length=20)
+    expression_examples: list[str] = Field(default_factory=list, max_length=8)
 
     @model_validator(mode='after')
     def material_budget(self):
+        if self.conversation_turns and not self.conversation_mode:
+            raise ValueError('Conversation context requires conversation mode')
+        if sum(len(t.question) + len(t.answer or '') for t in self.conversation_turns) > 24000:
+            raise ValueError('Conversation context exceeds 24000 characters')
+        if (self.expression_examples and not self.conversation_mode) or sum(map(len, self.expression_examples)) > 4000:
+            raise ValueError('Invalid confirmed expression context')
         # A source can support several memories; don't count the same original
         # twice. Reject an oversized input instead of silently dropping sources.
         excerpts = {e.excerpt for c in self.candidates for e in c.evidence}
@@ -65,10 +74,28 @@ class TwinInput(BaseModel):
 class TwinOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     answer: str = Field(max_length=500)
-    response_type: Literal["ORIGINAL", "SIMULATION", "UNKNOWN"]
+    response_type: Literal["ORIGINAL", "SIMULATION", "UNKNOWN", "CONVERSATION"]
     evidence_ids: list[str] = Field(max_length=8)
     confidence: float = Field(ge=0, le=1)
     model_version: str = Field(min_length=1, max_length=128)
+
+
+class ConversationTurn(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    answer_id: str = Field(min_length=1, max_length=64)
+    question: str = Field(min_length=1, max_length=1000)
+    answer: str | None = Field(default=None, max_length=500)
+    response_type: Literal['ORIGINAL','SIMULATION','UNKNOWN','CONVERSATION']
+    assistant_stale: bool = False
+
+    @model_validator(mode='after')
+    def stale_has_no_body(self):
+        if self.assistant_stale and self.answer is not None:
+            raise ValueError('Expired assistant content must be omitted')
+        return self
+
+
+TwinInput.model_rebuild()
 
 
 TWIN_PROMPT_VERSION = "twin-evidence-v1"
@@ -98,6 +125,8 @@ class DeepSeekTwinProvider:
             self.client.close()
 
     def answer(self, payload: TwinInput) -> TwinOutput:
+        if payload.conversation_mode:
+            raise ProviderUnavailable('This legacy adapter does not support conversation mode')
         if not payload.candidates:
             return TwinOutput(answer="现有记录还不足以确定。", response_type="UNKNOWN",
                               evidence_ids=[], confidence=0, model_version="no-evidence")
@@ -105,7 +134,8 @@ class DeepSeekTwinProvider:
             "model": self.model,
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": TWIN_SYSTEM},
-                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True), ensure_ascii=False)}],
+                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True,
+                             exclude={'conversation_mode','conversation_turns','expression_examples'}), ensure_ascii=False)}],
             "response_format": {"type": "json_object"},
             "max_tokens": 700,
             "temperature": 0,

@@ -224,7 +224,6 @@ class CaptureEpisodeForm(BaseModel):
     duration_ms: int | None = Field(None, ge=0)
     metadata: str | None = Field(None, description="Arbitrary capture metadata, as JSON")
 
-
 class ClientTranscript(BaseModel):
     """An owner's unverified client ASR report, never a server provider receipt."""
     model_config = ConfigDict(extra='forbid', strict=True)
@@ -633,6 +632,9 @@ def read_audio(episode_id: str, actor: Actor = Depends(current_actor),
                store: ObjectStore = Depends(_object_store),
                session: Session = Depends(get_session)) -> Response:
     episode = EpisodeRepository(session).require_for(episode_id, actor_id=actor.actor_id)
+    if not episode.audio_object_key:
+        from ..errors import EpisodeNotFound
+        raise EpisodeNotFound('这是一条本人文字记忆，没有原始录音。')
     return Response(content=store.get(episode.audio_object_key),
                     media_type=episode.audio_content_type,
                     headers={"Cache-Control": "private, no-store"})

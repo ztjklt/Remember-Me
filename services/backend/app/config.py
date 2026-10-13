@@ -78,6 +78,18 @@ class Settings(BaseSettings):
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    realtime_enabled: bool = False
+    livekit_url: str = ""
+    livekit_api_url: str = ""
+    livekit_api_key: SecretStr = SecretStr("")
+    livekit_api_secret: SecretStr = SecretStr("")
+    realtime_worker_secret: SecretStr = SecretStr("")
+    realtime_public_url: str = ""
+    cosyvoice_api_key: SecretStr = SecretStr("")
+    cosyvoice_model: str = "cosyvoice-v3-flash"
+    cosyvoice_base_url: str = "https://dashscope.aliyuncs.com/api/v1"
+    realtime_inference_url: str = "wss://dashscope.aliyuncs.com/api-ws/v1/inference"
+    realtime_asr_model: str = "paraformer-realtime-v2"
     voice_url: str = "http://127.0.0.1:8300"
     voice_timeout_seconds: float = 180.0
 

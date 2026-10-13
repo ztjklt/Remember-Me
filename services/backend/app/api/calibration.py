@@ -129,7 +129,7 @@ def start(subject_id: str, body: StartCalibration,
     answer = session.scalar(select(TwinAnswer).where(
         TwinAnswer.answer_id == body.twin_answer_id, TwinAnswer.subject_id == subject_id,
         TwinAnswer.actor_id == actor.actor_id))
-    if answer is None or answer.invalidated_at is not None or answer.response_type == "UNKNOWN":
+    if answer is None or answer.invalidated_at is not None or answer.response_type not in {"ORIGINAL", "SIMULATION"}:
         raise CalibrationNotReady("请先取得一条未过期且有证据的 Twin 回答。")
     existing = session.scalar(select(CalibrationRun).where(CalibrationRun.twin_answer_id == answer.answer_id))
     if existing is not None:

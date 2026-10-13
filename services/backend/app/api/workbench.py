@@ -114,6 +114,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
     return {'stt': settings.stt_backend, 'ai': settings.ai_backend,
         'live_configured': settings.stt_backend in {'http', *CLOUD_BACKENDS} and settings.ai_backend == 'http',
         'client_transcript_upload': True,
+        'twin_conversation': True, 'chat_memory': True,
         'client_transcript_endpoint': '/api/v1/episodes/client-transcribed',
         'stt_processing': 'client' if settings.stt_backend == 'client' else ('cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http')),
         'stt_configured': configured(settings) if cloud else settings.stt_backend == 'http',
@@ -175,6 +176,8 @@ def audio(subject_id: str, episode_id: str, request: Request,
     if episode_id not in visible_episodes(session, subject_id, actor.actor_id):
         raise Hidden('原音不可用。')
     episode = session.get(Episode, episode_id)
+    if not episode.audio_object_key:
+        raise Hidden('本人文字记忆没有原始录音。')
     if not is_owner(session, subject_id, actor.actor_id):
         if altered_story_ids(session, {episode_id}):
             raise Hidden('相关内容已更新，当前不可用。')

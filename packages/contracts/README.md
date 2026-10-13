@@ -1,4 +1,9 @@
-# Integration Contract v0.4
+# Integration Contract v0.6
+
+Version `0.6.0` adds separately consented real-time Twin voice profiles, capabilities, call requests and short-lived LiveKit room tickets. The [approved realtime proposal](../../docs/architecture/realtime-twin-voice-contract-proposal.md) records the owner’s LiveKit Cloud / CosyVoice direction and authorization boundaries. Provider credentials stay server-side.
+
+Version 0.5 adds owner-scoped multi-turn Twin context and explicitly confirmed chat text capture. The Product / Integration Owner request and approved boundaries are recorded in [the conversation proposal](../../docs/architecture/twin-conversation-contract-proposal.md). Requests opt in with `conversation_mode`; `previous_answer_id` references a server-owned prior turn and `request_id` supports stable retries. `CONVERSATION` is separate from evidence prediction and cannot enter locked-answer calibration. Confirmed original user text is an `IOS_TEXT` Episode without audio, using owner-supplement provenance and the existing pending profile review loop. No assistant text automatically becomes personal evidence. Older Android calls and v0.1–v0.4 schemas are preserved.
+
 
 Version `0.4.0` adds a locked Twin calibration start, a completion request after a confirmed human Episode, and a typed result with five comparison dimensions. `calibration_id` is optional capture metadata for iOS recordings; old Android and iOS request shapes remain valid. The [calibration proposal](../../docs/architecture/calibration-contract-proposal.md) records the Product Owner direction and provenance boundary. See `schemas/integration-contract-v0.4.schema.json`.
 
@@ -8,9 +13,9 @@ Version `0.2.0` adds the iOS voice-to-Person-Model closure authorized in [Issue 
 
 The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps the schema version that produced it. Only evidence that resolves to an original transcript span enters AI Core output. Backend correction evidence is separately attributed to a calibration audit record.
 
-This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.4.0` add the approved iOS capabilities without changing that older file.
+This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.6.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.4.schema.json`; v0.1–v0.3 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.6.schema.json`; v0.1–v0.5 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 
@@ -57,3 +62,7 @@ These are recorded rather than silently resolved. None may be changed without an
 - **`job_id` visibility.** A Processing Job is distinct from an Episode and from an execution trace, but Phase 1 does not require Android to inspect job identity or retry history. Keep it internal to Backend until a concrete cross-module consumer requires a versioned proposal.
 - **Twin and Calibration shapes are shallow.** The v0.2 graph and person-trait proposals are typed. Twin, `dimension_diffs`, `model_updates`, and `followup_questions` remain later-phase work and require a versioned proposal.
 - **Voice Synthesis provider metadata is open-ended.** `provider_metadata` intentionally allows any properties so no provider is presumed; treat its contents as non-normative.
+
+## Realtime Voice v0.6 (2026-10-13)
+
+The [approved LiveKit/CosyVoice proposal](../../docs/architecture/realtime-twin-voice-contract-proposal.md) adds separately consented real-time profile, capabilities, call request and short-lived room ticket shapes in `schemas/integration-contract-v0.6.schema.json`. v0.1–v0.5 remain unchanged. Provider credentials/voice IDs are never mobile payloads. A ticket is ephemeral session data, not a saved login. Existing v0.5 multi-turn conversations remain the source of question/answer provenance; call audio does not automatically become evidence.

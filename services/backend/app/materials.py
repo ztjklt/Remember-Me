@@ -82,6 +82,10 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
                     source_type=memory.source_type, evidence=evidence, score=1.0))
         # Sentence-sized original excerpts preserve unextracted facts, source
         # offsets and the narrator's wording. No generated summary is quoted.
+        # Confirmed written chat has its own owner-supplement evidence; it is
+        # not a recorded quotation and deletion must not recreate raw gaps.
+        if ep.source == 'IOS_TEXT':
+            continue
         gaps = []
         for match in re.finditer(r'[^。！？\n]+[。！？\n]*', text):
             start,end=match.span()

@@ -119,3 +119,11 @@ iOS 已覆盖安装 1.3.1 / 2026101304，中文记忆页新增描述搜索与原
 表达测试曾发现旧路由将明天计划概括为“通常”；已接通正式证据复核、加入情境限制并修正官方 JSON 模式提示词要求，真实重测保留这次计划与时间紧的条件。当前云端验证返回 SIMULATION / available 表达；创建校准后 locked_answer 等于手机展示的措辞。旧表达答案读取为 stale，无证据或可用 expression。所有自动确认仅操作合成 QA 账号，不替真实本人审核。
 
 Backend 516 passed / 6 skipped，AI Core 285 passed，iOS 本轮 13 个 ECSConnectionTests + 6 个 SimpleFlowUITests 通过。iOS 1.3.2 / 2026101305 已覆盖安装；锁屏仍阻止自动启动。长期盲评趋势和真人相似度提升尚未验证。当前真实账号已有 CLOUD_TWIN 授权，但本轮未替用户发起个人选择测试或确认理解，等待其先给问题。方法、保留限制和诊断记录见 [相似度反馈设计](../../docs/architecture/twin-fidelity-feedback.md)。
+
+## 2026-10-13 实时 Twin 语音增量
+
+本人已选择 LiveKit Cloud 与普通百炼 CosyVoice，并授权创建及部署专用后端凭据。新接口、迁移 `0019_realtime_voice`、请求期间的 ASR/TTS 代理和撤销维护见 [实时方案](../../docs/architecture/realtime-twin-voice-contract-proposal.md)；常驻语音 Agent 位于 LiveKit Cloud，而 CloudBase 继续提供授权和经证据验证的 Twin。
+
+平台环境变量总长限制为 5 KiB；公开的腾讯 PostgreSQL CA 链已作为 runtime 的 `.crt` 文件打包，启动仍强制 `verify-full`，不会关闭 TLS 或主机名校验。已有 PEM 配置仍可优先使用。镜像增加 FFmpeg 用于验证专用样本的实际时长和音量。未扩大既有网络或副本配置。实时迁移是增加两张表，未重置用户数据。
+
+本轮检查旧部署参数时发生凭据进入工具输出的失误；用户选择稍后自行轮换旧凭据。需要一起更新数据库密码、百炼 ASR/CosyVoice Key、DeepSeek Key、CloudBase 私有存储 Key、CloudBase 定时任务 token；token 在 API 与 timer 必须一致。新生成的 LiveKit Secret 未回显。详细部署及验证状态以新 dated report 为准。

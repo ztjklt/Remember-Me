@@ -105,7 +105,13 @@ class CaptureSource(StrEnum):
     IMPORT = "IMPORT"
 
 
-CAPTURE_SOURCE_CHECK = _enum_check("source", CaptureSource)
+class TextCaptureSource(StrEnum):
+    IOS_TEXT = 'IOS_TEXT'
+
+
+# The existing audio-capture API keeps its enum; only the explicit written
+# endpoint can create this additional Episode kind.
+CAPTURE_SOURCE_CHECK = _enum_check("source", [*CaptureSource, *TextCaptureSource])
 
 
 class MemoryType(StrEnum):
@@ -286,13 +292,13 @@ class Episode(Base):
     # beside the object key because they are different facts: the key is where
     # Backend put the bytes, this is what the recording was called before it
     # arrived, and that is worth not losing.
-    audio_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    audio_ref: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     # The object reference and its metadata. The bytes live in object storage.
-    audio_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    audio_object_key: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     audio_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     audio_content_type: Mapped[str] = mapped_column(String(128), nullable=False)
-    audio_checksum: Mapped[str] = mapped_column(String(64), nullable=False)
+    audio_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     # The trace id of the request that created this Episode, carried through
@@ -719,11 +725,17 @@ class EvidenceChunkEmbedding(Base):
 
 class TwinAnswer(Base):
     __tablename__ = "twin_answers"
-    __table_args__ = (Index("ix_twin_answers_subject", "subject_id", "created_at"),)
+    __table_args__ = (Index("ix_twin_answers_subject", "subject_id", "created_at"),
+        Index("ix_twin_answers_request", "subject_id", "actor_id", "request_id", unique=True),)
 
     answer_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
+    conversation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    parent_answer_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    context_answer_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    context_truncated: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
     response_type: Mapped[str] = mapped_column(String(16), nullable=False)

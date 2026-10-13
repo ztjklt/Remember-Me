@@ -113,7 +113,7 @@ def create_speech(subject_id: str, answer_id: str, request: Request,
     answer = session.scalar(select(TwinAnswer).where(
         TwinAnswer.answer_id == answer_id, TwinAnswer.subject_id == subject_id,
         TwinAnswer.actor_id == actor.actor_id, TwinAnswer.invalidated_at.is_(None)))
-    if answer is None or answer.response_type == "UNKNOWN" or not is_current_guard(answer.source_basis):
+    if answer is None or answer.response_type not in {"ORIGINAL", "SIMULATION"} or not is_current_guard(answer.source_basis):
         raise VoiceNotFound("这条回答已过期或没有可朗读的答案。")
     cached = session.scalar(select(VoiceAsset).where(
         VoiceAsset.answer_id == answer_id, VoiceAsset.profile_id == profile.profile_id))
