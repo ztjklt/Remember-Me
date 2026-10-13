@@ -9,6 +9,7 @@ import secrets
 from datetime import timedelta
 from uuid import uuid4
 from urllib.parse import quote
+from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response, Form, File, UploadFile, WebSocket
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
@@ -19,7 +20,7 @@ from livekit import api
 from ..db import get_session
 from ..models import Actor, ConsentScope, TwinAnswer, as_utc, utcnow
 from ..realtime_models import RealtimeVoiceProfile, VoiceCall
-from ..realtime_access import check_call, configured, policy, profile_for
+from ..realtime_access import check_call, configured, policy, profile_for, default_voice
 from ..realtime_provider import RealtimeUnavailable, validate_sample, enrollment_prefix
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
@@ -38,6 +39,7 @@ class CallRequest(BaseModel):
     cloud_consent_id: str = Field(min_length=1)
     voice_consent_id: str = Field(min_length=1)
     policy: str
+    voice_mode: Literal['personal', 'default'] = 'personal'
 
 
 class InterruptRequest(BaseModel):
@@ -69,7 +71,8 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     require_subject(session, subject_id, actor)
     s = request.app.state.settings
     profile = profile_for(session, subject_id, actor.actor_id)
-    return {'available': configured(s, request.app.state.realtime_provider), 'policy': policy(s),
+    return {'available': configured(s, request.app.state.realtime_provider),
+            'default_voice_available': bool(configured(s, request.app.state.realtime_provider) and default_voice(s)), 'policy': policy(s),
             'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。通话不会自动保存为记忆，可随时静音、结束或撤销声音授权。',
             'profile': profile_view(profile)}
 
@@ -205,8 +208,22 @@ async def start_call(subject_id: str, payload: CallRequest, request: Request, ac
     for scope, identifier in [(ConsentScope.CLOUD_TWIN,payload.cloud_consent_id),(ConsentScope.VOICE,payload.voice_consent_id)]:
         ConsentRepository(session).require_active(identifier, subject_id=subject_id, scope=scope, actor_id=actor.actor_id)
     profile = profile_for(session, subject_id, actor.actor_id)
-    if not profile or profile.status != 'ready' or profile.consent_id != payload.voice_consent_id or profile.model != s.cosyvoice_model:
-        raise TwinNotFound('请先完成本人声音设置并等待音色就绪。')
+    if payload.voice_mode == 'default':
+        preset = default_voice(s)
+        if not preset: raise RealtimeUnavailable('当前服务尚未提供默认声音通话。')
+        profile = session.scalar(select(RealtimeVoiceProfile).where(
+            RealtimeVoiceProfile.profile_id.startswith('rvp_default_'), RealtimeVoiceProfile.subject_id == subject_id,
+            RealtimeVoiceProfile.actor_id == actor.actor_id, RealtimeVoiceProfile.consent_id == payload.voice_consent_id,
+            RealtimeVoiceProfile.revoked_at.is_(None), RealtimeVoiceProfile.accepted_policy == policy(s),
+            RealtimeVoiceProfile.model == s.cosyvoice_model, RealtimeVoiceProfile.status == 'ready'))
+        if not profile:
+            profile = RealtimeVoiceProfile(profile_id='rvp_default_'+uuid4().hex, subject_id=subject_id,
+                actor_id=actor.actor_id, consent_id=payload.voice_consent_id, accepted_policy=policy(s),
+                sample_key='', reference_text='', provider_voice_id=preset, model=s.cosyvoice_model,
+                status='ready', fetch_digest='', fetch_expires_at=utcnow())
+            session.add(profile); session.flush()
+    elif not profile or profile.status != 'ready' or profile.consent_id != payload.voice_consent_id or profile.model != s.cosyvoice_model:
+        raise TwinNotFound('请先完成本人声音设置并等待音色就绪，或选用默认声音通话。')
     active = list(session.scalars(select(VoiceCall).where(VoiceCall.actor_id==actor.actor_id,VoiceCall.ended_at.is_(None))))
     for old in active: old.ended_at=utcnow()
     identifier='vc_'+uuid4().hex
@@ -221,7 +238,7 @@ async def start_call(subject_id: str, payload: CallRequest, request: Request, ac
                                     can_publish_data=True,can_publish_sources=['microphone'],can_update_own_metadata=False))
         .with_room_config(api.RoomConfiguration(agents=[api.RoomAgentDispatch(agent_name=s.livekit_agent_name,metadata=json.dumps({'call_id':identifier}))])).to_jwt())
     return {'call_id':identifier,'room':row.room,'participant_identity':row.participant,
-            'livekit_url':s.livekit_url,'token':token,'expires_at':row.expires_at.isoformat()}
+            'livekit_url':s.livekit_url,'token':token,'expires_at':row.expires_at.isoformat(), 'voice_mode': payload.voice_mode}
 
 
 async def remove_room(app, room):
@@ -294,14 +311,18 @@ def revoke_realtime(app, session, consent_id):
     for call in session.scalars(select(VoiceCall).where(VoiceCall.ended_at.is_(None),
         (VoiceCall.voice_consent_id==consent_id)|(VoiceCall.cloud_consent_id==consent_id))): call.ended_at=utcnow()
     for profile in session.scalars(select(RealtimeVoiceProfile).where(RealtimeVoiceProfile.consent_id==consent_id,RealtimeVoiceProfile.revoked_at.is_(None))):
-        app.state.object_store.delete(profile.sample_key)
+        if profile.sample_key: app.state.object_store.delete(profile.sample_key)
         profile.sample_key='';profile.reference_text='';profile.fetch_digest='';profile.revoked_at=utcnow()
-        profile.status='delete_pending'
+        if profile.profile_id.startswith('rvp_default_'):
+            profile.provider_voice_id=''; profile.status='deleted'
+        else: profile.status='delete_pending'
 
 
 def delete_remote_profiles(app):
     with app.state.database.session() as session:
         for profile in session.scalars(select(RealtimeVoiceProfile).where(RealtimeVoiceProfile.status=='delete_pending').limit(2)):
+            if profile.profile_id.startswith('rvp_default_'):
+                profile.provider_voice_id=''; profile.status='deleted'; continue
             try:
                 identifiers=[profile.provider_voice_id] if profile.provider_voice_id else [
                     v['voice_id'] for v in app.state.realtime_provider.operation('list_voice',

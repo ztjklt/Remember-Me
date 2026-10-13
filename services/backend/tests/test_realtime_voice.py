@@ -14,7 +14,7 @@ from app.config import Settings
 from sqlalchemy import select
 from app.models import TwinAnswer, DeviceCredential, Consent, utcnow
 from app.realtime_models import VoiceCall, RealtimeVoiceProfile
-from app.realtime_access import policy
+from app.realtime_access import policy, profile_for
 from app.realtime_provider import AlibabaVoice, RealtimeUnavailable, validate_sample
 from app.seed import seed_development_data
 from app.twin_basis import current
@@ -65,6 +65,40 @@ def start(client,app,ready):
     own,_,headers,cloud,voice,_=ready
     return client.post(f'/api/v1/subjects/{own.subject_id}/twin/voice/calls',headers=headers,
         json={'cloud_consent_id':cloud,'voice_consent_id':voice,'policy':policy(app.state.settings)})
+
+
+def test_default_voice_can_call_without_clone_and_stays_out_of_personal_profile(app, client, session, ready):
+    own, _, headers, cloud, voice, personal = ready
+    personal.revoked_at = utcnow(); personal.status = 'deleted'; session.commit()
+    path = f'/api/v1/subjects/{own.subject_id}/twin/voice'
+    assert client.get(path+'/capabilities', headers=headers).json()['default_voice_available'] is True
+    payload = {'cloud_consent_id':cloud, 'voice_consent_id':voice, 'policy':policy(app.state.settings)}
+    assert client.post(path+'/calls', headers=headers, json=payload).status_code == 404
+    response = client.post(path+'/calls', headers=headers, json={**payload, 'voice_mode':'default'})
+    assert response.status_code == 200 and response.json()['voice_mode'] == 'default'
+    row = session.get(VoiceCall, response.json()['call_id'])
+    assert row.profile_id.startswith('rvp_default_')
+    preset = session.get(RealtimeVoiceProfile, row.profile_id)
+    assert preset.sample_key == preset.reference_text == ''
+    assert profile_for(session, own.subject_id, own.actor_id) is None
+    assert client.get(path+'/profile', headers=headers).json()['status'] == 'missing'
+    assert not any(action == 'create_voice' for action, _ in app.state.realtime_provider.operations)
+    assert 'longxiaochun' not in response.text
+    client.post('/api/v1/consents/'+voice+'/revoke', headers=headers)
+    session.expire_all()
+    assert preset.status == 'deleted' and preset.provider_voice_id == ''
+    assert row.ended_at is not None
+    assert not any(action == 'delete_voice' for action, _ in app.state.realtime_provider.operations)
+
+
+def test_default_voice_still_requires_both_consents(app, client, session, ready):
+    own, _, headers, cloud, voice, _ = ready
+    path = f'/api/v1/subjects/{own.subject_id}/twin/voice/calls'
+    client.post('/api/v1/consents/'+voice+'/revoke', headers=headers)
+    response = client.post(path, headers=headers, json={'cloud_consent_id':cloud, 'voice_consent_id':voice,
+        'policy':policy(app.state.settings), 'voice_mode':'default'})
+    assert response.status_code == 403
+    assert not list(session.scalars(select(VoiceCall)))
 
 
 def test_voice_preview_is_private_wave_without_twin_or_saved_evidence(app, client, session, ready):

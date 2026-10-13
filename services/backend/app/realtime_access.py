@@ -32,7 +32,13 @@ def configured(settings, provider):
 def profile_for(session, subject_id, actor_id):
     return session.scalar(select(RealtimeVoiceProfile).where(
         RealtimeVoiceProfile.subject_id == subject_id, RealtimeVoiceProfile.actor_id == actor_id,
+        ~RealtimeVoiceProfile.profile_id.startswith('rvp_default_'),
         RealtimeVoiceProfile.revoked_at.is_(None)).order_by(RealtimeVoiceProfile.created_at.desc()))
+
+
+def default_voice(settings):
+    # The provider preset stays behind the Backend adapter, never in mobile payloads.
+    return 'longxiaochun_v3' if settings.cosyvoice_model == 'cosyvoice-v3-flash' else None
 
 
 def check_call(session, call_id, settings, provider):
