@@ -15,12 +15,14 @@ def state(session, subject, actor):
     return session.get(ChatMemoryState, (subject, actor))
 
 
-def history(session, subject, actor, basis):
+def history(session, subject, actor, basis, *, conversation_id=None):
     pref = state(session, subject, actor)
     if pref is not None and not pref.enabled:
         return []
     query = select(TwinAnswer).where(TwinAnswer.subject_id == subject,
         TwinAnswer.actor_id == actor, TwinAnswer.conversation_id.is_not(None))
+    if conversation_id is not None:
+        query = query.where(TwinAnswer.conversation_id == conversation_id)
     if pref is not None and pref.forgotten_before is not None:
         query = query.where(TwinAnswer.created_at > pref.forgotten_before)
     rows = session.scalars(query.order_by(TwinAnswer.created_at, TwinAnswer.answer_id)
@@ -41,14 +43,14 @@ def fingerprint(turns):
     return hashlib.sha256(json.dumps(turns, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
-def valid_recall(session, subject, actor, basis, selected):
-    available = {t['answer_id']:t for t in history(session, subject, actor, basis)}
+def valid_recall(session, subject, actor, basis, selected, *, conversation_id=None):
+    available = {t['answer_id']:t for t in history(session, subject, actor, basis, conversation_id=conversation_id)}
     return all(available.get(t['answer_id']) == t for t in selected)
 
 
-def prepare(session, subject, actor, basis, question, recent, encoder):
+def prepare(session, subject, actor, basis, question, recent, encoder, *, conversation_id=None):
     excluded = {t['answer_id'] for t in recent}
-    turns = [t for t in history(session, subject, actor, basis) if t['answer_id'] not in excluded]
+    turns = [t for t in history(session, subject, actor, basis, conversation_id=conversation_id) if t['answer_id'] not in excluded]
     if not turns:
         return [], [], None
     # Bound a single indexing operation explicitly, never replace all history
@@ -102,10 +104,10 @@ def prepare(session, subject, actor, basis, question, recent, encoder):
     return selected, updates, fingerprint(turns)
 
 
-def publish(session, subject, actor, basis, recent, snapshot, updates):
+def publish(session, subject, actor, basis, recent, snapshot, updates, *, conversation_id=None):
     if snapshot is None: return True
     excluded = {t['answer_id'] for t in recent}
-    current = [t for t in history(session, subject, actor, basis) if t['answer_id'] not in excluded]
+    current = [t for t in history(session, subject, actor, basis, conversation_id=conversation_id) if t['answer_id'] not in excluded]
     if fingerprint(current) != snapshot: return False
     if session.bind.dialect.name == 'postgresql':
         from sqlalchemy.dialects.postgresql import insert

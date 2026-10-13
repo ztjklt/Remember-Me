@@ -26,7 +26,7 @@ from ..repositories.consents import ConsentRepository
 from ..security import current_actor
 from ..errors import AppError
 from ..tokens import hash_actor_token
-from .twin import require_subject, TwinNotFound, ask, read_answer, TwinQuestion
+from .twin import require_subject, TwinNotFound, answer_question, read_answer, TwinQuestion
 
 router = APIRouter(tags=['realtime-voice'])
 PREFIX = '/api/v1/subjects/{subject_id}/twin/voice'
@@ -270,8 +270,16 @@ def answer_call(call_id: str,payload: SpokenQuestion,request: Request,session: S
     row,profile,actor=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     row.active_turn=payload.turn_id; row.active_answer_id=""; session.commit()
     # Reuse the final validated, source-versioned Twin operation, not a generic voice LLM.
-    result=ask(row.subject_id,TwinQuestion(question=payload.question,cloud_consent_id=row.cloud_consent_id,
-        conversation_mode=True,previous_answer_id=row.previous_answer_id or None,request_id=payload.turn_id),request,actor,session)
+    # A repeated worker turn ID from another call is a different request. Do
+    # not let text's global request-id deduplication return an old call's answer.
+    request_id=hashlib.sha256((call_id+'\0'+payload.turn_id).encode()).hexdigest()
+    def current_turn(guard_session):
+        current,_,_=check_call(guard_session,call_id,request.app.state.settings,request.app.state.realtime_provider)
+        if current.active_turn!=payload.turn_id:
+            raise TwinNotFound('回答已被打断。')
+    result=answer_question(row.subject_id,TwinQuestion(question=payload.question,cloud_consent_id=row.cloud_consent_id,
+        conversation_mode=True,previous_answer_id=row.previous_answer_id or None,request_id=request_id),
+        request,actor,session,chat_history_scope='conversation',publication_guard=current_turn)
     session.expire_all(); row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     if row.active_turn != payload.turn_id: raise TwinNotFound("回答已被打断。")
     row.active_answer_id=result["answer_id"]; row.previous_answer_id=result["answer_id"]; session.commit()

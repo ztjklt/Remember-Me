@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from uuid import uuid4
+from typing import Callable, Literal
 
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
@@ -167,9 +168,23 @@ def search_memories(subject_id: str, q: str, request: Request,
 @router.post("/twin/answers")
 def ask(subject_id: str, payload: TwinQuestion, request: Request,
         actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    return answer_question(subject_id,payload,request,actor,session,chat_history_scope='actor')
+
+
+def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
+                    actor: Actor, session: Session, *, chat_history_scope: Literal['actor','conversation'],
+                    publication_guard: Callable[[Session], None] | None = None) -> dict:
+    """Internal caller scope; clients cannot opt a voice call into old chats.
+
+    Text keeps historical-chat capability across sessions. Voice uses its own
+    saved chain and older turns from that conversation, plus life evidence.
+    """
+    if chat_history_scope not in {'actor','conversation'}:
+        raise ValueError('Unknown internal chat-history scope')
     actor_id = actor.actor_id
     publication_lock(session, subject_id)
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    if publication_guard: publication_guard(session)
     if payload.conversation_mode:
         from ..access import require_owner
         require_owner(session, subject_id, actor_id)
@@ -220,16 +235,18 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     from ..twin_conversation import context, retrieval_question
     turns, conversation_id, truncated = context(session, subject_id, actor_id,
         payload.previous_answer_id, from_material_basis(basis)) if payload.conversation_mode else ([], None, False)
+    if payload.conversation_mode and conversation_id is None: conversation_id = 'tc_' + uuid4().hex
+    history_conversation_id = conversation_id if chat_history_scope == 'conversation' else None
     from .. import chat_memory
     recalled, chat_updates, chat_snapshot = [], [], None
     summary, summary_status = None, None
     if payload.conversation_mode and not reader:
         try:
             recalled, chat_updates, chat_snapshot = chat_memory.prepare(session, subject_id, actor_id,
-                from_material_basis(basis), retrieval_question(payload.question, turns), turns, request.app.state.embedding_encoder)
+                from_material_basis(basis), retrieval_question(payload.question, turns), turns, request.app.state.embedding_encoder,
+                conversation_id=history_conversation_id)
         except EmbeddingUnavailable as exc:
             raise TwinFailed(str(exc)) from exc
-    if payload.conversation_mode and conversation_id is None: conversation_id = 'tc_' + uuid4().hex
     session.commit()
     question = payload.question.strip()
     if not question:
@@ -242,7 +259,9 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
-    if not chat_memory.publish(session, subject_id, actor_id, from_material_basis(basis), turns, chat_snapshot, chat_updates):
+    if publication_guard: publication_guard(session)
+    if not chat_memory.publish(session, subject_id, actor_id, from_material_basis(basis), turns, chat_snapshot, chat_updates,
+                               conversation_id=history_conversation_id):
         raise SourceChanged('聊天记忆已变化，请重新提问。')
     candidates = publish_and_select(session, plan, candidates, related_groups=related_groups)
     session.commit()
@@ -264,9 +283,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if recalled:
         summary, summary_status = chat_memory.digest(session, subject_id, actor_id, recalled, request.app.state.twin_client)
         publication_lock(session, subject_id)
-        if basis != source_basis(session, subject_id) or not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled):
+        if basis != source_basis(session, subject_id) or not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled,
+                                                                                  conversation_id=history_conversation_id):
             raise SourceChanged('聊天记忆或授权已变化，请重新提问。')
         require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+        if publication_guard: publication_guard(session)
         chat_memory.save_digest(session, subject_id, actor_id, summary)
         session.commit()
     if not limited and not payload.conversation_mode:
@@ -298,6 +319,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         if basis!=source_basis(session,subject_id):
             raise SourceChanged('资料或授权已变化，请重新提问。')
         require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+        if publication_guard: publication_guard(session)
         session.commit()
         # Only this optional pass may degrade; never replace a failed fact answer.
         expression=request.app.state.twin_client.express(result['answer'],examples)
@@ -305,7 +327,9 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
     require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
-    if recalled and not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled):
+    if publication_guard: publication_guard(session)
+    if recalled and not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled,
+                                                conversation_id=history_conversation_id):
         raise SourceChanged('聊天记忆已变化，请重新提问。')
     valid = {source["evidence_id"]: (source, row) for row in candidates for source in row["evidence"]}
     kind = result.get("response_type")

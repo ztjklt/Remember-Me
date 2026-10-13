@@ -13,6 +13,7 @@ import array
 import asyncio
 from collections import deque
 import json
+import hashlib
 import math
 import os
 from pathlib import Path
@@ -314,7 +315,11 @@ async def run(args):
                 await cleanup('revoke_voice', revoke())
             if ticket and turns:
                 async def remove_answers():
-                    requests = ','.join(literal(t) for t in turns)
+                    # Current Backend namespaces request IDs by call. Include
+                    # the legacy IDs only for this run's random QA turns, so
+                    # the same probe also cleans older compatible releases.
+                    ids=list(turns)+[hashlib.sha256((ticket['call_id']+'\0'+t).encode()).hexdigest() for t in turns]
+                    requests = ','.join(literal(t) for t in ids)
                     where = owner_filter + ' AND request_id IN (' + requests + ')'
                     ids = 'SELECT answer_id FROM remember_ios.twin_answers WHERE ' + where
                     await database('remove-answers',
