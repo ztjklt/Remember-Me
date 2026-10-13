@@ -35,6 +35,8 @@ Backend / Worker 源码 85b4987 已推送 codex/twin-chat-memory。源包白名�
 
 最终 iOS 1.7.1 / 2026101401 签名构建通过；包内版本与设备应用列表独立核对。devicectl 覆盖安装和启动均 success，没有卸载或清空容器，未传入测试启动参数。后台音频权限未开启。系统路线选择使用 AVRoutePickerView，最终 UI 用例复验及带输出选择图标的截图检查通过。231 个不同自动用例通过；不是所有检查在同一命令中运行。
 
+完成后通过现有 Agent 的 secrets update 将 REMEMBER_REALTIME_NETWORK_DIAGNOSTICS 设回 0，CLI exit 0；Backend019 同样为 0。保留已发布代码、原 Agent 和模型配置。关闭后未重复完整 RTC 场景；诊断关闭的行为已由 Worker 单元测试覆盖。
+
 本人音色、真人自然交互、实际蓝牙/有线耳机、拔出、锁屏及来电均需本人在真机上操作。模拟器、系统预置音色和构建不代替这些结果。
 
 ## 后续能力
