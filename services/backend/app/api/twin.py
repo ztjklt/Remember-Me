@@ -270,7 +270,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         chat_memory.save_digest(session, subject_id, actor_id, summary)
         session.commit()
     if not limited and not payload.conversation_mode:
-        result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
+        result = {"answer": "这件事，我还没有足够的记录可以确认。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
         if request.app.state.settings.ai_backend != "http":
@@ -321,7 +321,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             or len(cited) != len(set(cited)) or any(identifier not in valid for identifier in cited)):
         raise TwinFailed("模型回答的证据格式不正确。")
     if kind == "UNKNOWN":
-        content, cited, confidence = "现有记录还不足以确定。", [], 0
+        content, cited, confidence = "这件事，我还没有足够的记录可以确认。", [], 0
     elif (kind != 'CONVERSATION' and not cited) or not content.strip():
         raise TwinFailed("模型回答缺少可核对的证据。")
     if kind == "ORIGINAL":
@@ -339,7 +339,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         if not any(verified_original(identifier) for identifier in cited):
             raise TwinFailed("模型给出的原话无法在录音转写中定位。")
     if kind == "SIMULATION" and any(valid[identifier][1]["memory_item_id"] in unresolved for identifier in cited):
-        kind, content, cited, confidence = "UNKNOWN", "现有记录有不同说法，还不能确定。", [], 0
+        kind, content, cited, confidence = "UNKNOWN", "这件事的记录有不同说法，我还不能确认。", [], 0
     if payload.request_id:
         # A concurrent retry may have published while the provider was running.
         existing = session.scalar(select(TwinAnswer).where(TwinAnswer.subject_id == subject_id,

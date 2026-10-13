@@ -163,3 +163,19 @@ def test_revocation_during_model_call_prevents_publishing_new_dialogue(app,clien
     response=send(client,owner,oh,cloud,'授权撤销后不能发布')
     assert response.status_code in {403,404,409},response.text
     assert session.scalar(select(TwinAnswer).where(TwinAnswer.question=='授权撤销后不能发布')) is None
+
+
+def test_unknown_is_first_person_even_when_provider_uses_old_wording(app,client,session):
+    owner,reader,oh,rh,ep,cloud=setup_pair(app,client,session)
+    class Unknown(Dialogue):
+        def answer(self,*args,**kwargs):
+            return dict(answer='现有记录还不足以确定。',response_type='UNKNOWN',
+                        evidence_ids=[],confidence=0,model_version='fake-unknown')
+    app.state.twin_client=Unknown()
+    response=send(client,owner,oh,cloud,'我的父亲是什么职业？')
+    assert response.status_code==200,response.text
+    data=response.json()
+    assert data['response_type']=='UNKNOWN'
+    assert data['answer']=='这件事，我还没有足够的记录可以确认。'
+    assert data['evidence']==[] and data['confidence']==0
+    assert session.get(TwinAnswer,data['answer_id']).answer==data['answer']
