@@ -155,7 +155,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 
 
 def generate_answer(subject_id, payload, request, actor, session, *, voice_context=None,
-                    cancel_check=lambda: None):
+                    cancel_check=lambda: None,on_retrieved=lambda: None):
     cancel_check()
     actor_id = actor.actor_id
     from ..narrative import visible_records,contextual_sources
@@ -252,9 +252,11 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         raise RequestInvalid('请先由本人开启分身表达，并确认可使用的人物理解和表达范例。')
     from ..persona_context import visible_contributions, select_contributions
     contributions=visible_contributions(session,subject_id,actor_id,
-        enforce_budget=payload.retrieval_mode=='full') if payload.mode=='persona' else []
+        enforce_budget=payload.retrieval_mode=='full',
+        selection_metadata=payload.retrieval_mode=='local') if payload.mode=='persona' else []
     if payload.retrieval_mode=='local':
         contributions=select_contributions(contributions,retrieval_question)
+        contributions=[{k:v for k,v in note.items() if k not in {'narrative_ids','status'}} for note in contributions]
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
@@ -285,9 +287,11 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         raise SourceChanged('资料或授权已变化，请重新提问。')
     session.commit()
     if not limited and not contributions:
+        on_retrieved()
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
+        on_retrieved()
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
         try:
@@ -410,6 +414,8 @@ def read_answer(subject_id: str, answer_id: str,
         TwinAnswer.actor_id == actor.actor_id))
     if row is None:
         raise TwinNotFound("Answer not found")
+    from ..twin_validity import require_answer_disclosed
+    require_answer_disclosed(session,answer_id)
     if row.invalidated_at is None and row.source_basis != source_basis(session,subject_id):
         row.invalidated_at=utcnow()
         session.commit()

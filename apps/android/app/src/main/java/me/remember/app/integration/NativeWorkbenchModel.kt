@@ -65,6 +65,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private val callState=MutableStateFlow<VoiceCallEngine?>(null)
     val voiceCall=callState.asStateFlow()
     private val playbackGate = SourcePlaybackGate(gate)
+    private val voiceStartGate = SourcePlaybackGate(gate)
     private val client = BackendClient(gate)
     private val reminders = LocalDailyReminder(context)
     private val savedSession = SavedSession(context)
@@ -499,24 +500,33 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     fun beginVoice(mode:String,simpleMode:Boolean,calibrationId:String?=null) {
         val s=session?:return
         val subject=state.value.subject
-        if(subject.isBlank()||state.value.recording)return
+        if(subject.isBlank()||state.value.recording||state.value.busy||!foreground)return
+        endVoice()
+        val ticket=voiceStartGate.begin(s)
         operation(s){
             val capabilities=io{client.json(s,"/api/v1/voice-capabilities")}
             check(capabilities.optBoolean("enabled")){"这个账号暂未开放语音聊聊。"}
-            stopSource();audio.stopPlayback();endVoice()
+            stopSource();audio.stopPlayback()
             val consent=io{cloudConsent(s)}
             val created=io{client.json(s,"/api/v1/subjects/${segment(subject)}/voice-sessions","POST",
                 JSONObject().put("cloud_consent_id",consent).put("mode",mode).put("simple_mode",simpleMode)
                     .put("policy","continuous-voice-v1").put("cloud_asr_allowed",true).put("cloud_tts_allowed",true)
                     .put("purpose",if(calibrationId==null)"dialogue" else "calibration_report")
-                    .apply{if(calibrationId!=null)put("calibration_id",calibrationId)}))}
-            gate.requireCurrent(s)
-            val engine=VoiceCallEngine(appContext){gate.accepts(s)&&state.value.subject==subject}
-            callState.value=engine
-            engine.start(s,created.getString("websocket_path"),created.getString("session_id"))
+                    .apply{if(calibrationId!=null)put("calibration_id",calibrationId)})}
+            val published=voiceStartGate.publish(ticket){
+                if(state.value.subject==subject){
+                    val engine=VoiceCallEngine(appContext,
+                        {gate.accepts(s)&&state.value.subject==subject}, {foreground})
+                    callState.value=engine
+                    engine.start(s,created.getString("websocket_path"),created.getString("session_id"))
+                }
+            }
+            if(!published || state.value.subject!=subject)io{
+                runCatching{client.json(s,"/api/v1/voice-sessions/${segment(created.getString("session_id"))}","DELETE")}
+            }
         }
     }
-    fun endVoice(){callState.value?.close();callState.value=null}
+    fun endVoice(){voiceStartGate.invalidate();callState.value?.close();callState.value=null}
     fun ask(question: String, cloudConfirmed: Boolean, mode: String = "evidence") {
         val s = session ?: return
         if(!cloudConfirmed || question.isBlank()) { report("请填写问题并明确同意本次云端文字处理。"); return }
@@ -803,8 +813,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             else state.value.copy(error = null, notice = "下载缓存已清理；本机原音、登录和云端记忆保留。")
     }
     fun onForeground(value: Boolean) {
-        if(!value)callState.value?.pause("已暂停聆听")
         foreground = value
+        voiceStartGate.setForeground(value)
+        if(!value)callState.value?.pause("已暂停聆听")
         playbackGate.setForeground(value)
         if(!value) { stopSource(); audio.stopPlayback(); if(state.value.companionRecording.isNotBlank()) finishCompanionRecording() else if(state.value.recording) finish() }
         else if(session != null && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()

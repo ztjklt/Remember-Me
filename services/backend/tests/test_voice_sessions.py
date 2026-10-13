@@ -1,9 +1,49 @@
 import asyncio
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import pytest
 from starlette.websockets import WebSocketDisconnect
 from test_reader_understandings import prepare
 from test_persona_dialogue import cloud
 from app.api import voice_sessions as api
+
+
+def test_only_one_simultaneous_connection_can_claim_a_call():
+    call=api.Call('id','subject','actor',None)
+    barrier=threading.Barrier(8)
+    def claim(_):
+        barrier.wait();return call.claim()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        assert sum(pool.map(claim,range(8)))==1
+
+
+def test_cancel_before_transport_and_during_registration(monkeypatch):
+    from types import SimpleNamespace
+    from app.realtime_providers import RealtimeFailure
+    async def run():
+        bridge=api.AsyncTwinBridge(asyncio.get_running_loop(),SimpleNamespace(ai_core_url='http://invalid'),[],threading.Event())
+        bridge.cancel()
+        with pytest.raises(RealtimeFailure): await bridge._request('/twin',{})
+        with pytest.raises(RealtimeFailure): bridge.request('/twin',{})
+        bridge=api.AsyncTwinBridge(asyncio.get_running_loop(),SimpleNamespace(),[],threading.Event())
+        entered=threading.Event(); release=threading.Event(); cancellation=threading.Event()
+        original=asyncio.run_coroutine_threadsafe
+        async def transport(*args): await asyncio.sleep(30)
+        bridge._request=transport
+        def registering(coro,loop):
+            future=original(coro,loop); entered.set();release.wait(2);return future
+        monkeypatch.setattr(asyncio,'run_coroutine_threadsafe',registering)
+        worker=asyncio.create_task(asyncio.to_thread(bridge.request,'/twin',{}))
+        assert await asyncio.to_thread(entered.wait,2)
+        def cancel(): cancellation.set();bridge.cancel()
+        killer=asyncio.create_task(asyncio.to_thread(cancel))
+        assert await asyncio.to_thread(cancellation.wait,2)
+        release.set()
+        await killer
+        with pytest.raises((asyncio.CancelledError,RealtimeFailure, __import__('concurrent.futures').futures.CancelledError)):
+            await worker
+        assert not bridge.futures
+    asyncio.run(run())
 
 
 def setup_call(app,client,session):

@@ -101,7 +101,7 @@ def _check_source(session: Session, row: CalibrationRun) -> bool:
 
 def _view(row: CalibrationRun) -> dict:
     stale = row.status == "stale"
-    hidden = row.status == 'awaiting_human'
+    hidden = row.status != 'complete' and row.calibration_id.startswith('vcal_')
     return {
         "calibration_id": row.calibration_id, "subject_id": row.subject_id,
         "twin_answer_id": row.twin_answer_id, "question": row.question,
@@ -127,13 +127,17 @@ def prepare_voice(subject_id: str, body: TwinQuestion, request: Request,
     """Prepare and lock without delivering the model answer to the human UI."""
     require_subject(session,subject_id,actor)
     answer=generate_answer(subject_id,body.model_copy(update={'retrieval_mode':'local'}),request,actor,session)
-    return start(subject_id,StartCalibration(twin_answer_id=answer['answer_id'],
-        cloud_consent_id=body.cloud_consent_id),actor,session)
+    return _start(subject_id,StartCalibration(twin_answer_id=answer['answer_id'],
+        cloud_consent_id=body.cloud_consent_id),actor,session,blind=True)
 
 
 @router.post("")
 def start(subject_id: str, body: StartCalibration,
           actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    return _start(subject_id,body,actor,session)
+
+
+def _start(subject_id,body,actor,session,*,blind=False):
     require_subject(session, subject_id, actor)
     ConsentRepository(session).require_active(body.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
@@ -158,7 +162,7 @@ def start(subject_id: str, body: StartCalibration,
     if not snapshot or not answer.evidence_ids:
         raise CalibrationNotReady("Twin 回答缺少有效的原始记忆证据。")
     row = CalibrationRun(
-        calibration_id="cal_" + uuid4().hex[:16], subject_id=subject_id,
+        calibration_id=("vcal_" if blind else "cal_") + uuid4().hex[:16], subject_id=subject_id,
         actor_id=actor.actor_id, twin_answer_id=answer.answer_id,
         question=answer.question, locked_answer=answer.answer,
         locked_response_type=answer.response_type,

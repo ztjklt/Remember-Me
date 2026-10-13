@@ -4,6 +4,8 @@ import asyncio
 import base64
 import re
 import time
+import logging
+logger=logging.getLogger(__name__)
 
 
 class VoiceTurns:
@@ -21,6 +23,10 @@ class VoiceTurns:
     def playback(self, turn, samples):
         if turn!=self.turn_id: return
         if type(samples) is not int or samples<self.played or samples>self.samples: raise ValueError('Invalid playback position')
+        if samples>0 and not self.played:
+            self.timings['playback_ack_ms']=round((time.monotonic()-self.timings['asr_final'])*1000)
+            logger.info('voice_playback',extra={'session_id':self.session_id,'turn_id':turn,
+                'playback_ack_ms':self.timings['playback_ack_ms']})
         self.played=samples
 
     def _archive(self):

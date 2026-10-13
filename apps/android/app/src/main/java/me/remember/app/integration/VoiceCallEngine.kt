@@ -26,7 +26,8 @@ data class CallUi(val active:Boolean=false,val status:String="",val paused:Boole
     val sources:JSONObject?=null,val ready:Boolean=false,val inputEnabled:Boolean=true)
 
 /** One call owns microphone, communication focus and queued output. Never persists recordings. */
-class VoiceCallEngine(private val context:Context,private val identityValid:()->Boolean) {
+class VoiceCallEngine(private val context:Context,private val identityValid:()->Boolean,
+                      private val foreground:()->Boolean) {
     private val mutable=MutableStateFlow(CallUi())
     val ui=mutable.asStateFlow()
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
@@ -82,7 +83,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
         scope.launch { while(isActive&&!closed){ delay(100); acknowledge() } }
     }
 
-    private fun event(e:JSONObject) {
+    @Synchronized private fun event(e:JSONObject) {
         if(e.optString("session_id")!=sessionId)return
         val id=e.optLong("turn_id")
         when(e.optString("type")){
@@ -115,7 +116,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
 
     @Suppress("MissingPermission")
     private fun startCapture(){
-        if(closed||inputPaused||capture?.isActive==true)return
+        if(closed||inputPaused||!foreground()||!identityValid()||capture?.isActive==true)return
         if(ContextCompat.checkSelfPermission(context,Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){fail("请允许使用麦克风");return}
         capture=scope.launch {
             try{
@@ -127,7 +128,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                 if(NoiseSuppressor.isAvailable())ns=NoiseSuppressor.create(mic.audioSessionId)?.apply{enabled=true}
                 mic.startRecording()
                 val buffer=ShortArray(320);var voiced=0;var quiet=0;var speaking=false
-                while(isActive&&!closed&&!inputPaused){
+                while(isActive&&!closed&&!inputPaused&&foreground()&&identityValid()){
                     val size=mic.read(buffer,0,buffer.size,AudioRecord.READ_BLOCKING)
                     check(size>0)
                     if(mutable.value.muted)continue
@@ -135,8 +136,10 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                     if(rms>900){voiced++;quiet=0}else{quiet++;voiced=0}
                     if(voiced>=6&&!speaking){
                         speaking=true
-                        acknowledge();outputSuppressed=true;flush()
-                        send(JSONObject().put("type","interrupt"))
+                        synchronized(this@VoiceCallEngine){
+                            acknowledge();outputSuppressed=true;flush()
+                            send(JSONObject().put("type","interrupt"))
+                        }
                     }
                     if(quiet>=20)speaking=false
                     val bytes=ByteArray(size*2)
@@ -149,6 +152,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
     }
 
     private suspend fun play(id:Long,pcm:ByteArray){
+        synchronized(this){
         if(closed||id!=turn||outputSuppressed||inputPaused)return
         if(track==null||trackTurn!=id){
             val next=AudioTrack.Builder().setAudioAttributes(AudioAttributes.Builder()
@@ -158,19 +162,24 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
             if(closed||id!=turn||outputSuppressed){next.release();return}
             track=next;trackTurn=id;next.play()
         }
+        }
         var offset=0
         while(offset<pcm.size&&!closed&&id==turn&&!outputSuppressed&&!inputPaused){
-            val count=runCatching { track?.write(pcm,offset,pcm.size-offset,AudioTrack.WRITE_NON_BLOCKING)?:-1 }.getOrDefault(-1)
+            val count=synchronized(this){
+                if(closed||id!=turn||outputSuppressed||inputPaused)-1
+                else runCatching { track?.write(pcm,offset,pcm.size-offset,AudioTrack.WRITE_NON_BLOCKING)?:-1 }.getOrDefault(-1)
+            }
             if(count<0)return
             offset+=count;if(count==0)delay(10)
         }
     }
 
-    private fun acknowledge(){
+    @Synchronized private fun acknowledge(){
         val current=track?:return
-        if(trackTurn!=turn||closed)return
+        val ownerTurn=trackTurn
+        if(ownerTurn!=turn||closed)return
         val samples=runCatching{current.playbackHeadPosition.toLong() and 0xffffffffL}.getOrDefault(0)
-        if(samples<=receivedSamples)send(JSONObject().put("type","playback").put("turn_id",turn).put("samples",samples))
+        if(samples<=receivedSamples)send(JSONObject().put("type","playback").put("turn_id",ownerTurn).put("samples",samples))
     }
     @Synchronized private fun flush(){
         val old=track;track=null
@@ -178,19 +187,19 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
         while(chunks.tryReceive().isSuccess){ }
     }
     private fun send(event:JSONObject){ if(!closed&&identityValid())socket?.send(event.toString()) }
-    fun pause(reason:String="已暂停"){
+    @Synchronized fun pause(reason:String="已暂停"){
         if(closed||!mutable.value.active)return
         inputPaused=true;acknowledge();flush();capture?.cancel()
         runCatching{recorder?.stop()};send(JSONObject().put("type","pause"))
         mutable.update{it.copy(paused=true,status=reason)}
     }
-    fun resume(){if(closed)return;mutable.update{it.copy(error="",muted=false)};send(JSONObject().put("type","resume"))}
+    fun resume(){if(closed||!foreground()||!identityValid())return;mutable.update{it.copy(error="",muted=false)};send(JSONObject().put("type","resume"))}
     fun toggleMute(){
         if(mutable.value.muted){mutable.update{it.copy(muted=false)};resume()}
         else{mutable.update{it.copy(muted=true)};pause("麦克风已静音")}
     }
     private fun fail(message:String){mutable.update{it.copy(error=message,status="已结束")};close()}
-    fun close(){
+    @Synchronized fun close(){
         if(closed)return
         acknowledge();socket?.send(JSONObject().put("type","end").toString());closed=true;inputPaused=true
         socket?.close(1000,"ended");flush();capture?.cancel();runCatching{recorder?.stop()}

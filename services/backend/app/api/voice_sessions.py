@@ -51,6 +51,13 @@ class Call:
     created: float=field(default_factory=time.monotonic)
     connected: bool=False
     stop: asyncio.Event=field(default_factory=asyncio.Event)
+    claim_lock: threading.Lock=field(default_factory=threading.Lock)
+
+    def claim(self):
+        with self.claim_lock:
+            if self.connected or self.stop.is_set(): return False
+            self.connected=True
+            return True
 
 
 def enabled(settings, actor):
@@ -112,12 +119,15 @@ class AsyncTwinBridge:
     def __init__(self,loop,settings,history,cancelled):
         self.loop=loop; self.settings=settings; self.history=history; self.cancelled=cancelled
         self.futures=set()
+        self.lock=threading.Lock()
 
     def check(self):
         if self.cancelled.is_set(): raise RealtimeFailure('TURN_CANCELLED')
 
     async def _request(self,path,payload):
+        self.check()
         async with httpx.AsyncClient(timeout=110,trust_env=False,follow_redirects=False) as client:
+            self.check()
             response=await client.post(self.settings.ai_core_url.rstrip('/')+path,json=payload)
             if response.is_error:
                 raise TwinUnavailable('本轮回答暂未完成。')
@@ -125,20 +135,23 @@ class AsyncTwinBridge:
             return response.json()
 
     def request(self,path,payload):
-        self.check()
-        future=asyncio.run_coroutine_threadsafe(self._request(path,payload),self.loop)
-        self.futures.add(future)
+        with self.lock:
+            self.check()
+            future=asyncio.run_coroutine_threadsafe(self._request(path,payload),self.loop)
+            self.futures.add(future)
         try:
             result=future.result(timeout=115); self.check(); return result
-        finally: self.futures.discard(future)
+        finally:
+            with self.lock: self.futures.discard(future)
 
     def persona(self,payload): return self.request('/persona',payload)
     def answer(self,question,candidates):
         return self.request('/twin',dict(question=question,candidates=candidates,
             dialogue_context=self.history,voice_response=True))
     def cancel(self):
-        self.cancelled.set()
-        for future in tuple(self.futures): future.cancel()
+        with self.lock:
+            self.cancelled.set()
+            for future in tuple(self.futures): future.cancel()
 
 
 @router.websocket('/api/v1/voice-sessions/{session_id}/stream')
@@ -172,7 +185,10 @@ async def stream(websocket:WebSocket,session_id:str):
             raise Hidden('通话已过期。')
     except AppError:
         await websocket.close(code=4403); return
-    call.connected=True
+    # Authentication awaited above; claim on the event loop with no await
+    # between the second check and assignment.
+    if not call.claim():
+        await websocket.close(code=4409);return
     await websocket.accept()
     send_lock=asyncio.Lock()
     async def send(event):
@@ -195,15 +211,18 @@ async def stream(websocket:WebSocket,session_id:str):
             return await asyncio.to_thread(report)
         loop=asyncio.get_running_loop(); cancelled=threading.Event()
         bridge=AsyncTwinBridge(loop,settings,history,cancelled)
+        timing={};started=time.monotonic()
         def generate():
             with app.state.database.session() as session:
                 actor=ActorRepository(session).find_by_token(token)
                 if not actor or actor.actor_id!=call.actor: raise Hidden('身份已变化。')
                 request=SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(
                     settings=settings,twin_client=bridge,embedding_encoder=app.state.embedding_encoder)))
-                return generate_answer(call.subject,TwinQuestion(question=question,
+                result=generate_answer(call.subject,TwinQuestion(question=question,
                     cloud_consent_id=call.payload.cloud_consent_id,mode=call.payload.mode,retrieval_mode='local'),
-                    request,actor,session,voice_context=history,cancel_check=bridge.check)
+                    request,actor,session,voice_context=history,cancel_check=bridge.check,
+                    on_retrieved=lambda:timing.update(retrieval_ms=round((time.monotonic()-started)*1000)))
+                return dict(result,voice_timing=timing)
         try: return await asyncio.to_thread(generate)
         finally: bridge.cancel()
 
@@ -228,7 +247,8 @@ async def stream(websocket:WebSocket,session_id:str):
                     if paused or call.stop.is_set(): continue
                     if event['type']!='transcript': continue
                     await guard()
-                    await turns.emit('transcript',text=event['text'],final=event['final'])
+                    await turns.emit('transcript',text=event['text'],final=event['final'],
+                        begin_ms=event.get('begin_ms'),end_ms=event.get('end_ms'))
                     if event['final']:
                         await turns.submit(event['text'])
                     elif turns.current is not None:

@@ -179,7 +179,10 @@ def test_calibration_locks_twin_before_human_episode_and_stales_on_source_edit(a
     assert locked.status_code == 200, locked.text
     run = locked.json()
     assert run["status"] == "awaiting_human"
-    assert run["locked_answer"] == answer["answer"]
+    assert run["locked_answer"] == answer["answer"] and not run['answer_hidden']
+    # Locking remains durable; the human-facing response no longer leaks it
+    # before the human has supplied a reviewed answer.
+    assert session.get(CalibrationRun, run['calibration_id']).locked_answer == answer['answer']
     assert client.get(f"{path}/{run['calibration_id']}",
                       headers={"Authorization": "Bearer " + other.actor_token}).status_code == 404
     assert client.post(path, headers=headers,
