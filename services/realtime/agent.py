@@ -88,27 +88,38 @@ async def pcm_chunks(source):
 
 
 async def clocked_pcm(source):
-    """Preserve input and advance ASR time through Opus DTX/muted gaps."""
-    buffer=bytearray();ended=False
-    async def collect():
-        nonlocal ended
-        async for frame in source:
-            if not isinstance(frame,rtc.AudioFrame):continue
-            if frame.num_channels!=1 or frame.sample_rate!=16000:raise ValueError('ASR requires 16 kHz mono')
-            buffer.extend(bytes(frame.data))
-            if len(buffer)>64000:raise RuntimeError('ASR input fell behind by over two seconds')
-        ended=True
-    producer=asyncio.create_task(collect());loop=asyncio.get_running_loop();deadline=loop.time()+.1
+    """Batch incoming PCM promptly; advance ASR time only during input gaps.
+
+    RTC can deliver a queued burst while the ASR socket is opening. Pacing that
+    burst a second time grows the queue and can terminate an otherwise healthy
+    call. Keep one pending read, preserving partial frames across normal jitter.
+    """
+    buffer=bytearray();iterator=source.__aiter__();pending=None
+    loop=asyncio.get_running_loop();deadline=loop.time()+.1
     try:
         while True:
-            await asyncio.sleep(max(0,deadline-loop.time()))
-            if producer.done():producer.result()
-            if ended and not buffer:return
-            packet=bytes(buffer[:3200]);del buffer[:len(packet)]
-            yield packet.ljust(3200,b'\0')
-            deadline=max(deadline+.1,loop.time())
+            if pending is None:pending=asyncio.create_task(iterator.__anext__())
+            done,_=await asyncio.wait({pending},timeout=max(0,deadline-loop.time()))
+            if done:
+                try:frame=pending.result()
+                except StopAsyncIteration:
+                    if buffer:yield bytes(buffer).ljust(3200,b'\0')
+                    return
+                pending=None
+                if isinstance(frame,rtc.AudioFrame):
+                    if frame.num_channels!=1 or frame.sample_rate!=16000:raise ValueError('ASR requires 16 kHz mono')
+                    buffer.extend(bytes(frame.data))
+                    while len(buffer)>=3200:
+                        packet=bytes(buffer[:3200]);del buffer[:3200]
+                        yield packet
+                        deadline=loop.time()+.1
+                elif buffer:
+                    yield bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
+            else:
+                yield bytes(buffer).ljust(3200,b'\0');buffer.clear();deadline=loop.time()+.1
     finally:
-        producer.cancel();await asyncio.gather(producer,return_exceptions=True)
+        if pending:
+            pending.cancel();await asyncio.gather(pending,return_exceptions=True)
 
 
 class ProxyStream(stt.RecognizeStream):
@@ -146,6 +157,27 @@ class ProxyStream(stt.RecognizeStream):
                 finally:
                     for task in tasks:task.cancel()
                     await asyncio.gather(*tasks,return_exceptions=True)
+
+
+async def listen_microphone(recognizer, participant):
+    """Keep recognition on the owner's RTC microphone across playout/interrupts."""
+    audio=rtc.AudioStream.from_participant(participant=participant,
+        track_source=rtc.TrackSource.SOURCE_MICROPHONE,sample_rate=16000,num_channels=1)
+    stream=recognizer.stream()
+    async def feed():
+        async for event in audio:stream.push_frame(event.frame)
+        stream.end_input()
+    async def drain():
+        async for _ in stream:pass  # ProxyStream submits authenticated finals directly.
+    tasks=[asyncio.create_task(feed()),asyncio.create_task(drain())]
+    try:
+        done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+        for task in done:task.result()
+        raise RuntimeError('Microphone recognition ended')
+    finally:
+        for task in tasks:task.cancel()
+        await asyncio.gather(*tasks,return_exceptions=True)
+        await stream.aclose();await audio.aclose()
 
 
 class CallController:
@@ -228,14 +260,14 @@ async def entrypoint(ctx: JobContext):
     # Manual turn submission prevents any generic LLM from bypassing Backend validation.
     # VAD still emits speaking events: those immediately clear LiveKit's audio queue.
     recognizer=ProxySTT(backend)
-    session=AgentSession(stt=recognizer,vad=silero.VAD.load(),
+    session=AgentSession(vad=silero.VAD.load(),
         turn_handling={'turn_detection':'manual','interruption':{'enabled':True,'mode':'vad','resume_false_interruption':False}})
     async def publish(data):
         await ctx.room.local_participant.publish_data(json.dumps(data,ensure_ascii=False).encode(),reliable=True,
             destination_identities=[authorized['participant_identity']],topic=TOPIC)
     controller=CallController(backend,session,publish)
-    # Manual SDK turns can suppress later transcript events after speech. Consume
-    # the authenticated final transcript directly; SDK retains its VAD/audio role.
+    # Recognition owns a separate microphone reader. SDK manual turn/playout
+    # lifecycle must not gate the next user utterance; SDK retains VAD/playout.
     recognizer.on_final=controller.question
     @session.on('user_state_changed')
     def user_state(event):
@@ -254,6 +286,15 @@ async def entrypoint(ctx: JobContext):
         controller.closed=True
     await session.start(room=ctx.room,agent=Agent(instructions='只播放 Remember Me 后端已校验的孪生回答。'),
         room_options=room_io.RoomOptions(participant_identity=authorized['participant_identity'],text_input=False,text_output=False,delete_room_on_close=True),record=False)
+    participant=await ctx.wait_for_participant(identity=authorized['participant_identity'])
+    async def recognize():
+        try:await listen_microphone(recognizer,participant)
+        except asyncio.CancelledError:raise
+        except Exception:
+            controller.interrupt()
+            await publish({'type':'ended','message':'实时识别连接已结束，请重新发起通话。'})
+            await session.aclose()
+    recognition=asyncio.create_task(recognize())
     await publish({'type':'state','state':'listening'})
     async def monitor():
         try:
@@ -267,7 +308,8 @@ async def entrypoint(ctx: JobContext):
             await ctx.room.disconnect()
     watchdog=asyncio.create_task(monitor())
     async def shutdown():
-        watchdog.cancel();await asyncio.gather(watchdog,return_exceptions=True)
+        watchdog.cancel();recognition.cancel()
+        await asyncio.gather(watchdog,recognition,return_exceptions=True)
         await controller.close()
         try:await backend.request('POST','/end')
         except httpx.HTTPError:pass

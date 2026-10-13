@@ -171,3 +171,43 @@ async def test_clocked_asr_advances_silence_without_losing_partial_frames():
     assert len(packets)>=3 and all(len(p)==3200 for p in packets)
     assert packets[0].startswith(original) and packets[0][len(original):]==b'\0'*(3200-len(original))
     assert all(p==b'\0'*3200 for p in packets[1:])
+
+
+@pytest.mark.asyncio
+async def test_asr_startup_burst_is_drained_without_retiming_or_dropping_samples():
+    from agent import clocked_pcm
+    from livekit import rtc
+    original=b''.join(bytes([i % 120 + 1,0])*320 for i in range(160))
+    async def source():
+        for pos in range(0,len(original),640):
+            yield rtc.AudioFrame(data=original[pos:pos+640],sample_rate=16000,num_channels=1,samples_per_channel=320)
+    async with asyncio.timeout(1):
+        packets=[packet async for packet in clocked_pcm(source())]
+    assert b''.join(packets)==original and all(len(p)==3200 for p in packets)
+
+
+@pytest.mark.asyncio
+async def test_independent_microphone_reader_releases_both_streams_on_asr_failure(monkeypatch):
+    from types import SimpleNamespace
+    from agent import listen_microphone
+    from livekit import rtc
+    arrived=asyncio.Event();closed=[]
+    class Microphone:
+        def __aiter__(self):return self.frames()
+        async def frames(self):
+            yield SimpleNamespace(frame=rtc.AudioFrame(data=b'\0'*640,sample_rate=16000,num_channels=1,samples_per_channel=320))
+            await asyncio.Event().wait()
+        async def aclose(self):closed.append('microphone')
+    class Recognition:
+        def push_frame(self,frame):arrived.set()
+        def __aiter__(self):return self.events()
+        async def events(self):
+            await arrived.wait()
+            raise RuntimeError('fixture service disconnect')
+            yield
+        async def aclose(self):closed.append('recognition')
+    monkeypatch.setattr(rtc.AudioStream,'from_participant',lambda **kwargs:Microphone())
+    async with asyncio.timeout(1):
+        with pytest.raises(RuntimeError,match='fixture service disconnect'):
+            await listen_microphone(SimpleNamespace(stream=lambda:Recognition()),object())
+    assert sorted(closed)==['microphone','recognition']
