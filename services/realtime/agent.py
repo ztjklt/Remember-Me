@@ -11,7 +11,7 @@ from uuid import uuid4
 import aiohttp
 import httpx
 from livekit import rtc
-from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, stt, APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS, room_io
+from livekit.agents import Agent, AgentServer, AgentSession, JobContext, cli, stt, APIConnectionError, APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS, room_io
 from livekit.plugins import silero
 
 TOPIC='remember.twin.voice.v1'
@@ -124,6 +124,14 @@ async def clocked_pcm(source):
 
 class ProxyStream(stt.RecognizeStream):
     async def _run(self):
+        try:await self._connection()
+        except (aiohttp.ClientError,asyncio.TimeoutError,RuntimeError):
+            # Recheck the live owner/grants before the SDK's bounded reconnect.
+            # Consumed PCM is never replayed; only subsequent live input remains.
+            await self._stt.backend.request('GET','/authorize')
+            raise APIConnectionError('Realtime recognition transport unavailable') from None
+
+    async def _connection(self):
         backend=self._stt.backend
         url=backend.url.replace('https://','wss://',1).replace('http://','ws://',1)+'/internal/voice-calls/'+backend.call_id+'/listen'
         tasks=[]
@@ -131,32 +139,39 @@ class ProxyStream(stt.RecognizeStream):
             async with client.ws_connect(url,headers=backend.headers,heartbeat=10,max_msg_size=128*1024) as ws:
                 ready=await asyncio.wait_for(ws.receive_json(),20)
                 if ready.get('type')!='ready': raise RuntimeError('ASR unavailable')
+                counters={'pcm_bytes':0,'heartbeat_count':0,'final_count':0};opened=asyncio.get_running_loop().time()
                 async def send():
-                    async for data in clocked_pcm(self._input_ch):await ws.send_bytes(data)
+                    async for data in clocked_pcm(self._input_ch):
+                        await ws.send_bytes(data);counters['pcm_bytes']+=len(data)
                 async def receive():
                     seen=set()
                     async for message in ws:
                         if message.type!=aiohttp.WSMsgType.TEXT: raise RuntimeError('ASR disconnected')
                         data=json.loads(message.data);kind=data.get('type')
                         if kind=='error': raise RuntimeError('ASR connection ended')
+                        if kind=='heartbeat':counters['heartbeat_count']+=1
                         if kind not in {'interim','final'}: continue
                         text=data.get('text','')
                         identifier=data.get('sentence_id','')
                         if kind=='final':
                             if identifier in seen: continue
-                            seen.add(identifier)
+                            seen.add(identifier);counters['final_count']+=1
                             if len(seen)>10000: raise RuntimeError('ASR turn limit')
                             if self._stt.on_final:self._stt.on_final(text)
                         self._event_ch.send_nowait(stt.SpeechEvent(
                             type=stt.SpeechEventType.FINAL_TRANSCRIPT if kind=='final' else stt.SpeechEventType.INTERIM_TRANSCRIPT,
                             alternatives=[stt.SpeechData(language='zh',text=text)]))
-                tasks=[asyncio.create_task(send()),asyncio.create_task(receive())]
+                    raise RuntimeError('ASR socket closed code='+str(ws.close_code))
+                tasks=[asyncio.create_task(send(),name='asr-send'),asyncio.create_task(receive(),name='asr-receive')]
                 try:
                     done,_=await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
                     for task in done:task.result()
                 finally:
                     for task in tasks:task.cancel()
                     await asyncio.gather(*tasks,return_exceptions=True)
+                    logging.getLogger(__name__).info('Realtime ASR transport summary',extra={
+                        **counters,'audio_seconds':round(counters['pcm_bytes']/32000,1),
+                        'wall_seconds':round(asyncio.get_running_loop().time()-opened,1),'close_code':ws.close_code})
 
 
 async def listen_microphone(recognizer, participant):
@@ -290,7 +305,9 @@ async def entrypoint(ctx: JobContext):
     async def recognize():
         try:await listen_microphone(recognizer,participant)
         except asyncio.CancelledError:raise
-        except Exception:
+        except Exception as exc:
+            reason=str(exc) if str(exc) in {'ASR unavailable','ASR disconnected','ASR connection ended','Microphone recognition ended'} or str(exc).startswith('ASR socket closed code=') else type(exc).__name__
+            logging.getLogger(__name__).warning('Realtime recognition stopped: %s',reason)
             controller.interrupt()
             await publish({'type':'ended','message':'实时识别连接已结束，请重新发起通话。'})
             await session.aclose()

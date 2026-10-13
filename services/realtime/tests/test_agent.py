@@ -211,3 +211,30 @@ async def test_independent_microphone_reader_releases_both_streams_on_asr_failur
         with pytest.raises(RuntimeError,match='fixture service disconnect'):
             await listen_microphone(SimpleNamespace(stream=lambda:Recognition()),object())
     assert sorted(closed)==['microphone','recognition']
+
+
+@pytest.mark.asyncio
+async def test_asr_transport_reconnect_requires_fresh_authorization(monkeypatch):
+    from types import SimpleNamespace
+    from agent import ProxyStream
+    from livekit.agents import APIConnectionError
+    checks=[]
+    async def dropped(self):raise RuntimeError('ASR socket closed code=1000')
+    async def authorized(method,path):checks.append((method,path));return {}
+    monkeypatch.setattr(ProxyStream,'_connection',dropped)
+    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=authorized))
+    with pytest.raises(APIConnectionError,match='transport unavailable'):await stream._run()
+    assert checks==[('GET','/authorize')]
+
+
+@pytest.mark.asyncio
+async def test_revoked_call_is_not_reconnected(monkeypatch):
+    from types import SimpleNamespace
+    from agent import ProxyStream
+    async def dropped(self):raise RuntimeError('ASR connection ended')
+    async def denied(method,path):
+        response=httpx.Response(403,request=httpx.Request('GET','https://fixture.invalid/authorize'))
+        response.raise_for_status()
+    monkeypatch.setattr(ProxyStream,'_connection',dropped)
+    stream=object.__new__(ProxyStream);stream._stt=SimpleNamespace(backend=SimpleNamespace(request=denied))
+    with pytest.raises(httpx.HTTPStatusError):await stream._run()
