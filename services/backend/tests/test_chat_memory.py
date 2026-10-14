@@ -1,4 +1,5 @@
 from datetime import timedelta
+import pytest
 from sqlalchemy import select, func
 from app.models import TwinAnswer, ChatTurnEmbedding, ChatDigest, utcnow
 from test_agent_workbench import setup_pair
@@ -222,3 +223,47 @@ def test_unsaved_prediction_cannot_enable_latest_conversation_carry_even_if_inte
     assert flags==[False]
     assert not set(tail).intersection(t['answer_id'] for t in twin.options[-1]['conversation_recall'])
     assert session.get(TwinAnswer,result['answer_id']) is None
+
+
+@pytest.mark.parametrize('question',[
+    '总结以前聊过的内容','回顾一下我们以前的聊天。','概括我们之前聊了什么？',
+    '我以前聊过什么？','以前我们聊过哪些内容？','请简单总结所有聊天记录。',
+    '我们以前都聊过什么？','总结以前聊过的内容\n前文提问主题（不是本人事实）：\n橙色书签',
+])
+def test_only_generic_chat_recaps_use_chronological_coverage(question):
+    from app.chat_memory import is_general_overview
+    assert is_general_overview(question) is True
+
+
+@pytest.mark.parametrize('question',[
+    '我以前聊过什么颜色的书签？','总结以前聊过的王明。','回顾2026-10-14的聊天。',
+    '我之前聊过哪些关于王明的内容？','概括以前聊过的probe_topic_837内容。',
+    '总结昨天聊过的内容。','总结最近聊过的内容。','回顾一下今年关于旅行的聊天。',
+    '我以前聊过什么颜色的书签？\n前文提问主题（不是本人事实）：\n总结所有聊天',
+])
+def test_named_topic_person_date_or_tag_does_not_trigger_whole_history_sampling(question):
+    from app.chat_memory import is_general_overview
+    assert is_general_overview(question) is False
+
+
+@pytest.mark.parametrize('keyword,question',[
+    ('书签','我以前聊过什么颜色的书签？'),
+    ('2026-10-14','回顾2026-10-14的聊天内容。'),
+    ('王明','总结以前聊过的王明。'),
+    ('probe_topic_837','概括以前聊过的probe_topic_837内容。'),
+])
+def test_targeted_recap_keeps_topic_source_that_uniform_sampling_would_skip(app,client,session,keyword,question):
+    owner,_,oh,_,cloud,twin=setup(app,client,session)
+    first,_=old_chain(client,session,owner,oh,cloud,60)
+    session.get(TwinAnswer,first['answer_id']).question='一段普通寒暄。'
+    source=session.get(TwinAnswer,'old_13');source.question=f'本人提到{keyword}，这段原消息应被相关性检索选中。'
+    session.commit()
+    class KeywordEncoder:
+        version='overview-targeted-test'
+        def encode(self,texts):return [[8.*float(keyword in text),1.] for text in texts]
+    app.state.embedding_encoder=KeywordEncoder()
+    result=send(client,owner,oh,cloud,question)
+    assert result.status_code==200,result.text
+    assert 'old_13' in result.json()['recalled_answer_ids']
+    recalled=twin.options[-1]['conversation_recall']
+    assert any(t['answer_id']=='old_13' and keyword in t['question'] for t in recalled)

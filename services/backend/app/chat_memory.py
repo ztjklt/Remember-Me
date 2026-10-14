@@ -1,6 +1,7 @@
 """Owner-scoped historical chat recall. Summaries are hints, never person evidence."""
 import hashlib
 import json
+import re
 from uuid import uuid4
 from sqlalchemy import select, delete
 from .models import TwinAnswer, ChatMemoryState, ChatTurnEmbedding, ChatDigest, as_utc, utcnow
@@ -10,6 +11,25 @@ from .evidence_rag import lexical, checked_vector
 MAX_RECALL_TURNS = 12
 MAX_RECALL_CHARACTERS = 10000
 MAX_CARRY_TURNS = 6
+
+
+def is_general_overview(question):
+    """Use chronological coverage only for an unqualified chat recap.
+
+    Keeping any unknown topic/date/name/tag word makes this conservative:
+    specific recall continues to use relevance, without an extra model call.
+    """
+    # retrieval_question appends recent topic anchors for vector search. They
+    # must not turn an explicitly general current request into a topic query.
+    question=question.partition('\n前文提问主题（不是本人事实）：\n')[0]
+    if not re.search(r'(总结|回顾|概括).*(聊天|聊过|聊了|对话|以前|之前)|(以前|之前|过去).*(聊过什么|聊了什么|聊过哪些)',question):
+        return False
+    generic=('聊天记录','对话记录','以前','之前','过去','曾经','全部','所有','整体','全面',
+        '总结','回顾','概括','聊过','聊了','聊天','对话','内容','记录','话题','事情','东西',
+        '什么','哪些','这些','那些','我们','你们','能不能','可不可以','能否','可以','一下',
+        '简单','简要','简短','大致','请','帮','给','我','你','和','的','过','了','些','把','做','都')
+    rest=re.sub('|'.join(re.escape(word) for word in sorted(generic,key=len,reverse=True)),'',question)
+    return not re.search(r'\w',rest)
 
 
 def state(session, subject, actor):
@@ -89,8 +109,7 @@ def prepare(session, subject, actor, basis, question, recent, encoder, *, conver
     floor = max(.35, scores[ranked[0]['answer_id']] - .18)
     # A request to recap previous conversations needs topic coverage, not just
     # an embedding match to the word "chat". Keep originals from across time.
-    import re
-    overview = bool(re.search(r'(总结|回顾|概括).*(聊天|聊过|聊了|对话|以前|之前)|(以前|之前|过去).*(聊过什么|聊了什么|聊过哪些)', question))
+    overview = is_general_overview(question)
     if overview:
         chronological = sorted(turns, key=lambda t:(t['created_at'], t['answer_id']))
         count = min(MAX_RECALL_TURNS, len(chronological))
