@@ -34,3 +34,12 @@ services/realtime/.venv/bin/python tools/verification/public_voice_scenario.py \
 `realtime_voice_probe.py` 保留已批准的隔离预置Profile场景及显式staging dispatch，不改默认真实ticket。仅供专用 `rvp_qa_transport_` fixture；外围controller必须在finally中先清空预置音色引用，再撤销测试VOICE，避免供应商维护误删系统预置音色。不得用于真人Profile。
 
 新增 default 探针不替代该personal路径，也不扩大客户端或公开Contract。两类证据必须分别标明实际运行版本、声音模式、阶段失败和资源清理结果。
+
+
+## Same-recording spoken introductions
+
+`speaker_recording_probe.py` runs the public capture/process/playback/revoke/delete path with actual ASR and declared synthetic audio. Use a dedicated `speaker_qa_` subject and ignored mode-0600 JSON credentials (`actor_token`, `subject_id`, `other_token`), never a person's existing account or audio. The two system-preset voices must introduce themselves as 小王 and 小李 with the spoken recording/transcription/identification agreement, then make four alternating statements. Names and report fixtures do not replace real ASR evidence. The runner revokes its grant and deletes its original; repeated revocation must preserve the deleted tombstone.
+
+`python speaker_recording_probe.py --origin SERVICE_ORIGIN --private-state PRIVATE_JSON --synthetic-audio QA_WAV --output SAFE_JSON`
+
+The 2026-10-15 production run and limits are recorded in `docs/verification/IOS_SPEAKER_INTRODUCTIONS_2026_10_15.md`. Cross-record recognition and real-person accuracy are not covered by this engineering probe.

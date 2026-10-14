@@ -26,6 +26,8 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
+2026-10-15：同段录音多人识别与自我介绍自动关联已获批实现，CloudBase037 / `4e78742` 已上线；iOS 1.10.0 已从主 checkout 安装到「黑幕」。工程证据、失败样例和边界见 [验证记录](docs/verification/IOS_SPEAKER_INTRODUCTIONS_2026_10_15.md)。
+
 2026-10-14 共享通话记忆与个人学习：CloudBase034 / `25b8e81` 已发布，新电话自动承接最近会话并检索旧电话／文字原消息，具体主题查询已在线核对。Mac 自动训练器已常驻；独立 MODEL_TRAINING 许可、候选状态与60题本人一致率验证上线，候选尚未接入生产推理或专属盲测。iOS **1.9.0 / 2026101410** 已签名构建，15项单元与3个 UI 场景通过；「黑幕」未连接、尚未覆盖安装。见[交付与边界](docs/verification/IOS_PERSONAL_LEARNING_2026_10_14.md)。
 
 2026-10-14 Twin 本人视角：CloudBase025 / `54856ef` 已上线，依据核对录音和确认资料，以“我”表达本人身份、记忆、偏好及选择；普通身份问题简短回应，未知事实不补猜。保留来源与推测标签，语音不再机械朗读推测前缀。AI Core 296 项、Backend 54 项及真实模型／线上合成问答检查通过；首版真实 RTC 单轮通过。沿用已安装 iOS 1.8.2，无 Native 变更。见[验证记录](docs/verification/IOS_TWIN_FIRST_PERSON_2026_10_14.md)。
