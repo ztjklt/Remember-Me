@@ -8,8 +8,12 @@ class MicrophoneClip:
         if speech:self.started=True
         if self.started and len(self.pcm)<480000:self.pcm.extend(data[:480000-len(self.pcm)])
     def finish(self,turn):
-        pcm=bytes(self.pcm);self.pcm.clear();self.started=False
-        if not self.enabled or self.attempts>=3 or len(pcm)<160000:return
+        self.started=False
+        if not self.enabled or self.attempts>=3:return
+        # Several short normal utterances can make one useful sample. Do not
+        # collect inter-turn silence or ask the person to speak longer.
+        if len(self.pcm)<160000:return
+        pcm=bytes(self.pcm);self.pcm.clear()
         self.attempts+=1
         async def send():
             try:

@@ -56,7 +56,7 @@ def delete(subject_id:str,episode_id:str,request:Request,actor:Actor=Depends(cur
     from ..repositories.person_model import PersonModelRepository
     from ..retrieval import invalidate_answers
     metadata=row.capture_metadata or {}
-    for sample in session.scalars(select(DialogueSample).where(DialogueSample.call_id==metadata.get('call_id'),DialogueSample.turn_id==metadata.get('turn_id'))):
+    for sample in session.scalars(select(DialogueSample).where(DialogueSample.call_id==metadata.get('call_id'))):
         discard(session,request.app.state.object_store,sample)
     memories=list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id==episode_id)))
     mids=[m.memory_item_id for m in memories]
