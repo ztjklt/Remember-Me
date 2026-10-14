@@ -1,5 +1,7 @@
 # Automatic spoken introductions in one group recording
 
+2026-10-15 later amendment: required spoken agreement and repeated switches are superseded by [natural capture v0.11](natural-capture-contract-v0.11.md). This document records the historical first slice.
+
 Approved direction: Product / Integration Owner request in the current chat, 2026-10-15: implement speaker identification; associate names automatically from self-introductions in the recording, without a manual “who is this” step. This updates the manual-attribution-first proposal. The first runnable slice is owner-operated, same-recording identification for two or three informed participants. Existing single-person capture, Voice cloning, Twin and Android payloads remain intact.
 
 ## Behavior and provenance

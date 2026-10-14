@@ -43,3 +43,6 @@ services/realtime/.venv/bin/python tools/verification/public_voice_scenario.py \
 `python speaker_recording_probe.py --origin SERVICE_ORIGIN --private-state PRIVATE_JSON --synthetic-audio QA_WAV --output SAFE_JSON`
 
 The 2026-10-15 production run and limits are recorded in `docs/verification/IOS_SPEAKER_INTRODUCTIONS_2026_10_15.md`. Cross-record recognition and real-person accuracy are not covered by this engineering probe.
+
+
+`public_voice_scenario.py --natural-capture` 在明确的合成账号、默认声音真实通话中额外核对正常对话原话与麦克风样本采集，并删除本轮资料、样本、答案和许可。短句不需要额外朗读，样本只累积订阅的用户麦克风。当前实际证据见自然采集验证记录；该选项不证明真人音色相似度。
