@@ -98,7 +98,8 @@ def require_active(session, row):
 def discard(session, store, row, status='deleted'):
     # The tombstone and access block are committed before attempting storage
     # cleanup. A remote deletion failure can be retried; access never reopens.
-    row.status = status; row.report = None; row.lease_token = None; row.lease_expires_at = None
+    row.status = 'deleted' if row.status == 'deleted' else status
+    row.report = None; row.lease_token = None; row.lease_expires_at = None
     session.commit()
     if row.audio_key:
         try: store.delete(row.audio_key)

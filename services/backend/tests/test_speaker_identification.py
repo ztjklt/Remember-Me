@@ -135,3 +135,16 @@ def test_timeout_resumes_same_record_and_delete_blocks_late_publish(app,client,s
             Provider(callback=lambda:client.delete(f'/api/v1/subjects/{own.subject_id}/speaker-recordings/{rid}',headers=h)))
     session.expire_all();row=session.get(SpeakerRecording,rid)
     assert row.status=='deleted' and row.report is None and not row.audio_key
+
+
+def test_repeated_revocation_preserves_deleted_tombstone_and_does_not_relist(app,client,session,monkeypatch):
+    own,h,c=prepare(app,client,session,monkeypatch)
+    rid=upload(client,own,h,c).json()['recording_id']
+    prefix=f'/api/v1/subjects/{own.subject_id}/speaker-recordings'
+    assert client.delete(prefix+'/'+rid,headers=h).json()['status']=='deleted'
+    for _ in range(2):
+        assert client.post('/api/v1/consents/'+c+'/revoke',headers=h).status_code==200
+        assert client.get(prefix+'/'+rid,headers=h).json()['status']=='deleted'
+        assert client.get(prefix,headers=h).json()['items']==[]
+    session.expire_all();row=session.get(SpeakerRecording,rid)
+    assert row.report is None and row.audio_key==''
