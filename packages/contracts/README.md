@@ -23,7 +23,7 @@ The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps th
 
 This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.6.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.6.schema.json`; v0.1–v0.5 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.9.schema.json`; v0.1–v0.8 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 
@@ -74,3 +74,7 @@ These are recorded rather than silently resolved. None may be changed without an
 ## Realtime Voice v0.6 (2026-10-13)
 
 The [approved LiveKit/CosyVoice proposal](../../docs/architecture/realtime-twin-voice-contract-proposal.md) adds separately consented real-time profile, capabilities, call request and short-lived room ticket shapes in `schemas/integration-contract-v0.6.schema.json`. v0.1–v0.5 remain unchanged. Provider credentials/voice IDs are never mobile payloads. A ticket is ephemeral session data, not a saved login. Existing v0.5 multi-turn conversations remain the source of question/answer provenance; call audio does not automatically become evidence.
+
+## Personal learning v0.9 (2026-10-14)
+
+The direct Product / Integration Owner request is recorded in [the personal-learning proposal](../../docs/architecture/twin-personal-learning-proposal.md). MODEL_TRAINING is a separate owner grant. v0.9 adds strict preference, verified human reference/rating and real training-result shapes; all v0.1–v0.8 shapes remain unchanged. Training remains a candidate until independent held-out human validation. Model loss, recording counts and LLM diagnoses never become personality-completion percentages.

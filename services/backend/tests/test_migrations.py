@@ -6,6 +6,7 @@ from app.models import Base
 
 EXPECTED_TABLES = {
     "alembic_version",
+    "learning_preferences", "personal_training_jobs", "personal_trainer_heartbeats", "fidelity_cases",
     "realtime_voice_profiles", "voice_calls",
     "chat_memory_state", "chat_turn_embeddings", "chat_digests",
     "subjects",

@@ -173,11 +173,11 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 
 def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
                     actor: Actor, session: Session, *, chat_history_scope: Literal['actor','conversation'],
-                    publication_guard: Callable[[Session], None] | None = None) -> dict:
-    """Internal caller scope; clients cannot opt a voice call into old chats.
+                    publication_guard: Callable[[Session], None] | None = None, persist_answer: bool = True) -> dict:
+    """Server-selected recall scope, independently of the current answer chain.
 
-    Text keeps historical-chat capability across sessions. Voice uses its own
-    saved chain and older turns from that conversation, plus life evidence.
+    Owner text and voice callers share historical recall when chat memory is
+    enabled. Each new conversation still owns a separate recent-turn chain.
     """
     if chat_history_scope not in {'actor','conversation'}:
         raise ValueError('Unknown internal chat-history scope')
@@ -385,8 +385,9 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
                      source_basis=from_material_basis(basis),
                      expression=expression,
                      created_at=utcnow())
-    session.add(row)
-    session.commit()
+    if persist_answer:
+        session.add(row)
+        session.commit()
     return answer_view(session, row)
 
 

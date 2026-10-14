@@ -73,7 +73,7 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     profile = profile_for(session, subject_id, actor.actor_id)
     return {'available': configured(s, request.app.state.realtime_provider),
             'default_voice_available': bool(configured(s, request.app.state.realtime_provider) and default_voice(s)), 'policy': policy(s),
-            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。通话不会自动保存为记忆，可随时静音、结束或撤销声音授权。',
+            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理，开启旧聊天记忆时也会参考同账号空间以前的电话和文字聊天；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。通话不会自动保存为记忆，可随时静音、结束或撤销声音授权。',
             'profile': profile_view(profile)}
 
 
@@ -277,9 +277,11 @@ def answer_call(call_id: str,payload: SpokenQuestion,request: Request,session: S
         current,_,_=check_call(guard_session,call_id,request.app.state.settings,request.app.state.realtime_provider)
         if current.active_turn!=payload.turn_id:
             raise TwinNotFound('回答已被打断。')
+    # Historical recall shares the owner's text/phone memory; the parent chain
+    # and publication guard still belong only to this active call and turn.
     result=answer_question(row.subject_id,TwinQuestion(question=payload.question,cloud_consent_id=row.cloud_consent_id,
         conversation_mode=True,previous_answer_id=row.previous_answer_id or None,request_id=request_id),
-        request,actor,session,chat_history_scope='conversation',publication_guard=current_turn)
+        request,actor,session,chat_history_scope='actor',publication_guard=current_turn)
     session.expire_all(); row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     if row.active_turn != payload.turn_id: raise TwinNotFound("回答已被打断。")
     row.active_answer_id=result["answer_id"]; row.previous_answer_id=result["answer_id"]; session.commit()

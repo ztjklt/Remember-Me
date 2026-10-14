@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, pool
 from app.config import get_settings
 from app.logging_config import configure_logging
 from app.models import Base
+from app import learning_models  # Register the personal-learning tables for metadata diffs.
 
 config = context.config
 target_metadata = Base.metadata

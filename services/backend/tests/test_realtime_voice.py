@@ -282,7 +282,7 @@ def test_real_twin_operation_keeps_original_provenance(ready,client,app,session)
     assert app.state.twin_client.contexts[-1]['conversation_turns'][0]['question']=='喜欢什么？'
 
 
-def test_new_call_keeps_only_its_answer_chain_without_disabling_text_chat_recall(ready,client,app,session,monkeypatch):
+def test_new_call_recalls_previous_call_but_keeps_an_independent_answer_chain(ready,client,app,session,monkeypatch):
     from test_chat_memory import RecallTwin,TopicEncoder
     from test_twin_conversation import send
     import app.api.realtime as api
@@ -306,15 +306,19 @@ def test_new_call_keeps_only_its_answer_chain_without_disabling_text_chat_recall
     next_call=start(client,app,ready).json()['call_id']
     restarted=speak(next_call,'继续刚才书签的话题。','voice-restarted')
     assert restarted['parent_answer_id'] is None
+    assert restarted['conversation_id']!=first['conversation_id']
     assert twin.options[-1]['conversation_turns']==[]
-    assert not twin.options[-1].get('conversation_recall')
-    assert restarted['recalled_turn_count']==0
+    recalled={t['answer_id'] for t in twin.options[-1]['conversation_recall']}
+    assert {first['answer_id'],second['answer_id']}<=recalled
+    assert restarted['recalled_turn_count']>=2
+    assert restarted['history_summary_status']=='ready'
+    assert twin.options[-1]['conversation_summary']
     ordinary=send(client,own,headers,cloud,'我以前说过喜欢什么颜色的书签？')
     assert ordinary.status_code==200,ordinary.text
     assert first['answer_id'] in {t['answer_id'] for t in twin.options[-1]['conversation_recall']}
 
 
-def test_new_voice_call_does_not_silently_use_an_earlier_text_conversation(ready,client,app,session):
+def test_new_voice_call_automatically_recalls_an_earlier_text_conversation(ready,client,app,session):
     from test_chat_memory import RecallTwin,TopicEncoder
     from test_twin_conversation import send
     own,_,headers,cloud,_,_=ready
@@ -327,8 +331,10 @@ def test_new_voice_call_does_not_silently_use_an_earlier_text_conversation(ready
         json={'question':'继续聊刚才的书签。','turn_id':'fresh-voice'})
     assert response.status_code==200,response.text
     assert twin.options[-1]['conversation_turns']==[]
-    assert not twin.options[-1].get('conversation_recall')
-    assert response.json()['recalled_turn_count']==0
+    assert response.json()['parent_answer_id'] is None
+    assert prior.json()['answer_id'] in {t['answer_id'] for t in twin.options[-1]['conversation_recall']}
+    assert response.json()['recalled_turn_count']==1
+    assert response.json()['history_summary_status']=='ready'
 
 
 def test_reused_worker_turn_id_cannot_reuse_an_answer_from_another_call(ready,client,app,session):
@@ -348,8 +354,10 @@ def test_reused_worker_turn_id_cannot_reuse_an_answer_from_another_call(ready,cl
     assert len(twin.options)==2
 
 
-def test_voice_can_recall_older_turns_of_same_call_without_recalling_another_call(ready,client,app,session):
+def test_voice_recalls_older_than_twenty_current_turns_and_prior_calls_and_text(ready,client,app,session):
     from test_chat_memory import RecallTwin,TopicEncoder
+    from test_twin_conversation import send
+    own,_,headers,cloud,_,_=ready
     twin=RecallTwin();app.state.twin_client=twin
     app.state.embedding_encoder=TopicEncoder();app.state.settings.ai_backend='http'
     old_call=start(client,app,ready).json()['call_id']
@@ -358,7 +366,9 @@ def test_voice_can_recall_older_turns_of_same_call_without_recalling_another_cal
             json={'question':question,'turn_id':turn})
         assert r.status_code==200,r.text
         return r.json()
-    foreign=speak(old_call,'我喜欢橙色书签。','another-call')
+    previous=speak(old_call,'我喜欢橙色书签。','another-call')
+    text=send(client,own,headers,cloud,'文字里我也提到了橙色书签。')
+    assert text.status_code==200,text.text
     current_call=start(client,app,ready).json()['call_id']
     first=speak(current_call,'这一通电话我提到蓝色书签。','current-first')
     original=session.get(TwinAnswer,first['answer_id'])
@@ -372,28 +382,107 @@ def test_voice_can_recall_older_turns_of_same_call_without_recalling_another_cal
     session.get(VoiceCall,current_call).previous_answer_id=parent;session.commit()
     result=speak(current_call,'我前面提到什么颜色的书签？','current-followup')
     selected={t['answer_id'] for t in twin.options[-1].get('conversation_recall',[])}
-    assert first['answer_id'] in selected and foreign['answer_id'] not in selected
+    assert {first['answer_id'],previous['answer_id'],text.json()['answer_id']}<=selected
     assert result['recalled_turn_count']>0 and result['context_truncated']
     assert result['parent_answer_id']==parent
+    assert len(twin.options[-1]['conversation_turns'])==20
+    assert first['answer_id'] not in {t['answer_id'] for t in twin.options[-1]['conversation_turns']}
+    assert len(selected)<=12
+
+
+@pytest.mark.parametrize('action',['disable','clear'])
+def test_voice_history_honors_chat_memory_switch_and_clear(ready,client,app,session,action):
+    from test_chat_memory import RecallTwin,TopicEncoder
+    from test_twin_conversation import send
+    from app.models import ChatTurnEmbedding,ChatDigest
+    own,_,headers,cloud,_,_=ready
+    twin=RecallTwin();app.state.twin_client=twin
+    app.state.embedding_encoder=TopicEncoder();app.state.settings.ai_backend='http'
+    text=send(client,own,headers,cloud,'旧文字提到橙色书签。').json()
+    first_call=start(client,app,ready).json()['call_id']
+    spoken=client.post('/internal/voice-calls/'+first_call+'/answers',headers=internal(),
+        json={'question':'上一通电话提到蓝色书签。','turn_id':'old-voice'})
+    assert spoken.status_code==200,spoken.text
+    path=f'/api/v1/subjects/{own.subject_id}/twin/chat-memory'
+    update=(client.put(path,headers=headers,json={'enabled':False}) if action=='disable'
+            else client.delete(path,headers=headers))
+    assert update.status_code==200,update.text
+    next_call=start(client,app,ready).json()['call_id']
+    response=client.post('/internal/voice-calls/'+next_call+'/answers',headers=internal(),
+        json={'question':'以前的书签是什么颜色？','turn_id':'after-setting'})
+    assert response.status_code==200,response.text
+    assert not twin.options[-1].get('conversation_recall')
+    assert not twin.options[-1].get('conversation_summary')
+    assert twin.options[-1]['conversation_turns']==[]
+    assert response.json()['parent_answer_id'] is None and response.json()['recalled_turn_count']==0
+    session.expire_all()
+    assert session.scalar(select(ChatTurnEmbedding).where(ChatTurnEmbedding.subject_id==own.subject_id)) is None
+    assert session.scalar(select(ChatDigest).where(ChatDigest.subject_id==own.subject_id)) is None
+    # Original chats remain saved, but a clear cannot silently reindex them.
+    assert session.get(TwinAnswer,text['answer_id']) is not None
+    assert session.get(TwinAnswer,spoken.json()['answer_id']) is not None
+
+
+def test_voice_recall_excludes_another_actor_or_subject_even_with_matching_topics(ready,client,app,session):
+    from test_chat_memory import RecallTwin,TopicEncoder
+    from test_twin_conversation import send
+    from app.models import ChatTurnEmbedding,MemoryItem,PersonTrait,Episode
+    own,other,headers,cloud,_,_=ready
+    twin=RecallTwin();app.state.twin_client=twin
+    app.state.embedding_encoder=TopicEncoder();app.state.settings.ai_backend='http'
+    original=send(client,own,headers,cloud,'本人的文字提到橙色书签。').json()
+    row=session.get(TwinAnswer,original['answer_id'])
+    values={c.name:getattr(row,c.name) for c in TwinAnswer.__table__.columns}
+    foreign_ids=set()
+    for n,(subject,actor) in enumerate([(own.subject_id,other.actor_id),
+            (other.subject_id,own.actor_id),(other.subject_id,other.actor_id)]):
+        identifier=f'foreign_history_{n}';foreign_ids.add(identifier)
+        session.add(TwinAnswer(**dict(values,answer_id=identifier,subject_id=subject,actor_id=actor,
+            question=f'他人的秘密书签{n}',answer='不能当成本人的人格。',request_id=None)))
+    session.commit()
+    identifier=start(client,app,ready).json()['call_id']
+    response=client.post('/internal/voice-calls/'+identifier+'/answers',headers=internal(),
+        json={'question':'以前的书签聊了什么？','turn_id':'own-recall'})
+    assert response.status_code==200,response.text
+    selected={t['answer_id'] for t in twin.options[-1]['conversation_recall']}
+    assert selected=={original['answer_id']}
+    assert not foreign_ids.intersection(response.json()['recalled_answer_ids'])
+    assert '他人的秘密' not in str(twin.options[-1])
+    assert not set(session.scalars(select(ChatTurnEmbedding.answer_id))).intersection(foreign_ids)
+    assert session.scalar(select(MemoryItem).join(Episode).where(Episode.subject_id==own.subject_id)) is None
+    assert session.scalar(select(PersonTrait).where(PersonTrait.subject_id==own.subject_id)) is None
 
 
 @pytest.mark.parametrize('action',['hangup','new_turn'])
-def test_answer_finishing_after_call_change_is_not_saved_or_recalled(ready,client,app,session,action):
+@pytest.mark.parametrize('phase',['summary','answer'])
+def test_answer_finishing_after_call_change_is_not_saved_or_recalled(ready,client,app,session,action,phase):
     from test_chat_memory import RecallTwin,TopicEncoder
-    own,_,_,_,_,_=ready
+    from test_twin_conversation import send
+    from app.models import ChatDigest
+    own,_,headers,cloud,_,_=ready
+    app.state.twin_client=RecallTwin();app.state.embedding_encoder=TopicEncoder()
+    app.state.settings.ai_backend='http'
+    prior=send(client,own,headers,cloud,'之前的文字提到橙色书签。')
+    assert prior.status_code==200,prior.text
     identifier=start(client,app,ready).json()['call_id']
     class LateTwin(RecallTwin):
-        def answer(self,*args,**kwargs):
-            result=super().answer(*args,**kwargs)
+        def change_call(self):
             with app.state.database.session() as guard:
                 call=guard.get(VoiceCall,identifier)
                 if action=='hangup':call.ended_at=utcnow()
                 else:call.active_turn='newer-turn'
                 guard.commit()
+        def summarize_chat(self,*args,**kwargs):
+            result=super().summarize_chat(*args,**kwargs)
+            if phase=='summary':self.change_call()
+            return result
+        def answer(self,*args,**kwargs):
+            result=super().answer(*args,**kwargs)
+            if phase=='answer':self.change_call()
             return result
     app.state.twin_client=LateTwin();app.state.embedding_encoder=TopicEncoder()
     app.state.settings.ai_backend='http'
-    question='这个晚到的语音回答不能保存。'
+    question='这个晚到的书签语音回答不能保存。'
     response=client.post('/internal/voice-calls/'+identifier+'/answers',headers=internal(),
         json={'question':question,'turn_id':'superseded-turn'})
     assert response.status_code==404,response.text
@@ -402,6 +491,8 @@ def test_answer_finishing_after_call_change_is_not_saved_or_recalled(ready,clien
     row=session.get(VoiceCall,identifier)
     assert row.previous_answer_id==''
     if action=='new_turn':assert row.active_turn=='newer-turn'
+    if phase=='summary':
+        assert session.scalar(select(ChatDigest).where(ChatDigest.subject_id==own.subject_id)) is None
 
 
 def test_signed_sample_fetch_requires_ticket_active_consent_and_expiry(ready,client,app,session):

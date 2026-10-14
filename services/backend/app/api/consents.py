@@ -210,6 +210,11 @@ def revoke_consent(
             CalibrationRun.status != "stale",
         )):
             run.status = "stale"
+    if consent.scope == ConsentScope.MODEL_TRAINING:
+        from ..personal_learning import preference, invalidate_jobs
+        pref=preference(session,consent.subject_id,actor.actor_id)
+        pref.enabled=False
+        invalidate_jobs(session,consent.subject_id,actor.actor_id)
     from .realtime import revoke_realtime, delete_remote_profiles
     revoke_realtime(request.app, session, consent_id)
     session.commit()
