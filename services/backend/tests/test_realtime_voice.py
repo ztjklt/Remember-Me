@@ -337,6 +337,54 @@ def test_new_voice_call_automatically_recalls_an_earlier_text_conversation(ready
     assert response.json()['history_summary_status']=='ready'
 
 
+def test_greeting_in_new_call_carries_latest_previous_call_tail_despite_old_similar_chats(ready,client,app,session,monkeypatch):
+    from test_chat_memory import RecallTwin,TopicEncoder,noisy_history_with_latest_tail
+    import app.api.realtime as api
+    from app import chat_memory
+    own,_,headers,_,_,_=ready
+    twin=RecallTwin();app.state.twin_client=twin;app.state.embedding_encoder=TopicEncoder();app.state.settings.ai_backend='http'
+    async def no_room(*args):pass
+    monkeypatch.setattr(api,'remove_room',no_room)
+    old_call=start(client,app,ready).json()['call_id']
+    old=client.post('/internal/voice-calls/'+old_call+'/answers',headers=internal(),
+        json={'question':'书签的安排。','turn_id':'latest-call-first'})
+    assert old.status_code==200,old.text
+    tail=noisy_history_with_latest_tail(session,session.get(TwinAnswer,old.json()['answer_id']))
+    assert client.delete(f'/api/v1/subjects/{own.subject_id}/twin/voice/calls/{old_call}',headers=headers).status_code==200
+    flags=[];original=chat_memory.prepare
+    def inspect(*args,**kwargs):
+        flags.append(kwargs.get('carry_latest_conversation'));return original(*args,**kwargs)
+    monkeypatch.setattr(chat_memory,'prepare',inspect)
+    new_call=start(client,app,ready).json()['call_id']
+    response=client.post('/internal/voice-calls/'+new_call+'/answers',headers=internal(),
+        json={'question':'你好','turn_id':'new-greeting'})
+    assert response.status_code==200,response.text
+    carried={t['answer_id'] for t in twin.options[-1]['conversation_recall']}
+    assert set(tail[-6:])<=carried and len(carried)<=12
+    assert response.json()['parent_answer_id'] is None
+    assert response.json()['conversation_id']!=old.json()['conversation_id']
+    assert twin.options[-1]['conversation_turns']==[] and flags[-1] is True
+    follow=client.post('/internal/voice-calls/'+new_call+'/answers',headers=internal(),
+        json={'question':'那继续吧','turn_id':'new-followup'})
+    assert follow.status_code==200,follow.text
+    assert follow.json()['parent_answer_id']==response.json()['answer_id']
+    assert flags[-1] is False
+
+
+def test_greeting_in_new_call_carries_latest_text_conversation_as_fallback(ready,client,app,session):
+    from test_chat_memory import RecallTwin,TopicEncoder,noisy_history_with_latest_tail
+    from test_twin_conversation import send
+    own,_,headers,cloud,_,_=ready
+    twin=RecallTwin();app.state.twin_client=twin;app.state.embedding_encoder=TopicEncoder();app.state.settings.ai_backend='http'
+    text=send(client,own,headers,cloud,'书签的计划。');assert text.status_code==200
+    tail=noisy_history_with_latest_tail(session,session.get(TwinAnswer,text.json()['answer_id']))
+    identifier=start(client,app,ready).json()['call_id']
+    response=client.post('/internal/voice-calls/'+identifier+'/answers',headers=internal(),json={'question':'你好','turn_id':'text-fallback'})
+    assert response.status_code==200,response.text
+    assert set(tail[-6:])<={t['answer_id'] for t in twin.options[-1]['conversation_recall']}
+    assert twin.options[-1]['conversation_turns']==[] and response.json()['parent_answer_id'] is None
+
+
 def test_reused_worker_turn_id_cannot_reuse_an_answer_from_another_call(ready,client,app,session):
     from test_chat_memory import RecallTwin,TopicEncoder
     twin=RecallTwin();app.state.twin_client=twin
@@ -409,7 +457,7 @@ def test_voice_history_honors_chat_memory_switch_and_clear(ready,client,app,sess
     assert update.status_code==200,update.text
     next_call=start(client,app,ready).json()['call_id']
     response=client.post('/internal/voice-calls/'+next_call+'/answers',headers=internal(),
-        json={'question':'以前的书签是什么颜色？','turn_id':'after-setting'})
+        json={'question':'你好','turn_id':'after-setting'})
     assert response.status_code==200,response.text
     assert not twin.options[-1].get('conversation_recall')
     assert not twin.options[-1].get('conversation_summary')

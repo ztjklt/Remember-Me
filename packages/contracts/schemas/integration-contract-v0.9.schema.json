@@ -3,110 +3,6 @@
   "$id": "https://remember-me.local/contracts/integration-contract-v0.9.schema.json",
   "title": "Remember Me Integration Contract v0.9 — personal learning and held-out human verification",
   "type": "object",
-  "oneOf": [
-    {
-      "$ref": "#/$defs/captureEpisode"
-    },
-    {
-      "$ref": "#/$defs/episodeCreated"
-    },
-    {
-      "$ref": "#/$defs/processingStatus"
-    },
-    {
-      "$ref": "#/$defs/aiCoreInput"
-    },
-    {
-      "$ref": "#/$defs/aiCoreOutput"
-    },
-    {
-      "$ref": "#/$defs/episodeResult"
-    },
-    {
-      "$ref": "#/$defs/twinRequest"
-    },
-    {
-      "$ref": "#/$defs/twinResponse"
-    },
-    {
-      "$ref": "#/$defs/voiceRequest"
-    },
-    {
-      "$ref": "#/$defs/voiceResponse"
-    },
-    {
-      "$ref": "#/$defs/calibrationInput"
-    },
-    {
-      "$ref": "#/$defs/calibrationOutput"
-    },
-    {
-      "$ref": "#/$defs/personModelSnapshot"
-    },
-    {
-      "$ref": "#/$defs/captureQuestion"
-    },
-    {
-      "$ref": "#/$defs/twinQueryV3"
-    },
-    {
-      "$ref": "#/$defs/twinAnswerV3"
-    },
-    {
-      "$ref": "#/$defs/voiceProfileV3"
-    },
-    {
-      "$ref": "#/$defs/voiceSpeechV3"
-    },
-    {
-      "$ref": "#/$defs/calibrationStart"
-    },
-    {
-      "$ref": "#/$defs/calibrationComplete"
-    },
-    {
-      "$ref": "#/$defs/calibrationRun"
-    },
-    {
-      "$ref": "#/$defs/rememberChatMessageV5"
-    },
-    {
-      "$ref": "#/$defs/rememberChatReplyV5"
-    },
-    {
-      "$ref": "#/$defs/realtimeVoiceProfile"
-    },
-    {
-      "$ref": "#/$defs/realtimeVoiceCapabilities"
-    },
-    {
-      "$ref": "#/$defs/voiceCallRequest"
-    },
-    {
-      "$ref": "#/$defs/voiceCallTicket"
-    },
-    {
-      "$ref": "#/$defs/chatMemoryPreference"
-    },
-    {
-      "$ref": "#/$defs/chatMemoryView"
-    },
-    {
-      "$ref": "#/$defs/modelTrainingPreference"
-    },
-    {
-      "$ref": "#/$defs/fidelityCaseInput"
-    },
-    {
-      "$ref": "#/$defs/fidelityHumanAnswer"
-    },
-    {
-      "$ref": "#/$defs/fidelityRatings"
-    },
-    {
-      "$ref": "#/$defs/personalTrainingResult"
-    }
-  ],
   "$defs": {
     "evidence": {
       "type": "object",
@@ -2169,5 +2065,110 @@
         }
       }
     }
-  }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/captureEpisode"
+    },
+    {
+      "$ref": "#/$defs/episodeCreated"
+    },
+    {
+      "$ref": "#/$defs/processingStatus"
+    },
+    {
+      "$ref": "#/$defs/aiCoreInput"
+    },
+    {
+      "$ref": "#/$defs/aiCoreOutput"
+    },
+    {
+      "$ref": "#/$defs/episodeResult"
+    },
+    {
+      "$ref": "#/$defs/twinRequest"
+    },
+    {
+      "$ref": "#/$defs/twinResponse"
+    },
+    {
+      "$ref": "#/$defs/voiceRequest"
+    },
+    {
+      "$ref": "#/$defs/voiceResponse"
+    },
+    {
+      "$ref": "#/$defs/calibrationInput"
+    },
+    {
+      "$ref": "#/$defs/calibrationOutput"
+    },
+    {
+      "$ref": "#/$defs/personModelSnapshot"
+    },
+    {
+      "$ref": "#/$defs/captureQuestion"
+    },
+    {
+      "$ref": "#/$defs/twinQueryV3"
+    },
+    {
+      "$ref": "#/$defs/twinAnswerV3"
+    },
+    {
+      "$ref": "#/$defs/voiceProfileV3"
+    },
+    {
+      "$ref": "#/$defs/voiceSpeechV3"
+    },
+    {
+      "$ref": "#/$defs/calibrationStart"
+    },
+    {
+      "$ref": "#/$defs/calibrationComplete"
+    },
+    {
+      "$ref": "#/$defs/calibrationRun"
+    },
+    {
+      "$ref": "#/$defs/rememberChatMessageV5"
+    },
+    {
+      "$ref": "#/$defs/rememberChatReplyV5"
+    },
+    {
+      "$ref": "#/$defs/realtimeVoiceProfile"
+    },
+    {
+      "$ref": "#/$defs/realtimeVoiceCapabilities"
+    },
+    {
+      "$ref": "#/$defs/voiceCallRequest"
+    },
+    {
+      "$ref": "#/$defs/voiceCallTicket"
+    },
+    {
+      "$ref": "#/$defs/chatMemoryPreference"
+    },
+    {
+      "$ref": "#/$defs/chatMemoryView"
+    },
+    {
+      "$ref": "#/$defs/modelTrainingPreference"
+    },
+    {
+      "$ref": "#/$defs/fidelityCaseInput"
+    },
+    {
+      "$ref": "#/$defs/fidelityHumanAnswer"
+    },
+    {
+      "$ref": "#/$defs/fidelityRatings"
+    },
+    {
+      "$ref": "#/$defs/personalTrainingResult"
+    }
+  ],
+  "description": "Endpoint-specific definitions are authoritative. The generic envelope accepts a union because Twin questions and diagnostic fidelity questions can share an untagged body."
 }

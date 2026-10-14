@@ -281,7 +281,7 @@ def answer_call(call_id: str,payload: SpokenQuestion,request: Request,session: S
     # and publication guard still belong only to this active call and turn.
     result=answer_question(row.subject_id,TwinQuestion(question=payload.question,cloud_consent_id=row.cloud_consent_id,
         conversation_mode=True,previous_answer_id=row.previous_answer_id or None,request_id=request_id),
-        request,actor,session,chat_history_scope='actor',publication_guard=current_turn)
+        request,actor,session,chat_history_scope='actor',publication_guard=current_turn,carry_latest_conversation=True)
     session.expire_all(); row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     if row.active_turn != payload.turn_id: raise TwinNotFound("回答已被打断。")
     row.active_answer_id=result["answer_id"]; row.previous_answer_id=result["answer_id"]; session.commit()

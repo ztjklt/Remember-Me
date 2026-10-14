@@ -80,6 +80,7 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
     personal_trainer_secret: SecretStr = SecretStr("")
     personal_training_base_model: str = "Qwen/Qwen3-0.6B-MLX-4bit"
+    release_id: str = "development"
     realtime_enabled: bool = False
     livekit_url: str = ""
     livekit_api_url: str = ""

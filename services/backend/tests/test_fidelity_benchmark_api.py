@@ -29,6 +29,7 @@ def _rated_rows(session,fixture,*,fixed,duplicate_reference=False,count=20):
             locked_answer=reference,answer_id='synthetic-private-lock-'+str(i),response_type='SIMULATION',
             model_version='test-prediction-v1',person_model_version=version(session,own.subject_id),source_basis=basis,
             exposure_manifest={'verified':True,'benchmark_id':benchmark.BENCHMARK_ID,'benchmark_verified':fixed,
+                'evaluation_release_id':'development',
                 'benchmark_question_id':item['question_id'] if fixed else None,'text_hashes':[],
                 'source_group_ids':[],'exposed_texts':[],'locked_at':(now-timedelta(minutes=3)).isoformat()},
             human_answer=reference,ratings={d:'MATCH' if i%2==0 else 'DIFFERENT' for d in DIMENSIONS},
@@ -87,6 +88,17 @@ def test_fixed_bank_allows_uncertain_middle_agreement_when_enough_independent_re
     assert len(report['cases'])==60
     assert report['overall']['agreement_rate']==.5
     assert report['overall']['confidence_interval']['lower']<.5<report['overall']['confidence_interval']['upper']
+
+def test_new_release_cannot_reuse_old_prompt_or_adapter_scores(learning_owner,client,app,session):
+    _rated_rows(session,learning_owner,fixed=True,count=60)
+    path=_path(learning_owner);headers=learning_owner[2]
+    assert client.get(path,headers=headers).json()['status']=='available'
+    app.state.settings.release_id='changed-twin-prompt-release'
+    report=client.get(path,headers=headers).json()
+    assert report['accepted_observation_count']==0
+    assert report['overall']['agreement_rate'] is None
+    assert len(report['cases'])==60  # Old audit records remain inspectable.
+    assert report['evaluation_release_id']=='changed-twin-prompt-release'
 
 def test_already_exposed_summary_reference_cannot_count_despite_punctuation(learning_owner,client,app,session):
     from sqlalchemy import select

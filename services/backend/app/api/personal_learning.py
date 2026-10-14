@@ -229,6 +229,7 @@ def create_case(subject_id:str,body:CaseInput,request:Request,actor=Depends(curr
         answer_id=answer['answer_id'],response_type=answer['response_type'],model_version=answer['model_version'],
         person_model_version=answer['person_model_version'],source_basis=basis,created_at=frozen,
         exposure_manifest={'verified':True,'benchmark_id':benchmark.BENCHMARK_ID,'benchmark_verified':fixed is not None,
+            'evaluation_release_id':request.app.state.settings.release_id,
             'benchmark_question_id':body.benchmark_question_id,'text_hashes':hashes,'source_group_ids':list({e['episode_id'] for m in materials for e in m['evidence']}),
             'question_group_ids':[],'exposed_texts':exposed,'locked_at':answer['created_at']})
     session.add(case);session.commit();return case_view(case)
@@ -255,10 +256,11 @@ def rate_case(subject_id:str,case_id:str,body:RatingInput,actor=Depends(current_
     case.ratings=body.ratings;case.rated_at=case.rated_at or utcnow();session.commit();return case_view(case)
 
 @router.get(ROOT+'/fidelity')
-def fidelity(subject_id:str,actor=Depends(current_actor),session=Depends(get_session)):
+def fidelity(subject_id:str,request:Request,actor=Depends(current_actor),session=Depends(get_session)):
     require_owner(session,subject_id,actor.actor_id);basis=source_basis(session,subject_id)
     cases=list(session.scalars(select(FidelityCase).where(FidelityCase.subject_id==subject_id,FidelityCase.actor_id==actor.actor_id).order_by(FidelityCase.created_at.desc())))
-    current=next((c for c in cases if c.source_basis==basis),None)
+    release=request.app.state.settings.release_id
+    current=next((c for c in cases if c.source_basis==basis and c.exposure_manifest.get('evaluation_release_id')==release),None)
     model=current.model_version if current else 'not_evaluated';pm=str(learning.version(session,subject_id));observations=[]
     for c in cases:
         if not c.rated_at or not c.human_confirmed_at:continue
@@ -268,7 +270,7 @@ def fidelity(subject_id:str,actor=Depends(current_actor),session=Depends(get_ses
         if not reference or any(reference in benchmark.normalized_text(text) for text in manifest.get('exposed_texts',[])):
             prior_hashes.append(text_hash(c.human_answer))
         fixed=benchmark.BY_ID.get(manifest.get('benchmark_question_id'))
-        verified=manifest.get('benchmark_verified') is True and manifest.get('benchmark_id')==benchmark.BENCHMARK_ID and fixed is not None and c.question==fixed['question'] and c.question_group_id==fixed['question_group_id']
+        verified=manifest.get('benchmark_verified') is True and manifest.get('benchmark_id')==benchmark.BENCHMARK_ID and fixed is not None and c.question==fixed['question'] and c.question_group_id==fixed['question_group_id'] and manifest.get('evaluation_release_id')==release
         observations.append(CalibrationObservation(observation_id=c.case_id,benchmark_id=benchmark.BENCHMARK_ID,subject_id=subject_id,actor_id=actor.actor_id,
             question_group_id=c.question_group_id,holdout_source_group_ids=(c.case_id,'human-reference:'+text_hash(benchmark.normalized_text(c.human_answer))),question=c.question,locked_answer=c.locked_answer,human_answer=c.human_answer,
             model_version=c.model_version,person_model_version=str(c.person_model_version),source_basis=c.source_basis,
@@ -282,6 +284,7 @@ def fidelity(subject_id:str,actor=Depends(current_actor),session=Depends(get_ses
     report['cases']=[case_view(c) for c in cases if c.source_basis==basis][:200]
     report.update(benchmark.metadata())
     report['evaluation_target']='current_twin'
+    report['evaluation_release_id']=release
     report['personal_candidate_evaluation_available']=False
     report['diagnostic_case_count']=sum(not c.exposure_manifest.get('benchmark_verified',False) for c in cases)
     return report

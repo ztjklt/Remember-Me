@@ -13,3 +13,5 @@ Actor 与 Subject 同时匹配才可进入检索；第三方、其他人物以�
 验证使用隔离的 API / 数据库路径及可观察的假提供商：上一通电话、旧文字、当前通话超过 20 轮、关闭／清除、Actor / Subject 隔离、跨电话 turn_id 重用，以及挂断／新轮次发生在摘要或回答生成时的发布保护。测试不代表真人声音或人格质量测评。
 
 本次实际执行：`cd services/backend && .venv/bin/python -m pytest -o addopts='' tests/test_realtime_voice.py tests/test_chat_memory.py tests/test_twin_conversation.py -q`，60 passed，2 项现有依赖弃用警告。完整结果保存在本地 `build/voice-shared-history-tests.log`；本提案记录代码与测试，部署结果由交付记录另行说明。
+
+新电话首轮优先带入同 Actor / Subject 的最近一段会话末尾最多6条，然后以相关性补入其它旧聊天，仍受12条／10000字总预算。简单寒暄也能保留上一段语境；后续轮次按当前通话链接续。未保存的独立验证题不启用此入口。

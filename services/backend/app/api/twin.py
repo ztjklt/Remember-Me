@@ -173,7 +173,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 
 def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
                     actor: Actor, session: Session, *, chat_history_scope: Literal['actor','conversation'],
-                    publication_guard: Callable[[Session], None] | None = None, persist_answer: bool = True) -> dict:
+                    publication_guard: Callable[[Session], None] | None = None, persist_answer: bool = True,
+                    carry_latest_conversation: bool = False) -> dict:
     """Server-selected recall scope, independently of the current answer chain.
 
     Owner text and voice callers share historical recall when chat memory is
@@ -244,7 +245,8 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
         try:
             recalled, chat_updates, chat_snapshot = chat_memory.prepare(session, subject_id, actor_id,
                 from_material_basis(basis), retrieval_question(payload.question, turns), turns, request.app.state.embedding_encoder,
-                conversation_id=history_conversation_id)
+                conversation_id=history_conversation_id,
+                carry_latest_conversation=carry_latest_conversation and payload.previous_answer_id is None and persist_answer)
         except EmbeddingUnavailable as exc:
             raise TwinFailed(str(exc)) from exc
     session.commit()

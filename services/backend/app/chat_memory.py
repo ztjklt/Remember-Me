@@ -9,6 +9,7 @@ from .evidence_rag import lexical, checked_vector
 
 MAX_RECALL_TURNS = 12
 MAX_RECALL_CHARACTERS = 10000
+MAX_CARRY_TURNS = 6
 
 
 def state(session, subject, actor):
@@ -48,7 +49,8 @@ def valid_recall(session, subject, actor, basis, selected, *, conversation_id=No
     return all(available.get(t['answer_id']) == t for t in selected)
 
 
-def prepare(session, subject, actor, basis, question, recent, encoder, *, conversation_id=None):
+def prepare(session, subject, actor, basis, question, recent, encoder, *, conversation_id=None,
+            carry_latest_conversation=False):
     excluded = {t['answer_id'] for t in recent}
     turns = [t for t in history(session, subject, actor, basis, conversation_id=conversation_id) if t['answer_id'] not in excluded]
     if not turns:
@@ -94,11 +96,23 @@ def prepare(session, subject, actor, basis, question, recent, encoder, *, conver
         count = min(MAX_RECALL_TURNS, len(chronological))
         ranked = [chronological[round(i*(len(chronological)-1)/max(1,count-1))] for i in range(count)]
     selected, size = [], 0
+    if carry_latest_conversation:
+        # A greeting need not semantically match the last call. Reserve its
+        # latest tail before topic retrieval, within the same shared budget.
+        # history already applies owner scope, the switch and the clear cutoff.
+        latest=turns[-1]['conversation_id']
+        tail=[t for t in turns if t['conversation_id']==latest][-MAX_CARRY_TURNS:]
+        for turn in reversed(tail):
+            needed=len(turn['question'])+len(turn['answer'] or '')
+            if size+needed>MAX_RECALL_CHARACTERS:continue
+            selected.append(turn);size+=needed
+    selected_ids={turn['answer_id'] for turn in selected}
     for turn in ranked:
         if (not overview and scores[turn['answer_id']] < floor) or len(selected) >= MAX_RECALL_TURNS: break
+        if turn['answer_id'] in selected_ids:continue
         needed = len(turn['question']) + len(turn['answer'] or '')
         if size + needed > MAX_RECALL_CHARACTERS: continue
-        selected.append(turn); size += needed
+        selected.append(turn);selected_ids.add(turn['answer_id']);size += needed
     selected.sort(key=lambda t:(t['created_at'], t['answer_id']))
     # Validate all indexed inputs at publication, including a concurrent clear.
     return selected, updates, fingerprint(turns)

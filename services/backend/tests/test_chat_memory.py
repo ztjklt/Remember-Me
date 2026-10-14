@@ -152,3 +152,73 @@ def test_general_history_summary_retrieves_topics_from_across_time(app,client,se
     recalled=twin.options[-1]['conversation_recall']
     assert first['answer_id'] in {t['answer_id'] for t in recalled}
     assert 'old_59' in {t['answer_id'] for t in recalled} and len(recalled)<=12
+
+
+def noisy_history_with_latest_tail(session,prototype,*,latest_count=8,tail_answer=None):
+    """Older greeting matches outrank an unrelated latest conversation."""
+    base=utcnow();prototype.created_at=base-timedelta(minutes=5)
+    values={c.name:getattr(prototype,c.name) for c in TwinAnswer.__table__.columns}
+    for n in range(24):
+        session.add(TwinAnswer(**dict(values,answer_id=f'greeting_noise_{n}',conversation_id='tc_greeting_noise',
+            question=f'你好，这是以前的普通寒暄{n}',request_id=None,parent_answer_id=None,
+            created_at=base-timedelta(minutes=3)+timedelta(microseconds=n))))
+    latest=[]
+    for n in range(latest_count):
+        identifier=f'latest_tail_{n}';latest.append(identifier)
+        session.add(TwinAnswer(**dict(values,answer_id=identifier,question=f'书签的新安排第{n}项',
+            answer=tail_answer if tail_answer is not None else '这是当前对话的回应。',
+            request_id=None,parent_answer_id=None,created_at=base-timedelta(minutes=1)+timedelta(microseconds=n))))
+    session.commit();return latest
+
+
+def test_optional_latest_tail_reservation_beats_low_relevance_and_keeps_shared_budget(app,client,session):
+    from app import chat_memory
+    from app.twin_basis import current
+    owner,_,oh,_,cloud,_=setup(app,client,session)
+    original=send(client,owner,oh,cloud,'书签的计划。').json()
+    tail=noisy_history_with_latest_tail(session,session.get(TwinAnswer,original['answer_id']))
+    args=(session,owner.subject_id,owner.actor_id,current(session,owner.subject_id),'你好',[],app.state.embedding_encoder)
+    ordinary,_,_=chat_memory.prepare(*args)
+    assert not set(tail).intersection(t['answer_id'] for t in ordinary)
+    carried,_,_=chat_memory.prepare(*args,carry_latest_conversation=True)
+    ids={t['answer_id'] for t in carried}
+    assert set(tail[-6:])<=ids
+    assert not set(tail[:-6]).intersection(ids)
+    assert any(t['answer_id'].startswith('greeting_noise_') for t in carried)
+    assert len(carried)<=12 and sum(len(t['question'])+len(t['answer'] or '') for t in carried)<=10000
+    assert carried==sorted(carried,key=lambda t:(t['created_at'],t['answer_id']))
+
+
+def test_latest_tail_reservation_cannot_exceed_character_budget_or_reuse_stale_assistant(app,client,session):
+    from app import chat_memory
+    from app.twin_basis import current
+    owner,_,oh,_,cloud,_=setup(app,client,session)
+    original=send(client,owner,oh,cloud,'书签的计划。').json()
+    tail=noisy_history_with_latest_tail(session,session.get(TwinAnswer,original['answer_id']),tail_answer='长'*2200)
+    row=session.get(TwinAnswer,tail[-1]);row.answer='失效回复中的秘密';row.invalidated_at=utcnow();session.commit()
+    recalled,_,_=chat_memory.prepare(session,owner.subject_id,owner.actor_id,current(session,owner.subject_id),
+        '你好',[],app.state.embedding_encoder,carry_latest_conversation=True)
+    assert tail[-1] in {t['answer_id'] for t in recalled}
+    assert sum(len(t['question'])+len(t['answer'] or '') for t in recalled)<=10000
+    assert '失效回复中的秘密' not in str(recalled)
+    assert len(set(tail[-6:]).intersection(t['answer_id'] for t in recalled))<6
+
+
+def test_unsaved_prediction_cannot_enable_latest_conversation_carry_even_if_internal_flag_is_set(app,client,session,monkeypatch):
+    from starlette.requests import Request
+    from app import chat_memory
+    from app.models import Actor
+    from app.api.twin import answer_question,TwinQuestion
+    owner,_,oh,_,cloud,twin=setup(app,client,session)
+    first=send(client,owner,oh,cloud,'书签的计划。').json()
+    tail=noisy_history_with_latest_tail(session,session.get(TwinAnswer,first['answer_id']))
+    flags=[];original=chat_memory.prepare
+    def inspect(*args,**kwargs):
+        flags.append(kwargs.get('carry_latest_conversation'));return original(*args,**kwargs)
+    monkeypatch.setattr(chat_memory,'prepare',inspect)
+    result=answer_question(owner.subject_id,TwinQuestion(question='你好',cloud_consent_id=cloud,conversation_mode=True),
+        Request({'type':'http','app':app}),session.get(Actor,owner.actor_id),session,
+        chat_history_scope='actor',persist_answer=False,carry_latest_conversation=True)
+    assert flags==[False]
+    assert not set(tail).intersection(t['answer_id'] for t in twin.options[-1]['conversation_recall'])
+    assert session.get(TwinAnswer,result['answer_id']) is None
