@@ -56,6 +56,7 @@ class ConsentScope(StrEnum):
     CLOUD_TWIN = "CLOUD_TWIN"
     MODEL_TRAINING = "MODEL_TRAINING"
     SPEAKER_IDENTIFICATION = "SPEAKER_IDENTIFICATION"
+    DIGITAL_HANDOVER = "DIGITAL_HANDOVER"
 
 
 # The database refuses a scope this codebase does not register, so a typo or a
@@ -734,6 +735,8 @@ class TwinAnswer(Base):
     subject_id: Mapped[str] = mapped_column(String(64), ForeignKey("subjects.subject_id"), nullable=False)
     actor_id: Mapped[str] = mapped_column(String(64), ForeignKey("actors.actor_id"), nullable=False)
     conversation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    voice_call_id: Mapped[str | None] = mapped_column(String(64),nullable=True)
+    voice_turn_id: Mapped[str | None] = mapped_column(String(64),nullable=True)
     parent_answer_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     context_answer_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)

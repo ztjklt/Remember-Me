@@ -6,6 +6,7 @@ from app.models import Base
 
 EXPECTED_TABLES = {
     "speaker_recordings", "dialogue_samples",
+    "voice_identities", "voice_utterances", "legacy_states", "entrustments", "entrust_unlocks", "entrust_visits",
     "alembic_version",
     "learning_preferences", "personal_training_jobs", "personal_trainer_heartbeats", "fidelity_cases",
     "realtime_voice_profiles", "voice_calls",

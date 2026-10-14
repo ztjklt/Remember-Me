@@ -13,6 +13,8 @@ COPY services/ai-core/app services/ai-core/app
 COPY services/ai-core/fixtures services/ai-core/fixtures
 COPY packages/contracts/schemas packages/contracts/schemas
 RUN cd services/ai-core && uv sync --frozen --no-dev
+COPY models models
+ENV REMEMBER_VOICEPRINT_MODEL_PATH=/opt/remember/models/wespeaker_zh_cnceleb_resnet34.onnx
 COPY services/backend/app services/backend/app
 COPY services/backend/migrations services/backend/migrations
 COPY services/backend/alembic.ini services/backend/alembic.ini

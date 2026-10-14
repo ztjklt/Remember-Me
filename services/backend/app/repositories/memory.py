@@ -43,7 +43,7 @@ class MemoryRepository:
                     memory_item_id=f"mi_{uuid4().hex[:16]}",
                     episode_id=episode.episode_id,
                     ordinal=ordinal,
-                    review_state='pending' if revision and revision.status == 'pending' else 'active',
+                    review_state='pending' if str(item.source_type)=='THIRD_PARTY' or revision and revision.status == 'pending' else 'active',
                     memory_type=str(item.memory_type),
                     content=item.content,
                     source_type=str(item.source_type),

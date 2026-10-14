@@ -23,7 +23,7 @@ def no_store(response: Response):
 router = APIRouter(prefix='/api/v1/subjects/{subject_id}/speaker-recordings', tags=['speaker-recordings'], dependencies=[Depends(no_store)])
 NOTICE = ('点击开始即确认本次录音、云端转写和本段声音识别；原音发送到现用百炼服务。'
           '正常聊天即可，自我介绍可帮助显示姓名，没听清时仍按说话人编号保留文字。'
-          '本段身份不用于登录，不建立跨录音声纹档案，不将多人原音用于本人音色复刻。')
+          '声音不用于登录，不将多人原音整体用于本人音色复刻。')
 GUIDE = '自然说一句“我叫小王”就可以，也可以直接开始聊天。'
 
 
@@ -46,7 +46,7 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     require_owner(session, subject_id, actor.actor_id)
     settings = request.app.state.settings
     return {'available': recognition.available(settings), 'policy': recognition.policy(settings),
-            'notice': NOTICE, 'introduction_guide': GUIDE, 'identification_scope': 'recording', 'consent_action':'start_recording', 'introduction_optional':True}
+            'notice': NOTICE + (' 清晰自我介绍的声音会在当前人物空间登记声纹，用于以后录音和聊天的辅助识别，可删除或撤销；声音不能替代账号或密码。' if __import__('app.voiceprints',fromlist=['available']).available(settings) else ''), 'introduction_guide': GUIDE, 'identification_scope': 'recording', 'consent_action':'start_recording', 'introduction_optional':True,'voiceprint_available':__import__('app.voiceprints',fromlist=['available']).available(settings)}
 
 
 class ProcessInput(BaseModel):

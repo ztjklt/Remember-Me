@@ -1,3 +1,7 @@
+# Integration Contract v0.12
+
+2026-10-15 Product / Integration Owner 授权：真正的 Subject 内声纹模板与跨段匹配，普通／多人录音与同一手机多人 Twin 对话；仅匹配本人声音自动更新记忆；指定账号＋语音辅助确认＋密语的专属范围托付；独立人物模型资料覆盖图。v0.11 定义完整保留，新形状在 v0.12。见 [批准修订](../../docs/architecture/voiceprint-personal-model-contract-v0.12.md)。声纹不代替账号、密码或授权，声音无法确认时继续交流。交接由事先指定照护人记录核验，不能由声音或 LLM 自动触发。
+
 # Integration Contract v0.11
 
 2026-10-15 本人修订：点击开始确认本次用途，无重复勾选／固定同意句；姓名自然关联、听不清保留编号和文字。普通语音对话可自动留作待核对资料，并复用清晰单人片段后台准备音色。v0.10 定义保持不变，独立授权仍在服务端记录和校验。见 [获批修订](../../docs/architecture/natural-capture-contract-v0.11.md)。
@@ -35,7 +39,7 @@ The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps th
 
 This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.6.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.11.schema.json`; v0.1–v0.10 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.12.schema.json`; v0.1–v0.10 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 

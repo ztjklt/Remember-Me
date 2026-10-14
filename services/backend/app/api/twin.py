@@ -174,7 +174,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
                     actor: Actor, session: Session, *, chat_history_scope: Literal['actor','conversation'],
                     publication_guard: Callable[[Session], None] | None = None, persist_answer: bool = True,
-                    carry_latest_conversation: bool = False) -> dict:
+                    carry_latest_conversation: bool = False, scope_authorization: Callable[[Session], set[str]] | None = None) -> dict:
     """Server-selected recall scope, independently of the current answer chain.
 
     Owner text and voice callers share historical recall when chat memory is
@@ -183,12 +183,16 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
     if chat_history_scope not in {'actor','conversation'}:
         raise ValueError('Unknown internal chat-history scope')
     actor_id = actor.actor_id
+    def authorize_scope():
+        if scope_authorization is not None: return scope_authorization(session)
+        require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+        return None
     publication_lock(session, subject_id)
-    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    authorize_scope()
     if publication_guard: publication_guard(session)
     if payload.conversation_mode:
         from ..access import require_owner
-        require_owner(session, subject_id, actor_id)
+        if scope_authorization is None: require_owner(session, subject_id, actor_id)
     elif payload.previous_answer_id is not None:
         raise SourceChanged('续聊需要启用会话模式。')
     if payload.request_id:
@@ -200,8 +204,8 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
             if existing.invalidated_at is not None or existing.source_basis != answer_basis(session, subject_id):
                 raise SourceChanged('上次回答的依据已变化，请重新发送。')
             return answer_view(session, existing)
-    ids = visible_episodes(session, subject_id, actor_id, cloud=True)
-    reader = not is_owner(session, subject_id, actor_id)
+    ids = scope_authorization(session) if scope_authorization is not None else visible_episodes(session, subject_id, actor_id, cloud=True)
+    reader = scope_authorization is not None or not is_owner(session, subject_id, actor_id)
     if reader:
         ids -= altered_story_ids(session, ids)
     candidates = effective_materials(session, subject_id, ids, enforce_budget=False)
@@ -210,7 +214,7 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
     from ..models import NarrativePreference
     from ..profiles import approved_traits
     sources = contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
-    organized = [r for r in visible_records(session,subject_id,actor_id,sources=sources)
+    organized = [] if scope_authorization is not None else [r for r in visible_records(session,subject_id,actor_id,sources=sources)
                  if r['status']=='confirmed' and r['source_valid']]
     for trait in (approved_traits(session, subject_id) if not reader else []):
         # Conditions and counterexamples need the same permission check as support.
@@ -260,7 +264,7 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
-    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    authorize_scope()
     if publication_guard: publication_guard(session)
     if not chat_memory.publish(session, subject_id, actor_id, from_material_basis(basis), turns, chat_snapshot, chat_updates,
                                conversation_id=history_conversation_id):
@@ -288,7 +292,7 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
         if basis != source_basis(session, subject_id) or not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled,
                                                                                   conversation_id=history_conversation_id):
             raise SourceChanged('聊天记忆或授权已变化，请重新提问。')
-        require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+        authorize_scope()
         if publication_guard: publication_guard(session)
         chat_memory.save_digest(session, subject_id, actor_id, summary)
         session.commit()
@@ -320,7 +324,7 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
         publication_lock(session,subject_id)
         if basis!=source_basis(session,subject_id):
             raise SourceChanged('资料或授权已变化，请重新提问。')
-        require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
+        authorize_scope()
         if publication_guard: publication_guard(session)
         session.commit()
         # Only this optional pass may degrade; never replace a failed fact answer.
@@ -328,7 +332,7 @@ def answer_question(subject_id: str, payload: TwinQuestion, request: Request,
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
-    require_cloud(session, subject_id, actor_id, payload.cloud_consent_id)
+    authorize_scope()
     if publication_guard: publication_guard(session)
     if recalled and not chat_memory.valid_recall(session, subject_id, actor_id, from_material_basis(basis), recalled,
                                                 conversation_id=history_conversation_id):
@@ -410,6 +414,15 @@ def remember_message(subject_id: str, answer_id: str, payload: RememberMessage, 
     row = session.scalar(select(TwinAnswer).where(TwinAnswer.answer_id == answer_id,
         TwinAnswer.subject_id == subject_id, TwinAnswer.actor_id == actor.actor_id))
     if row is None: raise TwinNotFound('聊天消息不存在。')
+    if row.voice_call_id:
+        from ..voiceprints import require_verified_episode
+        from ..errors import RequestInvalid
+        verified=session.scalar(select(Episode).where(Episode.subject_id==subject_id,Episode.actor_id==actor.actor_id,Episode.capture_metadata['call_id'].as_string()==row.voice_call_id,Episode.capture_metadata['turn_id'].as_string()==row.voice_turn_id,Episode.capture_metadata['speaker_verification'].as_string()=='matched'))
+        if not verified:raise RequestInvalid('这轮声音暂未匹配本人，继续聊天即可；不能手动改为本人经历。')
+        require_verified_episode(session,verified)
+        note=session.scalar(select(MemoryItem).where(MemoryItem.episode_id==verified.episode_id,MemoryItem.deleted_at.is_(None),MemoryItem.review_state=='active'))
+        if not note:raise SourceChanged('本人发言正在自动整理，请稍后查看。')
+        return {'episode_id':verified.episode_id,'memory_item_id':note.memory_item_id,'status':verified.status,'source':'IOS_TEXT'}
     existing = EpisodeRepository(session).find_by_idempotency(subject_id=subject_id,
         actor_id=actor.actor_id, idempotency_key='chat:' + row.answer_id)
     if existing is not None:

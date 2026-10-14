@@ -6,7 +6,7 @@ not new memories. Caller holds a short snapshot transaction, never a model call.
 """
 import hashlib
 import re
-from sqlalchemy import select
+from sqlalchemy import select,or_
 from .errors import AppError
 from .models import Episode, MemoryItem, Evidence, MemoryRevision
 from .language_support import is_owner_supplement
@@ -21,7 +21,7 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
     episodes = list(session.scalars(select(Episode).where(Episode.subject_id == subject_id,
         Episode.episode_id.in_(episode_ids), Episode.status == 'ready',
         Episode.episode_id.not_in(select(MemoryRevision.episode_id).where(MemoryRevision.status!='confirmed')),
-        Episode.transcript_reviewed_at.is_not(None)).order_by(Episode.recorded_at, Episode.episode_id)))
+        or_(Episode.transcript_reviewed_at.is_not(None),Episode.capture_metadata['speaker_verification'].as_string()=='matched')).order_by(Episode.recorded_at, Episode.episode_id)))
     # Check before any truncation, including text later masked by a correction.
     if enforce_budget and sum(len(e.transcript or '') for e in episodes) > 24000:
         raise ContextTooLarge('当前有效材料超过24000字符，请缩小故事范围；没有截断原文。')
@@ -30,6 +30,10 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
         MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed',
         MemoryRevision.kind == 'change'))}
     for ep in episodes:
+        if (ep.capture_metadata or {}).get('origin')=='natural_dialogue':
+            from .voiceprints import require_verified_episode
+            try:require_verified_episode(session,ep)
+            except AppError:continue
         text = ep.transcript or ''
         memories = list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id == ep.episode_id).order_by(MemoryItem.ordinal)))
         blocked, suppress = [], False

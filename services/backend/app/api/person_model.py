@@ -93,6 +93,8 @@ def episodes(subject_id: str, actor: Actor = Depends(current_actor), session: Se
         "duration_ms": item.duration_ms, "transcript": item.transcript,
         "stt_backend": item.stt_backend, "stt_model_version": item.stt_model_version,
         "model_version": item.model_version, "error_code": item.error_code,
+        "speaker_report": (item.capture_metadata or {}).get("speaker_report"),
+        "capture_origin": (item.capture_metadata or {}).get("origin"),
     } for item in rows]}
 
 
@@ -186,3 +188,9 @@ def delete_memory(subject_id: str, memory_id: str, request: Request,
     invalidate_answers(session, request.app.state.object_store, subject_id)
     session.commit()
     return {"memory_item_id": memory_id, "model_version": version}
+
+@router.get('/person-model/coverage')
+def model_coverage(subject_id:str,actor:Actor=Depends(current_actor),session:Session=Depends(get_session)):
+    _authorized(session,subject_id,actor)
+    from ..model_coverage import coverage
+    return coverage(session,subject_id)

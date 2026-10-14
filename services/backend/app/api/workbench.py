@@ -117,6 +117,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
         'twin_conversation': True, 'chat_memory': True, 'chat_history_memory': True,
         'client_transcript_endpoint': '/api/v1/episodes/client-transcribed',
         'stt_processing': 'client' if settings.stt_backend == 'client' else ('cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http')),
+        'voiceprint_available':__import__('app.voiceprints',fromlist=['available']).available(settings),
         'stt_configured': configured(settings) if cloud else settings.stt_backend == 'http',
         'cloud_asr_policy': cloud_policy(settings) if cloud else None,
         'stt_model': destination(settings)['model'] if cloud else None,

@@ -1,6 +1,6 @@
 """Separately consented provider profiles and bounded voice-call audit records."""
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from .models import Base, utcnow
 
@@ -33,7 +33,9 @@ class VoiceCall(Base):
     voice_consent_id: Mapped[str] = mapped_column(String(64), ForeignKey('consents.consent_id'))
     recording_consent_id: Mapped[str | None] = mapped_column(ForeignKey('consents.consent_id'), nullable=True)
     speaker_consent_id: Mapped[str | None] = mapped_column(ForeignKey('consents.consent_id'), nullable=True)
+    enroll_owner_voice: Mapped[bool] = mapped_column(Boolean,default=False)
     previous_answer_id: Mapped[str] = mapped_column(String(64), default='')
+    completed_turn_id: Mapped[str] = mapped_column(String(64),default='')
     active_turn: Mapped[str] = mapped_column(String(64), default='')
     active_answer_id: Mapped[str] = mapped_column(String(64), default='')
     credential_digest: Mapped[str] = mapped_column(String(64))

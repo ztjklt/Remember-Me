@@ -87,7 +87,7 @@ def private_logs():
         for handler in logging.getLogger(name).handlers:handler.addFilter(guard)
 
 
-from natural_capture import MicrophoneClip
+from natural_capture import MicrophoneClip, UtteranceClip
 
 
 class Backend:
@@ -284,6 +284,7 @@ class ProxyStream(stt.RecognizeStream):
                         before=asyncio.get_running_loop().time()
                         await send_pcm(ws,data);counters['pcm_bytes']+=len(data)
                         if clip := getattr(backend,'microphone_clip',None):clip.feed(data,pcm_has_speech(data))
+                        if clip := getattr(backend,'utterance_clip',None):clip.feed(data,pcm_has_speech(data))
                         if segment_diagnostics(backend):segment_diagnostics(backend).observe('asr_send',data)
                         if diagnostic and pcm_has_speech(data):counters['speech_packet_count']+=1
                         counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
@@ -396,6 +397,7 @@ class CallController:
             await self.publish({'type':'question','turn_id':turn,'text':text})
             await self.publish({'type':'state','turn_id':turn,'state':'thinking'})
             if clip := getattr(self.backend,'microphone_clip',None):clip.finish(turn)
+            if clip := getattr(self.backend,'utterance_clip',None):clip.finish(turn)
             phase='twin_answer'
             answer=await self.backend.request('POST','/answers',json={'question':text,'turn_id':turn})
             if self.closed or self.turn_id!=turn:return
@@ -445,6 +447,11 @@ class CallController:
                         except (ValueError,AttributeError,TypeError):pass
                     trace.mark(phase+'.failed',turn_number=turn_number,http_status=status,failure_kind=kind)
                 await self.publish({'type':'error','turn_id':turn,'message':'本轮语音回答未完成，可以重新说或结束通话。'})
+
+        finally:
+            if not self.closed and self.turn_id==turn and getattr(self.backend,'utterance_clip',None):
+                try:await self.backend.request('POST','/turn-complete',json={'turn_id':turn})
+                except Exception:pass
 
     async def close(self):
         self.closed=True;self.interrupt()
@@ -529,6 +536,7 @@ async def entrypoint(ctx: JobContext):
     async def publish(data):
         await ctx.room.local_participant.publish_data(json.dumps(data,ensure_ascii=False).encode(),reliable=True,
             destination_identities=[authorized['participant_identity']],topic=TOPIC)
+    backend.utterance_clip=UtteranceClip(backend,enabled=authorized.get('capture_voice_identity') is True,publish=publish)
     controller=CallController(backend,session,publish)
     # Recognition owns a separate microphone reader. SDK manual turn/playout
     # lifecycle must not gate the next user utterance; SDK retains VAD/playout.
@@ -549,6 +557,7 @@ async def entrypoint(ctx: JobContext):
     def closed(event):
         controller.closed=True
         backend.microphone_clip.close()
+        backend.utterance_clip.close()
     await session.start(room=ctx.room,agent=Agent(instructions='只播放 Remember Me 后端已校验的孪生回答。'),
         room_options=room_io.RoomOptions(participant_identity=authorized['participant_identity'],text_input=False,text_output=False,delete_room_on_close=True),record=False)
     participant=await ctx.wait_for_participant(identity=authorized['participant_identity'])

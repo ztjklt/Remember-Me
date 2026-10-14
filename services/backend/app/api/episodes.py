@@ -356,6 +356,8 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
     capture_metadata.pop('cloud_asr_receipt', None)
     capture_metadata.pop('client_asr_receipt', None)
     capture_metadata.pop('asr_call', None)
+    for reserved in ('origin','speaker_verification','voice_identity_id','speaker_model_version','voice_utterance_id','spans','speaker_report','review_status','call_id','turn_id','realtime_text'):
+        capture_metadata.pop(reserved,None)
     capture_metadata.pop('transcript_normalization', None)
     if settings.stt_backend == 'client' and client_transcript is None:
         raise RequestInvalid('服务器采用客户端转写模式，请先在客户端转写，再上传原音和机器稿进行核对。')

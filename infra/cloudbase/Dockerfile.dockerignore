@@ -1,4 +1,6 @@
 **
+!models/
+!models/wespeaker_zh_cnceleb_resnet34.onnx
 !services/
 !services/backend/
 !services/backend/pyproject.toml

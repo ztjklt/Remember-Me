@@ -52,6 +52,11 @@ class PersonModelRepository:
             if question and question.subject_id == subject_id:
                 question.status = "answered"
 
+        from ..entrust_models import LegacyState
+        legacy=session.get(LegacyState,subject_id)
+        if legacy and legacy.status in ('active','suspended') and legacy.baseline and include_episode_id and include_episode_id not in legacy.baseline.get('episode_ids',[]):
+            revision=session.get(ModelRevision,subject_id)
+            return revision.version if revision else 0
         # Memory rows and evidence are historical source records. Only derived
         # tables are replaced; a correction/deletion can thus be recomputed.
         session.execute(delete(PersonTrait).where(PersonTrait.subject_id == subject_id))
@@ -63,6 +68,20 @@ class PersonModelRepository:
                 or_(Episode.status == 'ready', Episode.episode_id == include_episode_id)
             ).order_by(Episode.created_at, MemoryItem.ordinal)
         ).all())
+        from ..entrust_models import LegacyState
+        legacy=session.get(LegacyState,subject_id)
+        if legacy and legacy.status in ('active','suspended') and legacy.baseline:
+            frozen=set(legacy.baseline.get('episode_ids',[]))
+            memories=[pair for pair in memories if pair[1].episode_id in frozen]
+        from ..voiceprints import require_verified_episode
+        from ..errors import AppError
+        verified=[]
+        for memory,episode in memories:
+            if (episode.capture_metadata or {}).get('origin')=='natural_dialogue':
+                try:require_verified_episode(session,episode)
+                except AppError:continue
+            verified.append((memory,episode))
+        memories=verified
         traits: list[PersonTrait] = []
         changes = list(session.scalars(select(MemoryRevision).where(
             MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed',

@@ -24,3 +24,7 @@ No cross-module Contract change happens silently: put the proposal in the Issue 
 CI and peer review are useful signals but are not required merge gates on `develop` or `main`. A lead or contributor records the shortest relevant result, including a failure if one remains; do not call an unrun check successful. Check a real device when changed native behavior needs it and once for the selected end-to-end demo. Do not repeat the same device test across people, PRs, or both platforms solely for sign-off. The Phase 1 product claim still requires a real recording to pass through upload, STT, Memory extraction, and readback on one client.
 
 All three collaborators have Write access to this personal repository, including the ability to create Issues, push branches, open PRs, and merge where GitHub permits. Neither `main` nor `develop` has branch protection or a repository ruleset; direct pushes are allowed, and branch protection no longer blocks force pushes or deletion. Mainline leads may batch related work rather than open and wait on one PR per module. Delegated Issues still use a PR for handoff. Keep `main` as a usable demo snapshot and use `develop` for ongoing integration.
+
+## 2026-10-15 本人追加批准
+
+当前会话直接批准 [v0.12 声纹与人物模型修订](../architecture/voiceprint-personal-model-contract-v0.12.md)：录音／多人录音／同手机多人 Twin 的真实声纹匹配、仅本人声音的自动对话资料更新、账号＋密语限定范围的数字托付与照护人交接核验记录，以及独立人物模型资料覆盖图。该授权不启动硬件或自动身后判定。

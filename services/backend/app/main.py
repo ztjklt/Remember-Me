@@ -24,7 +24,7 @@ from .twin_client import TwinClient
 from .voice_client import VoiceClient
 from .realtime_provider import AlibabaVoice
 from .api import realtime, personal_learning
-from . import realtime_models, learning_models, speaker_models, dialogue_models
+from . import realtime_models, learning_models, speaker_models, dialogue_models, voiceprint_models, entrust_models
 from .calibration_client import CalibrationClient
 
 access_logger = logging.getLogger("app.access")
@@ -185,7 +185,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         import os
         allowed=settings.allow_account_registration
         return {'release_id':os.environ.get('REMEMBER_RELEASE_ID','development'),
-            'api_version':'0.11.0','sharing_invitations':True,
+            'api_version':'0.12.0','sharing_invitations':True,
             'registration_allowed':allowed if allowed is not None else settings.environment in {'development','test'}}
     app.include_router(consents.router)
     app.include_router(episodes.router)
@@ -199,6 +199,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(speaker_recordings.router)
     from .api import dialogue_materials
     app.include_router(dialogue_materials.router)
+    from .api import voiceprints
+    app.include_router(voiceprints.router)
+    from .api import entrustments
+    app.include_router(entrustments.router)
     app.include_router(calibration.router)
     app.include_router(workbench.router)
     from .api import profiles

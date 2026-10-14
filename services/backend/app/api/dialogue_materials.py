@@ -16,7 +16,7 @@ def own(session,subject,identifier,actor):
     if not row or row.subject_id!=subject or row.actor_id!=actor.actor_id or (row.capture_metadata or {}).get('origin')!='natural_dialogue':raise Hidden('这段对话资料不存在。')
     return row
 
-def view(row):return {'episode_id':row.episode_id,'text':row.transcript,'recorded_at':as_utc(row.recorded_at).isoformat(),'status':(row.capture_metadata or {}).get('review_status','pending')}
+def view(row):return {'episode_id':row.episode_id,'text':row.transcript,'recorded_at':as_utc(row.recorded_at).isoformat(),'status':(row.capture_metadata or {}).get('review_status','pending'),'has_audio':bool(row.audio_object_key)}
 @router.get('')
 def listing(subject_id:str,actor:Actor=Depends(current_actor),session=Depends(get_session)):
     require_owner(session,subject_id,actor.actor_id)
@@ -31,6 +31,8 @@ def confirm(subject_id:str,episode_id:str,body:Confirm,request:Request,actor:Act
     ConsentRepository(session).require_active(row.recording_consent_id,subject_id=subject_id,actor_id=actor.actor_id,scope=ConsentScope.RECORDING)
     state=(row.capture_metadata or {}).get('review_status')
     if state=='deleted':raise Hidden('资料已删除。')
+    from ..voiceprints import require_verified_episode
+    require_verified_episode(session,row)
     text=(body.text if body.text is not None else row.transcript).strip()
     if not text:raise RequestInvalid('请留下要保存的原话。')
     state=(row.capture_metadata or {}).get('review_status')
@@ -56,6 +58,9 @@ def delete(subject_id:str,episode_id:str,request:Request,actor:Actor=Depends(cur
     from ..repositories.person_model import PersonModelRepository
     from ..retrieval import invalidate_answers
     metadata=row.capture_metadata or {}
+    from ..voiceprint_models import VoiceUtterance
+    from ..voice_utterances import discard as discard_utterance
+    for utterance in session.scalars(select(VoiceUtterance).where(VoiceUtterance.call_id==metadata.get('call_id'),VoiceUtterance.turn_id==metadata.get('turn_id'))):discard_utterance(session,request.app.state.object_store,utterance)
     for sample in session.scalars(select(DialogueSample).where(DialogueSample.call_id==metadata.get('call_id'))):
         discard(session,request.app.state.object_store,sample)
     memories=list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id==episode_id)))
@@ -67,6 +72,12 @@ def delete(subject_id:str,episode_id:str,request:Request,actor:Actor=Depends(cur
     for audit in session.scalars(select(MemoryAudit).where(MemoryAudit.memory_item_id.in_(mids))):audit.previous_content=''
     for evidence in session.scalars(select(Evidence).where(Evidence.episode_id==episode_id)):evidence.excerpt=''
     for embedding in session.scalars(select(EvidenceChunkEmbedding).where(EvidenceChunkEmbedding.evidence_id.in_(select(Evidence.evidence_id).where(Evidence.episode_id==episode_id)))):session.delete(embedding)
+    original_key=row.audio_object_key or metadata.get('cleanup_object_key')
+    row.audio_object_key=None;row.audio_ref=None;row.audio_checksum=None;row.audio_size_bytes=0
     row.transcript='';row.stt_transcript=None;row.capture_metadata={'origin':'natural_dialogue','review_status':'deleted'}
     PersonModelRepository(session).rebuild(subject_id);invalidate_answers(session,request.app.state.object_store,subject_id);session.commit()
-    return {'deleted':True}
+    if original_key:
+        try:request.app.state.object_store.delete(original_key)
+        except Exception:
+            row.capture_metadata={**row.capture_metadata,'cleanup_object_key':original_key};session.commit();return {'deleted':True,'cleanup_pending':True}
+    return {'deleted':True,'cleanup_pending':False}

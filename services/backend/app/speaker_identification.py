@@ -14,7 +14,7 @@ from .repositories.consents import ConsentRepository
 from .errors import AppError, RequestInvalid, SttFailed, SttTimeout, SttUnavailable
 from .chinese_text import simplified_transcript
 
-VERSION = 'natural-introductions-v2'
+VERSION = 'natural-voiceprints-v3'
 INTRO_WINDOW_MS = 120_000
 _NAME = re.compile(r'^(?:(?:大家好|你好|你们好|嗯|哦|对|其实|那个|我呢)[，,。！!、\s]*)*(?:我叫|我的名字(?:是|叫)|我是|叫我|你们(?:可以)?叫我)\s*([\u4e00-\u9fffA-Za-z0-9·]{1,20})(?=[，,。.!！?？;；\s]|就|吧|啊|呀|呢|$)')
 _ROLE_WORDS = ('朋友', '老师', '学生', '爸爸', '妈妈', '同意', '觉得', '来自', '这个', '那个', '你的', '他的', '她的', '的')
@@ -114,6 +114,8 @@ def discard(session, store, row, status='deleted'):
     row.status = 'deleted' if row.status == 'deleted' else status
     row.report = None; row.lease_token = None; row.lease_expires_at = None
     session.commit()
+    from .voiceprints import invalidate_source
+    invalidate_source(session,'speaker_recording',row.recording_id,store)
     if row.audio_key:
         try: store.delete(row.audio_key)
         except Exception:
@@ -170,6 +172,12 @@ def run_one(database, store, settings, recording_id=None, provider=None):
         try: require_active(session, current)
         except AppError: discard(session, store, current, 'revoked'); return True
         if policy(settings) != expected_policy: result = None; failure = '识别用途已变化，请重新确认用途。'; retry = False
+        if result:
+            from .voiceprints import available as vp_available, encoder, pcm, annotate
+            if vp_available(settings):
+                try:
+                    result=annotate(session,current.subject_id,pcm(audio,kind),result,encoder(settings.voiceprint_model_path),consent_id=current.consent_id,actor=current.actor_id,source={'kind':'speaker_recording','id':rid},learn_names=True)
+                except AppError: result['voiceprint_status']='unavailable'
         current.report = result; current.error = failure
         current.status = 'ready' if result else 'uploaded' if retry and current.attempts < 10 else 'failed'
         current.lease_token = None; current.lease_expires_at = None

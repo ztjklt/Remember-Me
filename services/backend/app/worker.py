@@ -54,6 +54,11 @@ from .storage.base import ObjectStore
 logger = logging.getLogger("app.worker")
 
 
+class DialoguePublishDeferred(AppError):
+    code="DIALOGUE_PENDING"
+    retryable=True
+
+
 class UnexpectedFailure(AppError):
     """A raised exception that is not part of the taxonomy.
 
@@ -200,6 +205,13 @@ class ProcessingWorker:
             return None
         try:
             return self._run_stage(job_id)
+        except DialoguePublishDeferred:
+            from datetime import timedelta
+            from sqlalchemy import update
+            from .models import Job,utcnow
+            with self.database.session() as session:
+                session.execute(update(Job).where(Job.job_id==job_id,Job.lease_owner==self.owner,Job.state=='running').values(state='queued',lease_owner=None,lease_expires_at=None,available_at=utcnow()+timedelta(seconds=2),attempts=0))
+                session.commit()
         except AppError as error:
             logger.warning(
                 "stage.failed",
@@ -389,7 +401,15 @@ class ProcessingWorker:
                             raise SttFailed('本段原音未同意当前云端转写配置，原音保留，未外发。')
                         ConsentRepository(guard).require_active(fresh.recording_consent_id,
                             subject_id=fresh.subject_id, scope=ConsentScope.RECORDING, actor_id=fresh.actor_id)
-                transcript = self.stt.transcribe_authorized(audio, episode.audio_content_type, authorize)
+                receipt=(episode.capture_metadata or {}).get('voiceprint_consent_id')
+                if receipt and isinstance(self.stt,ParaformerSttProvider):
+                    with self.database.session() as guard:
+                        from .repositories.consents import ConsentRepository
+                        from .models import ConsentScope
+                        ConsentRepository(guard).require_active(receipt,subject_id=episode.subject_id,actor_id=episode.actor_id,scope=ConsentScope.SPEAKER_IDENTIFICATION)
+                    transcript=self.stt.transcribe_authorized(audio,episode.audio_content_type,authorize,diarization=True)
+                else:
+                    transcript = self.stt.transcribe_authorized(audio, episode.audio_content_type, authorize)
             else:
                 transcript = self.stt.transcribe(audio, episode.audio_content_type)
         except AppError:
@@ -411,6 +431,19 @@ class ProcessingWorker:
             episode.capture_metadata['asr_call'] = transcript.metadata
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
+        if (episode.capture_metadata or {}).get('voiceprint_consent_id'):
+            from .config import get_settings
+            from .voiceprints import available,encoder,pcm,annotate
+            settings=get_settings()
+            if available(settings):
+                from .speaker_identification import build_report
+                with self.database.session() as verification:
+                    from .repositories.consents import ConsentRepository
+                    from .models import ConsentScope
+                    ConsentRepository(verification).require_active(episode.capture_metadata['voiceprint_consent_id'],subject_id=episode.subject_id,actor_id=episode.actor_id,scope=ConsentScope.SPEAKER_IDENTIFICATION)
+                    report=build_report(transcript,duration_ms=episode.duration_ms or len(pcm(audio,episode.audio_content_type))//32)
+                    annotate(verification,episode.subject_id,pcm(audio,episode.audio_content_type),report,encoder(settings.voiceprint_model_path))
+                    episode.capture_metadata={**episode.capture_metadata,'speaker_report':report}
 
     def _extract(self, session, episode: Episode) -> None:  # type: ignore[no-untyped-def]
         """Ask AI Core to turn the transcript into memories, and store the result.
@@ -424,6 +457,9 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the extract stage with no transcript"
             )
 
+        if (episode.capture_metadata or {}).get('speaker_verification'):
+            from .voiceprints import require_verified_episode
+            require_verified_episode(session,episode)
         payload = AICoreInput(
             episode_id=episode.episode_id,
             subject_id=episode.subject_id,
@@ -437,6 +473,14 @@ class ProcessingWorker:
             trace_id=episode.trace_id,
         )
         output = self.ai.process(payload)
+        if (episode.capture_metadata or {}).get('speaker_verification'):
+            from .access import publication_lock
+            publication_lock(session,episode.subject_id)
+            session.expire_all()
+            from .voiceprints import require_verified_episode
+            require_verified_episode(session,episode)
+        from .voiceprints import classify_recorded_evidence
+        classify_recorded_evidence(episode,output)
         MemoryRepository(session).store_result(episode, output)
 
     def _model(self, session, episode: Episode) -> None:
@@ -451,6 +495,16 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
         metadata = episode.capture_metadata or {}
+        if metadata.get('origin')=='natural_dialogue':
+            from sqlalchemy import select
+            from .realtime_models import VoiceCall
+            from .access import publication_lock
+            publication_lock(session,episode.subject_id)
+            busy=session.scalar(select(VoiceCall).where(VoiceCall.subject_id==episode.subject_id,VoiceCall.ended_at.is_(None),VoiceCall.active_turn!='',VoiceCall.active_turn!=VoiceCall.completed_turn_id))
+            if busy:raise DialoguePublishDeferred('对话继续，资料稍后自动整理。')
+        if metadata.get('speaker_verification'):
+            from .voiceprints import require_verified_episode
+            require_verified_episode(session,episode)
         from .language_support import store_supplement
         store_supplement(session, episode)
         PersonModelRepository(session).rebuild(

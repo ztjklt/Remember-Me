@@ -17,6 +17,15 @@ def setup(app,client,session,ready,monkeypatch):
     response=client.post(f'/api/v1/subjects/{own.subject_id}/twin/voice/calls',headers=h,json={'cloud_consent_id':cloud,'voice_consent_id':voice,'recording_consent_id':own.consent_id,'speaker_consent_id':speaker,'policy':caps['policy'],'voice_mode':'default'})
     assert response.status_code==200,response.text
     monkeypatch.setattr(speaker_identification,'available',lambda _:True)
+    # Natural preparation now requires an independently enrolled acoustic owner
+    # reference. This fixture represents that reference, not a typed identity.
+    from app import voiceprints
+    class AcousticOwner:
+        version='fixture-acoustic-v1'
+        def extract(self,data):return [1.,0.]
+    app.state.speaker_encoder=AcousticOwner()
+    voiceprints.enroll(session,own.subject_id,own.actor_id,speaker,[1,0],AcousticOwner.version,{'kind':'fixture','id':'registered-owner'},role='subject',label='Voice own',person_key='subject')
+    session.commit()
     return own,h,speaker,response.json()['call_id'],{'Authorization':'Bearer '+'x'*32}
 
 def audio():
@@ -91,6 +100,12 @@ def test_dialogue_review_is_optional_private_and_deletion_clears_raw_and_derived
     path=f'/api/v1/subjects/{own.subject_id}/dialogue-materials'
     rows=client.get(path,headers=h).json()['items'];assert len(rows)==1 and rows[0]['status']=='pending'
     episode=rows[0]['episode_id'];route=path+'/'+episode
+    from app.voiceprint_models import VoiceUtterance,VoiceIdentity
+    identifier='review-proof'
+    session.add(VoiceUtterance(utterance_id=identifier,call_id=call,turn_id='t1',audio_key='',checksum='fixture',status='ready',report={'voiceprint_model_version':'fixture-acoustic-v1','speakers':[{'voice_identity_id':session.scalar(select(VoiceIdentity)).identity_id,'is_subject':True,'voiceprint_status':'matched'}]}))
+    original=session.get(Episode,episode)
+    original.capture_metadata={**original.capture_metadata,'speaker_verification':'matched','voice_identity_id':session.scalar(select(VoiceIdentity)).identity_id,'voice_utterance_id':identifier}
+    session.commit()
     r=client.post(route+'/confirm',headers=h,json={'text':'我小时候在家乡的河边散步。'});assert r.status_code==200,r.text
     assert r.json()['status']=='confirmed'
     session.expire_all();original=session.get(Episode,episode);assert original.stt_transcript=='我小时候在家乡的河边玩。'

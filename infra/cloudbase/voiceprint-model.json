@@ -1,0 +1,11 @@
+{
+  "adapter": "sherpa-onnx-cpu",
+  "package_version": "1.12.40",
+  "model": "wespeaker_zh_cnceleb_resnet34.onnx",
+  "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_zh_cnceleb_resnet34.onnx",
+  "sha256": "f86cd6c509f331f0e20b07bd48d1b2eb7de54202643401c4e84695ac861a0e5a",
+  "cache_path": "build/voiceprint-models/wespeaker_zh_cnceleb_resnet34.onnx",
+  "runtime_path": "/opt/remember/models/wespeaker_zh_cnceleb_resnet34.onnx",
+  "documentation": "https://k2-fsa.github.io/sherpa/onnx/speaker-identification/",
+  "purpose": "Subject-scoped acoustic references, never an account or password credential"
+}

@@ -30,3 +30,18 @@ async def test_short_normal_utterances_accumulate_without_waiting_silence_or_rec
     c.feed(bytes(90000),True);c.finish('second');await asyncio.gather(*c.tasks)
     with wave.open(io.BytesIO(b.calls[0][1]['files']['sample'][1])) as w:assert w.getnframes()==85000
     assert not c.pcm
+
+@pytest.mark.asyncio
+async def test_voice_identity_keeps_each_turn_separate_and_does_not_accumulate_guests():
+    from natural_capture import UtteranceClip
+    b=Backend();c=UtteranceClip(b,True)
+    c.feed(b'\x01\0'*20000,True);c.finish('one')
+    c.feed(bytes(32000),False)
+    c.feed(b'\x02\0'*30000,True);c.finish('two')
+    await asyncio.gather(*c.tasks)
+    assert [x[1]['data']['turn_id'] for x in b.calls]==['one','two']
+    assert all(x[0]==('POST','/utterances') for x in b.calls)
+    for index,(_,kwargs) in enumerate(b.calls):
+        with wave.open(io.BytesIO(kwargs['files']['sample'][1])) as f:
+            assert f.readframes(f.getnframes())==(b'\x01\0'*20000 if index==0 else b'\x02\0'*30000)
+    c.close();assert not c.pcm

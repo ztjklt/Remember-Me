@@ -42,6 +42,7 @@ class CallRequest(BaseModel):
     voice_mode: Literal['personal', 'default'] = 'personal'
     recording_consent_id: str | None = None
     speaker_consent_id: str | None = None
+    enroll_owner_voice: bool = False
 
 
 class InterruptRequest(BaseModel):
@@ -75,8 +76,8 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     profile = profile_for(session, subject_id, actor.actor_id)
     return {'available': configured(s, request.app.state.realtime_provider),
             'default_voice_available': bool(configured(s, request.app.state.realtime_provider) and default_voice(s)), 'policy': policy(s),
-            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理，开启旧聊天记忆时也会参考同账号空间以前的电话和文字聊天；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。点击开始即确认本次云端语音对话；启用自然采集的客户端会保存你的原话为待核对资料，并从清晰的单人聊天片段准备本人音色。你可以继续聊天，稍后查看、更正、删除或撤销授权。',
-            'profile': profile_view(profile), 'dialogue_capture_available':True, 'natural_voice_preparation':__import__('app.speaker_identification',fromlist=['available']).available(s)}
+            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理，开启旧聊天记忆时也会参考同账号空间以前的电话和文字聊天；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。点击开始即确认本次云端语音对话；启用自然采集的客户端会保存你的原话为待核对资料，先通过自然介绍记住本人声音，再从匹配本人的清晰聊天片段准备本人音色和自动更新记忆。声音未匹配时继续聊天，不作为本人资料更新。你可以继续聊天，稍后查看、更正、删除或撤销授权。',
+            'voiceprint_available':__import__('app.voiceprints',fromlist=['available']).available(s), 'owner_voice_registered':__import__('app.voiceprints',fromlist=['owner_registered']).owner_registered(session,subject_id,s), 'profile': profile_view(profile), 'dialogue_capture_available':True, 'natural_voice_preparation':__import__('app.speaker_identification',fromlist=['available']).available(s)}
 
 
 @router.get(PREFIX + '/profile')
@@ -245,7 +246,7 @@ async def start_call(subject_id: str, payload: CallRequest, request: Request, ac
     active = list(session.scalars(select(VoiceCall).where(VoiceCall.actor_id==actor.actor_id,VoiceCall.ended_at.is_(None))))
     for old in active: old.ended_at=utcnow()
     identifier='vc_'+uuid4().hex
-    row=VoiceCall(call_id=identifier,subject_id=subject_id,actor_id=actor.actor_id,profile_id=profile.profile_id,
+    row=VoiceCall(enroll_owner_voice=payload.enroll_owner_voice,call_id=identifier,subject_id=subject_id,actor_id=actor.actor_id,profile_id=profile.profile_id,
         cloud_consent_id=payload.cloud_consent_id,voice_consent_id=payload.voice_consent_id,policy=payload.policy,
         recording_consent_id=payload.recording_consent_id,speaker_consent_id=payload.speaker_consent_id,
         credential_digest=hash_actor_token(request.headers.get('Authorization','')[7:].strip() or request.cookies.get('remember_session','')),
@@ -280,7 +281,7 @@ async def end_call(subject_id: str, call_id: str, request: Request, actor: Actor
 def authorize_call(call_id: str, request: Request, session: Session = Depends(get_session)):
     worker_authorization(request)
     row, profile, actor=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
-    return {'call_id':row.call_id,'subject_id':row.subject_id,'room':row.room,'participant_identity':row.participant,'expires_at':row.expires_at.isoformat(), 'capture_voice_sample':bool(row.recording_consent_id and row.speaker_consent_id and __import__('app.speaker_identification',fromlist=['available']).available(request.app.state.settings))}
+    return {'call_id':row.call_id,'subject_id':row.subject_id,'room':row.room,'participant_identity':row.participant,'expires_at':row.expires_at.isoformat(), 'capture_voice_identity':bool(row.recording_consent_id and row.speaker_consent_id and __import__('app.voiceprints',fromlist=['available']).available(request.app.state.settings)), 'capture_voice_sample':bool(row.recording_consent_id and row.speaker_consent_id and __import__('app.speaker_identification',fromlist=['available']).available(request.app.state.settings))}
 
 
 @router.post('/internal/voice-calls/{call_id}/answers', include_in_schema=False)
@@ -307,6 +308,8 @@ def answer_call(call_id: str,payload: SpokenQuestion,request: Request,session: S
         request,actor,session,chat_history_scope='actor',publication_guard=current_turn,carry_latest_conversation=True)
     session.expire_all(); row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     if row.active_turn != payload.turn_id: raise TwinNotFound("回答已被打断。")
+    saved=session.get(TwinAnswer,result['answer_id'])
+    if saved:saved.voice_call_id=call_id;saved.voice_turn_id=payload.turn_id
     row.active_answer_id=result["answer_id"]; row.previous_answer_id=result["answer_id"]; session.commit()
     return result
 
@@ -420,3 +423,55 @@ async def dialogue_sample(call_id:str,request:Request,turn_id:str=Form(...),samp
     try:session.commit()
     except Exception:session.rollback();request.app.state.object_store.delete(key);raise
     return {'status':'uploaded'}
+
+
+@router.post('/internal/voice-calls/{call_id}/utterances',include_in_schema=False)
+async def utterance(call_id:str,request:Request,turn_id:str=Form(...),sample:UploadFile=File(...),session:Session=Depends(get_session)):
+    worker_authorization(request)
+    row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
+    from ..dialogue_capture import consent
+    from ..voiceprint_models import VoiceUtterance
+    consent(session,row)
+    if not 1<=len(turn_id)<=64:raise TwinNotFound('发言编号不正确。')
+    data=await sample.read(960000+45)
+    if len(data)>960000+44:raise TwinNotFound('发言原音太长。')
+    try:
+        with wave.open(io.BytesIO(data),'rb') as w:
+            if w.getnchannels()!=1 or w.getsampwidth()!=2 or w.getframerate()!=16000 or not 8000<=w.getnframes()<=480000:return {'status':'skipped'}
+    except (wave.Error,EOFError):return {'status':'skipped'}
+    digest=hashlib.sha256(data).hexdigest()
+    old=session.scalar(select(VoiceUtterance).where(VoiceUtterance.call_id==call_id,VoiceUtterance.turn_id==turn_id))
+    if old:
+        if old.checksum!=digest:raise TwinNotFound('发言编号已使用。')
+        return {'status':old.status}
+    from sqlalchemy import func
+    if session.scalar(select(func.count()).select_from(VoiceUtterance).where(VoiceUtterance.call_id==call_id))>=120:return {'status':'skipped'}
+    identifier='vu_'+uuid4().hex;key='voice-utterances/'+identifier+'/original.wav'
+    request.app.state.object_store.put(key,data,'audio/wav')
+    try:
+        session.add(VoiceUtterance(utterance_id=identifier,call_id=call_id,turn_id=turn_id,audio_key=key,checksum=digest));session.commit()
+    except Exception:
+        session.rollback();request.app.state.object_store.delete(key);raise
+    return {'status':'uploaded'}
+
+@router.get('/internal/voice-calls/{call_id}/utterances/{turn_id}',include_in_schema=False)
+def utterance_status(call_id:str,turn_id:str,request:Request,session:Session=Depends(get_session)):
+    worker_authorization(request)
+    check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
+    from ..voiceprint_models import VoiceUtterance
+    row=session.scalar(select(VoiceUtterance).where(VoiceUtterance.call_id==call_id,VoiceUtterance.turn_id==turn_id))
+    if not row:raise TwinNotFound('此发言不存在。')
+    report=row.report or {};speakers=report.get('speakers',[])
+    if report.get('owner_enrollment')=='registered':message='已经记住你的声音。之后匹配到你的发言会自动更新记忆。'
+    elif any(s.get('is_subject') for s in speakers):message='匹配到本人声音，正在整理本人发言。'
+    elif row.status=='ready':message='这轮声音暂未匹配本人，继续聊天即可。'
+    else:message=None
+    return {'status':row.status,'message':message}
+
+
+@router.post('/internal/voice-calls/{call_id}/turn-complete',include_in_schema=False)
+def complete_turn(call_id:str,payload:InterruptRequest,request:Request,session:Session=Depends(get_session)):
+    worker_authorization(request)
+    row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
+    if row.active_turn==payload.turn_id:row.completed_turn_id=payload.turn_id;session.commit()
+    return {'completed':True}

@@ -40,3 +40,5 @@ Work 3200 / recording device integration through a capability-based adapter with
 A member who finishes their current phase may prepare non-blocking skeletons in the next phase — UI shells, schemas, adapters, test fixtures — but must not freeze a cross-module implementation alone. Phase 2/3 preparation never justifies skipping the Phase 1 Golden Path. The main path is integrated first; any peripheral feature that breaks it is reverted or flagged off.
 
 Undecided external dependencies (STT provider, Voice provider, Work 3200 SDK) are isolated behind adapters and must not block internal contract, Mock, or Stub work.
+
+2026-10-15 当前会话新增批准：见 [声纹、托付与人物模型 v0.12](../architecture/voiceprint-personal-model-contract-v0.12.md)。包括同手机多人对话，人工照护人核验的托付切片；硬件和自动死亡核验仍未启用。

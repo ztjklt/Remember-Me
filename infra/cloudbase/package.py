@@ -24,6 +24,12 @@ def package(destination):
     for directory in DIRECTORIES:
         sources.extend(path for path in (ROOT / directory).rglob('*') if path.is_file())
     hashes = {}
+    config=json.loads((ROOT/'infra/cloudbase/voiceprint-model.json').read_text())
+    cached=ROOT/config['cache_path']
+    if not cached.is_file() or hashlib.sha256(cached.read_bytes()).hexdigest()!=config['sha256']:
+        raise ValueError('Download and verify the pinned public voiceprint model in build/voiceprint-models before packaging.')
+    target=destination/'models'/config['model'];target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(cached,target)
+    hashes[str(target.relative_to(destination))]=config['sha256']
     for source in sorted(set(sources)):
         relative = source.relative_to(ROOT)
         if (source.is_symlink() or '__pycache__' in relative.parts or

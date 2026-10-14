@@ -219,6 +219,8 @@ def revoke_consent(
         from ..dialogue_capture import discard_grant
         discard_grant(session,request.app.state.object_store,consent_id)
     if consent.scope == ConsentScope.SPEAKER_IDENTIFICATION:
+        from ..voiceprints import revoke
+        revoke(session,consent_id,request.app.state.object_store)
         from ..speaker_models import SpeakerRecording
         from ..speaker_identification import discard
         for row in session.scalars(select(SpeakerRecording).where(SpeakerRecording.consent_id == consent_id)):

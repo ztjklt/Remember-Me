@@ -9,7 +9,7 @@ from .api.twin import require_subject, TwinNotFound
 from .realtime_provider import RealtimeUnavailable
 
 
-def policy(settings, *, version="realtime-voice-v2-natural-capture"):
+def policy(settings, *, version="realtime-voice-v3-subject-matching"):
     notice = {'version': version, 'livekit': settings.livekit_url,
               'inference': settings.realtime_inference_url,
               'voice_model': settings.cosyvoice_model, 'asr_model': settings.realtime_asr_model}
@@ -66,4 +66,4 @@ def check_call(session, call_id, settings, provider):
 def compatible_voice_policies(settings):
     # Notice-only capture changes do not invalidate an already consented voice.
     # A provider/endpoint/model change still changes both hashes.
-    return {policy(settings),policy(settings,version='realtime-voice-v1')}
+    return {policy(settings),policy(settings,version='realtime-voice-v2-natural-capture'),policy(settings,version='realtime-voice-v1')}

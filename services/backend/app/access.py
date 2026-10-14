@@ -92,11 +92,15 @@ def _source_basis(session, subject_id, *, include_profiles, include_authorizatio
     import hashlib
     import json
     from .models import MemoryItem, Evidence, PersonTrait, GraphFact, ModelRevision, MemoryRevision, ProfileCandidate
+    from sqlalchemy import or_,and_
+    # Draft conversation inputs cannot influence an answer and must not invalidate
+    # an in-flight reply while the same utterance is being classified/extracted.
+    admitted=or_(Episode.capture_metadata['origin'].as_string().is_(None),Episode.capture_metadata['origin'].as_string()!='natural_dialogue',and_(Episode.status=='ready',Episode.capture_metadata['speaker_verification'].as_string()=='matched'))
     parts = []
     queries = [select(Subject).where(Subject.subject_id == subject_id),
-        select(Episode).where(Episode.subject_id == subject_id),
-        select(MemoryItem).join(Episode).where(Episode.subject_id == subject_id),
-        select(Evidence).join(Episode).where(Episode.subject_id == subject_id),
+        select(Episode).where(Episode.subject_id == subject_id,admitted),
+        select(MemoryItem).join(Episode).where(Episode.subject_id == subject_id,admitted),
+        select(Evidence).join(Episode).where(Episode.subject_id == subject_id,admitted),
         select(PersonTrait).where(PersonTrait.subject_id == subject_id),
         select(GraphFact).where(GraphFact.subject_id == subject_id),
         select(ModelRevision).where(ModelRevision.subject_id == subject_id)]

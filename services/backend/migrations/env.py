@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, pool
 from app.config import get_settings
 from app.logging_config import configure_logging
 from app.models import Base
-from app import speaker_models, dialogue_models
+from app import speaker_models, dialogue_models, voiceprint_models, entrust_models
 from app import learning_models  # Register the personal-learning tables for metadata diffs.
 
 config = context.config

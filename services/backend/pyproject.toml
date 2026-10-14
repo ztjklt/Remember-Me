@@ -23,6 +23,9 @@ dependencies = [
     # The S3-compatible object store backend used in deployment.
     "boto3>=1.34",
     "wsproto>=1.2,<2",
+    "sherpa-onnx==1.12.40",
+    "numpy>=2,<3",
+    "sherpa-onnx-core==1.12.40",
 ]
 
 [project.optional-dependencies]
