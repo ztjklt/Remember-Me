@@ -26,6 +26,8 @@ Remember Me is a consent-first system that turns recorded life episodes into tra
 
 ## Current status
 
+2026-10-15 声纹与人物模型：iOS **1.12.0 / 2026101504** 已覆盖安装到「黑幕」（锁屏，自动启动未通过）；CloudBase042 / `1e8369e` 与原语音Agent已更新。真实声学模板用于录音／多人录音／同手机多人Twin，本人匹配原话自动更新并保留原音；托付按账号＋密语＋限定范围解锁，访客不训练主人。新增人物模型人体填色和资料覆盖。见 [交付与验证](docs/verification/IOS_VOICEPRINT_PERSONAL_MODEL_2026_10_15.md)。
+
 2026-10-15 本人自然采集修订：CloudBase039 / `796591a` 与原LiveKit Worker已上线，iOS 1.11.0从主checkout安装。开始动作确认用途、无固定同意句，正常聊天自动留原话并累积清晰声音片段。见 [交付与边界](docs/verification/IOS_NATURAL_CAPTURE_2026_10_15.md)。
 
 2026-10-15：同段录音多人识别与自我介绍自动关联已获批实现，CloudBase037 / `4e78742` 已上线；iOS 1.10.0 已从主 checkout 安装到「黑幕」。工程证据、失败样例和边界见 [验证记录](docs/verification/IOS_SPEAKER_INTRODUCTIONS_2026_10_15.md)。

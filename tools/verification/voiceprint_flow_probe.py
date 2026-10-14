@@ -28,11 +28,16 @@ def main():
     from control import invoke
     def sql(name,statement):return invoke('voiceprint-probe-'+name,['db','execute','-e','remember-me-ios-d5f9twwlcae71c69','--sql',statement,'--json'])
     def expect(r,code=200):assert r.status_code==code, f'HTTP {r.status_code}, expected {code}: '+r.text[:300];return r.json()
-    def wait(check,timeout=150):
+    def wait(check,timeout=300):
         deadline=time.monotonic()+timeout
         while time.monotonic()<deadline:
             value=check()
             if value:return value
+            # Exercise the same durable processing route without waiting for
+            # the deployment's minute-based timer between every test stage.
+            with httpx.Client(timeout=90,trust_env=False) as processing:
+                tick=processing.post(args.origin+'/internal/jobs/processing-tick',headers={'Authorization':'Bearer '+env['CLOUDBASE_WORKER_TOKEN']})
+                assert tick.status_code in (200,409), 'Processing tick unavailable'
             time.sleep(2)
         raise AssertionError('Synthetic verification timed out')
     with httpx.Client(base_url=args.origin,headers={'Authorization':'Bearer '+state['actor_token']},timeout=100,trust_env=False) as c,httpx.Client(base_url=args.origin,headers={'Authorization':'Bearer '+state['other_token']},timeout=100,trust_env=False) as visitor,httpx.Client(base_url=args.origin,headers={'Authorization':'Bearer '+worker_secret},timeout=100,trust_env=False) as w:
@@ -48,6 +53,7 @@ def main():
             cloud,voice,recording,speaker=[grant(s) for s in ['CLOUD_TWIN','VOICE','RECORDING','SPEAKER_IDENTIFICATION']]
             caps=expect(c.get(prefix+'/twin/voice/capabilities'));assert caps['voiceprint_available'] and caps['available']
             report['model_available']=True
+            prior_episode_ids={r['episode_id'] for r in expect(c.get(prefix+'/episodes'))['items']}
             assert not expect(c.get(prefix+'/voice-identities'))['items'],'Use a fresh or cleaned dedicated synthetic Subject'
             recipient=expect(visitor.get('/api/v1/workbench/spaces'))['actor_id']
             call=expect(c.post(prefix+'/twin/voice/calls',json={'cloud_consent_id':cloud,'voice_consent_id':voice,'recording_consent_id':recording,'speaker_consent_id':speaker,'policy':caps['policy'],'voice_mode':'default','enroll_owner_voice':True}))['call_id'];calls.append(call)
@@ -58,7 +64,7 @@ def main():
             utterance(call,'story-'+run,story,'我记得大学校园里的那段时光。')
             utterance(call,'second-'+run,second,'我希望朋友们还记得那棵树。')
             def processed():
-                ep=expect(c.get(prefix+'/episodes'))['items'];owned=[r for r in ep if r.get('capture_origin')=='natural_dialogue' and r['status']=='ready' and r.get('duration_ms')]
+                ep=expect(c.get(prefix+'/episodes'))['items'];owned=[r for r in ep if r['episode_id'] not in prior_episode_ids and r.get('capture_origin')=='natural_dialogue' and r['status']=='ready' and r.get('duration_ms')]
                 return owned if len(owned)>=2 else None
             owned=wait(processed)
             assert all(r['source']=='IOS_MIC' for r in owned)

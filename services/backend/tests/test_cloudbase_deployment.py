@@ -166,6 +166,9 @@ def test_deploy_package_excludes_secrets_symlinks_and_local_state(tmp_path, monk
     infra=root/'infra/cloudbase';infra.mkdir(parents=True)
     (infra/'Dockerfile').write_text('FROM fixture')
     (infra/'Dockerfile.dockerignore').write_text('fixture')
+    import hashlib,json
+    model=root/'build/voiceprint-models/fixture.onnx';model.parent.mkdir(parents=True);model.write_bytes(b'pinned public model fixture')
+    (infra/'voiceprint-model.json').write_text(json.dumps({'cache_path':'build/voiceprint-models/fixture.onnx','model':'fixture.onnx','sha256':hashlib.sha256(model.read_bytes()).hexdigest()}))
     monkeypatch.setattr(packaging,'ROOT',root)
     monkeypatch.setattr(packaging,'FILES',[])
     monkeypatch.setattr(packaging,'DIRECTORIES',['services/backend/app'])
@@ -175,6 +178,7 @@ def test_deploy_package_excludes_secrets_symlinks_and_local_state(tmp_path, monk
     with tarfile.open(destination.with_suffix('.tar.gz')) as archive:
         names=archive.getnames()
         assert 'services/backend/app/main.py' in names
+        assert 'models/fixture.onnx' in names
         assert not any(name.endswith(('.env','.pem','.m4a','alias.py')) for name in names)
     with pytest.raises(ValueError): packaging.package(root/'services')
 
