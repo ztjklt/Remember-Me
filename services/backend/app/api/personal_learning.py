@@ -65,6 +65,22 @@ def job_view(job):
         'result':job.result,'created_at':job.created_at.isoformat(),'updated_at':job.updated_at.isoformat(),
         'activation_allowed':False}
 
+def available_training_consent(session,subject,actor,pref):
+    """Expose an existing revocable grant, independently of the training switch.
+
+    Discovery never changes the saved preference or enables a job. Prefer its
+    bound grant, then recover another still-active owner/subject training grant.
+    """
+    repository=ConsentRepository(session)
+    identifiers=([pref.consent_id] if pref.consent_id else [])+[grant.consent_id for grant in
+        reversed(repository.list_for_actor(subject,actor_id=actor,scope=ConsentScope.MODEL_TRAINING))]
+    for identifier in dict.fromkeys(identifiers):
+        try:
+            repository.require_active(identifier,subject_id=subject,actor_id=actor,scope=ConsentScope.MODEL_TRAINING)
+        except AppError:continue
+        return identifier
+    return None
+
 def learning_view(subject,actor,request,session):
     pref=learning.preference(session,subject,actor.actor_id)
     issue=None
@@ -75,7 +91,7 @@ def learning_view(subject,actor,request,session):
     trainer=learning.worker_available(session,request.app.state.settings.personal_training_base_model)
     status='disabled' if not active else 'ineligible_data' if issue else 'insufficient_data' if plan.status!='ready' else 'trainer_offline' if not trainer and (job is None or job.status=='queued') else job.status if job else 'queued'
     return {'enabled':active,'policy':learning.POLICY,'notice':learning.POLICY_NOTICE,'status':status,
-        'trainer_available':trainer,'training_consent_id':pref.consent_id if active else None,
+        'trainer_available':trainer,'training_consent_id':available_training_consent(session,subject,actor.actor_id,pref),
         'base_model':request.app.state.settings.personal_training_base_model,
         'dataset':{'examples':len(plan.train)+len(plan.validation)+len(plan.test),'source_groups':plan.source_group_count,
             'train':len(plan.train),'validation':len(plan.validation),'test':len(plan.test),'missing':list(plan.missing)} if plan else

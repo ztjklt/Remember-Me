@@ -150,3 +150,44 @@ def test_claim_rechecks_authorization_after_publication_lock_refresh(learning_ow
     assert 'plan' not in claimed.json()
     session.expire_all()
     assert session.get(PersonalTrainingJob,identifier).status=='revoked'
+
+
+def test_disabled_learning_reopens_with_revocable_grant_without_enabling_training(learning_owner,client,app,session):
+    own,_,headers,foreign_headers,grants=learning_owner
+    assert _enable(client,learning_owner).status_code==200
+    disabled=client.put(_path(learning_owner),headers=headers,json={'enabled':False})
+    assert disabled.status_code==200 and disabled.json()['enabled'] is False
+    assert disabled.json()['training_consent_id']==grants['MODEL_TRAINING']
+    reopened=client.get(_path(learning_owner),headers=headers)
+    assert reopened.status_code==200 and reopened.json()['status']=='disabled'
+    assert reopened.json()['training_consent_id']==grants['MODEL_TRAINING']
+    assert client.get(_path(learning_owner),headers=foreign_headers).status_code==404
+    assert _claim(client,app).json()['job'] is None
+    assert session.scalar(select(PersonalTrainingJob)) is None
+    enabled=_enable(client,learning_owner)
+    assert enabled.status_code==200 and enabled.json()['enabled'] is True
+    assert enabled.json()['training_consent_id']==grants['MODEL_TRAINING']
+    assert client.put(_path(learning_owner),headers=headers,json={'enabled':False}).status_code==200
+    assert client.post('/api/v1/consents/'+grants['MODEL_TRAINING']+'/revoke',headers=headers).status_code==200
+    revoked=client.get(_path(learning_owner),headers=headers).json()
+    assert revoked['enabled'] is False and revoked['training_consent_id'] is None
+    assert _enable(client,learning_owner).status_code==403
+
+
+def test_disabled_grant_discovery_recovers_valid_owner_grant_and_never_adopts_foreign_or_wrong_scope(learning_owner,client,app,session):
+    from app.learning_models import LearningPreference
+    from app.models import Consent
+    own,other,headers,foreign_headers,grants=learning_owner
+    # An orphan explicit grant is discoverable even before a preference was set.
+    initial=client.get(_path(learning_owner),headers=headers).json()
+    assert initial['enabled'] is False and initial['training_consent_id']==grants['MODEL_TRAINING']
+    foreign=client.post('/api/v1/consents',headers=foreign_headers,
+        json={'subject_id':other.subject_id,'scope':'MODEL_TRAINING'}).json()['consent_id']
+    session.expire_all();pref=session.get(LearningPreference,(own.subject_id,own.actor_id))
+    for bad in [foreign,own.consent_id,grants['VOICE'],grants['CLOUD_TWIN']]:
+        pref.consent_id=bad;pref.enabled=False;session.commit()
+        view=client.get(_path(learning_owner),headers=headers).json()
+        assert view['training_consent_id']==grants['MODEL_TRAINING'] and view['enabled'] is False
+    assert client.post('/api/v1/consents/'+grants['MODEL_TRAINING']+'/revoke',headers=headers).status_code==200
+    assert client.get(_path(learning_owner),headers=headers).json()['training_consent_id'] is None
+    assert session.scalar(select(PersonalTrainingJob)) is None
