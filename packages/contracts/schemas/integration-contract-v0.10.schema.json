@@ -1,0 +1,2514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.local/contracts/integration-contract-v0.10.schema.json",
+  "title": "Remember Me Integration Contract v0.10 — recording-scoped spoken introductions",
+  "type": "object",
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "source_type",
+        "source_ref"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "span_start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "memoryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_type",
+        "content",
+        "source_type",
+        "evidence_ids",
+        "confidence",
+        "model_version",
+        "prompt_version",
+        "schema_version"
+      ],
+      "properties": {
+        "memory_type": {
+          "enum": [
+            "EVENT",
+            "PERSON",
+            "RELATIONSHIP",
+            "PREFERENCE",
+            "VALUE",
+            "EMOTION"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effective_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "captureEpisode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "audio_ref",
+        "source",
+        "recorded_at"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recording_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audio_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "enum": [
+            "ANDROID_MIC",
+            "IOS_MIC",
+            "WORK_3200",
+            "RECORDING_DEVICE",
+            "IMPORT"
+          ]
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "episodeCreated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "upload_status"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upload_status": {
+          "enum": [
+            "pending",
+            "uploading",
+            "uploaded",
+            "failed"
+          ]
+        }
+      }
+    },
+    "processingStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "status"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "uploaded",
+            "transcribing",
+            "extracting",
+            "modeling",
+            "ready",
+            "failed"
+          ]
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "error_message": {
+          "type": "string"
+        }
+      }
+    },
+    "aiCoreInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "subject_id",
+        "transcript",
+        "existing_model_version"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transcript": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_context": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "existing_model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "aiCoreOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_items",
+        "graph_updates",
+        "persona_updates",
+        "evidence",
+        "model_version"
+      ],
+      "properties": {
+        "memory_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/memoryItem"
+          }
+        },
+        "graph_updates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graphFact"
+          }
+        },
+        "persona_updates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/personTrait"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "episodeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "status",
+        "memory_items",
+        "model_version"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "ready"
+        },
+        "memory_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/memoryItem"
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trace_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "twinRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "user_query"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "user_query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "twinResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer",
+        "response_type",
+        "evidence",
+        "confidence"
+      ],
+      "properties": {
+        "answer": {
+          "type": "string"
+        },
+        "response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "recalled_turn_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 12
+        },
+        "history_summary_status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "ready",
+            "unavailable",
+            "empty",
+            null
+          ]
+        },
+        "recalled_answer_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maxItems": 12
+        }
+      }
+    },
+    "voiceRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "authorized_text",
+        "voice_profile_id",
+        "voice_consent_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorized_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_consent_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "voiceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "queued",
+            "processing",
+            "ready",
+            "failed"
+          ]
+        },
+        "audio_ref": {
+          "type": "string"
+        },
+        "provider_metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "calibrationInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "question",
+        "locked_twin_answer",
+        "human_answer"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locked_twin_answer": {
+          "type": "string"
+        },
+        "human_answer": {
+          "type": "string"
+        }
+      }
+    },
+    "calibrationOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension_diffs",
+        "model_updates",
+        "followup_questions"
+      ],
+      "properties": {
+        "dimension_diffs": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "model_updates": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "followup_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "personTrait": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trait_id",
+        "domain",
+        "statement",
+        "confidence",
+        "source_type",
+        "evidence_ids",
+        "counter_evidence_ids",
+        "status",
+        "model_version"
+      ],
+      "properties": {
+        "trait_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES_BELIEFS",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ]
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source_type": {
+          "enum": [
+            "SUBJECT",
+            "THIRD_PARTY",
+            "AI_INFERENCE",
+            "OBJECTIVE",
+            "CALIBRATION"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "counter_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "unresolved",
+            "superseded"
+          ]
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory_item_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "graphFact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact_id",
+        "subject_id",
+        "kind",
+        "content",
+        "evidence_ids",
+        "model_version"
+      ],
+      "properties": {
+        "fact_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "EVENT",
+            "PERSON",
+            "RELATIONSHIP"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "personModelSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "version",
+        "domains"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "domains": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "domain",
+              "traits"
+            ],
+            "properties": {
+              "domain": {
+                "enum": [
+                  "IDENTITY",
+                  "EPISODIC_MEMORY",
+                  "RELATIONSHIPS",
+                  "PREFERENCES",
+                  "VALUES_BELIEFS",
+                  "DECISION_PATTERNS",
+                  "EXPRESSION"
+                ]
+              },
+              "traits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/personTrait"
+                }
+              }
+            }
+          }
+        },
+        "graph_facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graphFact"
+          }
+        }
+      }
+    },
+    "captureQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_id",
+        "subject_id",
+        "text",
+        "target_domain",
+        "reason",
+        "status"
+      ],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_domain": {
+          "enum": [
+            "IDENTITY",
+            "EPISODIC_MEMORY",
+            "RELATIONSHIPS",
+            "PREFERENCES",
+            "VALUES_BELIEFS",
+            "DECISION_PATTERNS",
+            "EXPRESSION"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "answered",
+            "skipped"
+          ]
+        }
+      }
+    },
+    "twinEvidenceV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "episode_id",
+        "source_type"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "excerpt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "has_audio": {
+          "type": "boolean"
+        }
+      }
+    },
+    "twinQueryV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "question",
+        "cloud_consent_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conversation_mode": {
+          "type": "boolean"
+        },
+        "previous_answer_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "request_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "previous_answer_id"
+            ],
+            "properties": {
+              "previous_answer_id": {
+                "type": "string"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "conversation_mode"
+            ],
+            "properties": {
+              "conversation_mode": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "twinAnswerV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_id",
+        "subject_id",
+        "question",
+        "answer",
+        "response_type",
+        "evidence",
+        "confidence",
+        "model_version",
+        "person_model_version",
+        "stale"
+      ],
+      "properties": {
+        "answer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "answer": {
+          "type": "string"
+        },
+        "response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION",
+            "UNKNOWN",
+            "CONVERSATION"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/twinEvidenceV3"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "person_model_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stale": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "conversation_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "parent_answer_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "remembered_episode_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "context_turn_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "context_truncated": {
+          "type": "boolean"
+        },
+        "source_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64
+        },
+        "expression": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "available",
+                "rejected",
+                "unavailable"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "model_version": {
+              "type": "string"
+            },
+            "prompt_version": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "voiceProfileV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready",
+        "profile_id",
+        "model_version",
+        "voice_consent_id"
+      ],
+      "properties": {
+        "ready": {
+          "type": "boolean"
+        },
+        "profile_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "voice_consent_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "voiceSpeechV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "asset_id",
+        "model_version"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ready"
+          ]
+        },
+        "asset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "calibrationStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "twin_answer_id",
+        "cloud_consent_id"
+      ],
+      "properties": {
+        "twin_answer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "calibrationComplete": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_consent_id"
+      ],
+      "properties": {
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "calibrationDimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension",
+        "alignment",
+        "note",
+        "human_excerpt"
+      ],
+      "properties": {
+        "dimension": {
+          "enum": [
+            "DECISION",
+            "REASONING",
+            "VALUE_PRIORITY",
+            "EMOTIONAL_REACTION",
+            "EXPRESSION"
+          ]
+        },
+        "alignment": {
+          "enum": [
+            "MATCH",
+            "PARTIAL",
+            "DIFFERENT",
+            "NOT_OBSERVED"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "human_excerpt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "calibrationRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "calibration_id",
+        "subject_id",
+        "twin_answer_id",
+        "question",
+        "locked_answer",
+        "locked_response_type",
+        "locked_model_version",
+        "locked_person_model_version",
+        "locked_evidence_ids",
+        "status",
+        "human_episode_id",
+        "summary",
+        "dimensions",
+        "suggested_question",
+        "comparison_model_version",
+        "created_at",
+        "completed_at"
+      ],
+      "properties": {
+        "calibration_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "twin_answer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locked_answer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locked_response_type": {
+          "enum": [
+            "ORIGINAL",
+            "SIMULATION"
+          ]
+        },
+        "locked_model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locked_person_model_version": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "locked_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "status": {
+          "enum": [
+            "awaiting_human",
+            "complete",
+            "stale"
+          ]
+        },
+        "human_episode_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/calibrationDimension"
+          }
+        },
+        "suggested_question": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "comparison_model_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "rememberChatMessageV5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_consent_id",
+        "recording_consent_id",
+        "confirmed"
+      ],
+      "properties": {
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recording_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confirmed": {
+          "const": true
+        }
+      }
+    },
+    "rememberChatReplyV5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "episode_id",
+        "memory_item_id",
+        "source",
+        "status"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory_item_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "const": "IOS_TEXT"
+        },
+        "status": {
+          "const": "ready"
+        }
+      }
+    },
+    "realtimeVoiceProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ready",
+        "status",
+        "profile_id",
+        "model_version",
+        "voice_consent_id"
+      ],
+      "properties": {
+        "ready": {
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "missing",
+            "enrolling",
+            "ready",
+            "failed",
+            "enrollment_unknown",
+            "delete_pending",
+            "deleted"
+          ]
+        },
+        "profile_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "voice_consent_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "realtimeVoiceCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "policy",
+        "notice",
+        "profile"
+      ],
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "$ref": "#/$defs/realtimeVoiceProfile"
+        },
+        "default_voice_available": {
+          "type": "boolean"
+        }
+      }
+    },
+    "voiceCallRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_consent_id",
+        "voice_consent_id",
+        "policy"
+      ],
+      "properties": {
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_mode": {
+          "type": "string",
+          "enum": [
+            "personal",
+            "default"
+          ]
+        }
+      }
+    },
+    "voiceCallTicket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "call_id",
+        "room",
+        "participant_identity",
+        "livekit_url",
+        "token",
+        "expires_at"
+      ],
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "pattern": "^vc_[a-f0-9]{32}$"
+        },
+        "room": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participant_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "livekit_url": {
+          "type": "string",
+          "pattern": "^wss://[^/?#@]+(?:/[^?#]*)?$"
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "voice_mode": {
+          "type": "string",
+          "enum": [
+            "personal",
+            "default"
+          ]
+        }
+      }
+    },
+    "chatMemoryPreference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "historicalChatTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer_id",
+        "question",
+        "answer",
+        "assistant_stale",
+        "response_type",
+        "created_at",
+        "conversation_id"
+      ],
+      "properties": {
+        "answer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "answer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "assistant_stale": {
+          "type": "boolean"
+        },
+        "response_type": {
+          "enum": [
+            "CONVERSATION",
+            "ORIGINAL",
+            "SIMULATION",
+            "UNKNOWN"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "conversation_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "chatMemorySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "source_answer_ids",
+        "model_version",
+        "created_at"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "source_answer_ids": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "model_version": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "chatMemoryView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "available_turn_count",
+        "forgotten_before",
+        "items",
+        "summaries"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "available_turn_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "forgotten_before": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/historicalChatTurn"
+          }
+        },
+        "summaries": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/chatMemorySummary"
+          }
+        }
+      }
+    },
+    "modelTrainingPreference": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "training_consent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Training Consent Id"
+        },
+        "accepted_policy": {
+          "default": "",
+          "title": "Accepted Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "PreferenceInput",
+      "type": "object"
+    },
+    "fidelityCaseInput": {
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "cloud_consent_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Cloud Consent Id",
+          "type": "string"
+        },
+        "benchmark_question_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exact server benchmark question binding; custom questions are diagnostic only."
+        }
+      },
+      "required": [
+        "question",
+        "cloud_consent_id"
+      ],
+      "title": "CaseInput",
+      "type": "object"
+    },
+    "fidelityHumanAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "answer": {
+          "maxLength": 8000,
+          "minLength": 1,
+          "title": "Answer",
+          "type": "string"
+        },
+        "confirmed": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "answer",
+        "confirmed"
+      ],
+      "title": "HumanInput",
+      "type": "object"
+    },
+    "fidelityRatings": {
+      "additionalProperties": false,
+      "properties": {
+        "ratings": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "DECISION": {
+              "enum": [
+                "MATCH",
+                "PARTIAL",
+                "DIFFERENT",
+                "NOT_OBSERVED"
+              ]
+            },
+            "REASONING": {
+              "enum": [
+                "MATCH",
+                "PARTIAL",
+                "DIFFERENT",
+                "NOT_OBSERVED"
+              ]
+            },
+            "VALUE_PRIORITY": {
+              "enum": [
+                "MATCH",
+                "PARTIAL",
+                "DIFFERENT",
+                "NOT_OBSERVED"
+              ]
+            },
+            "EMOTIONAL_REACTION": {
+              "enum": [
+                "MATCH",
+                "PARTIAL",
+                "DIFFERENT",
+                "NOT_OBSERVED"
+              ]
+            },
+            "EXPRESSION": {
+              "enum": [
+                "MATCH",
+                "PARTIAL",
+                "DIFFERENT",
+                "NOT_OBSERVED"
+              ]
+            }
+          },
+          "required": [
+            "DECISION",
+            "REASONING",
+            "VALUE_PRIORITY",
+            "EMOTIONAL_REACTION",
+            "EXPRESSION"
+          ]
+        }
+      },
+      "required": [
+        "ratings"
+      ],
+      "title": "RatingInput",
+      "type": "object"
+    },
+    "personalTrainingPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "min_examples": {
+          "default": 40,
+          "maximum": 10000,
+          "minimum": 3,
+          "title": "Min Examples",
+          "type": "integer"
+        },
+        "min_source_groups": {
+          "default": 10,
+          "maximum": 10000,
+          "minimum": 3,
+          "title": "Min Source Groups",
+          "type": "integer"
+        },
+        "min_train": {
+          "default": 24,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Min Train",
+          "type": "integer"
+        },
+        "min_validation": {
+          "default": 6,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Min Validation",
+          "type": "integer"
+        },
+        "min_test": {
+          "default": 6,
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Min Test",
+          "type": "integer"
+        },
+        "max_examples": {
+          "default": 2000,
+          "maximum": 10000,
+          "minimum": 3,
+          "title": "Max Examples",
+          "type": "integer"
+        },
+        "iterations": {
+          "default": 100,
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Iterations",
+          "type": "integer"
+        },
+        "num_layers": {
+          "default": 2,
+          "maximum": 8,
+          "minimum": 1,
+          "title": "Num Layers",
+          "type": "integer"
+        },
+        "rank": {
+          "default": 8,
+          "maximum": 32,
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "learning_rate": {
+          "default": 0.0001,
+          "exclusiveMinimum": 0,
+          "maximum": 0.001,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "max_seq_length": {
+          "default": 512,
+          "maximum": 2048,
+          "minimum": 64,
+          "title": "Max Seq Length",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 1800,
+          "maximum": 3600,
+          "minimum": 10,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "minimum_relative_loss_improvement": {
+          "default": 0.01,
+          "maximum": 0.5,
+          "minimum": 0,
+          "title": "Minimum Relative Loss Improvement",
+          "type": "number"
+        },
+        "seed": {
+          "default": 17,
+          "maximum": 2147483647,
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "title": "TrainingPolicy",
+      "type": "object"
+    },
+    "TrainingMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline_validation_loss": {
+          "minimum": 0,
+          "title": "Baseline Validation Loss",
+          "type": "number"
+        },
+        "validation_loss": {
+          "minimum": 0,
+          "title": "Validation Loss",
+          "type": "number"
+        },
+        "baseline_test_loss": {
+          "minimum": 0,
+          "title": "Baseline Test Loss",
+          "type": "number"
+        },
+        "test_loss": {
+          "minimum": 0,
+          "title": "Test Loss",
+          "type": "number"
+        },
+        "weight_delta_l2": {
+          "exclusiveMinimum": 0,
+          "title": "Weight Delta L2",
+          "type": "number"
+        },
+        "optimizer_steps": {
+          "maximum": 1000,
+          "minimum": 1,
+          "title": "Optimizer Steps",
+          "type": "integer"
+        },
+        "trainable_parameter_count": {
+          "exclusiveMinimum": 0,
+          "title": "Trainable Parameter Count",
+          "type": "integer"
+        },
+        "peak_memory_bytes": {
+          "minimum": 0,
+          "title": "Peak Memory Bytes",
+          "type": "integer"
+        },
+        "mlx_lm_version": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Mlx Lm Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "baseline_validation_loss",
+        "validation_loss",
+        "baseline_test_loss",
+        "test_loss",
+        "weight_delta_l2",
+        "optimizer_steps",
+        "trainable_parameter_count",
+        "peak_memory_bytes",
+        "mlx_lm_version"
+      ],
+      "title": "TrainingMetrics",
+      "type": "object"
+    },
+    "personalTrainingResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "insufficient_data",
+            "unavailable",
+            "failed",
+            "revoked",
+            "rejected",
+            "trained"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "subject_id": {
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "person_model_version": {
+          "title": "Person Model Version",
+          "type": "string"
+        },
+        "source_basis": {
+          "title": "Source Basis",
+          "type": "string"
+        },
+        "dataset_sha256": {
+          "title": "Dataset Sha256",
+          "type": "string"
+        },
+        "train_count": {
+          "title": "Train Count",
+          "type": "integer"
+        },
+        "validation_count": {
+          "title": "Validation Count",
+          "type": "integer"
+        },
+        "test_count": {
+          "title": "Test Count",
+          "type": "integer"
+        },
+        "metrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrainingMetrics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "adapter_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adapter Sha256"
+        },
+        "activation_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Activation Allowed",
+          "type": "boolean"
+        },
+        "requires_personality_evaluation": {
+          "const": true,
+          "default": true,
+          "title": "Requires Personality Evaluation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "subject_id",
+        "person_model_version",
+        "source_basis",
+        "dataset_sha256",
+        "train_count",
+        "validation_count",
+        "test_count"
+      ],
+      "title": "TrainingResult",
+      "type": "object"
+    },
+    "fidelityBenchmarkQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_id",
+        "question_group_id",
+        "question"
+      ],
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_group_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "speakerRecordingCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "policy",
+        "notice",
+        "introduction_guide",
+        "identification_scope"
+      ],
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "introduction_guide": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identification_scope": {
+          "const": "recording"
+        }
+      }
+    },
+    "speakerRecordingCapture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "consent_id",
+        "policy",
+        "idempotency_key",
+        "recorded_at",
+        "duration_ms",
+        "participant_consents_confirmed"
+      ],
+      "properties": {
+        "consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 5000,
+          "maximum": 7200000
+        },
+        "participant_consents_confirmed": {
+          "const": true
+        },
+        "speaker_count": {
+          "enum": [
+            2,
+            3
+          ]
+        }
+      }
+    },
+    "speakerRecordingProcess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy"
+      ],
+      "properties": {
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "speakerRecordingReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identification_scope",
+        "protocol_version",
+        "model_version",
+        "speakers",
+        "segments"
+      ],
+      "properties": {
+        "identification_scope": {
+          "const": "recording"
+        },
+        "protocol_version": {
+          "const": "spoken-introductions-v1"
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speakers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "speaker_id",
+              "name",
+              "identity_method",
+              "introduction_segment_ids",
+              "consent_segment_ids"
+            ],
+            "properties": {
+              "speaker_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "identity_method": {
+                "enum": [
+                  "spoken_introduction",
+                  "unidentified",
+                  "conflicting_introduction",
+                  "consent_missing"
+                ]
+              },
+              "introduction_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "consent_segment_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "segment_id",
+              "start_ms",
+              "end_ms",
+              "text",
+              "speaker_id",
+              "speaker_name",
+              "attribution",
+              "overlap"
+            ],
+            "properties": {
+              "segment_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "start_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end_ms": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "speaker_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "speaker_name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "attribution": {
+                "enum": [
+                  "spoken_introduction",
+                  "unidentified",
+                  "overlap",
+                  "conflicting_introduction",
+                  "consent_missing"
+                ]
+              },
+              "overlap": {
+                "type": "boolean"
+              }
+            }
+          },
+          "minItems": 1,
+          "maxItems": 3000
+        }
+      }
+    },
+    "speakerRecording": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recording_id",
+        "status",
+        "recorded_at",
+        "duration_ms",
+        "consent_id",
+        "policy",
+        "error",
+        "report"
+      ],
+      "properties": {
+        "recording_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "uploaded",
+            "analyzing",
+            "ready",
+            "failed",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 5000
+        },
+        "consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "report": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/speakerRecordingReport"
+            }
+          ]
+        }
+      }
+    },
+    "speakerRecordingList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/speakerRecording"
+          }
+        }
+      }
+    },
+    "speakerIdentificationGrant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id",
+        "scope"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "const": "SPEAKER_IDENTIFICATION"
+        },
+        "evidence_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/captureEpisode"
+    },
+    {
+      "$ref": "#/$defs/episodeCreated"
+    },
+    {
+      "$ref": "#/$defs/processingStatus"
+    },
+    {
+      "$ref": "#/$defs/aiCoreInput"
+    },
+    {
+      "$ref": "#/$defs/aiCoreOutput"
+    },
+    {
+      "$ref": "#/$defs/episodeResult"
+    },
+    {
+      "$ref": "#/$defs/twinRequest"
+    },
+    {
+      "$ref": "#/$defs/twinResponse"
+    },
+    {
+      "$ref": "#/$defs/voiceRequest"
+    },
+    {
+      "$ref": "#/$defs/voiceResponse"
+    },
+    {
+      "$ref": "#/$defs/calibrationInput"
+    },
+    {
+      "$ref": "#/$defs/calibrationOutput"
+    },
+    {
+      "$ref": "#/$defs/personModelSnapshot"
+    },
+    {
+      "$ref": "#/$defs/captureQuestion"
+    },
+    {
+      "$ref": "#/$defs/twinQueryV3"
+    },
+    {
+      "$ref": "#/$defs/twinAnswerV3"
+    },
+    {
+      "$ref": "#/$defs/voiceProfileV3"
+    },
+    {
+      "$ref": "#/$defs/voiceSpeechV3"
+    },
+    {
+      "$ref": "#/$defs/calibrationStart"
+    },
+    {
+      "$ref": "#/$defs/calibrationComplete"
+    },
+    {
+      "$ref": "#/$defs/calibrationRun"
+    },
+    {
+      "$ref": "#/$defs/rememberChatMessageV5"
+    },
+    {
+      "$ref": "#/$defs/rememberChatReplyV5"
+    },
+    {
+      "$ref": "#/$defs/realtimeVoiceProfile"
+    },
+    {
+      "$ref": "#/$defs/realtimeVoiceCapabilities"
+    },
+    {
+      "$ref": "#/$defs/voiceCallRequest"
+    },
+    {
+      "$ref": "#/$defs/voiceCallTicket"
+    },
+    {
+      "$ref": "#/$defs/chatMemoryPreference"
+    },
+    {
+      "$ref": "#/$defs/chatMemoryView"
+    },
+    {
+      "$ref": "#/$defs/modelTrainingPreference"
+    },
+    {
+      "$ref": "#/$defs/fidelityCaseInput"
+    },
+    {
+      "$ref": "#/$defs/fidelityHumanAnswer"
+    },
+    {
+      "$ref": "#/$defs/fidelityRatings"
+    },
+    {
+      "$ref": "#/$defs/personalTrainingResult"
+    },
+    {
+      "$ref": "#/$defs/speakerRecordingCapabilities"
+    },
+    {
+      "$ref": "#/$defs/speakerRecordingCapture"
+    },
+    {
+      "$ref": "#/$defs/speakerRecordingProcess"
+    },
+    {
+      "$ref": "#/$defs/speakerRecordingReport"
+    },
+    {
+      "$ref": "#/$defs/speakerRecording"
+    },
+    {
+      "$ref": "#/$defs/speakerRecordingList"
+    },
+    {
+      "$ref": "#/$defs/speakerIdentificationGrant"
+    }
+  ],
+  "description": "Endpoint-specific definitions are authoritative. The generic envelope accepts a union because Twin questions and diagnostic fidelity questions can share an untagged body."
+}

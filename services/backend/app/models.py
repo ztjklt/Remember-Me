@@ -55,6 +55,7 @@ class ConsentScope(StrEnum):
     VOICE = "VOICE"
     CLOUD_TWIN = "CLOUD_TWIN"
     MODEL_TRAINING = "MODEL_TRAINING"
+    SPEAKER_IDENTIFICATION = "SPEAKER_IDENTIFICATION"
 
 
 # The database refuses a scope this codebase does not register, so a typo or a

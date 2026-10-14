@@ -24,6 +24,9 @@ def create_tick_router(database, settings, profile_client, token, realtime_maint
         authorize(authorization)
         try:
             worker.run_once()
+            from app.speaker_identification import run_one
+            from app.storage import build_object_store
+            run_one(database, build_object_store(settings), settings)
             if realtime_maintenance: realtime_maintenance()
             return {'tick_completed': True}
         finally:

@@ -24,7 +24,7 @@ from .twin_client import TwinClient
 from .voice_client import VoiceClient
 from .realtime_provider import AlibabaVoice
 from .api import realtime, personal_learning
-from . import realtime_models, learning_models
+from . import realtime_models, learning_models, speaker_models
 from .calibration_client import CalibrationClient
 
 access_logger = logging.getLogger("app.access")
@@ -195,6 +195,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(voice.router)
     app.include_router(realtime.router)
     app.include_router(personal_learning.router)
+    from .api import speaker_recordings
+    app.include_router(speaker_recordings.router)
     app.include_router(calibration.router)
     app.include_router(workbench.router)
     from .api import profiles

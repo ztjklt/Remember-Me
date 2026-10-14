@@ -113,14 +113,16 @@ class ParaformerSttProvider:
     def transcribe(self, audio, content_type):
         return self.transcribe_authorized(audio, content_type, lambda: None)
 
-    def transcribe_authorized(self, audio, content_type, authorize):
+    def transcribe_authorized(self, audio, content_type, authorize, *, diarization=False, speaker_count=None):
         if not configured(self.settings):
             raise SttFailed('百炼转写配置未完成；不会使用本地模型或替换供应商。')
         if not audio or len(audio) > self.settings.max_upload_bytes:
             raise SttFailed('待转写原音为空或超出大小限制。')
+        if speaker_count is not None and (not diarization or type(speaker_count) is not int or speaker_count not in {2,3}):
+            raise SttFailed('本次说话人人数提示只能为 2 或 3。')
         base = _base(self.settings)
         digest = hashlib.sha256(audio).hexdigest()
-        checkpoint_id = hashlib.sha256((self.policy_id + digest).encode()).hexdigest()
+        checkpoint_id = hashlib.sha256((self.policy_id + digest + ((':speaker-v1' + (':' + str(speaker_count) if speaker_count else '')) if diarization else '')).encode()).hexdigest()
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / (checkpoint_id + '.json')
         record = {'at': datetime.now(timezone.utc).isoformat(), 'endpoint': base,
@@ -128,7 +130,8 @@ class ParaformerSttProvider:
             'prompt_supplied': False, 'audio_sha256': digest, 'audio_bytes': len(audio),
             'audio_transport': 'private-temporary-oss', 'temporary_retention_hours': 48,
             'http_status': None, 'usage': None, 'validation': 'failed',
-            'audio_alignment_verified': False}
+            'audio_alignment_verified': False,
+            **({'speaker_diarization':True, 'speaker_count_hint':speaker_count} if diarization else {})}
         started = time.monotonic()
         try:
             with FileLock(str(path) + '.lock', timeout=1), _client(self.settings.stt_timeout_seconds) as client:
@@ -188,7 +191,8 @@ class ParaformerSttProvider:
                     body = request('POST', base + '/api/v1/services/audio/asr/transcription', submitting=True,
                         headers={**headers, 'X-DashScope-Async':'enable', 'X-DashScope-OssResourceResolve':'enable'},
                         json={'model':MODEL, 'input':{'file_urls':[state['file_url']]}, 'parameters':{
-                            'channel_id':[0], 'language_hints':['zh'], 'disfluency_removal_enabled':False}})
+                            'channel_id':[0], 'language_hints':['zh'], 'disfluency_removal_enabled':False,
+                            **({'diarization_enabled':True, **({'speaker_count':speaker_count} if speaker_count else {})} if diarization else {})}})
                     task_id = body['output']['task_id']
                     if not isinstance(task_id, str) or not re.fullmatch(r'[a-zA-Z0-9-]{1,128}', task_id):
                         raise SttFailed('百炼未返回有效任务编号，未重复提交。')
@@ -236,7 +240,9 @@ class ParaformerSttProvider:
                 authorize()
                 record['usage'] = body.get('usage')
                 record['validation'] = 'transcript_received_unreviewed'
-                return Transcript(text.strip(), self.backend, 'bailian/' + MODEL, record)
+                return Transcript(text.strip(), self.backend, 'bailian/' + MODEL,
+                    {**record, **({'speaker_sentences': channels[0].get('sentences'),
+                                   'original_duration':result.get('properties',{}).get('original_duration')} if diarization else {})})
         except Timeout:
             record['error_code'] = 'STT_UNAVAILABLE'
             raise SttUnavailable('同一音频的百炼任务正在处理，稍后重试。') from None

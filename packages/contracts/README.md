@@ -1,3 +1,7 @@
+# Integration Contract v0.10
+
+2026-10-15：获用户授权的本段多人识别，通过语音自我介绍自动关联姓名，无手动确认步骤。新增独立 SPEAKER_IDENTIFICATION 许可、上传／处理／报告与能力形状；v0.9 定义完整保留。见 [获批提案](../../docs/architecture/speaker-introductions-contract-v0.10.md)。本段姓名仅是自述标签，不创建跨录音声纹档案；多人原音不进入本人模型或复刻训练。
+
 # Integration Contract v0.9
 
 2026-10-14：个人训练与复刻验证新增独立 MODEL_TRAINING 许可、本人训练开关与真实候选状态；固定情境题先封存预测，再收本人回答和五维评审，资料不足时评分为空。当前验证对象为现用 Twin，个人候选尚未接入推理或专属验证。暂停训练仍可查找、撤销已有有效许可，不会自动重新启用训练。见 [获批提案](../../docs/architecture/twin-personal-learning-proposal.md)。端点按对应 `$defs` 校验；通用包使用 `anyOf` 兼容无 discriminator 的相同请求形状，v0.1–v0.8 保持不变。
@@ -27,7 +31,7 @@ The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps th
 
 This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.6.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.9.schema.json`; v0.1–v0.8 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.10.schema.json`; v0.1–v0.9 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 

@@ -226,3 +226,25 @@ def test_product_upload_requires_policy_and_waits_for_review(app,client,session,
     assert ep.stt_transcript=='我沒有去過北京。' and ep.transcript=='我没有去过北京。'
     assert ep.stt_backend=='paraformer'
     assert session.scalar(select(Job).where(Job.episode_id==ep.episode_id)).state=='waiting'
+
+
+def test_diarization_is_opt_in_and_has_a_separate_resumable_checkpoint(tmp_path, monkeypatch):
+    class Speakers(Remote):
+        def __call__(self, req):
+            result=super().__call__(req)
+            if req.url.host=='dashscope-result-bj.oss-cn-beijing.aliyuncs.com':
+                body=result.json();body['properties']={'original_duration':5000}
+                body['transcripts'][0]['sentences']=[{'text':'我是小王。','begin_time':0,'end_time':4000,'speaker_id':0}]
+                return httpx.Response(200,json=body)
+            return result
+    remote=Speakers();provider=wired(tmp_path,monkeypatch,remote)
+    normal=provider.transcribe(b'ORIGINAL','audio/mp4')
+    group=provider.transcribe_authorized(b'ORIGINAL','audio/mp4',lambda:None,diarization=True)
+    submissions=[json.loads(r.content) for r in remote.requests if r.url.path.endswith('/transcription')]
+    assert len(submissions)==2
+    assert 'diarization_enabled' not in submissions[0]['parameters']
+    assert submissions[1]['parameters']['diarization_enabled'] is True
+    assert 'speaker_sentences' not in normal.metadata
+    assert group.metadata['speaker_sentences'][0]['speaker_id']==0
+    assert len(list(tmp_path.glob('*.json')))==2
+    assert '我是小王' not in (tmp_path/'calls.jsonl').read_text()

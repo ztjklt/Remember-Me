@@ -215,6 +215,11 @@ def revoke_consent(
         pref=preference(session,consent.subject_id,actor.actor_id)
         pref.enabled=False
         invalidate_jobs(session,consent.subject_id,actor.actor_id)
+    if consent.scope == ConsentScope.SPEAKER_IDENTIFICATION:
+        from ..speaker_models import SpeakerRecording
+        from ..speaker_identification import discard
+        for row in session.scalars(select(SpeakerRecording).where(SpeakerRecording.consent_id == consent_id)):
+            discard(session, request.app.state.object_store, row, 'revoked')
     from .realtime import revoke_realtime, delete_remote_profiles
     revoke_realtime(request.app, session, consent_id)
     session.commit()
