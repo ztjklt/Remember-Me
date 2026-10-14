@@ -148,3 +148,16 @@ def test_guest_introduction_is_remembered_as_voice_label_without_person_update(a
     later=next(r for r in rows if r.turn_id=='guest-later')
     assert later.report['speakers'][0]['name']=='小李' and not later.report['speakers'][0]['is_subject']
     assert session.scalar(select(func.count()).select_from(Episode))==0
+
+
+def test_full_encoder_checksum_is_provenance_not_the_short_stt_version_column(app,client,session,ready,monkeypatch):
+    own,h,grant,call,worker=setup(app,client,session,ready,monkeypatch)
+    from app.voiceprint_models import VoiceIdentity
+    session.query(VoiceIdentity).delete();session.commit()
+    class FullVersion(Encoder):version='wespeaker-cnceleb-resnet34:'+'a'*64
+    app.state.speaker_encoder=FullVersion()
+    vp.enroll(session,own.subject_id,own.actor_id,grant,[1,0],FullVersion.version,{'kind':'fixture','id':'owner'},role='subject',label='小王',person_key='subject');session.commit()
+    upload_utterance(client,call,worker);assert run_one(app,STT())
+    session.expire_all();ep=session.scalar(select(Episode))
+    assert ep.stt_model_version=='fixture' and len(ep.stt_model_version)<=64
+    assert ep.capture_metadata['speaker_model_version']==FullVersion.version

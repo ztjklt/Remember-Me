@@ -70,19 +70,20 @@ def run_one(app,provider=None):
                 if speaker.get('voiceprint_status')!='matched' or not speaker.get('is_subject'):continue
                 spans=[s for s in clear if s.get('speaker_id')==speaker['speaker_id'] and s.get('is_subject')]
                 text=''.join(s['text'] for s in spans).strip()
-                if text:_remember(session,call,row.turn_id,text,speaker['voice_identity_id'],engine.version,identifier,spans,store,raw)
+                if text:_remember(session,call,row.turn_id,text,speaker['voice_identity_id'],engine.version,identifier,spans,store,raw,transcript.model_version)
             row.report=report;row.status='ready';row.lease_token=None;row.lease_expires_at=None;session.commit()
             store.delete(key);row.audio_key='';session.commit()
-    except Exception:
+    except Exception as exc:
         with db.session() as session:
             row=session.get(VoiceUtterance,identifier)
             if row and row.status=='analyzing' and row.lease_token==lease:
+                row.report={'failure_code':getattr(exc,'code',type(exc).__name__)}
                 row.status='skipped';row.lease_token=None;row.lease_expires_at=None;session.commit()
                 try:store.delete(key);row.audio_key='';session.commit()
                 except Exception:pass
     return True
 
-def _remember(session,call,turn,text,identity,version,utterance,spans,store,raw):
+def _remember(session,call,turn,text,identity,version,utterance,spans,store,raw,stt_version):
     from .repositories.jobs import JobRepository
     from .models import Subject
     # Legacy freezes the historical person, including the owner's voice path.
@@ -94,12 +95,12 @@ def _remember(session,call,turn,text,identity,version,utterance,spans,store,raw)
     now=utcnow();identifier='ep_'+uuid4().hex
     ep=Episode(episode_id=identifier,subject_id=call.subject_id,actor_id=call.actor_id,recording_consent_id=call.recording_consent_id,idempotency_key=key,
         source='IOS_TEXT',recorded_at=now,duration_ms=None,capture_metadata={'origin':'natural_dialogue','call_id':call.call_id,'turn_id':turn,'review_status':'verified','speaker_verification':'matched','voice_identity_id':identity,'speaker_model_version':version,'voice_utterance_id':utterance,'spans':spans},
-        audio_size_bytes=0,audio_content_type='text/plain',status='extracting',trace_id='vp_'+uuid4().hex,transcript=text,stt_transcript=text,stt_backend='paraformer-speaker-verified',stt_model_version=version,created_at=now,updated_at=now)
+        audio_size_bytes=0,audio_content_type='text/plain',status='extracting',trace_id='vp_'+uuid4().hex,transcript=text,stt_transcript=text,stt_backend='paraformer-speaker-verified',stt_model_version=stt_version,created_at=now,updated_at=now)
     pending=session.scalar(select(Episode).where(Episode.subject_id==call.subject_id,Episode.actor_id==call.actor_id,Episode.idempotency_key=='dialogue:'+call.call_id+':'+turn))
     if pending:
         ep=pending;identifier=ep.episode_id
         ep.idempotency_key=key;ep.capture_metadata={**ep.capture_metadata,'realtime_text':ep.stt_transcript,'origin':'natural_dialogue','review_status':'verified','speaker_verification':'matched','voice_identity_id':identity,'speaker_model_version':version,'voice_utterance_id':utterance,'spans':spans}
-        ep.transcript=text;ep.stt_transcript=text;ep.stt_backend='paraformer-speaker-verified';ep.stt_model_version=version;ep.status='extracting'
+        ep.transcript=text;ep.stt_transcript=text;ep.stt_backend='paraformer-speaker-verified';ep.stt_model_version=stt_version;ep.status='extracting'
     else:session.add(ep)
     import io,wave
     original=b''.join(raw[max(0,s['start_ms']*32):min(len(raw),s['end_ms']*32)] for s in spans)

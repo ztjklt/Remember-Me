@@ -12,7 +12,9 @@ def main():
     args=p.parse_args();state=json.loads(Path(args.private_state).read_text());cfg=json.loads(Path(args.private_config).read_text())
     env=json.loads(cfg['ServerConfig']['EnvParams']);subject=state['subject_id'];assert subject.startswith('speaker_qa_')
     worker_secret=env['REMEMBER_REALTIME_WORKER_SECRET'];run=uuid.uuid4().hex
-    with wave.open(args.audio) as f:assert f.getframerate()==16000 and f.getnchannels()==1;raw=f.readframes(f.getnframes())
+    sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'services/backend'))
+    from app.voiceprints import pcm
+    raw=pcm(Path(args.audio).read_bytes(),'audio/wav')
     rows=json.loads(Path(args.segments).read_text())['segments']
     def clip(segments):
         pcm=b''.join(raw[s['start_ms']*32:s['end_ms']*32] for s in segments);buf=io.BytesIO()
@@ -43,11 +45,11 @@ def main():
             expect(w.post('/internal/voice-calls/'+call+'/turn-complete',json={'turn_id':turn}))
             return wait(lambda:(r if (r:=expect(w.get('/internal/voice-calls/'+call+'/utterances/'+turn)))['status'] in ['ready','skipped'] else None))
         try:
+            cloud,voice,recording,speaker=[grant(s) for s in ['CLOUD_TWIN','VOICE','RECORDING','SPEAKER_IDENTIFICATION']]
             caps=expect(c.get(prefix+'/twin/voice/capabilities'));assert caps['voiceprint_available'] and caps['available']
             report['model_available']=True
             assert not expect(c.get(prefix+'/voice-identities'))['items'],'Use a fresh or cleaned dedicated synthetic Subject'
-            recipient=expect(visitor.get('/api/v1/spaces'))['actor_id']
-            cloud,voice,recording,speaker=[grant(s) for s in ['CLOUD_TWIN','VOICE','RECORDING','SPEAKER_IDENTIFICATION']]
+            recipient=expect(visitor.get('/api/v1/workbench/spaces'))['actor_id']
             call=expect(c.post(prefix+'/twin/voice/calls',json={'cloud_consent_id':cloud,'voice_consent_id':voice,'recording_consent_id':recording,'speaker_consent_id':speaker,'policy':caps['policy'],'voice_mode':'default','enroll_owner_voice':True}))['call_id'];calls.append(call)
             utterance(call,'enroll-'+run,intro,'你好，我叫小王，这是我自己的声音。')
             identities=expect(c.get(prefix+'/voice-identities'))['items'];assert len(identities)==1 and identities[0]['role']=='subject'
