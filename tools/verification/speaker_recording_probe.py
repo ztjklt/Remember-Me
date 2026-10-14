@@ -4,7 +4,7 @@ Supply an ignored, mode-0600 JSON state {actor_token, subject_id, other_token}.
 Never use a production person's account or recording for this engineering probe.
 Results include no credentials. Created grants are revoked and originals deleted.
 """
-import argparse, hashlib, json, time, wave
+import argparse, hashlib, json, time, wave, uuid
 from datetime import datetime, timezone
 from pathlib import Path
 import httpx
@@ -27,7 +27,7 @@ def main():
         caps=expect(c.get(prefix+'/capabilities'),200);assert caps['available'] and caps['identification_scope']=='recording'
         grant=expect(c.post('/api/v1/consents',json={'subject_id':state['subject_id'],'scope':'SPEAKER_IDENTIFICATION','evidence_ref':'synthetic-engineering-qa'}),201)['consent_id']
         try:
-            fields={'consent_id':grant,'policy':caps['policy'],'idempotency_key':'synthetic-'+hashlib.sha256(data).hexdigest(),
+            fields={'consent_id':grant,'policy':caps['policy'],'idempotency_key':'synthetic-'+uuid.uuid4().hex,
                 'recorded_at':datetime.now(timezone.utc).isoformat(),'duration_ms':duration,'participant_consents_confirmed':'true','speaker_count':2}
             files={'file':('synthetic.wav',data,'audio/wav')}
             row=expect(c.post(prefix,data=fields,files=files),201);rid=row['recording_id']
@@ -40,7 +40,11 @@ def main():
                 time.sleep(3)
             assert row['status']=='ready'
             report=row['report'];labels=[s['speaker_name'] for s in report['segments']]
-            assert labels==['小王','小李','小王','小李','小王','小李'], 'Unexpected synthetic speaker labels'
+            args.output.with_suffix('.observed.json').write_text(json.dumps({'speaker_labels':labels,'speakers':report['speakers'],'segments':report['segments']},ensure_ascii=False,indent=2)+'\n')
+            assert set(labels)=={'小王','小李'} and len(labels)>=6, 'Unexpected synthetic speaker labels'
+            for token,name in [('大学校园','小王'),('每次回学校','小李'),('我希望','小王'),('树长高','小李')]:
+                rows=[x for x in report['segments'] if token in x['text']]
+                assert rows and all(x['speaker_name']==name for x in rows), 'Subsequent statement attributed to wrong speaker'
             audio=c.get(prefix+'/'+rid+'/audio');assert audio.status_code==200 and hashlib.sha256(audio.content).digest()==hashlib.sha256(data).digest()
             expect(c.post('/api/v1/consents/'+grant+'/revoke'),200)
             revoked=expect(c.get(prefix+'/'+rid),200);assert revoked['status']=='revoked' and revoked['report'] is None

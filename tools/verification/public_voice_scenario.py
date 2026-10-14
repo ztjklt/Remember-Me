@@ -32,6 +32,7 @@ def arguments():
     parser.add_argument('--report', type=Path, required=True)
     parser.add_argument('--expected-release', required=True)
     parser.add_argument('--qa-agent-name', default=None, help='Explicit local staging worker; production ticket otherwise unchanged')
+    parser.add_argument('--natural-capture', action='store_true', help='Exercise new dialogue capture with separate temporary QA grants')
     parser.add_argument('--synthetic-qa', action='store_true', required=True)
     return parser.parse_args()
 
@@ -72,6 +73,7 @@ async def run(args):
     feed_task = None
     streams, readers = [], []
     ticket = voice = None
+    natural_grants = []
     headers = {'Authorization': 'Bearer ' + state['actor_token']}
     base = state['origin'] + f"/api/v1/subjects/{state['subject_id']}/twin/voice"
     owner_filter = ('subject_id=' + literal(state['subject_id'])
@@ -202,10 +204,15 @@ async def run(args):
             consent = await request('POST', state['origin'] + '/api/v1/consents',
                                     json={'subject_id': state['subject_id'], 'scope': 'VOICE'})
             voice = consent.json()['consent_id']
+            payload={'voice_mode':'default','cloud_consent_id':state['grants']['CLOUD_TWIN'],'voice_consent_id':voice,'policy':caps['policy']}
+            if args.natural_capture:
+                assert caps.get('dialogue_capture_available') and caps.get('natural_voice_preparation')
+                for scope,field in [('RECORDING','recording_consent_id'),('SPEAKER_IDENTIFICATION','speaker_consent_id')]:
+                    grant=(await request('POST',state['origin']+'/api/v1/consents',json={'subject_id':state['subject_id'],'scope':scope,'evidence_ref':'synthetic-natural-dialogue-probe'})).json()['consent_id']
+                    natural_grants.append(grant);payload[field]=grant
+                report['scope']='isolated synthetic natural dialogue and background sample collection'
             phase('create_call')
-            ticket = (await request('POST', base + '/calls', json={
-                'voice_mode': 'default', 'cloud_consent_id': state['grants']['CLOUD_TWIN'],
-                'voice_consent_id': voice, 'policy': caps['policy']})).json()
+            ticket = (await request('POST', base + '/calls', json=payload)).json()
             if ticket['voice_mode'] != 'default':
                 raise RuntimeError('Unexpected voice mode')
             if args.qa_agent_name:
@@ -307,6 +314,20 @@ async def run(args):
                     result = await request('DELETE', base + '/calls/' + ticket['call_id'], timeout=8)
                     report['end_http_status'] = result.status_code
                 await cleanup('end_call', end())
+            if args.natural_capture and ticket:
+                async def natural_cleanup():
+                    where=owner_filter+" AND capture_metadata->>'call_id'="+literal(ticket['call_id'])
+                    captured=await database('natural-material-count','SELECT count(*) FROM remember_ios.episodes WHERE '+where+';')
+                    report['captured_user_materials']=int(scalar(captured));assert report['captured_user_materials']>=2
+                    rows=await database('natural-material-ids','SELECT episode_id FROM remember_ios.episodes WHERE '+where+';')
+                    for entry in rows['Rows']:
+                        identifier=json.loads(entry)[0]
+                        await request('DELETE',state['origin']+f"/api/v1/subjects/{state['subject_id']}/dialogue-materials/"+identifier)
+                    count=await database('natural-sample-count','SELECT count(*) FROM remember_ios.dialogue_samples WHERE call_id='+literal(ticket['call_id'])+';')
+                    report['captured_microphone_samples']=int(scalar(count));assert report['captured_microphone_samples']>=1
+                    for grant in natural_grants:await request('POST',state['origin']+'/api/v1/consents/'+grant+'/revoke')
+                    report['natural_capture_cleaned']=True
+                await cleanup('natural_capture',natural_cleanup(),60)
             if voice:
                 async def revoke():
                     result = await request('POST', state['origin'] + '/api/v1/consents/'
