@@ -135,3 +135,16 @@ def test_normal_multi_voice_recording_does_not_turn_guest_words_into_subject_fac
     memories=[S(evidence_ids=['own'],source_type='SUBJECT'),S(evidence_ids=['guest'],source_type='SUBJECT')]
     assert vp.classify_recorded_evidence(ep,S(evidence=evidence,memory_items=memories))=={'guest'}
     assert str(memories[0].source_type)=='SUBJECT' and str(memories[1].source_type)=='THIRD_PARTY'
+
+def test_guest_introduction_is_remembered_as_voice_label_without_person_update(app,client,session,ready,monkeypatch):
+    own,h,grant,call,worker=setup(app,client,session,ready,monkeypatch);reference(app,session,own,grant)
+    app.state.speaker_encoder=type('Guest',(Encoder,),{'extract':lambda _,data:[0,1]})()
+    class Intro:
+        def transcribe_authorized(self,*args,**kwargs):return Transcript('大家好，我叫小李，今天来和大家聊聊。','fixture','fixture',{'speaker_sentences':[{'speaker_id':0,'text':'大家好，我叫小李，今天来和大家聊聊。','begin_time':0,'end_time':5500}]})
+    upload_utterance(client,call,worker,'guest-intro');assert run_one(app,Intro())
+    session.expire_all();assert {r.role for r in session.scalars(select(VoiceIdentity))}=={'subject','contact'}
+    upload_utterance(client,call,worker,'guest-later');assert run_one(app,STT())
+    session.expire_all();rows=list(session.scalars(select(VoiceUtterance)))
+    later=next(r for r in rows if r.turn_id=='guest-later')
+    assert later.report['speakers'][0]['name']=='小李' and not later.report['speakers'][0]['is_subject']
+    assert session.scalar(select(func.count()).select_from(Episode))==0

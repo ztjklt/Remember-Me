@@ -80,6 +80,12 @@ def enroll(session,subject,actor,consent_id,vector,version,source,*,role,label,p
     old=session.scalar(select(VoiceIdentity).where(VoiceIdentity.subject_id==subject,VoiceIdentity.person_key==person_key))
     if old and not old.revoked_at:return old # Never silently replace an existing person's acoustic reference.
     if old:session.delete(old);session.flush()
+    if role=='subject':
+        # Resolve an earlier self-described contact for the same acoustic voice
+        # when the authenticated owner explicitly establishes their reference.
+        for candidate in active(session,subject,version):
+            if candidate.role=='contact' and any(similarity(unit(vector),unit(v))>=.85 for v in candidate.vectors):
+                candidate.revoked_at=utcnow();candidate.vectors=[];candidate.sources=[]
     row=VoiceIdentity(identity_id='vi_'+uuid4().hex,subject_id=subject,actor_id=actor,person_key=person_key,label=label[:80],role=role,
         consent_id=consent_id,encoder_version=version,vectors=[unit(vector)],sources=[source])
     session.add(row);session.flush();return row
@@ -97,7 +103,7 @@ def annotate(session,subject,raw,report,engine,*,consent_id=None,actor=None,sour
             data=bytes(groups.get(speaker['speaker_id'],b''))[:480000]
             vector=engine.extract(data);identity=match(session,subject,vector,engine.version)
             if identity is None and learn_names and speaker.get('name') and consent_id and actor:
-                identity=enroll(session,subject,actor,consent_id,vector,engine.version,source,role='contact',label=speaker['name'],person_key='contact:'+speaker['name'])
+                identity=enroll(session,subject,actor,consent_id,vector,engine.version,source,role='contact',label=speaker['name'],person_key='contact:'+uuid4().hex)
                 # A self-introduction is a label; not proof of a linked account.
                 speaker['voiceprint_status']='registered_label'
             elif identity:

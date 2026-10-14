@@ -464,7 +464,9 @@ def utterance_status(call_id:str,turn_id:str,request:Request,session:Session=Dep
     report=row.report or {};speakers=report.get('speakers',[])
     if report.get('owner_enrollment')=='registered':message='已经记住你的声音。之后匹配到你的发言会自动更新记忆。'
     elif any(s.get('is_subject') for s in speakers):message='匹配到本人声音，正在整理本人发言。'
-    elif row.status=='ready':message='这轮声音暂未匹配本人，继续聊天即可。'
+    elif row.status=='ready':
+        names=sorted({s['name'] for s in speakers if s.get('name')})
+        message=('刚才听到'+ '、'.join(names)+'的发言；没有作为本人记忆更新。') if names else '这轮声音暂未匹配本人，继续聊天即可。'
     else:message=None
     return {'status':row.status,'message':message}
 

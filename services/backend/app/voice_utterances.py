@@ -64,6 +64,8 @@ def run_one(app,provider=None):
                 if label:
                     vp.enroll(session,call.subject_id,call.actor_id,call.speaker_consent_id,engine.extract(raw[:480000]),engine.version,{'kind':'voice_utterance','id':identifier},role='subject',label=label,person_key='subject')
                     report['owner_enrollment']='registered';call.enroll_owner_voice=False
+            if report.get('owner_enrollment')!='registered' and any(s.get('name') and s.get('voiceprint_status')=='unknown' for s in report['speakers']):
+                vp.annotate(session,call.subject_id,raw,report,engine,consent_id=call.speaker_consent_id,actor=call.actor_id,source={'kind':'voice_utterance','id':identifier},learn_names=True)
             for speaker in report['speakers']:
                 if speaker.get('voiceprint_status')!='matched' or not speaker.get('is_subject'):continue
                 spans=[s for s in clear if s.get('speaker_id')==speaker['speaker_id'] and s.get('is_subject')]
