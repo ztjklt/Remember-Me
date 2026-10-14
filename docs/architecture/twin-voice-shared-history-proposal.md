@@ -15,3 +15,5 @@ Actor 与 Subject 同时匹配才可进入检索；第三方、其他人物以�
 本次实际执行：`cd services/backend && .venv/bin/python -m pytest -o addopts='' tests/test_realtime_voice.py tests/test_chat_memory.py tests/test_twin_conversation.py -q`，60 passed，2 项现有依赖弃用警告。完整结果保存在本地 `build/voice-shared-history-tests.log`；本提案记录代码与测试，部署结果由交付记录另行说明。
 
 新电话首轮优先带入同 Actor / Subject 的最近一段会话末尾最多6条，然后以相关性补入其它旧聊天，仍受12条／10000字总预算。简单寒暄也能保留上一段语境；后续轮次按当前通话链接续。未保存的独立验证题不启用此入口。
+
+具体主题回顾继续按相关性检索；只有不带人物、日期或主题限定的全聊天回顾使用跨时期覆盖。2026-10-14 后续主题检索回归42项通过；线上隔离书签查询选中对应原文字消息，验证详情见 [交付记录](../verification/IOS_PERSONAL_LEARNING_2026_10_14.md)。

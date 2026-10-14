@@ -1,3 +1,7 @@
+# Integration Contract v0.9
+
+2026-10-14：个人训练与复刻验证新增独立 MODEL_TRAINING 许可、本人训练开关与真实候选状态；固定情境题先封存预测，再收本人回答和五维评审，资料不足时评分为空。当前验证对象为现用 Twin，个人候选尚未接入推理或专属验证。暂停训练仍可查找、撤销已有有效许可，不会自动重新启用训练。见 [获批提案](../../docs/architecture/twin-personal-learning-proposal.md)。端点按对应 `$defs` 校验；通用包使用 `anyOf` 兼容无 discriminator 的相同请求形状，v0.1–v0.8 保持不变。
+
 # Integration Contract v0.8
 
 默认声音通话获 Product / Integration Owner 明确批准，见 [提案](../../docs/architecture/twin-default-voice-proposal.md)。新增可选 default_voice_available 与 voice_mode；旧请求省略模式仍使用本人音色。默认模式无需复刻样本，仍需声音与云端问答独立许可。v0.1–v0.7 保持不变。
