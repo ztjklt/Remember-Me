@@ -40,6 +40,8 @@ class CallRequest(BaseModel):
     voice_consent_id: str = Field(min_length=1)
     policy: str
     voice_mode: Literal['personal', 'default'] = 'personal'
+    recording_consent_id: str | None = None
+    speaker_consent_id: str | None = None
 
 
 class InterruptRequest(BaseModel):
@@ -73,8 +75,8 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     profile = profile_for(session, subject_id, actor.actor_id)
     return {'available': configured(s, request.app.state.realtime_provider),
             'default_voice_available': bool(configured(s, request.app.state.realtime_provider) and default_voice(s)), 'policy': policy(s),
-            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理，开启旧聊天记忆时也会参考同账号空间以前的电话和文字聊天；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。通话不会自动保存为记忆，可随时静音、结束或撤销声音授权。',
-            'profile': profile_view(profile)}
+            'notice': '通话期间，麦克风原音发送到百炼实时识别；问题和相关记忆由现有孪生模型处理，开启旧聊天记忆时也会参考同账号空间以前的电话和文字聊天；专用声音样本发送到百炼复刻音色，回答文字由 CosyVoice 生成语音，音频通过实时通话服务传输。点击开始即确认本次云端语音对话；启用自然采集的客户端会保存你的原话为待核对资料，并从清晰的单人聊天片段准备本人音色。你可以继续聊天，稍后查看、更正、删除或撤销授权。',
+            'profile': profile_view(profile), 'dialogue_capture_available':True, 'natural_voice_preparation':__import__('app.speaker_identification',fromlist=['available']).available(s)}
 
 
 @router.get(PREFIX + '/profile')
@@ -116,6 +118,10 @@ async def enroll_profile(subject_id: str, request: Request,
     session.expire_all()
     require_subject(session, subject_id, actor)
     ConsentRepository(session).require_active(voice_consent_id, subject_id=subject_id, scope=ConsentScope.VOICE, actor_id=actor.actor_id)
+    from .twin import publication_lock
+    publication_lock(session, subject_id)
+    if profile_for(session,subject_id,actor.actor_id):raise RealtimeUnavailable('已有本人音色，继续正常通话即可。')
+    if guard := request.scope.get('source_authorization'):guard()
     identifier = 'rvp_' + uuid4().hex
     ticket = secrets.token_urlsafe(32)
     key = f'subjects/{subject_id}/realtime-voice/{identifier}.m4a'
@@ -127,6 +133,7 @@ async def enroll_profile(subject_id: str, request: Request,
     session.add(profile); session.commit()
     url = s.realtime_public_url.rstrip('/') + '/api/v1/realtime-samples/' + identifier + '?ticket=' + quote(ticket)
     try:
+        if on_created := request.scope.get('on_profile_created'):on_created(identifier)
         result = await run_in_threadpool(request.app.state.realtime_provider.operation, 'create_voice',
                     target_model=s.cosyvoice_model, prefix=enrollment_prefix(identifier), url=url, language_hints=['zh'])
         voice_id = result.get('voice_id')
@@ -139,10 +146,16 @@ async def enroll_profile(subject_id: str, request: Request,
             await run_in_threadpool(delete_remote_profiles, request.app)
             raise TwinNotFound('声音授权已撤销。')
         ConsentRepository(session).require_active(voice_consent_id, subject_id=subject_id, scope=ConsentScope.VOICE, actor_id=actor.actor_id)
+        if guard := request.scope.get('source_authorization'):guard()
         session.commit()
         return profile_view(profile)
     except AppError:
         session.expire_all()
+        if guard := request.scope.get('source_authorization'):
+            try:guard()
+            except AppError:
+                profile.revoked_at=utcnow();profile.status='delete_pending';profile.fetch_digest='';session.commit()
+                await run_in_threadpool(delete_remote_profiles,request.app)
         if not profile.revoked_at: profile.status='enrollment_unknown' if not profile.provider_voice_id else 'failed'
         session.commit()
         raise
@@ -155,7 +168,8 @@ async def preview_profile(subject_id: str, request: Request, actor: Actor = Depe
     profile = profile_for(session, subject_id, actor.actor_id)
     if not configured(s, request.app.state.realtime_provider):
         raise RealtimeUnavailable('声音服务尚未配置。')
-    if not profile or profile.status != 'ready' or profile.model != s.cosyvoice_model or profile.accepted_policy != policy(s):
+    from ..realtime_access import compatible_voice_policies
+    if not profile or profile.status != 'ready' or profile.model != s.cosyvoice_model or profile.accepted_policy not in compatible_voice_policies(s):
         raise TwinNotFound('请等待本人音色就绪并确认当前声音用途。')
     profile_id, voice_id, model, consent_id = profile.profile_id, profile.provider_voice_id, profile.model, profile.consent_id
     actor_id = actor.actor_id
@@ -167,7 +181,7 @@ async def preview_profile(subject_id: str, request: Request, actor: Actor = Depe
             require_subject(guard, subject_id, current_actor(request, guard))
             ConsentRepository(guard).require_active(consent_id, subject_id=subject_id, scope=ConsentScope.VOICE, actor_id=actor_id)
             current = profile_for(guard, subject_id, actor_id)
-            if not current or current.profile_id != profile_id or current.status != 'ready' or current.provider_voice_id != voice_id or current.accepted_policy != policy(s):
+            if not current or current.profile_id != profile_id or current.status != 'ready' or current.provider_voice_id != voice_id or current.accepted_policy not in compatible_voice_policies(s):
                 raise TwinNotFound('声音状态已变化，请刷新后重试。')
 
     pcm = bytearray()
@@ -224,11 +238,16 @@ async def start_call(subject_id: str, payload: CallRequest, request: Request, ac
             session.add(profile); session.flush()
     elif not profile or profile.status != 'ready' or profile.consent_id != payload.voice_consent_id or profile.model != s.cosyvoice_model:
         raise TwinNotFound('请先完成本人声音设置并等待音色就绪，或选用默认声音通话。')
+    if payload.recording_consent_id:
+        from ..dialogue_capture import consent
+        consent(session, VoiceCall(subject_id=subject_id,actor_id=actor.actor_id,recording_consent_id=payload.recording_consent_id,speaker_consent_id=payload.speaker_consent_id,voice_consent_id=payload.voice_consent_id))
+    elif payload.speaker_consent_id:raise TwinNotFound('对话采集许可不完整。')
     active = list(session.scalars(select(VoiceCall).where(VoiceCall.actor_id==actor.actor_id,VoiceCall.ended_at.is_(None))))
     for old in active: old.ended_at=utcnow()
     identifier='vc_'+uuid4().hex
     row=VoiceCall(call_id=identifier,subject_id=subject_id,actor_id=actor.actor_id,profile_id=profile.profile_id,
         cloud_consent_id=payload.cloud_consent_id,voice_consent_id=payload.voice_consent_id,policy=payload.policy,
+        recording_consent_id=payload.recording_consent_id,speaker_consent_id=payload.speaker_consent_id,
         credential_digest=hash_actor_token(request.headers.get('Authorization','')[7:].strip() or request.cookies.get('remember_session','')),
         room=identifier,participant='user_'+identifier,created_at=utcnow(),expires_at=utcnow()+timedelta(minutes=30))
     session.add(row); session.commit()
@@ -261,7 +280,7 @@ async def end_call(subject_id: str, call_id: str, request: Request, actor: Actor
 def authorize_call(call_id: str, request: Request, session: Session = Depends(get_session)):
     worker_authorization(request)
     row, profile, actor=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
-    return {'call_id':row.call_id,'subject_id':row.subject_id,'room':row.room,'participant_identity':row.participant,'expires_at':row.expires_at.isoformat()}
+    return {'call_id':row.call_id,'subject_id':row.subject_id,'room':row.room,'participant_identity':row.participant,'expires_at':row.expires_at.isoformat(), 'capture_voice_sample':bool(row.recording_consent_id and row.speaker_consent_id and __import__('app.speaker_identification',fromlist=['available']).available(request.app.state.settings))}
 
 
 @router.post('/internal/voice-calls/{call_id}/answers', include_in_schema=False)
@@ -269,6 +288,10 @@ def answer_call(call_id: str,payload: SpokenQuestion,request: Request,session: S
     worker_authorization(request)
     row,profile,actor=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
     row.active_turn=payload.turn_id; row.active_answer_id=""; session.commit()
+    if row.recording_consent_id:
+        from ..dialogue_capture import remember_turn
+        try:remember_turn(session,row,payload.turn_id,payload.question.strip())
+        except Exception:session.rollback() # Capture must not prevent the conversation.
     # Reuse the final validated, source-versioned Twin operation, not a generic voice LLM.
     # A repeated worker turn ID from another call is a different request. Do
     # not let text's global request-id deduplication return an old call's answer.
@@ -370,3 +393,30 @@ def worker_end(call_id: str, request: Request, session: Session=Depends(get_sess
     row=session.get(VoiceCall,call_id)
     if row: row.ended_at=utcnow();session.commit()
     return {'ended':True}
+
+
+@router.post('/internal/voice-calls/{call_id}/samples',include_in_schema=False)
+async def dialogue_sample(call_id:str,request:Request,turn_id:str=Form(...),sample:UploadFile=File(...),session:Session=Depends(get_session)):
+    worker_authorization(request)
+    row,_,_=check_call(session,call_id,request.app.state.settings,request.app.state.realtime_provider)
+    from ..dialogue_capture import consent,validate_wave
+    from ..dialogue_models import DialogueSample
+    consent(session,row)
+    if not 1<=len(turn_id)<=64:raise TwinNotFound('样本编号不正确。')
+    data=await sample.read(500000+1)
+    if len(data)>500000:raise TwinNotFound('对话样本太长。')
+    try:duration=validate_wave(data)
+    except Exception:return {'status':'skipped'}
+    existing=session.scalar(select(DialogueSample).where(DialogueSample.call_id==call_id,DialogueSample.turn_id==turn_id))
+    if existing:
+        if existing.checksum!=hashlib.sha256(data).hexdigest():raise TwinNotFound('同一发言已有另一份原音。')
+        return {'status':existing.status}
+    if profile_for(session,row.subject_id,row.actor_id):return {'status':'prepared'}
+    count=len(list(session.scalars(select(DialogueSample).where(DialogueSample.call_id==call_id))))
+    if count>=3:return {'status':'skipped'}
+    identifier='ds_'+uuid4().hex;key='dialogue-samples/'+identifier+'/original.wav'
+    request.app.state.object_store.put(key,data,'audio/wav')
+    session.add(DialogueSample(sample_id=identifier,call_id=call_id,turn_id=turn_id,audio_key=key,checksum=hashlib.sha256(data).hexdigest(),duration_ms=duration))
+    try:session.commit()
+    except Exception:session.rollback();request.app.state.object_store.delete(key);raise
+    return {'status':'uploaded'}

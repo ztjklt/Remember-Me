@@ -1,3 +1,7 @@
+# Integration Contract v0.11
+
+2026-10-15 本人修订：点击开始确认本次用途，无重复勾选／固定同意句；姓名自然关联、听不清保留编号和文字。普通语音对话可自动留作待核对资料，并复用清晰单人片段后台准备音色。v0.10 定义保持不变，独立授权仍在服务端记录和校验。见 [获批修订](../../docs/architecture/natural-capture-contract-v0.11.md)。
+
 # Integration Contract v0.10
 
 2026-10-15：获用户授权的本段多人识别，通过语音自我介绍自动关联姓名，无手动确认步骤。新增独立 SPEAKER_IDENTIFICATION 许可、上传／处理／报告与能力形状；v0.9 定义完整保留。见 [获批提案](../../docs/architecture/speaker-introductions-contract-v0.10.md)。本段姓名仅是自述标签，不创建跨录音声纹档案；多人原音不进入本人模型或复刻训练。
@@ -31,7 +35,7 @@ The Backend and AI Core use v0.2 for newly extracted memories; a memory keeps th
 
 This package is the source of truth for cross-module payloads. Version `0.1.2` remains frozen for Phase 1 consumers; versions `0.2.0`–`0.6.0` add the approved iOS capabilities without changing that older file.
 
-The current machine-readable schema is `schemas/integration-contract-v0.10.schema.json`; v0.1–v0.9 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
+The current machine-readable schema is `schemas/integration-contract-v0.11.schema.json`; v0.1–v0.10 remain for existing consumers. Validate payloads at module boundaries. Additive optional fields may be proposed in a Pull Request; removals, renames, type changes, required-field changes, enum changes, or semantic changes require an Issue plus Product and Integration Owner approval.
 
 ## Contract status by phase
 

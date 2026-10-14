@@ -21,10 +21,10 @@ def no_store(response: Response):
     response.headers['Cache-Control'] = 'no-store'
 
 router = APIRouter(prefix='/api/v1/subjects/{subject_id}/speaker-recordings', tags=['speaker-recordings'], dependencies=[Depends(no_store)])
-NOTICE = ('本段原音会发送到现用百炼服务，按声音区分说话人并转成文字；每人开头自我介绍，'
-          '系统自动关联本段后续发言。请在开始前分别取得每位参与者的录音、云端转写和本段声音识别同意。'
-          '本次身份只用于这一段录音，不用于登录，不创建跨录音声纹档案，不训练人物或复刻音色。')
-GUIDE = '我是小王。我同意录音、云端转写和本次声音识别。'
+NOTICE = ('点击开始即确认本次录音、云端转写和本段声音识别；原音发送到现用百炼服务。'
+          '正常聊天即可，自我介绍可帮助显示姓名，没听清时仍按说话人编号保留文字。'
+          '本段身份不用于登录，不建立跨录音声纹档案，不将多人原音用于本人音色复刻。')
+GUIDE = '自然说一句“我叫小王”就可以，也可以直接开始聊天。'
 
 
 def own(session, subject_id, rid, actor):
@@ -46,12 +46,13 @@ def capabilities(subject_id: str, request: Request, actor: Actor = Depends(curre
     require_owner(session, subject_id, actor.actor_id)
     settings = request.app.state.settings
     return {'available': recognition.available(settings), 'policy': recognition.policy(settings),
-            'notice': NOTICE, 'introduction_guide': GUIDE, 'identification_scope': 'recording'}
+            'notice': NOTICE, 'introduction_guide': GUIDE, 'identification_scope': 'recording', 'consent_action':'start_recording', 'introduction_optional':True}
 
 
 class ProcessInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     policy: str = Field(min_length=1, max_length=128)
+    accept_current_policy: bool = False
 
 
 @router.post('')
@@ -63,7 +64,7 @@ def capture(subject_id: str, request: Request, response: Response,
     require_owner(session, subject_id, actor.actor_id)
     settings = request.app.state.settings
     if not recognition.available(settings): raise RequestInvalid('当前服务未接通多人识别，原音请保留在手机。')
-    if not participant_consents_confirmed: raise RequestInvalid('请先分别取得每位参与者的录音、转写和本段声音识别同意。')
+    if not participant_consents_confirmed: raise RequestInvalid('请通过开始录音操作确认本次录音、转写和声音识别用途。')
     if policy != recognition.policy(settings): raise RequestInvalid('多人识别用途已变化，请重新阅读确认。')
     ConsentRepository(session).require_active(consent_id, subject_id=subject_id,
         scope=ConsentScope.SPEAKER_IDENTIFICATION, actor_id=actor.actor_id)
@@ -124,6 +125,8 @@ def process(subject_id: str, recording_id: str, body: ProcessInput, request: Req
             actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
     row = own(session, subject_id, recording_id, actor); recognition.require_active(session, row)
     if row.status in {'deleted','revoked'}: raise RequestInvalid('该段录音已删除或撤销。')
+    if body.policy == recognition.policy(request.app.state.settings) and body.accept_current_policy and body.policy != row.policy:
+        row.policy=body.policy; session.commit()
     if body.policy != recognition.policy(request.app.state.settings) or body.policy != row.policy:
         raise RequestInvalid('多人识别用途已变化，未继续发送原音。')
     if row.status == 'failed':

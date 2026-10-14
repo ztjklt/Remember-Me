@@ -215,6 +215,9 @@ def revoke_consent(
         pref=preference(session,consent.subject_id,actor.actor_id)
         pref.enabled=False
         invalidate_jobs(session,consent.subject_id,actor.actor_id)
+    if consent.scope in {ConsentScope.RECORDING,ConsentScope.VOICE,ConsentScope.SPEAKER_IDENTIFICATION}:
+        from ..dialogue_capture import discard_grant
+        discard_grant(session,request.app.state.object_store,consent_id)
     if consent.scope == ConsentScope.SPEAKER_IDENTIFICATION:
         from ..speaker_models import SpeakerRecording
         from ..speaker_identification import discard

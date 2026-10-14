@@ -9,8 +9,8 @@ from .api.twin import require_subject, TwinNotFound
 from .realtime_provider import RealtimeUnavailable
 
 
-def policy(settings):
-    notice = {'version': 'realtime-voice-v1', 'livekit': settings.livekit_url,
+def policy(settings, *, version="realtime-voice-v2-natural-capture"):
+    notice = {'version': version, 'livekit': settings.livekit_url,
               'inference': settings.realtime_inference_url,
               'voice_model': settings.cosyvoice_model, 'asr_model': settings.realtime_asr_model}
     return 'rv1-' + hashlib.sha256(json.dumps(notice, sort_keys=True).encode()).hexdigest()[:24]
@@ -61,3 +61,9 @@ def check_call(session, call_id, settings, provider):
     if profile is None or profile.revoked_at or profile.status != 'ready' or profile.model != settings.cosyvoice_model:
         raise TwinNotFound('个人声音尚未就绪或已撤销。')
     return row, profile, actor
+
+
+def compatible_voice_policies(settings):
+    # Notice-only capture changes do not invalidate an already consented voice.
+    # A provider/endpoint/model change still changes both hashes.
+    return {policy(settings),policy(settings,version='realtime-voice-v1')}

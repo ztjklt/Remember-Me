@@ -27,6 +27,8 @@ def create_tick_router(database, settings, profile_client, token, realtime_maint
             from app.speaker_identification import run_one
             from app.storage import build_object_store
             run_one(database, build_object_store(settings), settings)
+            from app.dialogue_capture import run_one as prepare_dialogue_voice
+            prepare_dialogue_voice(app)
             if realtime_maintenance: realtime_maintenance()
             return {'tick_completed': True}
         finally:

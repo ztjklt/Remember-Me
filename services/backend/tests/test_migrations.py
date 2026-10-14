@@ -5,7 +5,7 @@ from conftest import alembic_config, upgrade_to_head
 from app.models import Base
 
 EXPECTED_TABLES = {
-    "speaker_recordings",
+    "speaker_recordings", "dialogue_samples",
     "alembic_version",
     "learning_preferences", "personal_training_jobs", "personal_trainer_heartbeats", "fidelity_cases",
     "realtime_voice_profiles", "voice_calls",

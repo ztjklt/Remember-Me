@@ -87,6 +87,9 @@ def private_logs():
         for handler in logging.getLogger(name).handlers:handler.addFilter(guard)
 
 
+from natural_capture import MicrophoneClip
+
+
 class Backend:
     def __init__(self, url, secret, call_id):
         parsed=urlsplit(url)
@@ -280,6 +283,7 @@ class ProxyStream(stt.RecognizeStream):
                     async for data in clocked_pcm(self._input_ch,live_after=self._audio_live_after):
                         before=asyncio.get_running_loop().time()
                         await send_pcm(ws,data);counters['pcm_bytes']+=len(data)
+                        if clip := getattr(backend,'microphone_clip',None):clip.feed(data,pcm_has_speech(data))
                         if segment_diagnostics(backend):segment_diagnostics(backend).observe('asr_send',data)
                         if diagnostic and pcm_has_speech(data):counters['speech_packet_count']+=1
                         counters['send_stall_max_ms']=max(counters['send_stall_max_ms'],round((asyncio.get_running_loop().time()-before)*1000))
@@ -391,6 +395,7 @@ class CallController:
         try:
             await self.publish({'type':'question','turn_id':turn,'text':text})
             await self.publish({'type':'state','turn_id':turn,'state':'thinking'})
+            if clip := getattr(self.backend,'microphone_clip',None):clip.finish(turn)
             phase='twin_answer'
             answer=await self.backend.request('POST','/answers',json={'question':text,'turn_id':turn})
             if self.closed or self.turn_id!=turn:return
@@ -517,6 +522,7 @@ async def entrypoint(ctx: JobContext):
     authorized=await connect_authorized(ctx,backend)
     # Manual turn submission prevents any generic LLM from bypassing Backend validation.
     # VAD still emits speaking events: those immediately clear LiveKit's audio queue.
+    backend.microphone_clip=MicrophoneClip(backend,enabled=authorized.get('capture_voice_sample') is True)
     recognizer=ProxySTT(backend)
     session=AgentSession(vad=silero.VAD.load(),
         turn_handling={'turn_detection':'manual','interruption':{'enabled':True,'mode':'vad','resume_false_interruption':False}})
@@ -542,6 +548,7 @@ async def entrypoint(ctx: JobContext):
     @session.on('close')
     def closed(event):
         controller.closed=True
+        backend.microphone_clip.close()
     await session.start(room=ctx.room,agent=Agent(instructions='只播放 Remember Me 后端已校验的孪生回答。'),
         room_options=room_io.RoomOptions(participant_identity=authorized['participant_identity'],text_input=False,text_output=False,delete_room_on_close=True),record=False)
     participant=await ctx.wait_for_participant(identity=authorized['participant_identity'])

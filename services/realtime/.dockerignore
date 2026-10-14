@@ -3,3 +3,5 @@
 !uv.lock
 !agent.py
 !Dockerfile
+
+!natural_capture.py

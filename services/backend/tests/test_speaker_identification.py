@@ -28,7 +28,7 @@ def test_self_introduction_labels_later_speech_without_manual_confirmation():
     report=build_report(transcript(rows()),duration_ms=20000)
     assert [s['speaker_name'] for s in report['segments']]==['小王','小李','小王','小李']
     assert report['identification_scope']=='recording'
-    assert report['speakers'][0]['consent_segment_ids']==['segment_0']
+    assert report['speakers'][0]['consent_segment_ids']==[]
 
 
 def test_same_name_does_not_merge_different_acoustic_speakers():
@@ -38,8 +38,8 @@ def test_same_name_does_not_merge_different_acoustic_speakers():
     assert report['speakers'][0]['speaker_id']!=report['speakers'][1]['speaker_id']
 
 
-@pytest.mark.parametrize('text',['他说我是小王。','我是你的朋友。','我是老师。','我是小王。'])
-def test_mentions_roles_and_missing_individual_consent_do_not_establish_identity(text):
+@pytest.mark.parametrize('text',['他说我是小王。','我是你的朋友。','我是老师。'])
+def test_mentions_and_roles_do_not_establish_identity(text):
     report=build_report(transcript([utterance(text)]),duration_ms=5000)
     assert report['segments'][0]['speaker_name'] is None
 
@@ -64,8 +64,11 @@ def test_missing_or_invalid_acoustic_id_never_uses_first_person_text_as_identity
 
 @pytest.mark.parametrize('raw',[None,[],[{'text':'我是小王','begin_time':True,'end_time':10}],
     [utterance('我是小王',start=10,end=8)],[utterance('我是小王',end=100000)]])
-def test_invalid_or_missing_diarization_is_not_success(raw):
-    with pytest.raises(SttFailed):build_report(Transcript('x','fixture','fixture',{'speaker_sentences':raw}),duration_ms=5000)
+def test_invalid_or_missing_diarization_keeps_useful_text(raw):
+    result=build_report(Transcript('已识别的原话','fixture','fixture',{'speaker_sentences':raw}),duration_ms=5000)
+    assert result['identification_status']=='text_only'
+    assert result['segments'][0]['text']=='已识别的原话'
+    assert result['segments'][0]['timing_estimated'] and result['segments'][0]['speaker_id'] is None
 
 
 def prepare(app,client,session,monkeypatch):
@@ -148,3 +151,17 @@ def test_repeated_revocation_preserves_deleted_tombstone_and_does_not_relist(app
         assert client.get(prefix,headers=h).json()['items']==[]
     session.expire_all();row=session.get(SpeakerRecording,rid)
     assert row.report is None and row.audio_key==''
+
+
+def test_natural_late_introduction_without_recitation_and_explicit_correction():
+    report=build_report(transcript([utterance('那天我们一起去种树。',8,0,5000),
+        utterance('嗯，我叫小王，继续刚才的话题。',8,130000,134000),
+        utterance('名字听错了，我叫小李。',8,135000,140000)]),duration_ms=150000)
+    assert all(s['speaker_name']=='小李' for s in report['segments'])
+    assert report['speakers'][0]['speaker_id']=='speaker_0'
+
+def test_no_names_never_blocks_grouped_transcription():
+    report=build_report(transcript([utterance('我小时候喜欢在河边玩。',5),utterance('我记得那里有一棵树。',9,5000,9000)]),duration_ms=10000)
+    assert [s['speaker_id'] for s in report['segments']]==['speaker_0','speaker_1']
+    assert all(s['speaker_name'] is None for s in report['segments'])
+    assert report['identification_status']=='grouped'

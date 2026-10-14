@@ -31,6 +31,8 @@ class VoiceCall(Base):
     profile_id: Mapped[str] = mapped_column(String(64), ForeignKey('realtime_voice_profiles.profile_id'))
     cloud_consent_id: Mapped[str] = mapped_column(String(64), ForeignKey('consents.consent_id'))
     voice_consent_id: Mapped[str] = mapped_column(String(64), ForeignKey('consents.consent_id'))
+    recording_consent_id: Mapped[str | None] = mapped_column(ForeignKey('consents.consent_id'), nullable=True)
+    speaker_consent_id: Mapped[str | None] = mapped_column(ForeignKey('consents.consent_id'), nullable=True)
     previous_answer_id: Mapped[str] = mapped_column(String(64), default='')
     active_turn: Mapped[str] = mapped_column(String(64), default='')
     active_answer_id: Mapped[str] = mapped_column(String(64), default='')
