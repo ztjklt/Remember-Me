@@ -28,6 +28,20 @@ def provider(monkeypatch, source, callback=None):
     return picker
 
 
+def test_context_only_keeps_counterexample_without_model_or_answer_write(app,client,session,monkeypatch):
+    from types import SimpleNamespace
+    from app.api.twin import TwinQuestion, generate_answer
+    o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
+    provider(monkeypatch,source)
+    packet=generate_answer(o.subject_id,TwinQuestion(question='这次怎么考虑？',mode='persona',
+        retrieval_mode='local',cloud_consent_id=cloud(client,o.subject_id,oh)),
+        SimpleNamespace(app=app),o,session,context_only=True)
+    ids={e['evidence_id'] for c in packet['candidates'] for e in c['evidence']}
+    assert {source['evidence_id'],extra['evidence_id']}<=ids
+    assert packet['understandings'][0]['counter_evidence_ids']==[extra['evidence_id']]
+    assert spy.payload is None and not list(session.scalars(select(TwinAnswer)))
+
+
 def test_selected_support_expands_counterexample_before_persona(app,client,session,monkeypatch):
     o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
     picker=provider(monkeypatch,source)
@@ -70,6 +84,30 @@ def test_unchanged_rag_snapshot_does_not_rebuild_whole_archive(app,client,sessio
     assert response.status_code==200,response.text
     assert len(expansions)==1
     assert spy.payload['understandings'][0]['counter_evidence_ids']==[extra['evidence_id']]
+
+
+def test_call_material_cache_reuses_only_unchanged_authorized_sources(app,client,session,monkeypatch):
+    import app.api.twin as twin
+    from app.voice_material_cache import VoiceMaterialCache
+    o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
+    provider(monkeypatch,source)
+    cache=VoiceMaterialCache();original=twin.generate_answer;expansions=[]
+    material=twin.effective_materials
+    def count(*a,**kw):expansions.append(1);return material(*a,**kw)
+    monkeypatch.setattr(twin,'effective_materials',count)
+    monkeypatch.setattr(twin,'generate_answer',lambda *a,**kw:original(*a,**kw,material_cache=cache))
+    body={'question':'这次会怎么考虑？','mode':'persona','retrieval_mode':'local',
+          'cloud_consent_id':cloud(client,o.subject_id,oh)}
+    path=f'/api/v1/subjects/{o.subject_id}/twin/answers'
+    for _ in range(2):
+        response=client.post(path,headers=oh,json=body)
+        assert response.status_code==200,response.text
+    assert len(expansions)==1
+    # This change invalidates prior provenance, so no prior profile may survive.
+    session.get(Episode,ep).transcript+='。后来我补充了一件新事。';session.commit()
+    response=client.post(path,headers=oh,json=body)
+    assert len(expansions)==2
+    assert response.status_code in {200,409,422}
 
 
 def test_modification_during_retrieval_prevents_model_call(app,client,session,monkeypatch):
@@ -126,3 +164,47 @@ def test_legitimate_empty_rag_is_not_misreported_as_persona_not_enabled(app,clie
     assert response.status_code==200,response.text
     assert response.json()['response_type']=='UNKNOWN' and response.json()['evidence']==[]
     assert spy.payload is None
+
+
+def test_prefetch_publishes_nothing_then_reuses_only_exact_final_query(app,client,session,monkeypatch):
+    import app.api.twin as twin
+    from app.voice_material_cache import VoiceMaterialCache
+    from app.voice_prefetch import SelectionCache
+    o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
+    picker=provider(monkeypatch,source);retrieved=[];old=picker.retrieve
+    def counted(q):retrieved.append(q);return old(q)
+    picker.retrieve=counted
+    m=VoiceMaterialCache();c=SelectionCache();original=twin.generate_answer
+    phase={'prepare':True}
+    def invoke(*a,**kw):return original(*a,**kw,material_cache=m,selection_cache=c,prepare_only=phase['prepare'])
+    monkeypatch.setattr(twin,'generate_answer',invoke)
+    body={'question':'这次会怎么考虑？','mode':'persona','retrieval_mode':'local','cloud_consent_id':cloud(client,o.subject_id,oh)}
+    path=f'/api/v1/subjects/{o.subject_id}/twin/answers'
+    result=client.post(path,headers=oh,json=body)
+    assert result.status_code==200,result.text
+    assert result.json()['prepared'] is True and spy.payload is None
+    assert not list(session.scalars(select(TwinAnswer)))
+    phase['prepare']=False
+    assert client.post(path,headers=oh,json=body).status_code==200
+    assert len(retrieved)==1
+    assert {source['evidence_id'],extra['evidence_id']}<=set(spy.payload['understandings'][0]['evidence_ids']+spy.payload['understandings'][0]['counter_evidence_ids'])
+    body['question']='这次不会怎么考虑？'
+    assert client.post(path,headers=oh,json=body).status_code==200
+    assert len(retrieved)==2
+
+
+def test_cancelled_prefetch_stops_before_new_database_preparation(app,client,session,monkeypatch):
+    import app.api.twin as twin
+    from app.api.twin import SourceChanged
+    o,r,oh,rh,ep,other,source,extra,root,spy=setup(app,client,session)
+    picker=provider(monkeypatch,source);seen=[];original=twin.generate_answer
+    def stop():raise SourceChanged('Call ended')
+    def invoke(*a,**kw):return original(*a,**kw,prepare_only=True,cancel_check=stop)
+    old=picker.retrieve
+    def counted(q):seen.append(q);return old(q)
+    picker.retrieve=counted
+    monkeypatch.setattr(twin,'generate_answer',invoke)
+    response=client.post(f'/api/v1/subjects/{o.subject_id}/twin/answers',headers=oh,json={
+        'question':'这次怎么考虑？','mode':'persona','retrieval_mode':'local','cloud_consent_id':cloud(client,o.subject_id,oh)})
+    assert response.status_code==409
+    assert seen==[] and spy.payload is None

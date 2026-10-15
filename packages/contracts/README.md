@@ -1,5 +1,7 @@
 # Integration Contract v0.4
 
+2026-10-15 adds an opt-in ASR proofreading operation without changing the frozen capture/result envelopes. See [the implementation proposal](../../docs/architecture/asr-proofread-20261015.md) and [transcript-correction-v1.schema.json](schemas/transcript-correction-v1.schema.json) (`#/$defs/CorrectionInput`, `#/$defs/CorrectionOutput`). Its output is an editable draft; it does not confirm the transcript or authorize memory extraction. The owner review response additionally exposes the raw machine transcript and correction history. Older uploads without the new policy continue unchanged.
+
 Version `0.4.0` adds a locked Twin calibration start, a completion request after a confirmed human Episode, and a typed result with five comparison dimensions. `calibration_id` is optional capture metadata for iOS recordings; old Android and iOS request shapes remain valid. The [calibration proposal](../../docs/architecture/calibration-contract-proposal.md) records the Product Owner direction and provenance boundary. See `schemas/integration-contract-v0.4.schema.json`.
 
 Version `0.3.0` adds the approved iOS-first Twin query/answer, evidence provenance, `UNKNOWN` routing, and local Voice profile/speech status in `schemas/integration-contract-v0.3.schema.json`. It is additive: v0.1 and v0.2 schemas remain available for Android and earlier iOS consumers. The [cross-module proposal](../../docs/architecture/twin-voice-contract-proposal.md) records Product Owner authorization and the sensitive-data boundary.

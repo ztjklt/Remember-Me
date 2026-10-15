@@ -53,7 +53,7 @@ class BackendClient(private val gate: SessionGate) {
         }
         return json(session, "/api/v1/consents", "POST", JSONObject().put("subject_id", subject).put("scope", scope)).getString("consent_id")
     }
-    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC"): String {
+    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC", correctionPolicy: String? = null): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
         require(source in setOf("ANDROID_MIC", "IMPORT", "WORK_3200"))
@@ -70,6 +70,7 @@ class BackendClient(private val gate: SessionGate) {
                     "idempotency_key" to key, "recording_consent_id" to consent,
                     "metadata" to JSONObject().put("capture_client", "native-android").apply {
                         cloudAsrPolicy?.let { put("cloud_asr_policy", it) }
+                        correctionPolicy?.takeIf { it.isNotBlank() }?.let { put("transcript_correction_policy", it) }
                         if(calibrationId.isNotBlank()) put("calibration_id", calibrationId)
                     }.toString())
                 transcript?.let { fields["client_transcript"] = it.toJson().toString() }

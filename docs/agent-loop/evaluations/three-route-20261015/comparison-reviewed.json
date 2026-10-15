@@ -1,0 +1,1929 @@
+{
+  "assessment": "Assistant source review; seven development questions repeated three times; not independent human evaluation",
+  "latency_policy": "Success-only P50 and nearest-rank P95; failures retained separately; do not combine with Realtime end-of-speech latency",
+  "raw_results_sha256": "8d0359da50cabbdef347aa398bb0557960ee24ee65ebc9b9521c291be3651d61",
+  "manifest": {
+    "started_utc": "2026-10-15T02:33:53.943324+00:00",
+    "rounds": 3,
+    "expected": 42,
+    "prompt_sha256": "eae6b3d99188f2da1765cdddf76b8d2f6f02547729ccc8b54e0b451d4402ab96",
+    "packets_sha256": "673272b8878ec414fc9caccfaf2c4d00a18c3815f906c4d25695625341ec8b79",
+    "policy": "Interleaved serial calls, no retries, 12s hard LLM deadline, 20s TTS deadline, 1s between calls",
+    "max_tokens": 2048,
+    "thinking_requested": "disabled both; organizer additionally reasoning_effort=low",
+    "semantic_review": false,
+    "validation": "Deployed render_ids schema and exact authorized sources",
+    "tts": "mimo-v2.5-tts, baihua, 24k PCM16, cache disabled",
+    "timing": "Start of text request to estimated server-side audible onset; excludes ASR, live retrieval, phone network/playback",
+    "playback_estimate": "Schedule each received chunk with 30ms initial buffer, retain underruns and source leading silence; first 10ms RMS>200",
+    "production_changed": false,
+    "finished_utc": "2026-10-15T02:39:30.384380+00:00",
+    "completed": 42
+  },
+  "summary": {
+    "weixin": {
+      "requests": 21,
+      "returned": 20,
+      "synthesized": 20,
+      "quality": {
+        "REQUEST_FAILURE": 1,
+        "PASS": 17,
+        "PARTIAL": 3
+      },
+      "llm_ms": {
+        "n": 20,
+        "median": 1197.678,
+        "p95": 6228.665,
+        "min": 596.447,
+        "max": 11767.882
+      },
+      "tts_first_chunk_ms": {
+        "n": 20,
+        "median": 612.551,
+        "p95": 837.744,
+        "min": 553.51,
+        "max": 1188.645
+      },
+      "tts_audible_estimate_ms": {
+        "n": 20,
+        "median": 760.913,
+        "p95": 987.744,
+        "min": 703.51,
+        "max": 1338.645
+      },
+      "text_start_to_audible_estimate_ms": {
+        "n": 20,
+        "median": 2127.194,
+        "p95": 6949.177,
+        "min": 1371.267,
+        "max": 12526.888
+      },
+      "timeouts": [
+        {
+          "sample": "story",
+          "repeat": 1,
+          "duration_ms": 12013.324
+        }
+      ]
+    },
+    "organizer": {
+      "requests": 21,
+      "returned": 16,
+      "synthesized": 16,
+      "quality": {
+        "PASS": 15,
+        "REQUEST_FAILURE": 5,
+        "FAIL": 1
+      },
+      "llm_ms": {
+        "n": 16,
+        "median": 4292.918,
+        "p95": 10487.049,
+        "min": 1606.138,
+        "max": 10487.049
+      },
+      "tts_first_chunk_ms": {
+        "n": 16,
+        "median": 609.522,
+        "p95": 876.081,
+        "min": 356.245,
+        "max": 876.081
+      },
+      "tts_audible_estimate_ms": {
+        "n": 16,
+        "median": 759.522,
+        "p95": 1026.081,
+        "min": 506.245,
+        "max": 1026.081
+      },
+      "text_start_to_audible_estimate_ms": {
+        "n": 16,
+        "median": 5016.211,
+        "p95": 11172.198,
+        "min": 2492.22,
+        "max": 11172.198
+      },
+      "timeouts": [
+        {
+          "sample": "cup",
+          "repeat": 1,
+          "duration_ms": 12001.636
+        },
+        {
+          "sample": "story",
+          "repeat": 2,
+          "duration_ms": 12014.288
+        },
+        {
+          "sample": "cup",
+          "repeat": 2,
+          "duration_ms": 12001.715
+        },
+        {
+          "sample": "story",
+          "repeat": 3,
+          "duration_ms": 12001.536
+        },
+        {
+          "sample": "cup",
+          "repeat": 3,
+          "duration_ms": 12001.499
+        }
+      ]
+    }
+  },
+  "rows": [
+    {
+      "repeat": 1,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:33:54.013117+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "error": "TimeoutError",
+      "llm_ms": 12013.324,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    },
+    {
+      "repeat": 1,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:34:07.028160+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 9632.604,
+      "usage": {
+        "prompt_tokens": 4271,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 799,
+        "completion_tokens_details": {
+          "reasoning_tokens": 775
+        },
+        "total_tokens": 5070
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_9d727e9afc9b47e1",
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 9729.351,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s20\",\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 740.474,
+      "tts_complete_ms": 6938.824,
+      "tts_audible_estimate_ms": 890.474,
+      "text_start_to_audible_estimate_ms": 10619.835,
+      "audio_seconds": 31.52,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "eddcfae7eb9c684682362932ec0ffccade819bad69c0d4260daa23bd2145d664",
+      "assessment": "PASS",
+      "assessment_reason": "故事与来源一致；本轮成功答案同时保留已纠正的1987年，没有把旧年份当作有效事实。"
+    },
+    {
+      "repeat": 1,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:34:24.706252+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 1789.803,
+      "usage": {
+        "prompt_tokens": 2928,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 76,
+        "completion_tokens_details": {
+          "reasoning_tokens": 58
+        },
+        "total_tokens": 3004
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_23a1435afe794db8"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 1845.317,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s14\"]}]}",
+      "tts_first_chunk_ms": 876.081,
+      "tts_complete_ms": 2193.558,
+      "tts_audible_estimate_ms": 1026.081,
+      "text_start_to_audible_estimate_ms": 2871.404,
+      "audio_seconds": 7.04,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "d7f48b936948706c22124f5802ec18800dd7509073704a226d2195d3bc15a294",
+      "assessment": "PASS",
+      "assessment_reason": "回答淡茶及不喜太甜，未扩张成健康要求。"
+    },
+    {
+      "repeat": 1,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:34:29.749459+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 904.861,
+      "usage": {
+        "prompt_tokens": 2881,
+        "total_tokens": 2902,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 2816
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_23a1435afe794db8",
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1026.686,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s14\",\"s31\"]}]}",
+      "tts_first_chunk_ms": 837.744,
+      "tts_complete_ms": 3150.264,
+      "tts_audible_estimate_ms": 987.744,
+      "text_start_to_audible_estimate_ms": 2014.44,
+      "audio_seconds": 11.04,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "9313ab4db5490eee4dab9f3db200b0072639457a54682c416451d2f1411520fb",
+      "assessment": "PASS",
+      "assessment_reason": "回答淡茶及不喜太甜，未扩张成健康要求。"
+    },
+    {
+      "repeat": 1,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:34:34.933088+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1612.246,
+      "usage": {
+        "prompt_tokens": 4321,
+        "total_tokens": 4342,
+        "completion_tokens": 21,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_18077b86331d4150",
+          "ev_ccdecc7f7eec4fc4"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1816.603,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s54\",\"s55\"]}]}",
+      "tts_first_chunk_ms": 688.297,
+      "tts_complete_ms": 2280.437,
+      "tts_audible_estimate_ms": 828.297,
+      "text_start_to_audible_estimate_ms": 2644.907,
+      "audio_seconds": 7.04,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "d19abd43150618b79f8d513d22aebf5f78f9f926b0c684f9abbf94b10b6872fc",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 1,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:34:40.034744+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 5474.013,
+      "usage": {
+        "prompt_tokens": 4368,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 2048,
+          "cached_tokens": 2048,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 506,
+        "completion_tokens_details": {
+          "reasoning_tokens": 485
+        },
+        "total_tokens": 4874
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_23a1435afe794db8",
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 5593.597,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s54\",\"s37\"]}]}",
+      "tts_first_chunk_ms": 415.454,
+      "tts_complete_ms": 2126.308,
+      "tts_audible_estimate_ms": 555.454,
+      "text_start_to_audible_estimate_ms": 6149.059,
+      "audio_seconds": 11.04,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "e1cb0648604bbd31bcf5d311c74c252f1ce6739890d5889c22ba5f073e5e87d0",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 1,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:34:48.760779+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 1870.266,
+      "usage": {
+        "prompt_tokens": 2056,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 85,
+        "completion_tokens_details": {
+          "reasoning_tokens": 67
+        },
+        "total_tokens": 2141
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 1966.369,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\"]}]}",
+      "tts_first_chunk_ms": 587.885,
+      "tts_complete_ms": 2286.779,
+      "tts_audible_estimate_ms": 727.885,
+      "text_start_to_audible_estimate_ms": 2694.263,
+      "audio_seconds": 7.68,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "6f3355d56d6244a791e3a803056fae38863aa7b9961bd8ff3da48c173ec5efc1",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 1,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:34:54.018110+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 6114.51,
+      "usage": {
+        "prompt_tokens": 2009,
+        "total_tokens": 2030,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 6228.665,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\",\"s17\"]}]}",
+      "tts_first_chunk_ms": 590.505,
+      "tts_complete_ms": 3472.372,
+      "tts_audible_estimate_ms": 720.505,
+      "text_start_to_audible_estimate_ms": 6949.177,
+      "audio_seconds": 17.92,
+      "leading_silence_ms": 100.0,
+      "audio_sha256": "573dea1798c8926b4e79483717d4c6ae865dadbcd68ed39f63312ef611f5f2b7",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 1,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:35:04.727991+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1494.791,
+      "usage": {
+        "prompt_tokens": 4227,
+        "total_tokens": 4251,
+        "completion_tokens": 24,
+        "prompt_tokens_details": {
+          "cached_tokens": 1024
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_c2a671db2ae34609",
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1661.734,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s21\",\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 644.195,
+      "tts_complete_ms": 5785.757,
+      "tts_audible_estimate_ms": 774.195,
+      "text_start_to_audible_estimate_ms": 2435.938,
+      "audio_seconds": 28.16,
+      "leading_silence_ms": 100.0,
+      "audio_sha256": "60835188a79183d6be56f99f02d0b8344b46b71f9dc586ee26e5ada1556067b4",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 1,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:35:13.184553+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 4495.193,
+      "usage": {
+        "prompt_tokens": 4274,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4096,
+          "cached_tokens": 4096,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 357,
+        "completion_tokens_details": {
+          "reasoning_tokens": 336
+        },
+        "total_tokens": 4631
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 4518.672,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 429.518,
+      "tts_complete_ms": 3908.296,
+      "tts_audible_estimate_ms": 579.518,
+      "text_start_to_audible_estimate_ms": 5098.197,
+      "audio_seconds": 17.92,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "44897975682755818c90cbef989cab19195924f62d4534bc358927a381f21280",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 1,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:35:22.620367+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 2498.819,
+      "usage": {
+        "prompt_tokens": 4270,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4096,
+          "cached_tokens": 4096,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 31,
+        "completion_tokens_details": {
+          "reasoning_tokens": 16
+        },
+        "total_tokens": 4301
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 2572.734,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 710.999,
+      "tts_complete_ms": 1028.762,
+      "tts_audible_estimate_ms": 870.999,
+      "text_start_to_audible_estimate_ms": 3443.74,
+      "audio_seconds": 2.24,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "2637b00021133d2b583107fd7c160728609a8dff78fa400df7f98708c4fd53c5",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 1,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:35:27.226478+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1383.679,
+      "usage": {
+        "prompt_tokens": 4223,
+        "total_tokens": 4238,
+        "completion_tokens": 15,
+        "prompt_tokens_details": {
+          "cached_tokens": 2048
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1477.114,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 612.826,
+      "tts_complete_ms": 970.191,
+      "tts_audible_estimate_ms": 762.826,
+      "text_start_to_audible_estimate_ms": 2239.948,
+      "audio_seconds": 2.08,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "c027951b9f10c58be6ea4bc55a268bb399bbaa6ec805d448cb7006c0f677a8c7",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 1,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:35:30.678460+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 5614.314,
+      "usage": {
+        "prompt_tokens": 2006,
+        "total_tokens": 2024,
+        "completion_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "所以这个旧杯子我换了新的以后也没急着扔。",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_860856ff282447cc"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 5725.006,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s10\"]}]}",
+      "tts_first_chunk_ms": 580.126,
+      "tts_complete_ms": 1123.389,
+      "tts_audible_estimate_ms": 720.126,
+      "text_start_to_audible_estimate_ms": 6445.141,
+      "audio_seconds": 3.36,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "79c493d4eee3fecc2d49660c48cab6a357d94976dabaa4e7bff0d8e073fe92b9",
+      "assessment": "PARTIAL",
+      "assessment_reason": "只说留下旧杯子，或补充杯沿缺口，遗漏站房喝水和一天忙完的记忆关联。"
+    },
+    {
+      "repeat": 1,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:35:38.531638+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "error": "TimeoutError",
+      "llm_ms": 12001.636,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    },
+    {
+      "repeat": 2,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:35:51.538791+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "error": "TimeoutError",
+      "llm_ms": 12014.288,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    },
+    {
+      "repeat": 2,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:36:04.557318+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 2980.494,
+      "usage": {
+        "prompt_tokens": 4224,
+        "total_tokens": 4248,
+        "completion_tokens": 24,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_9d727e9afc9b47e1",
+          "ev_43a06d5e1d6f4151",
+          "ev_9bf748bf5cc24b90"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 3154.13,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s20\",\"s33\",\"s24\"]}]}",
+      "tts_first_chunk_ms": 662.052,
+      "tts_complete_ms": 6875.168,
+      "tts_audible_estimate_ms": 792.052,
+      "text_start_to_audible_estimate_ms": 3946.192,
+      "audio_seconds": 32.16,
+      "leading_silence_ms": 100.0,
+      "audio_sha256": "d276af79587cfe23c6c3c78e0a1b8372d4058e70c00a503337e5907bce760267",
+      "assessment": "PASS",
+      "assessment_reason": "故事与来源一致；本轮成功答案同时保留已纠正的1987年，没有把旧年份当作有效事实。"
+    },
+    {
+      "repeat": 2,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:36:15.598913+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 893.263,
+      "usage": {
+        "prompt_tokens": 2881,
+        "total_tokens": 2899,
+        "completion_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 2560
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "我喝茶喜欢淡一点，太甜的我喝不惯。",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1040.258,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s31\"]}]}",
+      "tts_first_chunk_ms": 633.659,
+      "tts_complete_ms": 1314.789,
+      "tts_audible_estimate_ms": 803.659,
+      "text_start_to_audible_estimate_ms": 1843.928,
+      "audio_seconds": 3.36,
+      "leading_silence_ms": 140.0,
+      "audio_sha256": "0f4b3a2ac20f6d00dcb69ece3852c3b4942b78bce54fd93bdb35f3cb35051e86",
+      "assessment": "PASS",
+      "assessment_reason": "回答淡茶及不喜太甜，未扩张成健康要求。"
+    },
+    {
+      "repeat": 2,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:36:18.959393+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 4281.221,
+      "usage": {
+        "prompt_tokens": 2928,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 2816,
+          "cached_tokens": 2816,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 330,
+        "completion_tokens_details": {
+          "reasoning_tokens": 306
+        },
+        "total_tokens": 3258
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_23a1435afe794db8",
+          "ev_18077b86331d4150",
+          "ev_ccdecc7f7eec4fc4"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 4408.139,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s14\",\"s31\",\"s32\"]}]}",
+      "tts_first_chunk_ms": 688.423,
+      "tts_complete_ms": 3087.889,
+      "tts_audible_estimate_ms": 848.423,
+      "text_start_to_audible_estimate_ms": 5256.569,
+      "audio_seconds": 13.92,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "cc0533f9e3cb260cce768b61cd3a0fbe7c0336475c4336b42a6aaec5e425470e",
+      "assessment": "PASS",
+      "assessment_reason": "回答淡茶及不喜太甜，未扩张成健康要求。"
+    },
+    {
+      "repeat": 2,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:36:27.464591+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 7379.631,
+      "usage": {
+        "prompt_tokens": 4368,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4352,
+          "cached_tokens": 4352,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 519,
+        "completion_tokens_details": {
+          "reasoning_tokens": 501
+        },
+        "total_tokens": 4887
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "我喝茶喜欢淡一点，太甜的我喝不惯。",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 7467.825,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s54\"]}]}",
+      "tts_first_chunk_ms": 565.708,
+      "tts_complete_ms": 1180.041,
+      "tts_audible_estimate_ms": 705.708,
+      "text_start_to_audible_estimate_ms": 8173.54,
+      "audio_seconds": 3.68,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "df8d4df8ab22bbc046d674c486f18ff4ad0e0f36007a112ca5a7192d7b8d4c25",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 2,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:36:37.118243+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 977.077,
+      "usage": {
+        "prompt_tokens": 4321,
+        "total_tokens": 4339,
+        "completion_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_23a1435afe794db8"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1100.047,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s37\"]}]}",
+      "tts_first_chunk_ms": 563.775,
+      "tts_complete_ms": 2419.768,
+      "tts_audible_estimate_ms": 723.775,
+      "text_start_to_audible_estimate_ms": 1823.828,
+      "audio_seconds": 7.84,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "fa0f19291e495ab2a0a1b7a65a50c3bf3bef6f02f62d79ee22c0919de898c1b4",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 2,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:36:41.645620+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 883.833,
+      "usage": {
+        "prompt_tokens": 2009,
+        "total_tokens": 2027,
+        "completion_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1006.536,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\"]}]}",
+      "tts_first_chunk_ms": 577.408,
+      "tts_complete_ms": 2070.85,
+      "tts_audible_estimate_ms": 727.408,
+      "text_start_to_audible_estimate_ms": 1733.951,
+      "audio_seconds": 7.84,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "b905a4a2920357e51df65384b11dbffd559d27e5cc8f039444b2ae01ad44c7b8",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 2,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:36:45.729582+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 3691.499,
+      "usage": {
+        "prompt_tokens": 2056,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 2048,
+          "cached_tokens": 2048,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 294,
+        "completion_tokens_details": {
+          "reasoning_tokens": 276
+        },
+        "total_tokens": 2350
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 3762.011,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\"]}]}",
+      "tts_first_chunk_ms": 622.526,
+      "tts_complete_ms": 2144.482,
+      "tts_audible_estimate_ms": 762.526,
+      "text_start_to_audible_estimate_ms": 4524.544,
+      "audio_seconds": 7.68,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "7f4aca95af975c135e446ca97254c75240236b710c92a74e850cff95eab0cc13",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 2,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:36:52.648962+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 10378.994,
+      "usage": {
+        "prompt_tokens": 4274,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4224,
+          "cached_tokens": 4224,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 991,
+        "completion_tokens_details": {
+          "reasoning_tokens": 967
+        },
+        "total_tokens": 5265
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_c2a671db2ae34609",
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 10487.049,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s21\",\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 575.14,
+      "tts_complete_ms": 6173.31,
+      "tts_audible_estimate_ms": 685.14,
+      "text_start_to_audible_estimate_ms": 11172.198,
+      "audio_seconds": 29.76,
+      "leading_silence_ms": 80.0,
+      "audio_sha256": "b6ad301bec4cf1c16999258ecced727b31b378f6ebd43840c02064e4c938331d",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 2,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:37:10.319663+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 916.427,
+      "usage": {
+        "prompt_tokens": 4227,
+        "total_tokens": 4248,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1039.013,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 1188.645,
+      "tts_complete_ms": 4502.91,
+      "tts_audible_estimate_ms": 1338.645,
+      "text_start_to_audible_estimate_ms": 2377.665,
+      "audio_seconds": 17.92,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "95ff96083c1e73bfb186fa900501e3c36ed7ccd133c5a28811200c8a80a53b9e",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 2,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:37:16.871962+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1566.764,
+      "usage": {
+        "prompt_tokens": 4223,
+        "total_tokens": 4238,
+        "completion_tokens": 15,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1655.588,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 578.401,
+      "tts_complete_ms": 896.083,
+      "tts_audible_estimate_ms": 728.401,
+      "text_start_to_audible_estimate_ms": 2383.997,
+      "audio_seconds": 2.08,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "f801e1d496cb7e5a0d08259f306bc4b3f544d1a15bf608cdd64911ba45903cd6",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 2,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:37:20.430384+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 2476.026,
+      "usage": {
+        "prompt_tokens": 4270,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4224,
+          "cached_tokens": 4224,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 128,
+        "completion_tokens_details": {
+          "reasoning_tokens": 113
+        },
+        "total_tokens": 4398
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 2558.394,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 661.111,
+      "tts_complete_ms": 984.472,
+      "tts_audible_estimate_ms": 821.111,
+      "text_start_to_audible_estimate_ms": 3379.513,
+      "audio_seconds": 2.24,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "87f743f9d767dca4a65bd67986724173117cb1c548e0773424005de1bbe93fc3",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 2,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:37:24.981186+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "error": "TimeoutError",
+      "llm_ms": 12001.715,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    },
+    {
+      "repeat": 2,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:37:37.988774+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 475.14,
+      "usage": {
+        "prompt_tokens": 2006,
+        "total_tokens": 2027,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n“所以这个旧杯子我换了新的以后也没急着扔。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_554298c7655c4701",
+          "ev_860856ff282447cc"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 596.447,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s10\",\"s1\"]}]}",
+      "tts_first_chunk_ms": 634.813,
+      "tts_complete_ms": 2255.226,
+      "tts_audible_estimate_ms": 774.813,
+      "text_start_to_audible_estimate_ms": 1371.267,
+      "audio_seconds": 8.48,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "2a0f69bf8536428d56f4b4a20d42f854c816e323737838e814fc32296d28e996",
+      "assessment": "PARTIAL",
+      "assessment_reason": "只说留下旧杯子，或补充杯沿缺口，遗漏站房喝水和一天忙完的记忆关联。"
+    },
+    {
+      "repeat": 3,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:37:41.850136+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1004.341,
+      "usage": {
+        "prompt_tokens": 4224,
+        "total_tokens": 4248,
+        "completion_tokens": 24,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_9d727e9afc9b47e1",
+          "ev_43a06d5e1d6f4151",
+          "ev_9bf748bf5cc24b90"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1222.437,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s20\",\"s24\",\"s33\"]}]}",
+      "tts_first_chunk_ms": 553.51,
+      "tts_complete_ms": 6285.292,
+      "tts_audible_estimate_ms": 703.51,
+      "text_start_to_audible_estimate_ms": 1925.955,
+      "audio_seconds": 32.48,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "8ed7301a240ac7c060f79468f1714aab98114faba9a56b15d793dc69a2ac9580",
+      "assessment": "PASS",
+      "assessment_reason": "故事与来源一致；本轮成功答案同时保留已纠正的1987年，没有把旧年份当作有效事实。"
+    },
+    {
+      "repeat": 3,
+      "sample": "story",
+      "question": "请讲讲公交工作中的故事。",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:37:50.370711+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "679c7bcc14d86ed9fcf660fcd67b3c55c75ee8ca323a1ece869d7ea23b9393bb",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "error": "TimeoutError",
+      "llm_ms": 12001.536,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    },
+    {
+      "repeat": 3,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:38:03.379593+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 2447.456,
+      "usage": {
+        "prompt_tokens": 2928,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 2816,
+          "cached_tokens": 2816,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 89,
+        "completion_tokens_details": {
+          "reasoning_tokens": 74
+        },
+        "total_tokens": 3017
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 2448.797,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 380.885,
+      "tts_complete_ms": 739.687,
+      "tts_audible_estimate_ms": 560.885,
+      "text_start_to_audible_estimate_ms": 3009.689,
+      "audio_seconds": 2.24,
+      "leading_silence_ms": 150.0,
+      "audio_sha256": "7ed28bb027e8a6b911246d820bbe8321b1778ee121802b5127c4ab1ce6cdb8dc",
+      "assessment": "FAIL",
+      "assessment_reason": "有淡茶及不喜太甜的材料，却整题返回记录不足。"
+    },
+    {
+      "repeat": 3,
+      "sample": "tea",
+      "question": "你喜欢什么茶？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:38:07.575060+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "d81de3f08e8f1520825e65246cd42fbf57050f80eead1ede04fc888d90ee8512",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 895.479,
+      "usage": {
+        "prompt_tokens": 2881,
+        "total_tokens": 2902,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 2816
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_18077b86331d4150",
+          "ev_ccdecc7f7eec4fc4"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1067.576,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s31\",\"s32\"]}]}",
+      "tts_first_chunk_ms": 734.402,
+      "tts_complete_ms": 1976.116,
+      "tts_audible_estimate_ms": 914.402,
+      "text_start_to_audible_estimate_ms": 1981.986,
+      "audio_seconds": 6.72,
+      "leading_silence_ms": 150.0,
+      "audio_sha256": "5801a4e2549d4adf5734f666667c685b6b249789d40bbd9cf48e77fb481dd59c",
+      "assessment": "PASS",
+      "assessment_reason": "回答淡茶及不喜太甜，未扩张成健康要求。"
+    },
+    {
+      "repeat": 3,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:38:11.629336+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 982.75,
+      "usage": {
+        "prompt_tokens": 4321,
+        "total_tokens": 4342,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 4096
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_23a1435afe794db8",
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1128.533,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s37\",\"s54\"]}]}",
+      "tts_first_chunk_ms": 576.581,
+      "tts_complete_ms": 2731.869,
+      "tts_audible_estimate_ms": 746.581,
+      "text_start_to_audible_estimate_ms": 1875.125,
+      "audio_seconds": 10.72,
+      "leading_silence_ms": 140.0,
+      "audio_sha256": "69e0f473f848b11ed497fa9b1737dab4e2d9c189c11097be50b2c57f7c9f325f",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 3,
+      "sample": "follow",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:38:16.499054+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "82039971189269975ddbd09018af39fb9575ea00c72df97ab629e94d5b8eb318",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 8245.117,
+      "usage": {
+        "prompt_tokens": 4368,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4352,
+          "cached_tokens": 4352,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 744,
+        "completion_tokens_details": {
+          "reasoning_tokens": 726
+        },
+        "total_tokens": 5112
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "我喝茶喜欢淡一点，太甜的我喝不惯。",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_18077b86331d4150"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 8305.417,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s54\"]}]}",
+      "tts_first_chunk_ms": 758.351,
+      "tts_complete_ms": 1250.382,
+      "tts_audible_estimate_ms": 908.351,
+      "text_start_to_audible_estimate_ms": 9213.776,
+      "audio_seconds": 3.52,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "67f2f7a81d6150329d87d24e2a21185d475a98c512683d75fad182890a38ce11",
+      "assessment": "PASS",
+      "assessment_reason": "浓淡追问回答淡一点，未新增条件。"
+    },
+    {
+      "repeat": 3,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:38:27.064366+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 4063.082,
+      "usage": {
+        "prompt_tokens": 2056,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 2048,
+          "cached_tokens": 2048,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 81,
+        "completion_tokens_details": {
+          "reasoning_tokens": 63
+        },
+        "total_tokens": 2137
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 4177.698,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\"]}]}",
+      "tts_first_chunk_ms": 596.518,
+      "tts_complete_ms": 1890.678,
+      "tts_audible_estimate_ms": 756.518,
+      "text_start_to_audible_estimate_ms": 4934.225,
+      "audio_seconds": 7.68,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "15d9344a2f5a10b284b9c8dade77824558889003aabdf9282c2b48e623a2eeeb",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 3,
+      "sample": "year",
+      "question": "你第一次独立跑十二路是哪一年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:38:34.141702+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "c489fdd2058296a356def56704922f7a93568fd8c1622851ef8f1c5f85249a70",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 915.008,
+      "usage": {
+        "prompt_tokens": 2009,
+        "total_tokens": 2030,
+        "completion_tokens": 21,
+        "prompt_tokens_details": {
+          "cached_tokens": 1792
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1012.695,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s16\",\"s17\"]}]}",
+      "tts_first_chunk_ms": 777.282,
+      "tts_complete_ms": 4244.95,
+      "tts_audible_estimate_ms": 907.282,
+      "text_start_to_audible_estimate_ms": 1919.984,
+      "audio_seconds": 17.76,
+      "leading_silence_ms": 100.0,
+      "audio_sha256": "c93665adbce79c65b19be7854fcc0e20c2ee03e40ae1e68fb5080cd751afef51",
+      "assessment": "PASS",
+      "assessment_reason": "明确1987纠正1986，未编造月日。"
+    },
+    {
+      "repeat": 3,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:38:40.410992+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 11577.347,
+      "usage": {
+        "prompt_tokens": 4227,
+        "total_tokens": 4245,
+        "completion_tokens": 18,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 11767.882,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s25\"]}]}",
+      "tts_first_chunk_ms": 598.999,
+      "tts_complete_ms": 2530.684,
+      "tts_audible_estimate_ms": 758.999,
+      "text_start_to_audible_estimate_ms": 12526.888,
+      "audio_seconds": 9.92,
+      "leading_silence_ms": 130.0,
+      "audio_sha256": "f1a5aa36684f98acb544435d903e3a94e1ca574b889854d1929e8448cad5d835",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 3,
+      "sample": "old_year",
+      "question": "为什么有一条记录说是一九八六年？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:38:55.719184+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0d4fdb048820a94bca7cd75325fdb5aad17c82a311b35c5be9d097b3c4abca9b",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 6476.625,
+      "usage": {
+        "prompt_tokens": 4274,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4224,
+          "cached_tokens": 4224,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 591,
+        "completion_tokens_details": {
+          "reasoning_tokens": 570
+        },
+        "total_tokens": 4865
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_43a06d5e1d6f4151",
+          "ev_c33e6b4ace534c2a"
+        ],
+        "confidence": 0.8,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 6609.857,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s24\",\"s25\"]}]}",
+      "tts_first_chunk_ms": 356.245,
+      "tts_complete_ms": 3122.998,
+      "tts_audible_estimate_ms": 506.245,
+      "text_start_to_audible_estimate_ms": 7116.11,
+      "audio_seconds": 17.76,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "94983889ff83a7ae46a7a2c5c15f680093084f9ef57e50b95efc037d9255995a",
+      "assessment": "PASS",
+      "assessment_reason": "以记混相邻年份及后来查看证件解释旧记录；允许不重复正确年份数字，不要求答出题外信息。"
+    },
+    {
+      "repeat": 3,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:39:06.465098+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "first_content_ms": 1603.909,
+      "usage": {
+        "prompt_tokens": 4270,
+        "prompt_tokens_details": {
+          "cached_read_tokens": 4224,
+          "cached_tokens": 4224,
+          "cache_write_tokens": 0
+        },
+        "completion_tokens": 32,
+        "completion_tokens_details": {
+          "reasoning_tokens": 17
+        },
+        "total_tokens": 4302
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "deepseek-v4-1-flash-260910"
+      },
+      "llm_ms": 1606.138,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 756.074,
+      "tts_complete_ms": 1106.776,
+      "tts_audible_estimate_ms": 886.074,
+      "text_start_to_audible_estimate_ms": 2492.22,
+      "audio_seconds": 2.08,
+      "leading_silence_ms": 100.0,
+      "audio_sha256": "7d4b74ea2e8cc8f8a3a3ec153fe753c9f397bb9c890b86be769e463e8a2ffa07",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 3,
+      "sample": "unknown",
+      "question": "你的银行卡密码是多少？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:39:10.186131+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "0c449f47a774eec36d7b87eb1334eed7696ef297d269c3f018f93a9afb741ae8",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1645.537,
+      "usage": {
+        "prompt_tokens": 4223,
+        "total_tokens": 4238,
+        "completion_tokens": 15,
+        "prompt_tokens_details": {
+          "cached_tokens": 256
+        },
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1717.94,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":false,\"source_ids\":[]}]}",
+      "tts_first_chunk_ms": 612.276,
+      "tts_complete_ms": 1011.128,
+      "tts_audible_estimate_ms": 752.276,
+      "text_start_to_audible_estimate_ms": 2470.226,
+      "audio_seconds": 2.08,
+      "leading_silence_ms": 110.0,
+      "audio_sha256": "1369911cba74e40a6b097fbee41861a7e22753ff01d77ab81c5e1011b6af3781",
+      "assessment": "PASS",
+      "assessment_reason": "材料没有密码，明确未知。"
+    },
+    {
+      "repeat": 3,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "weixin",
+      "requested_model": "Deepseek-v4-flash",
+      "started_utc": "2026-10-15T02:39:13.925256+00:00",
+      "ok": true,
+      "tts_ok": true,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "Deepseek-v4-flash",
+      "first_content_ms": 1037.486,
+      "usage": {
+        "prompt_tokens": 2006,
+        "total_tokens": 2024,
+        "completion_tokens": 18,
+        "prompt_tokens_details": null,
+        "reasoning_tokens": 0
+      },
+      "finish_reason": "stop",
+      "answer": {
+        "answer": "所以这个旧杯子我换了新的以后也没急着扔。",
+        "response_type": "ORIGINAL",
+        "evidence_ids": [
+          "ev_860856ff282447cc"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "llm_ms": 1172.92,
+      "reasoning_chars": 0,
+      "raw_selection": "{\"points\":[{\"known\":true,\"source_ids\":[\"s10\"]}]}",
+      "tts_first_chunk_ms": 566.346,
+      "tts_complete_ms": 1266.999,
+      "tts_audible_estimate_ms": 716.346,
+      "text_start_to_audible_estimate_ms": 1889.272,
+      "audio_seconds": 3.2,
+      "leading_silence_ms": 120.0,
+      "audio_sha256": "b65e0e7a85392fca4407fd39c6602c3dc0bea32023bafc1f2b618992c779555f",
+      "assessment": "PARTIAL",
+      "assessment_reason": "只说留下旧杯子，或补充杯沿缺口，遗漏站房喝水和一天忙完的记忆关联。"
+    },
+    {
+      "repeat": 3,
+      "sample": "cup",
+      "question": "旧杯子为什么一直留着？",
+      "provider": "organizer",
+      "requested_model": "hackathon/v_model/deepseek-v4.1-flash",
+      "started_utc": "2026-10-15T02:39:17.374252+00:00",
+      "ok": false,
+      "tts_ok": false,
+      "messages_sha256": "dddee0f7e41afc6c8eb42f0ea75e53054f91ccca263f77d0fde311890eb80ebe",
+      "status": 200,
+      "response_model": "deepseek-v4-1-flash-260910",
+      "error": "TimeoutError",
+      "llm_ms": 12001.499,
+      "reasoning_chars": 0,
+      "raw_selection": "",
+      "assessment": "REQUEST_FAILURE",
+      "assessment_reason": "12秒共享期限内没有完成有效答案；不计为正确UNKNOWN。"
+    }
+  ]
+}

@@ -10,12 +10,16 @@ def sentences(text):
 class PreparedSpeech:
     def __init__(self,tts):
         self.tts=tts;self.text=None;self.task=None;self.queue=None
+        self.preparations=0;self.first_prepared_text=None
 
     async def prepare(self,text):
-        await self.close()
         parts=sentences(text)
         if not parts:return
+        if self.task is not None and parts[0]==self.text:return
+        await self.close()
         self.text=parts[0];self.queue=asyncio.Queue(maxsize=8)
+        self.preparations+=1
+        if self.first_prepared_text is None:self.first_prepared_text=self.text
         queue=self.queue;first=self.text
         async def produce():
             try:

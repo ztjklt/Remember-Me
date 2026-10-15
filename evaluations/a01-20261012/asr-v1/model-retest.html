@@ -1,0 +1,423 @@
+<!doctype html><meta charset="utf-8"><title>A01 固定7项小复验</title><style>body{font:16px/1.7 system-ui;max-width:1100px;padding:30px;margin:auto;background:#f8faf7}details{padding:16px;margin:15px 0;border:1px solid #bdcdbd;border-radius:10px;background:white}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere}.warn{color:#a43d2e}</style><h1>A01 固定7项小复验</h1>
+<p>v5 人物归纳 / v16 证据问答 · 全结果锁定 · 未修改机器稿 · 全部候选仍待审核</p>
+<pre>{
+  &quot;task_count&quot;: 7,
+  &quot;real_model_requests&quot;: 13,
+  &quot;http_200_requests&quot;: 13,
+  &quot;model_reported&quot;: &quot;Deepseek-v4-flash&quot;,
+  &quot;usage&quot;: {
+    &quot;prompt_tokens&quot;: 35486,
+    &quot;completion_tokens&quot;: 1687,
+    &quot;total_tokens&quot;: 37173
+  },
+  &quot;schema_valid_tasks&quot;: 7,
+  &quot;selected_QA_semantic_passes&quot;: 6,
+  &quot;selected_QA_tasks&quot;: 6,
+  &quot;profile_candidate_count&quot;: 8,
+  &quot;profile_candidates_supported_by_independent_text_review&quot;: 4,
+  &quot;profile_candidates_requiring_correction&quot;: 4,
+  &quot;confirmed_profile_candidates&quot;: 0,
+  &quot;extra_provider_calls&quot;: 0
+}</pre>
+<p class="warn">人物条目8项中4项需纠正。候选数量增加不等于效果改善；尤其第8项夜班角色交换必须拒绝。</p><h2>人物候选逐项与原始依据</h2>
+<details open><summary>1 reject_pending_correction</summary><pre>{
+  &quot;candidate_number&quot;: 1,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;IDENTITY&quot;,
+    &quot;statement&quot;: &quot;讲述者叫陈国梁，襄阳人，曾在机械厂当修机器的工人，退休多年，今年75岁，家里有老伴周桂芳、女儿小宁、儿子小川和外孙女豆豆。&quot;,
+    &quot;context&quot;: &quot;讲述者在开场自我介绍中说明了姓名、年龄、籍贯、职业与家庭成员。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_01-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_01-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_01&quot;,
+      &quot;text&quot;: &quot;我叫陈国梁，臣是尔东陈，国是国家的国，梁是房梁的梁。今年75 6了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班修机器的。你别看修机器听着简单，机器哪儿想的不对，得听出来，不能拿锤子乱敲。我退休好多年了，家里有老伴儿叫周桂芳，我们两个孩子，女儿小宁，儿子小川，还有个外孙女儿叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧，我不太会讲大道理，想到哪儿说到哪儿。&quot;,
+      &quot;sha256&quot;: &quot;efca4e89a0a575c034b3c10cccf0c5303dff46ac1edfd15b00264f85a26be0b9&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;reject_pending_correction&quot;,
+  &quot;independent_note&quot;: &quot;今年75岁把原ASR“75 6了”定为单一年龄；文字基线原本也不确定，不能确定化。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>2 supported_pending_technical_review</summary><pre>{
+  &quot;candidate_number&quot;: 2,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;,
+    &quot;statement&quot;: &quot;讲述者遇到问题时倾向于先查清故障原因再动手，而不是直接判定无救或更换；他自述在修机器和过日子上都是这样。&quot;,
+    &quot;context&quot;: &quot;讲述者回忆22岁进机械厂跟师傅学修机器，师傅让他先找老车床的毛病，他发现只是一颗小螺丝松了，并由此总结出遇事先弄明白哪里出了问题。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_02-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;habit&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_02-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_02&quot;,
+      &quot;text&quot;: &quot;我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。&quot;,
+      &quot;sha256&quot;: &quot;be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;supported_pending_technical_review&quot;,
+  &quot;independent_note&quot;: &quot;先查原因和修机器/过日子相通均有原ASR依据；候选不等于确认人格。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>3 reject_pending_correction</summary><pre>{
+  &quot;candidate_number&quot;: 3,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;,
+    &quot;statement&quot;: &quot;讲述者认为做事要认真，同时要顾着身体，不主张子女给他买东西或为回家而耽误工作。&quot;,
+    &quot;context&quot;: &quot;讲述者对小宁、小川说工作要认真做、身体也得顾着，别老想着给他买东西，忙不回来也没关系。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_09-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_09-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_09&quot;,
+      &quot;text&quot;: &quot;小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。&quot;,
+      &quot;sha256&quot;: &quot;b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;reject_pending_correction&quot;,
+  &quot;independent_note&quot;: &quot;原文忙可不回，没有明确“为回家而耽误工作”的因果；归纳又漏掉同段想念，应保留条件与并存愿望。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>4 supported_pending_technical_review</summary><pre>{
+  &quot;candidate_number&quot;: 4,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;PREFERENCES&quot;,
+    &quot;statement&quot;: &quot;讲述者不喜欢浪费，习惯随手关灯、东西坏了能修就修；但在给豆豆买画笔这类事情上会愿意花钱，认为有些东西错过就补不回来。&quot;,
+    &quot;context&quot;: &quot;讲述者自述不喜欢浪费、心疼换新东西的钱，同时提到给豆豆买了一套贵一点的好画笔，并说给孩子买这个不一样。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_06-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;habit&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_06-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_06&quot;,
+      &quot;text&quot;: &quot;我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;sha256&quot;: &quot;11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;supported_pending_technical_review&quot;,
+  &quot;independent_note&quot;: &quot;节约、可修就修、给孩子画笔的例外在同一来源中保留；未确定化“可能想起小宁”的原因。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>5 supported_pending_technical_review</summary><pre>{
+  &quot;candidate_number&quot;: 5,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;EXPRESSION&quot;,
+    &quot;statement&quot;: &quot;讲述者与不同对象说话方式不同：跟孩子会怕说重了，跟老杜则可以互相损、不用客气。&quot;,
+    &quot;context&quot;: &quot;讲述者提到小川打电话短，自己总说没事儿、你忙你的，挂了电话还想再听两句；而与认识几十年的老杜见面先互相损两句。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_05-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_05-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_05&quot;,
+      &quot;text&quot;: &quot;小川小时候皮得很拆，我收音机拆完装不回去，我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作忙，打电话也短，我老说没事儿，没事儿，你忙你的。其实挂了电话还想再听两句，老杜就不一样了。我跟他认识几十年，见面先互相损两句，他老说我抠门，我说你才抠上回吃面还是我付的钱。你看人跟人说话是不一样的，跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+      &quot;sha256&quot;: &quot;80868e5191ab1ae58073251af8ba3d61f7070de35c8f6b629b79ccb1e8f57155&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;supported_pending_technical_review&quot;,
+  &quot;independent_note&quot;: &quot;跟孩子怕说重、与老杜互损均明确保留。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>6 supported_pending_technical_review</summary><pre>{
+  &quot;candidate_number&quot;: 6,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;,
+    &quot;statement&quot;: &quot;讲述者曾以“学美术以后靠什么吃饭、读稳当专业好”为由不同意小宁学美术；后来他反思自己可能做错了，并认为不能替孩子把路全选了。&quot;,
+    &quot;context&quot;: &quot;讲述者回忆小宁初中时想学美术，自己没答应，小宁哭着收起画纸；后来收到小宁画的老房子并一直挂着，他说到现在也不知道该怎么跟小宁说，当年可能做错了。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_04-asr&quot;,
+      &quot;A01_09-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_04-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_04&quot;,
+      &quot;text&quot;: &quot;小宁小时候喜欢画画，画的挺像呀。他上初中的时候说想去学美术，我没答应。我那时候就想学那个以后靠什么吃饭，还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事儿我一直记得，后来他工作了有一年，送我一张画，是咱们家老房子，我看了半天没说什么就挂起来了。我到现在也不知道该怎么跟他说，当年我可能做错了，我不是不相信他，我是怕他以后吃苦，可怕归怕，也不能替他把路全选了。&quot;,
+      &quot;sha256&quot;: &quot;2ae635dc909a78d4be66ca4ff558e6b37f252e1c8d3b74273f493ae8ebeb188a&quot;
+    },
+    {
+      &quot;evidence_id&quot;: &quot;A01_09-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_09&quot;,
+      &quot;text&quot;: &quot;小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。&quot;,
+      &quot;sha256&quot;: &quot;b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;supported_pending_technical_review&quot;,
+  &quot;independent_note&quot;: &quot;旧时反对、后来“可能做错了”与不能替孩子选路同时保留，沿用ASR“小宁”而未静默改姓名。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>7 reject_pending_correction</summary><pre>{
+  &quot;candidate_number&quot;: 7,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;,
+    &quot;statement&quot;: &quot;讲述者自述近两年出现忘事的情况，比如买盐时想不起要买什么、钥匙放冰箱上面找了半天并错怪桂芳；后来去医院，医生说是阿尔斯海默病，他担心哪天认不出家里人。&quot;,
+    &quot;context&quot;: &quot;讲述者回忆忘事和错怪桂芳的经历，以及就医被告知阿尔斯海默病后的感受，并提到桂芳说会慢慢提醒他、他在旁边心里踏实些。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_07-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_07-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_07&quot;,
+      &quot;text&quot;: &quot;前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。&quot;,
+      &quot;sha256&quot;: &quot;0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;reject_pending_correction&quot;,
+  &quot;independent_note&quot;: &quot;“错怪桂芳”把当时指责提升成已证实错误；原文未证明她到底动没动东西。疾病拼写为机器稿原样，仍待核对。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<details open><summary>8 reject_pending_correction</summary><pre>{
+  &quot;candidate_number&quot;: 8,
+  &quot;actual_candidate&quot;: {
+    &quot;domain&quot;: &quot;RELATIONSHIPS&quot;,
+    &quot;statement&quot;: &quot;讲述者与桂芳共同生活近50年，记得她年轻时上夜班、独自带两个孩子还要教书；现在桂芳提醒他吃药、带他去医院，他有话不一定当面说得出，也希望她别把什么事都揽着。&quot;,
+    &quot;context&quot;: &quot;讲述者对桂芳说的一段话中，回顾两人近50年的生活、自己的脾气和忘记事情时的请求，并提到那只蓝色搪瓷被别扔。&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_08-asr&quot;,
+      &quot;A01_03-asr&quot;
+    ],
+    &quot;counter_evidence_ids&quot;: [],
+    &quot;kind&quot;: &quot;trait&quot;
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_08-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_08&quot;,
+      &quot;text&quot;: &quot;桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。&quot;,
+      &quot;sha256&quot;: &quot;9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431&quot;
+    },
+    {
+      &quot;evidence_id&quot;: &quot;A01_03-asr&quot;,
+      &quot;episode_id&quot;: &quot;A01_03&quot;,
+      &quot;text&quot;: &quot;桂芳是76年认识的，朋友介绍我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油，他看见了也没笑我，就递给我一张纸说先擦擦吧。我那时候嘴笨，只会问他吃饭没有。后来她跟我说，觉得我这个人老实。我说老师有什么好？她说老师也挺好，我们77年结婚日子也不是没吵过，他嫌我什么都憋心里，我嫌他老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放那儿都找不到。&quot;,
+      &quot;sha256&quot;: &quot;8c6f971efa73557bdefafb9e5df33f409fd4232a286b5804660d93026e78cf73&quot;
+    }
+  ],
+  &quot;independent_status&quot;: &quot;reject_pending_correction&quot;,
+  &quot;independent_note&quot;: &quot;“她年轻时上夜班”与来源“我年轻时上夜班，你一个人带两个孩子”相反，交换讲述者与桂芳行动归属。&quot;,
+  &quot;confirmed&quot;: false
+}</pre></details>
+<h2>ASR / 原口述同题对照</h2>
+<details open><summary>asr-qa-N01</summary><pre>{
+  &quot;task_id&quot;: &quot;asr-qa-N01&quot;,
+  &quot;source&quot;: &quot;asr&quot;,
+  &quot;question_id&quot;: &quot;N01&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+      &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;confidence&quot;: 0.0,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问资料能否证明桂芳真的动了讲述者的东西。s7中讲述者说钥匙放冰箱上找了半天，自己当时还跟桂芳发脾气，说她冻（动）他东西；随后去医院得知患阿尔茨海默病。这只是讲述者当时的怀疑/发脾气，不是桂芳确实动过东西的证据。材料中无任何确认桂芳动过钥匙的内容，也无独立事实支持该怀疑。因此不能证明桂芳真的动了，known=false、UNKNOWN合格。选段和答案未把怀疑写成事实，人物归属正确，无需修正。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: []
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;当时指责未证明妻子行为，返回UNKNOWN；未反向断言妻子肯定没动。&quot;,
+  &quot;source_review_status&quot;: &quot;unreviewed_machine_ASR&quot;
+}</pre></details>
+<details open><summary>asr-qa-Q04</summary><pre>{
+  &quot;task_id&quot;: &quot;asr-qa-Q04&quot;,
+  &quot;source&quot;: &quot;asr&quot;,
+  &quot;question_id&quot;: &quot;Q04&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;他为什么给豆豆买贵画笔？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+      &quot;evidence_ids&quot;: [
+        &quot;A01_06-asr&quot;
+      ],
+      &quot;confidence&quot;: 0.8,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问的是给豆豆买贵画笔的原因。s6中本人说“给孩子买这个不一样”“可能是想起小宁小时候那回事”“有些东西错过了，后面拿钱也补不回来”，直接回应了原因，且用“可能”表达不确定，引用保留完整。s4补充小宁学画被拒的背景，但s6已足。所问事实可见且有依据，选段未截断否定或条件，人物归属清楚，无矛盾。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: [
+      {
+        &quot;evidence_id&quot;: &quot;A01_06-asr&quot;,
+        &quot;excerpt&quot;: &quot;我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+        &quot;source_type&quot;: &quot;SUBJECT&quot;,
+        &quot;episode_id&quot;: &quot;A01_06&quot;,
+        &quot;recorded_at&quot;: null,
+        &quot;span_start&quot;: 0,
+        &quot;span_end&quot;: 163,
+        &quot;temporal_context&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;保留“说不清/可能”，未确定画笔原因；ASR版姓名和他/她错字原样保留，尚未经听读核对。&quot;,
+  &quot;source_review_status&quot;: &quot;unreviewed_machine_ASR&quot;
+}</pre></details>
+<details open><summary>asr-qa-Q06</summary><pre>{
+  &quot;task_id&quot;: &quot;asr-qa-Q06&quot;,
+  &quot;source&quot;: &quot;asr&quot;,
+  &quot;question_id&quot;: &quot;Q06&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;第一次见妻子是星期几？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+      &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;confidence&quot;: 0.0,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问第一次见妻子是星期几。s3只说明76年经朋友介绍在她学校门口第一次见面，未提星期几；s10本人明确说“我跟桂芳第一次见面到底是星期几，我真不知道”。因此所问事实确无依据，known=false、回答“现有记录还不足以确定”合理，不应判unsupported_unknown或irrelevant。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: []
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;日期未明，返回UNKNOWN，未猜测星期。&quot;,
+  &quot;source_review_status&quot;: &quot;unreviewed_machine_ASR&quot;
+}</pre></details>
+<details open><summary>script-qa-N01</summary><pre>{
+  &quot;task_id&quot;: &quot;script-qa-N01&quot;,
+  &quot;source&quot;: &quot;script&quot;,
+  &quot;question_id&quot;: &quot;N01&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+      &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;confidence&quot;: 0.0,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问资料能否证明桂芳真动了讲述者的东西。可见来源中，s7 只显示讲述者“还跟桂芳发脾气，说她动我东西”，这是讲述者的指责，并非桂芳确实动过东西的证据；其余来源也没有直接证据证明桂芳动了他的东西。因此现有记录无法证明该事实，known=false 且回答“现有记录还不足以确定。”合格。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: []
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;当时指责未证明妻子行为，返回UNKNOWN；未反向断言妻子肯定没动。&quot;,
+  &quot;source_review_status&quot;: &quot;spoken_script_text_baseline&quot;
+}</pre></details>
+<details open><summary>script-qa-Q04</summary><pre>{
+  &quot;task_id&quot;: &quot;script-qa-Q04&quot;,
+  &quot;source&quot;: &quot;script&quot;,
+  &quot;question_id&quot;: &quot;Q04&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;他为什么给豆豆买贵画笔？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+      &quot;evidence_ids&quot;: [
+        &quot;A01_06-script&quot;
+      ],
+      &quot;confidence&quot;: 0.8,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问给豆豆买贵画笔的原因。s6明确说豆豆喜欢画画、给她买好画笔，并说“可能是想起晓宁小时候那回事”“有些东西错过了，后面拿钱也补不回来”，指向因晓宁当年学美术被自己拒绝的遗憾而补偿。答案引用了该段并覆盖原因，未截断否定或条件，人物归属正确。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: [
+      {
+        &quot;evidence_id&quot;: &quot;A01_06-script&quot;,
+        &quot;excerpt&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+        &quot;source_type&quot;: &quot;SUBJECT&quot;,
+        &quot;episode_id&quot;: &quot;A01_06&quot;,
+        &quot;recorded_at&quot;: null,
+        &quot;span_start&quot;: 0,
+        &quot;span_end&quot;: 162,
+        &quot;temporal_context&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;原口述文字同样保留“说不清/可能”。&quot;,
+  &quot;source_review_status&quot;: &quot;spoken_script_text_baseline&quot;
+}</pre></details>
+<details open><summary>script-qa-Q06</summary><pre>{
+  &quot;task_id&quot;: &quot;script-qa-Q06&quot;,
+  &quot;source&quot;: &quot;script&quot;,
+  &quot;question_id&quot;: &quot;Q06&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;schema_and_evidence_valid&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;actual_result&quot;: {
+    &quot;question&quot;: &quot;第一次见妻子是星期几？&quot;,
+    &quot;answer&quot;: {
+      &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+      &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;confidence&quot;: 0.0,
+      &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+    },
+    &quot;review&quot;: {
+      &quot;valid&quot;: true,
+      &quot;reasoning&quot;: &quot;问题问第一次见妻子是星期几。s3只说明七六年认识、在桂芳学校门口第一次见面，未提星期几；s10本人明确说第一次见面到底是星期几真不知道。现有材料无该事实，已知部分也不能回答星期几。UNKNOWN合理，无引用需求。&quot;,
+      &quot;failure_codes&quot;: [],
+      &quot;replacement&quot;: null
+    },
+    &quot;original_evidence&quot;: []
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_selected_question&quot;,
+  &quot;independent_note&quot;: &quot;日期未明，返回UNKNOWN，未猜测星期。&quot;,
+  &quot;source_review_status&quot;: &quot;spoken_script_text_baseline&quot;
+}</pre></details>

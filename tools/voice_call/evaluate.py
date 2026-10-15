@@ -67,7 +67,8 @@ async def main(args):
                     if ws: await ws.close()
                     call=ok(await http.post(f'/api/v1/subjects/{subject}/voice-sessions',json=dict(
                         cloud_consent_id=consent,mode=args.mode,policy='continuous-voice-v1',
-                        cloud_asr_allowed=True,cloud_tts_allowed=True)))
+                        cloud_asr_allowed=True,cloud_tts_allowed=True,response_speed=args.response_speed,
+                        engine=args.engine)))
                     ws=await connect(args.base.replace('http','ws',1)+call['websocket_path'],
                         additional_headers={'Authorization':'Bearer '+token},proxy=None,max_size=1_000_000,
                         **({'ssl':tls} if args.base.startswith('https://') else {}))
@@ -76,7 +77,9 @@ async def main(args):
                 digest=hashlib.sha256(question.encode()).hexdigest()[:16]
                 source=out/(digest+'.wav')
                 if not source.exists():
-                    frames=[pcm async for pcm in XiaomiRealtime(settings).stream(question)]
+                    provider=XiaomiRealtime(settings)
+                    try:frames=[pcm async for pcm in provider.stream(question)]
+                    finally:await provider.close()
                     with wave.open(str(source),'wb') as f:
                         f.setparams((1,2,24000,0,'NONE','not compressed'));f.writeframes(b''.join(frames))
                 pcm=subprocess.check_output(['/usr/bin/ffmpeg','-v','error','-i',str(source),'-f','s16le','-ar','16000','-ac','1','pipe:1'])
@@ -111,7 +114,10 @@ async def main(args):
                                     row['interrupt_ack_ms']=round((time.monotonic()-started)*1000)-elapsed
                                     row['retired_turn']=old;row['ok']=True;break
                                 await ws.send(json.dumps({'type':'playback','turn_id':event['turn_id'],'samples':event['samples']}))
-                            elif kind=='answer_ready': row['answer']=event['answer'];row['reviewed_ms']=event['reviewed_ms']
+                            elif kind=='answer_ready':
+                                row['answer']=event['answer'];row['response_speed']=event.get('response_speed','reviewed')
+                                row['answer_ready_ms']=event.get('answer_ready_ms',event.get('reviewed_ms'))
+                                if 'reviewed_ms' in event:row['reviewed_ms']=event['reviewed_ms']
                             elif kind=='transcript' and event['final']:row['asr']=event['text'];row['asr_final_after_input_end_ms']=round((time.monotonic()-(speech_end or started))*1000)
                             row['events'].append(dict(event,client_elapsed_ms=elapsed))
                             if kind=='audio_end':row['ok']=True;break
@@ -137,6 +143,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8895')
     p.add_argument('--env',required=True);p.add_argument('--credentials',required=True)
     p.add_argument('--mode',choices=['evidence','persona'],default='evidence')
+    p.add_argument('--response-speed',choices=['reviewed','fast','streamed'],default='reviewed')
+    p.add_argument('--engine',choices=['pipeline','step_realtime'],default='pipeline')
     p.add_argument('--role',choices=['owner','reader'],default='owner')
     p.add_argument('--ca-file')
     p.add_argument('--output',required=True);p.add_argument('--limit',type=int,default=15)

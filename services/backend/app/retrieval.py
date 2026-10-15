@@ -75,11 +75,17 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
         altered = altered_story_ids(session, candidate_ids)
         query = query.where(Episode.episode_id.not_in(altered))
     rows = session.execute(query).all()
+    from .materials import effective_materials
+    effective = {c['memory_item_id'] for c in effective_materials(
+        session, subject_id, {ep.episode_id for _, ep in rows}, enforce_budget=False, include_gaps=False)}
+    rows = [(item, ep) for item, ep in rows if item.memory_item_id in effective]
     # Reader derivation starts from visible memories only. Never reuse an owner
     # aggregate: even a trait attached to one public memory may encode a secret.
     traits = [] if reader else list(session.scalars(select(PersonTrait).where(PersonTrait.subject_id == subject_id)))
     facts = [] if reader else list(session.scalars(select(GraphFact).where(GraphFact.subject_id == subject_id)))
     live = {item.memory_item_id for item, _ in rows}
+    traits = [t for t in traits if set(t.memory_item_ids).issubset(live)]
+    facts = [f for f in facts if set(f.memory_item_ids).issubset(live)]
     for stale in ([] if reader else session.scalars(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id))):
         if stale.memory_item_id not in live:
             session.delete(stale)

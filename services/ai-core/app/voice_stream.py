@@ -7,6 +7,8 @@ from fastapi.responses import StreamingResponse
 from .cancellation import cancelled_request, check_cancelled
 
 draft_observer=ContextVar('voice_draft_observer',default=None)
+semantic_review_required=ContextVar('voice_semantic_review_required',default=True)
+generation_streamed=ContextVar('voice_generation_streamed',default=False)
 
 
 def prepare_draft(output):
@@ -16,7 +18,7 @@ def prepare_draft(output):
         observer({'type':'draft','text':output.answer})
 
 
-def voice_response(function):
+def voice_response(function, *, review_required=True,stream_generation=False):
     async def events():
         loop=asyncio.get_running_loop();queue=asyncio.Queue(maxsize=4);cancelled=Event()
         def emit(event):
@@ -25,12 +27,20 @@ def voice_response(function):
             if not cancelled.is_set():queue.put_nowait(event)
         def run():
             token=cancelled_request.set(cancelled);draft_token=draft_observer.set(emit)
+            review_token=semantic_review_required.set(review_required)
+            stream_token=generation_streamed.set(stream_generation)
             try:
                 result=function();check_cancelled()
-                emit({'type':'final','result':result.model_dump(mode='json')})
+                value=result.model_dump(mode='json')
+                if not review_required:
+                    value.pop('coverage',None);value.pop('omitted_points',None)
+                emit({'type':'final','result':value,
+                      'semantic_review':'performed' if review_required else 'skipped'})
             except Exception as exc:
                 emit({'type':'error','code':getattr(exc,'code','AI_OUTPUT_INVALID')})
             finally:
+                generation_streamed.reset(stream_token)
+                semantic_review_required.reset(review_token)
                 draft_observer.reset(draft_token);cancelled_request.reset(token)
         task=asyncio.create_task(asyncio.to_thread(run))
         try:

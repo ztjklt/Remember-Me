@@ -155,7 +155,8 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
 
 
 def generate_answer(subject_id, payload, request, actor, session, *, voice_context=None,
-                    cancel_check=lambda: None,on_retrieved=lambda: None):
+                    cancel_check=lambda: None,on_retrieved=lambda: None,material_cache=None,
+                    on_source_prepared=None,selection_cache=None,prepare_only=False,context_only=False):
     cancel_check()
     actor_id = actor.actor_id
     from ..narrative import visible_records,contextual_sources
@@ -163,6 +164,7 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
     from ..person_context import persona_understandings
     loaded={}
     def load_snapshot():
+        cancel_check()
         # Transactions guard snapshots, never the retrieval or model call.
         publication_lock(session,subject_id)
         require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
@@ -170,6 +172,8 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         reader=not is_owner(session,subject_id,actor_id)
         if reader: ids-=altered_story_ids(session,ids)
         current_basis=source_basis(session,subject_id)
+        cache_key=(subject_id,actor_id,payload.cloud_consent_id,payload.retrieval_mode,
+                   current_basis,tuple(sorted(ids)),reader)
         # Request-local, only after fresh authorization and a complete source
         # fingerprint under the publication lock. Never cache across actors or
         # skip the post-retrieval check. This avoids rebuilding the same archive
@@ -179,6 +183,11 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
                 and loaded['ids']==ids and loaded['reader']==reader):
             session.commit()
             return previous
+        cached=material_cache.get(cache_key) if material_cache is not None else None
+        if cached is not None:
+            loaded.clear();loaded.update(cached)
+            session.commit()
+            return loaded['snapshot']
         candidates=effective_materials(session,subject_id,ids,enforce_budget=payload.retrieval_mode=='full')
         sources=contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
         organized=[r for r in visible_records(session,subject_id,actor_id,sources=sources)
@@ -213,6 +222,9 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         snapshot=AuthorizedSnapshot(subject_id,source_basis(session,subject_id),tuple(wrapped),tuple(groups))
         loaded.update(ids=ids,reader=reader,candidates=candidates,sources=sources,
                       organized=organized,understandings=understandings,snapshot=snapshot)
+        if material_cache is not None:
+            material_cache.put((subject_id,actor_id,payload.cloud_consent_id,payload.retrieval_mode,
+                snapshot.source_basis,tuple(sorted(ids)),reader),loaded)
         session.commit()
         return snapshot
     snapshot=load_snapshot()
@@ -226,11 +238,18 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
             previous=voice_context[-1]['question']
             if len(previous)+len(retrieval_question)<980:
                 retrieval_question=previous+'；追问：'+retrieval_question
-        selection=retrieve_context(retrieval_question,load_snapshot,provider)
+        selection_key=(subject_id,actor_id,payload.cloud_consent_id,payload.mode,snapshot.signature)
+        selection=selection_cache.get(selection_key,retrieval_question) if selection_cache is not None else None
+        prefetched=selection is not None
+        if selection is None:
+            selection=retrieve_context(retrieval_question,load_snapshot,provider)
+            cancel_check()
+            if selection_cache is not None:selection_cache.put(selection_key,retrieval_question,selection)
         retrieval_audit={'mode':'local','source_basis':selection.source_basis,
             'retriever_version':selection.retriever_version,'hit_ids':list(selection.hit_ids),
             'selected_evidence_ids':list(selection.selected_evidence_ids),
-            'expanded_ids':list(selection.expanded_ids),'character_count':selection.character_count}
+            'expanded_ids':list(selection.expanded_ids),'character_count':selection.character_count,
+            'prefetched_selection':prefetched}
         selected=set(selection.selected_evidence_ids)
         candidates=[dict(c,evidence=[e for e in c['evidence'] if e['evidence_id'] in selected])
                     for c in loaded['candidates'] if any(e['evidence_id'] in selected for e in c['evidence'])]
@@ -301,12 +320,29 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
         raise SourceChanged('资料或授权已变化，请重新提问。')
     require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
     session.commit()
+    if prepare_only:return {'prepared':True,'retrieval':retrieval_audit}
+    if context_only:
+        # Internal voice adapter only. The public question schema cannot request
+        # this payload. All retrieval, revision and permission checks above apply.
+        if payload.mode=='persona' and style_over_budget:
+            raise ContextTooLarge('表达范例超出本轮范围，请缩小问题范围。')
+        return dict(question=question,mode=payload.mode,candidates=limited,
+            understandings=understandings if payload.mode=='persona' else [],
+            examples=examples if payload.mode=='persona' else [],contributions=contributions,
+            dialogue_context=voice_context or [],source_version=basis,
+            evidence=list(twin_sources.values()),retrieval=retrieval_audit)
     if not limited and not contributions:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
+        if on_source_prepared is not None and payload.mode=='evidence':
+            # One private authorized retrieval-hit synthesis can overlap LLM
+            # selection. It never chooses or publishes an answer.
+            hit=next((twin_sources[i] for i in retrieval_audit.get('hit_ids',[])
+                      if i in twin_sources and twin_sources[i]['source_type']=='SUBJECT'),None)
+            if hit is not None and len(hit['excerpt'])<=500:on_source_prepared(hit['excerpt'])
         try:
             if payload.mode=='persona':
                 model_input=dict(question=question,candidates=limited,
@@ -369,6 +405,10 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
     if payload.mode=='persona' and kind=='UNKNOWN' and (cited or used_traits or used_notes):
         raise TwinFailed('未知回答不能携带已被删除的事实或人物依据。')
     review_summary['retrieval']=retrieval_audit
+    if 'semantic_review' in result:
+        if result['semantic_review'] not in {'performed','skipped'}:
+            raise TwinFailed('回答核对状态无效。')
+        review_summary['semantic_review']=result['semantic_review']
     if (kind not in {"ORIGINAL", "SIMULATION", "UNKNOWN"} or not isinstance(cited, list)
             or not isinstance(content, str) or len(content) > 500
             or not isinstance(confidence, (float, int)) or not 0 <= confidence <= 1

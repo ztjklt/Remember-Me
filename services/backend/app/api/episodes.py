@@ -83,6 +83,8 @@ class TranscriptReview(BaseModel):
     transcript: str | None = None
     stt_model_version: str | None = None
     supplement: str = ''
+    machine_transcript: str | None = None
+    automatic_correction: dict | None = None
 
 
 class ConfirmTranscript(BaseModel):
@@ -361,6 +363,17 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
     capture_metadata.pop('client_asr_receipt', None)
     capture_metadata.pop('asr_call', None)
     capture_metadata.pop('transcript_normalization', None)
+    capture_metadata.pop('transcript_correction_receipt', None)
+    capture_metadata.pop('automatic_correction', None)
+    requested_correction = capture_metadata.get('transcript_correction_policy')
+    if requested_correction is not None:
+        from ..transcript_correction import correction_policy, SOURCES
+        policy = correction_policy(settings)
+        if (not policy or requested_correction != policy or client_transcript is not None
+                or str(form.source) not in SOURCES):
+            raise RequestInvalid('自动纠错配置已变化，请刷新后再转文字。')
+        capture_metadata['transcript_correction_receipt'] = {
+            'policy':policy, 'actor_id':actor.actor_id, 'confirmed_at':utcnow().isoformat()}
     if settings.stt_backend == 'client' and client_transcript is None:
         raise RequestInvalid('服务器采用客户端转写模式，请先在客户端转写，再上传原音和机器稿进行核对。')
     from ..cloud_asr import CLOUD_BACKENDS
@@ -538,6 +551,9 @@ def read_transcript_review(
             if state == "reviewing" and episode.transcript is not None else None,
         stt_model_version=episode.stt_model_version,
         supplement=(episode.capture_metadata or {}).get('review_supplement',''),
+        machine_transcript=episode.stt_transcript if state == 'reviewing' else None,
+        automatic_correction=(episode.capture_metadata or {}).get('automatic_correction')
+            if state == 'reviewing' else None,
     )
 
 

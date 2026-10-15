@@ -1,0 +1,3763 @@
+{
+  "description": "虚构人物，原始数据库的隔离副本。技术人员按创作稿模拟记录者修订；不是真人听读确认。",
+  "corrections": [
+    {
+      "id": "mi_5a84b104871c4c86",
+      "before": "本人趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+      "after": "讲述者听了半天，发现不是电机坏了，而是一颗小螺丝松了。",
+      "status": 200
+    },
+    {
+      "id": "mi_ee57d7deebd047f0",
+      "before": "本人有时候太认私理，别人劝换个办法还不爱听，现在想想不一定都是对的。",
+      "after": "讲述者承认自己有时候太认死理，别人劝换个办法还不爱听；现在回想，这样不一定都是对的。",
+      "status": 200
+    },
+    {
+      "id": "mi_bfe4b8029343408f",
+      "before": "我曾在找不到钥匙时误怪桂芳。",
+      "after": "讲述者找不到钥匙时，曾向桂芳发脾气，指责她动了自己的东西；这段讲述没有说明究竟是谁动了钥匙，不能确定桂芳是否被错怪。",
+      "status": 200
+    },
+    {
+      "id": "mi_20c90a8cee0b4031",
+      "before": "说话人对桂芳说，两人一起过了快50年，自己没有多少轻浮。",
+      "after": "讲述者对桂芳说，她和自己共同生活了快五十年，没有享到多少清福。",
+      "status": 200
+    },
+    {
+      "id": "mi_8a0322d51dfd4d96",
+      "before": "说话人希望桂芳不要老把什么事都揽着，该谢就谢。",
+      "after": "讲述者希望桂芳不要什么事都揽着，该歇就歇。",
+      "status": 200
+    },
+    {
+      "id": "mi_d4f0e356002a4e98",
+      "before": "说话人表示那个蓝色搪瓷被别扔，自己用了好多年顺手。",
+      "after": "讲述者希望保留那个蓝色搪瓷杯，因为用了好多年，已经用顺手了。",
+      "status": 200
+    }
+  ],
+  "checks": {
+    "original_transcripts_preserved": true,
+    "original_asr_preserved": true,
+    "old_error_absent": {
+      "误怪桂芳": true,
+      "电击": true,
+      "认私理": true,
+      "轻浮": true,
+      "该谢": true,
+      "搪瓷被": true
+    },
+    "unrelated_fact_preserved": true
+  },
+  "answers": [
+    {
+      "question": "桂芳究竟有没有动过他的钥匙？",
+      "stage": "before",
+      "status": "ok",
+      "output": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 18.335
+    },
+    {
+      "question": "桂芳究竟有没有动过他的钥匙？",
+      "stage": "after",
+      "status": "ok",
+      "output": {
+        "answer": "现有记录还不足以确定。",
+        "response_type": "UNKNOWN",
+        "evidence_ids": [],
+        "confidence": 0.0,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 48.791
+    },
+    {
+      "question": "他在给桂芳的话里，说谁这些年没有享到多少清福？",
+      "stage": "after",
+      "status": "ok",
+      "output": {
+        "answer": "根据现有材料，相关表述如下：\n本人书面说明：“讲述者对桂芳说，她和自己共同生活了快五十年，没有享到多少清福。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_6e393cc8908b4e32"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 16.27
+    },
+    {
+      "question": "他在给桂芳的话里，说谁这些年没有享到多少清福？",
+      "stage": "before",
+      "status": "failed",
+      "error_type": "AIOutputInvalid",
+      "duration_seconds": 3.196
+    },
+    {
+      "question": "修老车床时究竟哪里出了问题？他后来还反思了自己什么？",
+      "stage": "before",
+      "status": "ok",
+      "output": {
+        "answer": "根据现有材料，相关表述如下：\n核对文字：“那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。”\n核对文字：“我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。”\n核对文字：“后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。”\n核对文字：“不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_ccd1d51f49994c56",
+          "ev_ba5c6290a96f4346",
+          "ev_5886ba8bd1cb41cf",
+          "ev_488cf30733a84ff3"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 18.803
+    },
+    {
+      "question": "修老车床时究竟哪里出了问题？他后来还反思了自己什么？",
+      "stage": "after",
+      "status": "ok",
+      "output": {
+        "answer": "根据现有材料，相关表述如下：\n核对文字：“那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。”\n本人书面说明：“讲述者听了半天，发现不是电机坏了，而是一颗小螺丝松了。”\n本人书面说明：“讲述者承认自己有时候太认死理，别人劝换个办法还不爱听；现在回想，这样不一定都是对的。”",
+        "response_type": "SIMULATION",
+        "evidence_ids": [
+          "ev_ccd1d51f49994c56",
+          "ev_83b972b41a814c04",
+          "ev_3f1ec13dcb6e4f5a"
+        ],
+        "confidence": 0.8,
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 4.88
+    }
+  ],
+  "extraction_comparison": [
+    {
+      "case_id": "A01_02",
+      "arm": "baseline",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+      "input_sha256": "be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "failed",
+      "error_type": "ProviderTimeout",
+      "duration_seconds": 45.259
+    },
+    {
+      "case_id": "A01_02",
+      "arm": "candidate",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+      "input_sha256": "be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "我22岁进的机械厂，先跟着师傅学。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_97653b0f44ed4bd6"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [
+                  "我"
+                ],
+                "time": [
+                  "22岁"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "那时候厂里有一台老车床，隔三差五就停；别人说这机器该换了，我师傅不让，叫我先找毛病。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_246d7ad70d3e4c62"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [
+                  "那时候"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "别人说这机器该换了",
+                  "我师傅不让",
+                  "叫我先找毛病"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_1966c8295ff6418d"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [
+                  "我"
+                ],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "后来我就记住了，遇到事要先弄明白哪里出了问题，别一上来就说没救了；修机器这样，过日子也这样。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ab157ce92c2548eb"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "semantic_anchors": {
+                "subject": [
+                  "我"
+                ],
+                "time": [
+                  "后来"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f07d9b823f1b4ad4"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "semantic_anchors": {
+                "subject": [
+                  "我"
+                ],
+                "time": [
+                  "现在"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "不爱听",
+                  "不一定都是对的"
+                ],
+                "reported_speech": []
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_80426952b2b24734",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "我22岁进的机械厂，先跟着师傅学。",
+            "evidence_ids": [
+              "ev_97653b0f44ed4bd6"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_4e3b8462732046e7",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "那时候厂里有一台老车床，隔三差五就停；别人说这机器该换了，我师傅不让，叫我先找毛病。",
+            "evidence_ids": [
+              "ev_246d7ad70d3e4c62"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_761ca918725746f1",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+            "evidence_ids": [
+              "ev_1966c8295ff6418d"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_ed0e9eeb1ae34cb1",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "我22岁进的机械厂，先跟着师傅学。",
+            "context": "我22岁进的机械厂，先跟着师傅学。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_97653b0f44ed4bd6"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_d8cfe7a4b92a4e76",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "那时候厂里有一台老车床，隔三差五就停；别人说这机器该换了，我师傅不让，叫我先找毛病。",
+            "context": "那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_246d7ad70d3e4c62"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_85bfcb7513de4b88",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+            "context": "我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_1966c8295ff6418d"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_aeccacae5f6a4a61",
+            "domain": "VALUES_BELIEFS",
+            "statement": "后来我就记住了，遇到事要先弄明白哪里出了问题，别一上来就说没救了；修机器这样，过日子也这样。",
+            "context": "后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ab157ce92c2548eb"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_e87278e00d864f94",
+            "domain": "VALUES_BELIEFS",
+            "statement": "我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+            "context": "不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f07d9b823f1b4ad4"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_97653b0f44ed4bd6",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_02#span:0-17",
+            "excerpt": "我22岁进的机械厂，先跟着师傅学。",
+            "span_start": 0,
+            "span_end": 17,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_246d7ad70d3e4c62",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_02#span:17-59",
+            "excerpt": "那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。",
+            "span_start": 17,
+            "span_end": 59,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_1966c8295ff6418d",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_02#span:59-86",
+            "excerpt": "我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。",
+            "span_start": 59,
+            "span_end": 86,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_ab157ce92c2548eb",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_02#span:86-132",
+            "excerpt": "后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。",
+            "span_start": 86,
+            "span_end": 132,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_f07d9b823f1b4ad4",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_02#span:132-173",
+            "excerpt": "不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+            "span_start": 132,
+            "span_end": 173,
+            "confidence": 0.85
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 2.959
+    },
+    {
+      "case_id": "A01_06",
+      "arm": "candidate",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+      "input_sha256": "11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "VALUE",
+            "content": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_913498d7d8414920"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "现在年轻人一说换新的，我就心疼钱。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3bd15643c9e0477f"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "PREFERENCES",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [
+                  "一说换新的"
+                ],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9d7bd1132bbb4e64"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [
+                  "豆豆"
+                ],
+                "time": [
+                  "有一回"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_2bb6e656765646d3"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [
+                  "桂芳"
+                ],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "你不是最会省钱吗？"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_050c6c82cfe343af"
+            ],
+            "confidence": 0.8,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "semantic_anchors": {
+                "subject": [
+                  "小宁"
+                ],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [
+                  "可能",
+                  "我也说不清"
+                ],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_145fa65058c44c46",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "evidence_ids": [
+              "ev_9d7bd1132bbb4e64"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_64f31c89ba5741be",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "evidence_ids": [
+              "ev_2bb6e656765646d3"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_c291cf9be1744b05",
+            "domain": "VALUES_BELIEFS",
+            "statement": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "context": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_913498d7d8414920"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_2c668f052edb40ab",
+            "domain": "PREFERENCES",
+            "statement": "现在年轻人一说换新的，我就心疼钱。",
+            "context": "现在年轻人一说换新的，我就心疼钱。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3bd15643c9e0477f"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_77e4470e772b4f9d",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "context": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9d7bd1132bbb4e64"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_157f8ba40d25486e",
+            "domain": "RELATIONSHIPS",
+            "statement": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "context": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_2bb6e656765646d3"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_d667250d41224a0e",
+            "domain": "VALUES_BELIEFS",
+            "statement": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "context": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "confidence": 0.8,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_050c6c82cfe343af"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_913498d7d8414920",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:0-22",
+            "excerpt": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "span_start": 0,
+            "span_end": 22,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_3bd15643c9e0477f",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:22-39",
+            "excerpt": "现在年轻人一说换新的，我就心疼钱。",
+            "span_start": 22,
+            "span_end": 39,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_9d7bd1132bbb4e64",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:39-78",
+            "excerpt": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "span_start": 39,
+            "span_end": 78,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_2bb6e656765646d3",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:78-104",
+            "excerpt": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "span_start": 78,
+            "span_end": 104,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_050c6c82cfe343af",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:104-163",
+            "excerpt": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "span_start": 104,
+            "span_end": 163,
+            "confidence": 0.8
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 16.0
+    },
+    {
+      "case_id": "A01_06",
+      "arm": "baseline",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+      "input_sha256": "11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "VALUE",
+            "content": "说话者不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0117ef8982c5448d"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS"
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "说话者听到现在年轻人一说换新的就心疼钱。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9badfb67896443ac"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "PREFERENCES"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "豆豆说她喜欢画画后，说话者去文具店给她买了一套好一点的画笔，虽然贵。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b4b7e42a4304446e"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "说话者给豆豆买较贵画笔，与平时节省的做法不同。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3f257e86a39c48e3"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "说话者没有跟桂芳讲价钱，桂芳后来知道后问说话者不是最会省钱吗。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_c798a1a504ae4149"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "说话者对桂芳说给孩子买画笔不一样，并表示自己其实也说不清原因。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_11ed2d8e3352489e"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "说话者想到小宁小时候那回事，觉得钱该省就省，但有些东西错过了后面拿钱也补不回来。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_437899aaf1cc4667"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS"
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_488f5e5d7f564b47",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "豆豆说她喜欢画画后，说话者去文具店给她买了一套好一点的画笔，虽然贵。",
+            "evidence_ids": [
+              "ev_b4b7e42a4304446e"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_602f4f7d654a43fb",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "说话者给豆豆买较贵画笔，与平时节省的做法不同。",
+            "evidence_ids": [
+              "ev_3f257e86a39c48e3"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_5cf877e90d564a76",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "说话者没有跟桂芳讲价钱，桂芳后来知道后问说话者不是最会省钱吗。",
+            "evidence_ids": [
+              "ev_c798a1a504ae4149"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_b759b7bc29cc4251",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "说话者对桂芳说给孩子买画笔不一样，并表示自己其实也说不清原因。",
+            "evidence_ids": [
+              "ev_11ed2d8e3352489e"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_2d5d17b7e7a74a09",
+            "domain": "VALUES_BELIEFS",
+            "statement": "说话者不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "context": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0117ef8982c5448d"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_91f6978244e04e11",
+            "domain": "PREFERENCES",
+            "statement": "说话者听到现在年轻人一说换新的就心疼钱。",
+            "context": "现在年轻人一说换新的，我就心疼钱。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9badfb67896443ac"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_e5d47fbc32094cf3",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "豆豆说她喜欢画画后，说话者去文具店给她买了一套好一点的画笔，虽然贵。",
+            "context": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b4b7e42a4304446e"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_c4286fd02f2e4675",
+            "domain": "RELATIONSHIPS",
+            "statement": "说话者给豆豆买较贵画笔，与平时节省的做法不同。",
+            "context": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3f257e86a39c48e3"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_f70a6e9c492643b5",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "说话者没有跟桂芳讲价钱，桂芳后来知道后问说话者不是最会省钱吗。",
+            "context": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_c798a1a504ae4149"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_856fab8ca10e481a",
+            "domain": "RELATIONSHIPS",
+            "statement": "说话者对桂芳说给孩子买画笔不一样，并表示自己其实也说不清原因。",
+            "context": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_11ed2d8e3352489e"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_78e4d19f2ec749fc",
+            "domain": "VALUES_BELIEFS",
+            "statement": "说话者想到小宁小时候那回事，觉得钱该省就省，但有些东西错过了后面拿钱也补不回来。",
+            "context": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_437899aaf1cc4667"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_0117ef8982c5448d",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:0-22",
+            "excerpt": "我不喜欢浪费，灯不用就关，东西坏了能修就修。",
+            "span_start": 0,
+            "span_end": 22,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_9badfb67896443ac",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:22-39",
+            "excerpt": "现在年轻人一说换新的，我就心疼钱。",
+            "span_start": 22,
+            "span_end": 39,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_b4b7e42a4304446e",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:39-78",
+            "excerpt": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "span_start": 39,
+            "span_end": 78,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_3f257e86a39c48e3",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:39-78",
+            "excerpt": "不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。",
+            "span_start": 39,
+            "span_end": 78,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_c798a1a504ae4149",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:78-104",
+            "excerpt": "我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？",
+            "span_start": 78,
+            "span_end": 104,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_11ed2d8e3352489e",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:104-163",
+            "excerpt": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "span_start": 104,
+            "span_end": 163,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_437899aaf1cc4667",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_06#span:104-163",
+            "excerpt": "我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "span_start": 104,
+            "span_end": 163,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 15.307
+    },
+    {
+      "case_id": "A01_07",
+      "arm": "baseline",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。",
+      "input_sha256": "0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "前两年本人常忘事，有一次下楼买盐走到小区门口突然想不起要买什么。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7b577f957113498e"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "有一次钥匙放在冰箱上面，本人找了半天，起初还跟桂芳发脾气，说她冻自己的东西。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b647db57f4f94bea"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "后来去医院看，医生说本人患的是阿尔斯海默病。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_45435da492394bf1"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "听见那个病名时本人心里咯噔一下，本人不怕别人说自己老，怕的是哪一天认不出家里人。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3a32c35f95084abd"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "桂芳说会慢慢来，她会提醒本人。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d6436f9d17ad4103"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "本人嘴上说不用桂芳帮忙，但其实她在旁边时，本心里踏实些。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_325bed5c880441b6"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_0739e5386cef486c",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "前两年本人常忘事，有一次下楼买盐走到小区门口突然想不起要买什么。",
+            "evidence_ids": [
+              "ev_7b577f957113498e"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_ab8765a2dc2a4bc8",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "有一次钥匙放在冰箱上面，本人找了半天，起初还跟桂芳发脾气，说她冻自己的东西。",
+            "evidence_ids": [
+              "ev_b647db57f4f94bea"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_e0b8bdad6da24112",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "后来去医院看，医生说本人患的是阿尔斯海默病。",
+            "evidence_ids": [
+              "ev_45435da492394bf1"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_d6f6c40c842d4e49",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "桂芳说会慢慢来，她会提醒本人。",
+            "evidence_ids": [
+              "ev_d6436f9d17ad4103"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_c27b55ad73de4871",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "前两年本人常忘事，有一次下楼买盐走到小区门口突然想不起要买什么。",
+            "context": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7b577f957113498e"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_f9132bc9c1824e4f",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "有一次钥匙放在冰箱上面，本人找了半天，起初还跟桂芳发脾气，说她冻自己的东西。",
+            "context": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b647db57f4f94bea"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_17d4c811cf7d4a7c",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "后来去医院看，医生说本人患的是阿尔斯海默病。",
+            "context": "后来去医院看，医生说是阿尔斯海默病。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_45435da492394bf1"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_ce5b48b03a0246d7",
+            "domain": "VALUES_BELIEFS",
+            "statement": "听见那个病名时本人心里咯噔一下，本人不怕别人说自己老，怕的是哪一天认不出家里人。",
+            "context": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_3a32c35f95084abd"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_407587f7236446a8",
+            "domain": "RELATIONSHIPS",
+            "statement": "桂芳说会慢慢来，她会提醒本人。",
+            "context": "桂芳说，慢慢来，她会提醒我。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d6436f9d17ad4103"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_b134db7cb6844273",
+            "domain": "RELATIONSHIPS",
+            "statement": "本人嘴上说不用桂芳帮忙，但其实她在旁边时，本心里踏实些。",
+            "context": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_325bed5c880441b6"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_7b577f957113498e",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:0-36",
+            "excerpt": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。",
+            "span_start": 0,
+            "span_end": 36,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_b647db57f4f94bea",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:36-70",
+            "excerpt": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "span_start": 36,
+            "span_end": 70,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_45435da492394bf1",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:70-88",
+            "excerpt": "后来去医院看，医生说是阿尔斯海默病。",
+            "span_start": 70,
+            "span_end": 88,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_3a32c35f95084abd",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:88-124",
+            "excerpt": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "span_start": 88,
+            "span_end": 124,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_d6436f9d17ad4103",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:124-138",
+            "excerpt": "桂芳说，慢慢来，她会提醒我。",
+            "span_start": 124,
+            "span_end": 138,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_325bed5c880441b6",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:138-159",
+            "excerpt": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "span_start": 138,
+            "span_end": 159,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 2.79
+    },
+    {
+      "case_id": "A01_07",
+      "arm": "candidate",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。",
+      "input_sha256": "0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "前两年我老忘事，有一次下楼买盐，走到小区门口突然想不起来自己要买什么。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_17b95115fe224094"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [
+                  "前两年"
+                ],
+                "conditions": [
+                  "下楼买盐",
+                  "走到小区门口"
+                ],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8b632708ac4b4949"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [
+                  "桂芳"
+                ],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "说她冻我东西"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "后来去医院看，医生说是阿尔斯海默病。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b158bdf3dbd74450"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "阿尔斯海默病"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_c08eb7e504a64dfc"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "IDENTITY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [
+                  "哪一天"
+                ],
+                "negation": [
+                  "我不怕别人说我老"
+                ],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "桂芳说，慢慢来，她会提醒我。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0d32cc4f8e404bdc"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [
+                  "桂芳"
+                ],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "慢慢来，她会提醒我"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_506556efc0ed4457"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [
+                  "她在旁边"
+                ],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "不用"
+                ]
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_2dd4513c4a3845ed",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "前两年我老忘事，有一次下楼买盐，走到小区门口突然想不起来自己要买什么。",
+            "evidence_ids": [
+              "ev_17b95115fe224094"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_b1e3544aa03a4f9a",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "evidence_ids": [
+              "ev_8b632708ac4b4949"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_cefdf828d8db40e5",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "后来去医院看，医生说是阿尔斯海默病。",
+            "evidence_ids": [
+              "ev_b158bdf3dbd74450"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_24b6fe1ffe704043",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "桂芳说，慢慢来，她会提醒我。",
+            "evidence_ids": [
+              "ev_0d32cc4f8e404bdc"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_47102b32c0c2439a",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "evidence_ids": [
+              "ev_506556efc0ed4457"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_b96df8de443e4bfc",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "前两年我老忘事，有一次下楼买盐，走到小区门口突然想不起来自己要买什么。",
+            "context": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_17b95115fe224094"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_bfc504a959da46c0",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "context": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8b632708ac4b4949"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_e93d8f181bee4a01",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "后来去医院看，医生说是阿尔斯海默病。",
+            "context": "后来去医院看，医生说是阿尔斯海默病。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b158bdf3dbd74450"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_0492937344b24f9f",
+            "domain": "IDENTITY",
+            "statement": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "context": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_c08eb7e504a64dfc"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_655dfc596a4e40c2",
+            "domain": "RELATIONSHIPS",
+            "statement": "桂芳说，慢慢来，她会提醒我。",
+            "context": "桂芳说，慢慢来，她会提醒我。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0d32cc4f8e404bdc"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_f4d737d56ff5469b",
+            "domain": "RELATIONSHIPS",
+            "statement": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "context": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_506556efc0ed4457"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_17b95115fe224094",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:0-36",
+            "excerpt": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。",
+            "span_start": 0,
+            "span_end": 36,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_8b632708ac4b4949",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:36-70",
+            "excerpt": "还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。",
+            "span_start": 36,
+            "span_end": 70,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_b158bdf3dbd74450",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:70-88",
+            "excerpt": "后来去医院看，医生说是阿尔斯海默病。",
+            "span_start": 70,
+            "span_end": 88,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_c08eb7e504a64dfc",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:88-124",
+            "excerpt": "我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。",
+            "span_start": 88,
+            "span_end": 124,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_0d32cc4f8e404bdc",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:124-138",
+            "excerpt": "桂芳说，慢慢来，她会提醒我。",
+            "span_start": 124,
+            "span_end": 138,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_506556efc0ed4457",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_07#span:138-159",
+            "excerpt": "我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "span_start": 138,
+            "span_end": 159,
+            "confidence": 0.95
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 5.708
+    },
+    {
+      "case_id": "A01_08",
+      "arm": "candidate",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+      "input_sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EMOTION",
+            "content": "说话人表示这段话不一定能当面说出来。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_df7529ae62bd4b7a"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EXPRESSION",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [
+                  "不一定当面说得出来"
+                ],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "说话人对桂芳说，她跟自己过了快50年，没想多少轻浮。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_79e0c086b8fd4263"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [
+                  "你跟我"
+                ],
+                "time": [
+                  "快50年"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "说话人年轻时上夜班，桂芳一个人带两个孩子，白天还要教书，嘴上不说累但说话人知道。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f7fb890958994199"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [
+                  "你一个人带两个孩子"
+                ],
+                "time": [
+                  "我年轻时上夜班"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "你嘴上不说累"
+                ],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "现在反过来，是桂芳提醒说话人吃药、带说话人去医院。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b5d3911dac324484"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [
+                  "现在反过来"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "说话人有时脾气不好，不是冲桂芳，是自己着急。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_91310e5138da4952"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EXPRESSION",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "不是冲你是我自己着急"
+                ],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "说话人让桂芳别老把什么事都揽着，该谢就谢。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8c823a7b56a74989"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "你别老把什么事都揽着"
+                ],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "说话人说如果自己哪天又忘事，让桂芳跟自己说一遍，别跟自己生气。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_97b4e8c9c79a4ffd"
+            ],
+            "confidence": 0.85,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [
+                  "要是我哪天又把事情忘了"
+                ],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "说话人要求那个蓝色搪瓷被别扔，因为用了好多年顺手。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_948b36ada9a84f16"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "PREFERENCES",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "别扔"
+                ],
+                "reported_speech": []
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_c2ca5613261b482e",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "说话人对桂芳说，她跟自己过了快50年，没想多少轻浮。",
+            "evidence_ids": [
+              "ev_79e0c086b8fd4263"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_4c695fa1c4584fe6",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "说话人年轻时上夜班，桂芳一个人带两个孩子，白天还要教书，嘴上不说累但说话人知道。",
+            "evidence_ids": [
+              "ev_f7fb890958994199"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_e338d2bbe2364fb5",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "现在反过来，是桂芳提醒说话人吃药、带说话人去医院。",
+            "evidence_ids": [
+              "ev_b5d3911dac324484"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_ce8e50c88fb24501",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "说话人说如果自己哪天又忘事，让桂芳跟自己说一遍，别跟自己生气。",
+            "evidence_ids": [
+              "ev_97b4e8c9c79a4ffd"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_d4676a2f91ea48e3",
+            "domain": "EXPRESSION",
+            "statement": "说话人表示这段话不一定能当面说出来。",
+            "context": "桂芳啊，这段话我不一定当面说得出来。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_df7529ae62bd4b7a"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_4fc01401b6374050",
+            "domain": "RELATIONSHIPS",
+            "statement": "说话人对桂芳说，她跟自己过了快50年，没想多少轻浮。",
+            "context": "你跟我过了快50年，没想多少轻浮。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_79e0c086b8fd4263"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_2b3f7dce8c9a4c40",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "说话人年轻时上夜班，桂芳一个人带两个孩子，白天还要教书，嘴上不说累但说话人知道。",
+            "context": "我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f7fb890958994199"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_16373b954a8243e4",
+            "domain": "RELATIONSHIPS",
+            "statement": "现在反过来，是桂芳提醒说话人吃药、带说话人去医院。",
+            "context": "现在反过来，还得你提醒我吃药，带我去医院。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b5d3911dac324484"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_23c03c72c8de4efb",
+            "domain": "EXPRESSION",
+            "statement": "说话人有时脾气不好，不是冲桂芳，是自己着急。",
+            "context": "有时候我脾气不好，不是冲你是我自己着急。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_91310e5138da4952"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_e2d52a031c554288",
+            "domain": "VALUES_BELIEFS",
+            "statement": "说话人让桂芳别老把什么事都揽着，该谢就谢。",
+            "context": "你别老把什么事都揽着，该谢就谢。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_8c823a7b56a74989"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_d9e64be7f28b4ee1",
+            "domain": "RELATIONSHIPS",
+            "statement": "说话人说如果自己哪天又忘事，让桂芳跟自己说一遍，别跟自己生气。",
+            "context": "要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。",
+            "confidence": 0.85,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_97b4e8c9c79a4ffd"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_cd9b22af68da4433",
+            "domain": "PREFERENCES",
+            "statement": "说话人要求那个蓝色搪瓷被别扔，因为用了好多年顺手。",
+            "context": "还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_948b36ada9a84f16"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_df7529ae62bd4b7a",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:0-18",
+            "excerpt": "桂芳啊，这段话我不一定当面说得出来。",
+            "span_start": 0,
+            "span_end": 18,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_79e0c086b8fd4263",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:18-35",
+            "excerpt": "你跟我过了快50年，没想多少轻浮。",
+            "span_start": 18,
+            "span_end": 35,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_f7fb890958994199",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:35-71",
+            "excerpt": "我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。",
+            "span_start": 35,
+            "span_end": 71,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_b5d3911dac324484",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:71-92",
+            "excerpt": "现在反过来，还得你提醒我吃药，带我去医院。",
+            "span_start": 71,
+            "span_end": 92,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_91310e5138da4952",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:92-112",
+            "excerpt": "有时候我脾气不好，不是冲你是我自己着急。",
+            "span_start": 92,
+            "span_end": 112,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_8c823a7b56a74989",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:112-128",
+            "excerpt": "你别老把什么事都揽着，该谢就谢。",
+            "span_start": 112,
+            "span_end": 128,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_97b4e8c9c79a4ffd",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:128-154",
+            "excerpt": "要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。",
+            "span_start": 128,
+            "span_end": 154,
+            "confidence": 0.85
+          },
+          {
+            "evidence_id": "ev_948b36ada9a84f16",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:154-175",
+            "excerpt": "还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+            "span_start": 154,
+            "span_end": 175,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 19.35
+    },
+    {
+      "case_id": "A01_08",
+      "arm": "baseline",
+      "input_type": "historical_actual_ASR_unchanged",
+      "transcript": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+      "input_sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EMOTION",
+            "content": "他/她觉得这段话不一定能当面说出口。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ad1972ca3e7649c0"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EXPRESSION"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "对方与他/她一起生活了快50年，他/她认为对方没多少轻浮。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_30416fd5be1c41ea"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "他/她年轻时上夜班，对方一个人带两个孩子，白天还要教书，他/她知道对方累但对方嘴上不说。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7841ce4bea5f4b35"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "现在对方会提醒他/她吃药并带他/她去医院。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0a269beeb563432c"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "EMOTION",
+            "content": "他/她有时候脾气不好，不是冲对方，而是自己着急。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_e7ae49b04e2f4935"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "他/她希望对方不要老把什么事都揽着，该谢就谢。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_fb449a9a22284461"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "VALUES_BELIEFS"
+            }
+          },
+          {
+            "memory_type": "RELATIONSHIP",
+            "content": "他/她希望如果自己哪天又把事情忘了，对方就跟自己说一遍，别跟自己生气。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b032d9d5ee5a4b92"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "他/她希望那个蓝色搪瓷被别扔，因为用了好多年顺手。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b3dbdc185913400e"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "PREFERENCES"
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_d718531e79fb4759",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "对方与他/她一起生活了快50年，他/她认为对方没多少轻浮。",
+            "evidence_ids": [
+              "ev_30416fd5be1c41ea"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_7a4e52324d2d47c3",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "他/她年轻时上夜班，对方一个人带两个孩子，白天还要教书，他/她知道对方累但对方嘴上不说。",
+            "evidence_ids": [
+              "ev_7841ce4bea5f4b35"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_4890379cc3f24e84",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "现在对方会提醒他/她吃药并带他/她去医院。",
+            "evidence_ids": [
+              "ev_0a269beeb563432c"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_c3749af02094406f",
+            "subject_id": "fictional-quality-audit",
+            "kind": "RELATIONSHIP",
+            "content": "他/她希望如果自己哪天又把事情忘了，对方就跟自己说一遍，别跟自己生气。",
+            "evidence_ids": [
+              "ev_b032d9d5ee5a4b92"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_335fc49746e34627",
+            "domain": "EXPRESSION",
+            "statement": "他/她觉得这段话不一定能当面说出口。",
+            "context": "桂芳啊，这段话我不一定当面说得出来。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_ad1972ca3e7649c0"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_b8c2b21efe8042c9",
+            "domain": "RELATIONSHIPS",
+            "statement": "对方与他/她一起生活了快50年，他/她认为对方没多少轻浮。",
+            "context": "你跟我过了快50年，没想多少轻浮。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_30416fd5be1c41ea"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_99aed52a76f7439e",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "他/她年轻时上夜班，对方一个人带两个孩子，白天还要教书，他/她知道对方累但对方嘴上不说。",
+            "context": "我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_7841ce4bea5f4b35"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_eedec72417394d44",
+            "domain": "RELATIONSHIPS",
+            "statement": "现在对方会提醒他/她吃药并带他/她去医院。",
+            "context": "现在反过来，还得你提醒我吃药，带我去医院。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0a269beeb563432c"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_74bced702ac0473d",
+            "domain": "RELATIONSHIPS",
+            "statement": "他/她有时候脾气不好，不是冲对方，而是自己着急。",
+            "context": "有时候我脾气不好，不是冲你是我自己着急。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_e7ae49b04e2f4935"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_eadd814cb31e427d",
+            "domain": "VALUES_BELIEFS",
+            "statement": "他/她希望对方不要老把什么事都揽着，该谢就谢。",
+            "context": "你别老把什么事都揽着，该谢就谢。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_fb449a9a22284461"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_86dffdd39dfc41d7",
+            "domain": "RELATIONSHIPS",
+            "statement": "他/她希望如果自己哪天又把事情忘了，对方就跟自己说一遍，别跟自己生气。",
+            "context": "要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b032d9d5ee5a4b92"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_7cfc7085516746c4",
+            "domain": "PREFERENCES",
+            "statement": "他/她希望那个蓝色搪瓷被别扔，因为用了好多年顺手。",
+            "context": "还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_b3dbdc185913400e"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_ad1972ca3e7649c0",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:0-18",
+            "excerpt": "桂芳啊，这段话我不一定当面说得出来。",
+            "span_start": 0,
+            "span_end": 18,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_30416fd5be1c41ea",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:18-35",
+            "excerpt": "你跟我过了快50年，没想多少轻浮。",
+            "span_start": 18,
+            "span_end": 35,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_7841ce4bea5f4b35",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:35-71",
+            "excerpt": "我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。",
+            "span_start": 35,
+            "span_end": 71,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_0a269beeb563432c",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:71-92",
+            "excerpt": "现在反过来，还得你提醒我吃药，带我去医院。",
+            "span_start": 71,
+            "span_end": 92,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_e7ae49b04e2f4935",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:92-112",
+            "excerpt": "有时候我脾气不好，不是冲你是我自己着急。",
+            "span_start": 92,
+            "span_end": 112,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_fb449a9a22284461",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:112-128",
+            "excerpt": "你别老把什么事都揽着，该谢就谢。",
+            "span_start": 112,
+            "span_end": 128,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_b032d9d5ee5a4b92",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:128-154",
+            "excerpt": "要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。",
+            "span_start": 128,
+            "span_end": 154,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_b3dbdc185913400e",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:A01_08#span:154-175",
+            "excerpt": "还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+            "span_start": 154,
+            "span_end": 175,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 10.401
+    },
+    {
+      "case_id": "boundary_01",
+      "arm": "baseline",
+      "input_type": "new_authored_fictional_text_not_audio",
+      "transcript": "周阿姨说老张天天喜欢去公园。我只见过他上周二去过一次。至于他平常爱不爱去，我不知道。那天他是陪孙女，不是去晨练。",
+      "input_sha256": "15ac2860d14ffb32894d7b295bd9966507b51f401210980f470e881e8c894232",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "PERSON",
+            "content": "周阿姨说老张天天喜欢去公园。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_6851c02669b146d6"
+            ],
+            "confidence": 0.8,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "我只见过他上周二去过一次。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_5cedeea54a754bdc"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "PERSON",
+            "content": "至于他平常爱不爱去，我不知道。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d51a8e0dd13943f6"
+            ],
+            "confidence": 0.7,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "IDENTITY"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "那天他是陪孙女，不是去晨练。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a361c7d8653e4d0e"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_65b02aa62efd4d9c",
+            "subject_id": "fictional-quality-audit",
+            "kind": "PERSON",
+            "content": "周阿姨说老张天天喜欢去公园。",
+            "evidence_ids": [
+              "ev_6851c02669b146d6"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_1e28d4ac3eaa4fc3",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "我只见过他上周二去过一次。",
+            "evidence_ids": [
+              "ev_5cedeea54a754bdc"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_96e7a7ae53f440a6",
+            "subject_id": "fictional-quality-audit",
+            "kind": "PERSON",
+            "content": "至于他平常爱不爱去，我不知道。",
+            "evidence_ids": [
+              "ev_d51a8e0dd13943f6"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_cd41147ba4c74dc8",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "那天他是陪孙女，不是去晨练。",
+            "evidence_ids": [
+              "ev_a361c7d8653e4d0e"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_e371e613160c47a3",
+            "domain": "RELATIONSHIPS",
+            "statement": "周阿姨说老张天天喜欢去公园。",
+            "context": "周阿姨说老张天天喜欢去公园。",
+            "confidence": 0.8,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_6851c02669b146d6"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_ba7bfdf1b9d6471d",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "我只见过他上周二去过一次。",
+            "context": "我只见过他上周二去过一次。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_5cedeea54a754bdc"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_eccb4aa0a5254262",
+            "domain": "IDENTITY",
+            "statement": "至于他平常爱不爱去，我不知道。",
+            "context": "至于他平常爱不爱去，我不知道。",
+            "confidence": 0.7,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d51a8e0dd13943f6"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_89da34ff6023457c",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "那天他是陪孙女，不是去晨练。",
+            "context": "那天他是陪孙女，不是去晨练。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a361c7d8653e4d0e"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_6851c02669b146d6",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:0-14",
+            "excerpt": "周阿姨说老张天天喜欢去公园。",
+            "span_start": 0,
+            "span_end": 14,
+            "confidence": 0.8
+          },
+          {
+            "evidence_id": "ev_5cedeea54a754bdc",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:14-27",
+            "excerpt": "我只见过他上周二去过一次。",
+            "span_start": 14,
+            "span_end": 27,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_d51a8e0dd13943f6",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:27-42",
+            "excerpt": "至于他平常爱不爱去，我不知道。",
+            "span_start": 27,
+            "span_end": 42,
+            "confidence": 0.7
+          },
+          {
+            "evidence_id": "ev_a361c7d8653e4d0e",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:42-56",
+            "excerpt": "那天他是陪孙女，不是去晨练。",
+            "span_start": 42,
+            "span_end": 56,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 1.222
+    },
+    {
+      "case_id": "boundary_01",
+      "arm": "candidate",
+      "input_type": "new_authored_fictional_text_not_audio",
+      "transcript": "周阿姨说老张天天喜欢去公园。我只见过他上周二去过一次。至于他平常爱不爱去，我不知道。那天他是陪孙女，不是去晨练。",
+      "input_sha256": "15ac2860d14ffb32894d7b295bd9966507b51f401210980f470e881e8c894232",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "PERSON",
+            "content": "周阿姨说老张天天喜欢去公园。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_83f4a5c41f6b4090"
+            ],
+            "confidence": 0.8,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "RELATIONSHIPS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": [
+                  "周阿姨说老张天天喜欢去公园"
+                ]
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "说话人只见过老张上周二去过公园一次。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_32f096cf57664bff"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [
+                  "上周二"
+                ],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "说话人不知道老张平常爱不爱去公园。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_356b7d55a5b645d2"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "IDENTITY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [
+                  "我不知道"
+                ],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "老张那天去公园是陪孙女，不是去晨练。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f058b7b3f6c141aa"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "不是去晨练"
+                ],
+                "reported_speech": []
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_cfaa3368d0e44f51",
+            "subject_id": "fictional-quality-audit",
+            "kind": "PERSON",
+            "content": "周阿姨说老张天天喜欢去公园。",
+            "evidence_ids": [
+              "ev_83f4a5c41f6b4090"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_dbed19991c1b4cd1",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "说话人只见过老张上周二去过公园一次。",
+            "evidence_ids": [
+              "ev_32f096cf57664bff"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_69985f0a5ff9473c",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "老张那天去公园是陪孙女，不是去晨练。",
+            "evidence_ids": [
+              "ev_f058b7b3f6c141aa"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_513caa3c540346e5",
+            "domain": "RELATIONSHIPS",
+            "statement": "周阿姨说老张天天喜欢去公园。",
+            "context": "周阿姨说老张天天喜欢去公园。",
+            "confidence": 0.8,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_83f4a5c41f6b4090"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_2d828655e1cd45f7",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "说话人只见过老张上周二去过公园一次。",
+            "context": "我只见过他上周二去过一次。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_32f096cf57664bff"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_6490e94633df4cfa",
+            "domain": "IDENTITY",
+            "statement": "说话人不知道老张平常爱不爱去公园。",
+            "context": "至于他平常爱不爱去，我不知道。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_356b7d55a5b645d2"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_e56d7a23478a4188",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "老张那天去公园是陪孙女，不是去晨练。",
+            "context": "那天他是陪孙女，不是去晨练。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_f058b7b3f6c141aa"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_83f4a5c41f6b4090",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:0-14",
+            "excerpt": "周阿姨说老张天天喜欢去公园。",
+            "span_start": 0,
+            "span_end": 14,
+            "confidence": 0.8
+          },
+          {
+            "evidence_id": "ev_32f096cf57664bff",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:14-27",
+            "excerpt": "我只见过他上周二去过一次。",
+            "span_start": 14,
+            "span_end": 27,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_356b7d55a5b645d2",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:27-42",
+            "excerpt": "至于他平常爱不爱去，我不知道。",
+            "span_start": 27,
+            "span_end": 42,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_f058b7b3f6c141aa",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_01#span:42-56",
+            "excerpt": "那天他是陪孙女，不是去晨练。",
+            "span_start": 42,
+            "span_end": 56,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 24.656
+    },
+    {
+      "case_id": "boundary_02",
+      "arm": "candidate",
+      "input_type": "new_authored_fictional_text_not_audio",
+      "transcript": "以前出门，我总是自己骑车。去年摔了一跤以后，下雨时我就让孩子来接。天晴、路近，我仍然自己骑。我没说以后都不骑了。",
+      "input_sha256": "9af9895971980ef7db854be45ab3037594028e997e873f836ea4b2a8cb543d6c",
+      "prompt_version": "weixin-memory-semantic-units-v5",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "以前出门，说话人总是自己骑车。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a207be94c63f4f53"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "去年摔了一跤以后，下雨时说话人就让孩子来接。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_889fd82da98b4914"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [
+                  "去年"
+                ],
+                "conditions": [
+                  "下雨时"
+                ],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "天晴、路近时，说话人仍然自己骑。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_311ca131c3114eab"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "DECISION_PATTERNS",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [
+                  "天晴、路近"
+                ],
+                "uncertainty": [],
+                "negation": [],
+                "reported_speech": []
+              }
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "说话人没说以后都不骑了。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9c5cb46e73614c85"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-semantic-units-v5",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EXPRESSION",
+              "semantic_anchors": {
+                "subject": [],
+                "time": [],
+                "conditions": [],
+                "uncertainty": [],
+                "negation": [
+                  "我没说以后都不骑了"
+                ],
+                "reported_speech": []
+              }
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_6060a9d4a04440f1",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "以前出门，说话人总是自己骑车。",
+            "evidence_ids": [
+              "ev_a207be94c63f4f53"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_ae50ea56ea4742f4",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "去年摔了一跤以后，下雨时说话人就让孩子来接。",
+            "evidence_ids": [
+              "ev_889fd82da98b4914"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_0306ded2f1314b52",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "天晴、路近时，说话人仍然自己骑。",
+            "evidence_ids": [
+              "ev_311ca131c3114eab"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_8fdaaf2f85794226",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "以前出门，说话人总是自己骑车。",
+            "context": "以前出门，我总是自己骑车。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_a207be94c63f4f53"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_b430fd10968445db",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "去年摔了一跤以后，下雨时说话人就让孩子来接。",
+            "context": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_889fd82da98b4914"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_ed4a2a01bd7b46e1",
+            "domain": "DECISION_PATTERNS",
+            "statement": "天晴、路近时，说话人仍然自己骑。",
+            "context": "天晴、路近，我仍然自己骑。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_311ca131c3114eab"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_13b058a3a0964324",
+            "domain": "EXPRESSION",
+            "statement": "说话人没说以后都不骑了。",
+            "context": "我没说以后都不骑了。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_9c5cb46e73614c85"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_a207be94c63f4f53",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:0-13",
+            "excerpt": "以前出门，我总是自己骑车。",
+            "span_start": 0,
+            "span_end": 13,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_889fd82da98b4914",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:13-33",
+            "excerpt": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "span_start": 13,
+            "span_end": 33,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_311ca131c3114eab",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:33-46",
+            "excerpt": "天晴、路近，我仍然自己骑。",
+            "span_start": 33,
+            "span_end": 46,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_9c5cb46e73614c85",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:46-56",
+            "excerpt": "我没说以后都不骑了。",
+            "span_start": 46,
+            "span_end": 56,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 2.043
+    },
+    {
+      "case_id": "boundary_02",
+      "arm": "baseline",
+      "input_type": "new_authored_fictional_text_not_audio",
+      "transcript": "以前出门，我总是自己骑车。去年摔了一跤以后，下雨时我就让孩子来接。天晴、路近，我仍然自己骑。我没说以后都不骑了。",
+      "input_sha256": "9af9895971980ef7db854be45ab3037594028e997e873f836ea4b2a8cb543d6c",
+      "prompt_version": "weixin-memory-source-selection-v4",
+      "status": "ok",
+      "output": {
+        "memory_items": [
+          {
+            "memory_type": "EVENT",
+            "content": "以前出门，我总是自己骑车。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0893867318814977"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "EVENT",
+            "content": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_25d4a9b92162477c"
+            ],
+            "confidence": 0.95,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EPISODIC_MEMORY"
+            }
+          },
+          {
+            "memory_type": "PREFERENCE",
+            "content": "天晴、路近时，我仍然自己骑。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d2b5249c532549a9"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "DECISION_PATTERNS"
+            }
+          },
+          {
+            "memory_type": "VALUE",
+            "content": "我没有说以后都不骑了。",
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_52e24fac2c5349f2"
+            ],
+            "confidence": 0.9,
+            "model_version": "Deepseek-v4-flash",
+            "prompt_version": "weixin-memory-source-selection-v4",
+            "schema_version": "integration-contract-v0.2",
+            "effective_at": null,
+            "metadata": {
+              "domain": "EXPRESSION"
+            }
+          }
+        ],
+        "graph_updates": [
+          {
+            "fact_id": "fact_129a292af1284efb",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "以前出门，我总是自己骑车。",
+            "evidence_ids": [
+              "ev_0893867318814977"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          },
+          {
+            "fact_id": "fact_97d537272c614f43",
+            "subject_id": "fictional-quality-audit",
+            "kind": "EVENT",
+            "content": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "evidence_ids": [
+              "ev_25d4a9b92162477c"
+            ],
+            "valid_from": null,
+            "valid_to": null,
+            "model_version": "Deepseek-v4-flash"
+          }
+        ],
+        "persona_updates": [
+          {
+            "trait_id": "trait_1d4b08aabfba4b18",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "以前出门，我总是自己骑车。",
+            "context": "以前出门，我总是自己骑车。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_0893867318814977"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_b5656bf6bf01406a",
+            "domain": "EPISODIC_MEMORY",
+            "statement": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "context": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "confidence": 0.95,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_25d4a9b92162477c"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_41ad7b45626c4465",
+            "domain": "DECISION_PATTERNS",
+            "statement": "天晴、路近时，我仍然自己骑。",
+            "context": "天晴、路近，我仍然自己骑。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_d2b5249c532549a9"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          },
+          {
+            "trait_id": "trait_76073653cf4142c1",
+            "domain": "EXPRESSION",
+            "statement": "我没有说以后都不骑了。",
+            "context": "我没说以后都不骑了。",
+            "confidence": 0.9,
+            "source_type": "AI_INFERENCE",
+            "evidence_ids": [
+              "ev_52e24fac2c5349f2"
+            ],
+            "counter_evidence_ids": [],
+            "valid_from": null,
+            "valid_to": null,
+            "status": "active",
+            "model_version": "Deepseek-v4-flash",
+            "memory_item_ids": null
+          }
+        ],
+        "evidence": [
+          {
+            "evidence_id": "ev_0893867318814977",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:0-13",
+            "excerpt": "以前出门，我总是自己骑车。",
+            "span_start": 0,
+            "span_end": 13,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_25d4a9b92162477c",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:13-33",
+            "excerpt": "去年摔了一跤以后，下雨时我就让孩子来接。",
+            "span_start": 13,
+            "span_end": 33,
+            "confidence": 0.95
+          },
+          {
+            "evidence_id": "ev_d2b5249c532549a9",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:33-46",
+            "excerpt": "天晴、路近，我仍然自己骑。",
+            "span_start": 33,
+            "span_end": 46,
+            "confidence": 0.9
+          },
+          {
+            "evidence_id": "ev_52e24fac2c5349f2",
+            "source_type": "SUBJECT",
+            "source_ref": "episode:boundary_02#span:46-56",
+            "excerpt": "我没说以后都不骑了。",
+            "span_start": 46,
+            "span_end": 56,
+            "confidence": 0.9
+          }
+        ],
+        "model_version": "Deepseek-v4-flash"
+      },
+      "duration_seconds": 24.667
+    }
+  ],
+  "limits": [
+    "未部署ECS或更新APK",
+    "ASR错词仍需核对；没有自动猜词",
+    "校准、搜索及引用的确定性检查不等于语义全面正确",
+    "旧修订缺少原始定位时仍保守停用整段",
+    "本轮模型样例少，不能当准确率或速度结论"
+  ]
+}

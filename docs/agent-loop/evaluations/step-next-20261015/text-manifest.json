@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-15T01:48:05.520216+00:00",
+  "rounds": 3,
+  "interval_seconds": 3.0,
+  "shared_deadline_seconds": 12.0,
+  "retry_at_seconds": 999.0,
+  "policy": "Shared deadline; serial requests; identical authorized materials; no semantic review",
+  "step_model": "step-3.7-flash",
+  "reasoning_effort": "low",
+  "step_max_tokens": 2048,
+  "weixin_model": "Deepseek-v4-flash",
+  "weixin_max_tokens": "provider default (unchanged)",
+  "packets_sha256": "673272b8878ec414fc9caccfaf2c4d00a18c3815f906c4d25695625341ec8b79",
+  "quoted_twin_file": "/opt/remember-me/releases/paired-voice-stability2-20261014/services/ai-core/app/quoted_twin.py",
+  "quoted_twin_sha256": "45b65963163f0c6e71645ef73aa87100359a48684e7cb71b20c8771cbde3004d",
+  "prompt_sha256": "eae6b3d99188f2da1765cdddf76b8d2f6f02547729ccc8b54e0b451d4402ab96",
+  "adapter_sha256": "770430cba28d2a08d79cc20736b621d14e72c016c1e061e756b41258c161a61e",
+  "semantic_review": false,
+  "production_changed": false,
+  "finished_utc": "2026-10-15T01:52:38.414243+00:00",
+  "completed_requests": 42,
+  "expected_requests": 42
+}

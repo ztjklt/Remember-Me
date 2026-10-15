@@ -17,7 +17,7 @@ class ContextTooLarge(AppError):
     http_status = 413
 
 
-def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True):
+def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True, include_gaps=True):
     episodes = list(session.scalars(select(Episode).where(Episode.subject_id == subject_id,
         Episode.episode_id.in_(episode_ids), Episode.status == 'ready',
         Episode.episode_id.not_in(select(MemoryRevision.episode_id).where(MemoryRevision.status!='confirmed')),
@@ -34,7 +34,15 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
     for memory in session.scalars(select(MemoryItem).where(
             MemoryItem.episode_id.in_([ep.episode_id for ep in episodes])).order_by(MemoryItem.ordinal)):
         by_episode[memory.episode_id].append(memory)
-    evidence_ids={id for rows in by_episode.values() for m in rows for id in m.evidence_ids}
+    def correction_sources(memory):
+        meta = memory.item_metadata or {}
+        value = meta.get('correction_source_ids')
+        if (memory.source_type == 'CALIBRATION' and meta.get('origin') == 'owner_correction'
+                and isinstance(value, list) and all(isinstance(v, str) for v in value)):
+            return value
+        return memory.evidence_ids
+    evidence_ids={id for rows in by_episode.values() for m in rows
+                  for id in m.evidence_ids + correction_sources(m)}
     evidence_map={e.evidence_id:e for e in session.scalars(select(Evidence).where(Evidence.evidence_id.in_(evidence_ids)))}
     for ep in episodes:
         text = ep.transcript or ''
@@ -42,8 +50,15 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
         blocked, suppress = [], False
         for memory in memories:
             if memory.deleted_at or memory.review_state != 'active' or (memory.source_type == 'CALIBRATION' and not is_owner_supplement(memory)):
-                spans = [evidence_map.get(id) for id in memory.evidence_ids]
-                if not spans or any(s is None or s.span_start is None or s.span_end is None or
+                meta = memory.item_metadata or {}
+                # Only the correction endpoint records this lineage. A known
+                # empty lineage is a written note, unlike missing legacy data.
+                correction = memory.source_type == 'CALIBRATION' and meta.get('origin') == 'owner_correction'
+                if is_owner_supplement(memory) or (correction and meta.get('correction_source_ids') == []):
+                    continue
+                source_ids = correction_sources(memory)
+                spans = [evidence_map.get(id) for id in source_ids]
+                if not spans or any(s is None or s.episode_id != ep.episode_id or s.span_start is None or s.span_end is None or
                     text[s.span_start:s.span_end] != s.excerpt for s in spans):
                     suppress = True
                 else:
@@ -89,6 +104,8 @@ def effective_materials(session, subject_id, episode_ids, *, enforce_budget=True
                     source_type=memory.source_type, evidence=evidence, score=1.0))
         # Sentence-sized original excerpts preserve unextracted facts, source
         # offsets and the narrator's wording. No generated summary is quoted.
+        if not include_gaps:
+            continue
         gaps = []
         for match in re.finditer(r'[^。！？\n]+[。！？\n]*', text):
             start,end=match.span()

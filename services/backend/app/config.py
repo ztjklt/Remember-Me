@@ -73,6 +73,8 @@ class Settings(BaseSettings):
     # with the AI Core owner needs no code change.
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
+    transcript_correction_enabled: bool = False
+    transcript_correction_timeout_seconds: float = Field(default=50.0, ge=1, le=60)
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
     embedding_warmup: bool = False
     voice_url: str = "http://127.0.0.1:8300"
@@ -88,6 +90,11 @@ class Settings(BaseSettings):
 
     # Experimental single-worker WSS calls; opt-in actor IDs, never public by default.
     realtime_voice_enabled: bool = False
+    realtime_voice_fast_enabled: bool = False
+    realtime_voice_streamed_enabled: bool = False
+    realtime_voice_prefetch_enabled: bool = False
+    step_realtime_enabled: bool = False
+    step_realtime_api_key: SecretStr | None = None
     realtime_voice_actor_ids: list[str] = Field(default_factory=list)
     realtime_voice_max_sessions: int = Field(default=8, ge=1, le=32)
     realtime_voice_max_seconds: int = Field(default=1200, ge=30, le=1800)

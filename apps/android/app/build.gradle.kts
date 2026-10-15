@@ -12,8 +12,8 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261019
-        versionName = "0.11.0-internal"
+        versionCode = 20261023
+        versionName = "0.12.1-internal"
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
         require(serviceUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+"))) { "rememberServiceUrl must be a service root URL" }
         buildConfigField("String", "SERVICE_URL", "\"$serviceUrl\"")

@@ -23,6 +23,8 @@ data class NativeState(
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
+    val stepVoiceAvailable: Boolean = false,
+    val fastVoiceAvailable: Boolean = false,
     val serviceInfo: ServiceInfo = ServiceInfo(),
     val connectionCheck: ConnectionCheck = ConnectionCheck(),
     val invitations: List<JSONObject> = emptyList(), val recipients: List<JSONObject> = emptyList(),
@@ -38,6 +40,7 @@ data class NativeState(
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(), val searchQuery:String = "",
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
+    val reviewMachineText: String = "", val reviewCorrection: JSONObject? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
@@ -388,6 +391,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             report("云端转写配置尚未完成，原音保留本机，请配置后再上传。"); return
         }
         val asrPolicy = if(!clientAsr && caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
+        val correctionPolicy = if(!clientAsr) caps.text("transcript_correction_policy").takeIf { it.isNotBlank() } else null
         if(clientAsr && capture.episode.isBlank() && capture.transcript == null) {
             report("请先取回这段原音对应的机器转写，再上传并核对；原音已保存。"); return
         }
@@ -398,7 +402,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             val sending = capture.beginUpload(clientAsr).also { saveCapture(s, it) }
             val consent = io { client.consent(s, subject, "RECORDING") }
             submitCapture(sending,
-                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source) } },
+                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source, correctionPolicy) } },
                 persist = { saveCapture(s, it) },
                 link = { episode, revision ->
                 io { client.json(s, "$path/revisions", "POST", JSONObject().put("episode_id", episode)
@@ -455,11 +459,12 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             check(result.text("state") == "reviewing") { "转写尚未完成或已经提交，请刷新后查看。" }
             val warnings = result.optJSONArray("review_warnings") ?: JSONArray()
             state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"),
+                reviewMachineText = result.text("machine_transcript"), reviewCorrection = result.optJSONObject("automatic_correction"),
                 reviewInitialText = result.text("transcript"), reviewWarnings = (0 until warnings.length()).map { warnings.optString(it) },
                 reviewParagraphPreview = result.optString("paragraph_preview").takeIf { it.isNotBlank() && it != "null" })
         }
     }
-    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null) }
+    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null, reviewMachineText = "", reviewCorrection = null) }
     fun useParagraphPreview() {
         val current = state.value
         if(current.reviewEpisode != null && current.reviewText == current.reviewInitialText && current.reviewParagraphPreview != null)
@@ -497,7 +502,19 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         return state.value.grants.firstOrNull { cloudProcessingAllowed(it) }?.text("grant_id")
             ?: throw IllegalStateException("记录者尚未允许共享故事参与云端问答。")
     }
-    fun beginVoice(mode:String,simpleMode:Boolean,calibrationId:String?=null) {
+    fun loadVoiceCapabilities() {
+        val s=session?:return
+        operation(s){
+            val value=io{client.json(s,"/api/v1/voice-capabilities")}
+            val engines=value.optJSONArray("engines")
+            val speeds=value.optJSONArray("response_speeds")
+            state.value=state.value.copy(fastVoiceAvailable=value.optBoolean("enabled") &&
+                speeds?.let{a->(0 until a.length()).any{a.optString(it)=="fast"}}==true,
+                stepVoiceAvailable=value.optBoolean("enabled") &&
+                engines?.let{a->(0 until a.length()).any{a.optString(it)=="step_realtime"}}==true)
+        }
+    }
+    fun beginVoice(mode:String,simpleMode:Boolean,calibrationId:String?=null,responseSpeed:String="reviewed",voiceEngine:String="pipeline") {
         val s=session?:return
         val subject=state.value.subject
         if(subject.isBlank()||state.value.recording||state.value.busy||!foreground)return
@@ -506,13 +523,17 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         operation(s){
             val capabilities=io{client.json(s,"/api/v1/voice-capabilities")}
             check(capabilities.optBoolean("enabled")){"这个账号暂未开放语音聊聊。"}
+            check(voiceEngine=="pipeline" || capabilities.optJSONArray("engines")?.let{a->(0 until a.length()).any{a.optString(it)==voiceEngine}}==true){"服务器尚未开放实时试用。"}
+            val streamed=capabilities.optJSONArray("response_speeds")?.let{a->(0 until a.length()).any{a.optString(it)=="streamed"}}==true
+            val speed=if(calibrationId!=null)"reviewed" else if(voiceEngine=="step_realtime")"fast" else if(responseSpeed=="fast"&&streamed)"streamed" else responseSpeed
+            check(speed=="reviewed" || capabilities.optJSONArray("response_speeds")?.let{a->(0 until a.length()).any{a.optString(it)==speed}}==true){"服务器尚未开放快速回复，请关闭开关后开始。"}
             stopSource();audio.stopPlayback()
             val consent=io{cloudConsent(s)}
             val created=io{client.json(s,"/api/v1/subjects/${segment(subject)}/voice-sessions","POST",
                 JSONObject().put("cloud_consent_id",consent).put("mode",mode).put("simple_mode",simpleMode)
                     .put("policy","continuous-voice-v1").put("cloud_asr_allowed",true).put("cloud_tts_allowed",true)
                     .put("purpose",if(calibrationId==null)"dialogue" else "calibration_report")
-                    .apply{if(calibrationId!=null)put("calibration_id",calibrationId)})}
+                    .apply{if(calibrationId!=null)put("calibration_id",calibrationId);if(speed!="reviewed")put("response_speed",speed);if(voiceEngine!="pipeline")put("engine",voiceEngine)})}
             val published=voiceStartGate.publish(ticket){
                 if(state.value.subject==subject){
                     val engine=VoiceCallEngine(appContext,

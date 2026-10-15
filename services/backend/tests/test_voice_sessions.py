@@ -56,6 +56,69 @@ def setup_call(app,client,session):
     return owner,oh,rh,body
 
 
+def test_step_engine_requires_explicit_gate_and_keeps_pipeline_default(app,client,session):
+    from pydantic import SecretStr
+    owner,oh,_,body=setup_call(app,client,session)
+    path=f'/api/v1/subjects/{owner.subject_id}/voice-sessions'
+    assert client.get('/api/v1/voice-capabilities',headers=oh).json()['engines']==['pipeline']
+    step=dict(body,engine='step_realtime',response_speed='fast')
+    assert client.post(path,headers=oh,json=step).status_code==404
+    app.state.settings.realtime_voice_fast_enabled=True
+    app.state.settings.step_realtime_enabled=True
+    app.state.settings.step_realtime_api_key=SecretStr('test')
+    assert 'step_realtime' in client.get('/api/v1/voice-capabilities',headers=oh).json()['engines']
+    created=client.post(path,headers=oh,json=step)
+    assert created.status_code==201,created.text
+    default=client.post(path,headers=oh,json=body)
+    assert app.state.voice_sessions[default.json()['session_id']].payload.engine=='pipeline'
+    assert client.post(path,headers=oh,json=dict(step,purpose='calibration_report')).status_code==404
+
+
+def test_fast_voice_is_explicit_and_does_not_change_default_or_calibration(app,client,session):
+    owner,oh,_,body=setup_call(app,client,session)
+    path=f'/api/v1/subjects/{owner.subject_id}/voice-sessions'
+    assert client.get('/api/v1/voice-capabilities',headers=oh).json()['response_speeds']==['reviewed']
+    fast=dict(body,response_speed='fast')
+    assert client.post(path,headers=oh,json=fast).status_code==404
+    app.state.settings.realtime_voice_fast_enabled=True
+    assert client.get('/api/v1/voice-capabilities',headers=oh).json()['response_speeds']==['reviewed','fast']
+    created=client.post(path,headers=oh,json=fast)
+    assert created.status_code==201,created.text
+    assert app.state.voice_sessions[created.json()['session_id']].payload.response_speed=='fast'
+    default=client.post(path,headers=oh,json=body)
+    assert app.state.voice_sessions[default.json()['session_id']].payload.response_speed=='reviewed'
+    assert client.post(path,headers=oh,json=dict(fast,purpose='calibration_report')).status_code==404
+
+
+def test_fast_bridge_routes_privately_and_requires_skip_metadata(monkeypatch):
+    import httpx
+    from types import SimpleNamespace
+    original=httpx.AsyncClient
+    requests=[]
+    def serve(request):
+        requests.append(request.url.path)
+        return httpx.Response(200,text='{"type":"final","semantic_review":"skipped","result":{"answer":"原话"}}\n')
+    monkeypatch.setattr(api.httpx,'AsyncClient',lambda **kw:original(transport=httpx.MockTransport(serve),**kw))
+    async def run():
+        async def draft(text):pass
+        bridge=api.AsyncTwinBridge(asyncio.get_running_loop(),SimpleNamespace(ai_core_url='http://ai'),[],threading.Event(),draft,response_speed='fast')
+        result=await bridge._request('/twin',{'voice_response':True})
+        assert requests==['/twin/voice-fast']
+        assert result['semantic_review']=='skipped'
+    asyncio.run(run())
+
+
+def test_streamed_voice_has_separate_gate_and_never_changes_calibration(app,client,session):
+    owner,oh,_,body=setup_call(app,client,session)
+    app.state.settings.realtime_voice_fast_enabled=True
+    path=f'/api/v1/subjects/{owner.subject_id}/voice-sessions'
+    body=dict(body,response_speed='streamed')
+    assert client.post(path,headers=oh,json=body).status_code==404
+    app.state.settings.realtime_voice_streamed_enabled=True
+    assert client.post(path,headers=oh,json=body).status_code==201
+    assert client.post(path,headers=oh,json=dict(body,purpose='calibration_report')).status_code==404
+
+
 def test_optin_consent_and_socket_identity_are_required(app,client,session):
     owner,oh,rh,body=setup_call(app,client,session)
     assert not client.get('/api/v1/voice-capabilities',headers=rh).json()['enabled']

@@ -42,6 +42,20 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
     private var sessionId=""
     private var recorder:AudioRecord?=null
     private var capture:Job?=null
+    // Numeric diagnostics only; no audio/transcript persists in the application.
+    @Volatile internal var capturedSamples=0L
+        private set
+    @Volatile internal var lastInputRms=0.0
+        private set
+    private var voiced=0
+    private var quiet=0
+    private var speaking=false
+    @Volatile internal var lastInterruptEpochMs=0L
+        private set
+    @Volatile internal var lastInterruptedSamples=0L
+        private set
+    @Volatile internal var lastInterruptedTurn=-1L
+        private set
     private var aec:AcousticEchoCanceler?=null
     private var ns:NoiseSuppressor?=null
     @Volatile private var track:AudioTrack?=null
@@ -106,6 +120,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                 require(bytes.size%2==0&&bytes.size<=64_000&&e.getInt("sample_rate")==24_000)
                 receivedSamples+=bytes.size/2;require(receivedSamples==e.getLong("samples")&&receivedSamples<=24000L*120)
                 previousSequence=seq
+                mutable.update{it.copy(status="正在说",error="")}
                 check(chunks.trySend(id to bytes).isSuccess)
             }
             "audio_end"->if(id==turn){expectedSamples=e.getLong("samples");acknowledge()}
@@ -129,28 +144,42 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
                 if(AcousticEchoCanceler.isAvailable())aec=AcousticEchoCanceler.create(mic.audioSessionId)?.apply{enabled=true}
                 if(NoiseSuppressor.isAvailable())ns=NoiseSuppressor.create(mic.audioSessionId)?.apply{enabled=true}
                 mic.startRecording()
-                val buffer=ShortArray(320);var voiced=0;var quiet=0;var speaking=false
+                val buffer=ShortArray(320)
                 while(isActive&&!closed&&!inputPaused&&foreground()&&identityValid()){
                     val size=mic.read(buffer,0,buffer.size,AudioRecord.READ_BLOCKING)
                     check(size>0)
-                    if(mutable.value.muted)continue
-                    val rms=sqrt(buffer.take(size).sumOf{it.toDouble()*it.toDouble()}/size)
-                    if(rms>900){voiced++;quiet=0}else{quiet++;voiced=0}
-                    if(voiced>=6&&!speaking){
-                        speaking=true
-                        synchronized(this@VoiceCallEngine){
-                            acknowledge();outputSuppressed=true;flush()
-                            send(JSONObject().put("type","interrupt"))
-                        }
-                    }
-                    if(quiet>=20)speaking=false
                     val bytes=ByteArray(size*2)
                     for(i in 0 until size){bytes[2*i]=buffer[i].toByte();bytes[2*i+1]=(buffer[i].toInt() shr 8).toByte()}
-                    if(socket?.send(bytes.toByteString())!=true)throw IllegalStateException("Disconnected")
+                    acceptCapturedPcm(bytes)
                 }
             }catch(e:Exception){ if(!inputPaused&&!closed&&e !is CancellationException)fail("麦克风暂时不可用，请重新进入") }
             finally{runCatching{recorder?.stop()};recorder?.release();recorder=null;aec?.release();ns?.release();aec=null;ns=null}
         }
+    }
+
+    /** The same post-capture path is exercised by instrumented PCM fixtures. */
+    @Synchronized internal fun acceptCapturedPcm(bytes:ByteArray){
+        if(closed||inputPaused||mutable.value.muted||!foreground()||!identityValid())return
+        require(bytes.isNotEmpty()&&bytes.size%2==0&&bytes.size<=640)
+        var energy=0.0
+        for(i in bytes.indices step 2){
+            val sample=((bytes[i].toInt() and 255) or (bytes[i+1].toInt() shl 8)).toShort().toDouble()
+            energy+=sample*sample
+        }
+        val count=bytes.size/2;val rms=sqrt(energy/count)
+        capturedSamples+=count;lastInputRms=rms
+        if(rms>900){voiced++;quiet=0}else{quiet++;voiced=0}
+        if(voiced>=6&&!speaking){
+            speaking=true
+            acknowledge()
+            lastInterruptedSamples=runCatching{track?.playbackHeadPosition?.toLong()?:0L}.getOrDefault(0L)
+            lastInterruptedTurn=trackTurn
+            outputSuppressed=true;flush()
+            lastInterruptEpochMs=System.currentTimeMillis()
+            send(JSONObject().put("type","interrupt"))
+        }
+        if(quiet>=20)speaking=false
+        if(socket?.send(bytes.toByteString())!=true)throw IllegalStateException("Disconnected")
     }
 
     private suspend fun play(id:Long,pcm:ByteArray){
@@ -194,6 +223,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
     @Synchronized fun pause(reason:String="已暂停"){
         if(closed||!mutable.value.active)return
         inputPaused=true;acknowledge();flush();capture?.cancel()
+        voiced=0;quiet=0;speaking=false
         runCatching{recorder?.stop()};send(JSONObject().put("type","pause"))
         mutable.update{it.copy(paused=true,status=reason)}
     }

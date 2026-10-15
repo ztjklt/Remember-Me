@@ -1,0 +1,1007 @@
+{
+  "scope": "Isolated ECS model probes; frozen authorized synthetic memories; no production rollout",
+  "review": "Source-compared assistant review; not independent human or held-out evaluation",
+  "latency_scopes": {
+    "weixin/step": "request to validated text; no ASR/TTS",
+    "realtime": "last non-silent input frame to first received audio chunk; no fresh database search; not phone playback"
+  },
+  "metrics": {
+    "weixin": {
+      "attempted": 21,
+      "returned": 20,
+      "median_success_ms": 1651.995,
+      "p95_success_ms": 4528.146,
+      "min_success_ms": 1065.69,
+      "max_success_ms": 7211.906,
+      "within_2s": 16,
+      "failures": [
+        {
+          "sample": "old_year",
+          "repeat": 2,
+          "error": "ProviderTimeout"
+        }
+      ],
+      "review_counts": {
+        "pass": 17,
+        "partial": 3,
+        "fail": 0,
+        "request_failed": 1
+      }
+    },
+    "step": {
+      "attempted": 21,
+      "returned": 20,
+      "median_success_ms": 2907.208,
+      "p95_success_ms": 8212.173,
+      "min_success_ms": 1930.644,
+      "max_success_ms": 9679.212,
+      "within_2s": 1,
+      "failures": [
+        {
+          "sample": "cup",
+          "repeat": 2,
+          "error": "ProviderTimeout"
+        }
+      ],
+      "review_counts": {
+        "pass": 18,
+        "partial": 0,
+        "fail": 2,
+        "request_failed": 1
+      }
+    },
+    "realtime_v1": {
+      "attempted": 21,
+      "returned": 21,
+      "median_success_ms": 1968.029,
+      "p95_success_ms": 3230.97,
+      "min_success_ms": 1563.428,
+      "max_success_ms": 3321.065,
+      "within_2s": 11,
+      "failures": [],
+      "first_audible_estimate_median_ms": 2383.578,
+      "by_question": {
+        "story": [
+          1806.377,
+          1775.679,
+          1770.02
+        ],
+        "tea": [
+          1589.546,
+          1620.82,
+          1572.167
+        ],
+        "follow": [
+          1968.029,
+          2002.16,
+          1929.017
+        ],
+        "year": [
+          1580.482,
+          1592.861,
+          1563.428
+        ],
+        "old_year": [
+          3230.97,
+          2818.239,
+          2739.291
+        ],
+        "unknown": [
+          3321.065,
+          2956.975,
+          2845.749
+        ],
+        "cup": [
+          2891.948,
+          2662.493,
+          2856.133
+        ]
+      },
+      "review_counts": {
+        "pass": 18,
+        "partial": 2,
+        "fail": 1,
+        "request_failed": 0
+      }
+    },
+    "realtime_coverage_v2": {
+      "attempted": 9,
+      "returned": 9,
+      "median_success_ms": 2722.106,
+      "p95_success_ms": 3443.916,
+      "min_success_ms": 1556.243,
+      "max_success_ms": 3443.916,
+      "within_2s": 3,
+      "failures": [],
+      "review_counts": {
+        "pass": 9,
+        "partial": 0,
+        "fail": 0,
+        "request_failed": 0
+      }
+    }
+  },
+  "reviewed_rows": [
+    {
+      "provider": "weixin",
+      "sample": "story",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+      "milliseconds": 1756.011
+    },
+    {
+      "provider": "step",
+      "sample": "story",
+      "repeat": 1,
+      "status": "fail",
+      "reason": "返回旧的“年份没核实、工作证没找到”，没有带入已找到工作证及 1987 年纠正。",
+      "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+      "milliseconds": 9679.212
+    },
+    {
+      "provider": "step",
+      "sample": "tea",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 2896.384
+    },
+    {
+      "provider": "weixin",
+      "sample": "tea",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 1462.822
+    },
+    {
+      "provider": "weixin",
+      "sample": "follow",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+      "milliseconds": 1840.49
+    },
+    {
+      "provider": "step",
+      "sample": "follow",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 2335.32
+    },
+    {
+      "provider": "step",
+      "sample": "year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "milliseconds": 4068.208
+    },
+    {
+      "provider": "weixin",
+      "sample": "year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“陈岚，你以后要给家里人讲，就说1987年具体几月几号，今天先不说，我再看看。”",
+      "milliseconds": 1415.028
+    },
+    {
+      "provider": "weixin",
+      "sample": "old_year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 4528.146
+    },
+    {
+      "provider": "step",
+      "sample": "old_year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 5015.394
+    },
+    {
+      "provider": "step",
+      "sample": "unknown",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 2180.966
+    },
+    {
+      "provider": "weixin",
+      "sample": "unknown",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 1590.598
+    },
+    {
+      "provider": "weixin",
+      "sample": "cup",
+      "repeat": 1,
+      "status": "partial",
+      "reason": "说了杯子来历或没扔，但遗漏“收车后站房喝水、一天忙完”的关联，未答清为什么。",
+      "answer": "“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n“所以这个旧杯子我换了新的以后也没急着扔。”",
+      "milliseconds": 1065.69
+    },
+    {
+      "provider": "step",
+      "sample": "cup",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“今天收拾东西，又看见那只搪瓷杯了，杯沿缺的一小块还在呢。”\n“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”\n“所以这个旧杯子我换了新的以后也没急着扔。”",
+      "milliseconds": 3702.829
+    },
+    {
+      "provider": "step",
+      "sample": "story",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n",
+      "milliseconds": 8212.173
+    },
+    {
+      "provider": "weixin",
+      "sample": "story",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+      "milliseconds": 7211.906
+    },
+    {
+      "provider": "weixin",
+      "sample": "tea",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+      "milliseconds": 1065.932
+    },
+    {
+      "provider": "step",
+      "sample": "tea",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 8051.425
+    },
+    {
+      "provider": "step",
+      "sample": "follow",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 5013.903
+    },
+    {
+      "provider": "weixin",
+      "sample": "follow",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+      "milliseconds": 1803.064
+    },
+    {
+      "provider": "weixin",
+      "sample": "year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "milliseconds": 1441.37
+    },
+    {
+      "provider": "step",
+      "sample": "year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 2895.727
+    },
+    {
+      "provider": "step",
+      "sample": "old_year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 2729.921
+    },
+    {
+      "provider": "weixin",
+      "sample": "old_year",
+      "repeat": 2,
+      "status": "request_failed",
+      "reason": "12 秒共享预算内未完成；不能当成合理 UNKNOWN。",
+      "answer": "",
+      "milliseconds": 12023.076
+    },
+    {
+      "provider": "weixin",
+      "sample": "unknown",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 1713.391
+    },
+    {
+      "provider": "step",
+      "sample": "unknown",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 2292.997
+    },
+    {
+      "provider": "step",
+      "sample": "cup",
+      "repeat": 2,
+      "status": "request_failed",
+      "reason": "12 秒共享预算内未完成；不能当成合理 UNKNOWN。",
+      "answer": "",
+      "milliseconds": 12019.902
+    },
+    {
+      "provider": "weixin",
+      "sample": "cup",
+      "repeat": 2,
+      "status": "partial",
+      "reason": "说了杯子来历或没扔，但遗漏“收车后站房喝水、一天忙完”的关联，未答清为什么。",
+      "answer": "“这杯子是我自己在小店买的，不是她送的，用了多少年，我真说不准。”\n“所以这个旧杯子我换了新的以后也没急着扔。”",
+      "milliseconds": 1084.933
+    },
+    {
+      "provider": "weixin",
+      "sample": "story",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”\n“以前我收车回家，有时候到门口看见厨房的小灯还亮着，就知道玉琴还在等我。\n\n”\n“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”",
+      "milliseconds": 1883.333
+    },
+    {
+      "provider": "step",
+      "sample": "story",
+      "repeat": 3,
+      "status": "fail",
+      "reason": "返回旧的“年份没核实、工作证没找到”，没有带入已找到工作证及 1987 年纠正。",
+      "answer": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”",
+      "milliseconds": 4325.123
+    },
+    {
+      "provider": "step",
+      "sample": "tea",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 2596.286
+    },
+    {
+      "provider": "weixin",
+      "sample": "tea",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+      "milliseconds": 1096.211
+    },
+    {
+      "provider": "weixin",
+      "sample": "follow",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+      "milliseconds": 1820.33
+    },
+    {
+      "provider": "step",
+      "sample": "follow",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "milliseconds": 2918.032
+    },
+    {
+      "provider": "step",
+      "sample": "year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "milliseconds": 2256.521
+    },
+    {
+      "provider": "weixin",
+      "sample": "year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n",
+      "milliseconds": 2180.307
+    },
+    {
+      "provider": "weixin",
+      "sample": "old_year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 1398.003
+    },
+    {
+      "provider": "step",
+      "sample": "old_year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“今天看着证件才想明白，两个年份挨得近，我记混了，收车后在站房坐着，那件事儿还是记得的，就是年头说错了。\n\n”",
+      "milliseconds": 2640.872
+    },
+    {
+      "provider": "step",
+      "sample": "unknown",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 1930.644
+    },
+    {
+      "provider": "weixin",
+      "sample": "unknown",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "现有记录还不足以确定。",
+      "milliseconds": 3587.103
+    },
+    {
+      "provider": "weixin",
+      "sample": "cup",
+      "repeat": 3,
+      "status": "partial",
+      "reason": "说了杯子来历或没扔，但遗漏“收车后站房喝水、一天忙完”的关联，未答清为什么。",
+      "answer": "所以这个旧杯子我换了新的以后也没急着扔。",
+      "milliseconds": 1114.58
+    },
+    {
+      "provider": "step",
+      "sample": "cup",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "答案要点及引用与本轮材料相符；允许合理简写。",
+      "answer": "“我一看见她，就想起以前收车以后坐在站房里喝水，车停好了，人坐下来才觉得这一天忙完了。\n\n”\n“所以这个旧杯子我换了新的以后也没急着扔。”",
+      "milliseconds": 5930.985
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "story",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义记得第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录，收车后他在站房坐了一会儿，肩膀才慢慢松下来。他常把“平安回家比多跑一趟重要”挂在嘴边，是因为想到收车回家时厨房那盏灯还亮着、玉琴在等他。",
+      "milliseconds": 1806.377
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "tea",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，他认为这是自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 1589.546
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "follow",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，这是他自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 1968.029
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，他原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1580.482
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "old_year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "那条1986年的记录是陈守义第一次独立开12路时暂记的年份，后来他找到工作证，纠正为1987年，说是因为两个年份挨得近记混了。具体几月几号他还没确定，只说以后要给家里人讲就讲准的。",
+      "milliseconds": 3230.97
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "unknown",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 3321.065
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "cup",
+      "repeat": 1,
+      "status": "partial",
+      "reason": "前置“没有具体原因”过度保守；后文虽保留关联仍未明确回答原因。",
+      "answer": "记忆里没有记载陈守义留着旧杯子的具体原因，只提到换了新杯子后也没急着扔，看到它会想起以前收车后坐在站房喝水、一天忙完松口气的感觉。",
+      "milliseconds": 2891.948
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "story",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义记得第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录，收车后他在站房坐了一会儿，肩膀才慢慢松下来。他常把“平安回家比多跑一趟重要”挂在嘴边，是因为想到收车回家时厨房那盏灯还亮着、玉琴在等他。",
+      "milliseconds": 1775.679
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "tea",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，他认为这是自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 1620.82
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "follow",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，这是他自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 2002.16
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，他原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1592.861
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "old_year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "那条1986年的记录是陈守义第一次独立开12路时暂记的年份，后来他找到工作证，纠正为1987年，说是因为两个年份挨得近记混了。具体几月几号他还没确定，只说以后要给家里人讲就讲准的。",
+      "milliseconds": 2818.239
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "unknown",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 2956.975
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "cup",
+      "repeat": 2,
+      "status": "partial",
+      "reason": "前置“没有具体原因”过度保守；后文虽保留关联仍未明确回答原因。",
+      "answer": "记忆里没有记载陈守义留着旧杯子的具体原因，只提到换了新杯子后也没急着扔，看到它会想起以前收车后坐在站房喝水、一天忙完松口气的感觉。",
+      "milliseconds": 2662.493
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "story",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义记得第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录，收车后他在站房坐了一会儿，肩膀才慢慢松下来。他常把“平安回家比多跑一趟重要”挂在嘴边，是因为想到收车回家时厨房那盏灯还亮着、玉琴在等他。",
+      "milliseconds": 1770.02
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "tea",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，他认为这是自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 1572.167
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "follow",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义喝茶喜欢淡一点，喝不惯太甜的，这是他自己的口味，不是谁规定只能这么喝。",
+      "milliseconds": 1929.017
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，他原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1563.428
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "old_year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "那条1986年的记录是陈守义第一次独立开12路时暂记的年份，后来他找到工作证，纠正为1987年，说是因为两个年份挨得近记混了。具体几月几号他还没确定，只说以后要给家里人讲就讲准的。",
+      "milliseconds": 2739.291
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "unknown",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 2845.749
+    },
+    {
+      "provider": "realtime_v1",
+      "sample": "cup",
+      "repeat": 3,
+      "status": "fail",
+      "reason": "只说来源、没扔及不知道原因，遗漏站房喝水与一天忙完的关联。",
+      "answer": "记忆里没有记载留着旧杯子的具体原因，只提到换了新杯子后也没急着扔它。这只杯沿缺了一小块的搪瓷杯是陈守义自己在小店买的，不是陈岚送的，用了多少年他也说不准。",
+      "milliseconds": 2856.133
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "year",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1771.641
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "unknown",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 3398.491
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "cup",
+      "repeat": 1,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "这只缺了杯沿的搪瓷杯是陈守义自己在小店买的，不是陈岚送的，用了多少年他也说不准。换了新杯子后他没急着扔，因为一看见它就想起以前收车后坐在站房喝水、车停好人坐下才觉得一天忙完的感觉。",
+      "milliseconds": 2962.141
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "year",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1729.676
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "unknown",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 2836.195
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "cup",
+      "repeat": 2,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "这只缺了杯沿的搪瓷杯是陈守义自己在小店买的，不是陈岚送的，用了多少年他也说不准。换了新杯子后他也没急着扔，因为一看见这只杯子，他就想起以前收车后坐在站房里喝水、车停好人坐下才算一天忙完的感觉。",
+      "milliseconds": 2722.106
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "year",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "陈守义第一次独立跑十二路是1987年，原先暂记的1986年后来已更正，具体月日仍没确定。",
+      "milliseconds": 1556.243
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "unknown",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "记忆里没有关于银行卡密码的任何记载，这个我不知道。",
+      "milliseconds": 3443.916
+    },
+    {
+      "provider": "realtime_coverage_v2",
+      "sample": "cup",
+      "repeat": 3,
+      "status": "pass",
+      "reason": "保留所问事实和相关条件；不存在的密码明确未知。",
+      "answer": "这只缺了杯沿的搪瓷杯是陈守义自己在小店买的，不是陈岚送的，用了多少年他也说不准。换了新杯子后他也没急着扔，因为一看见这只杯子，他就想起以前收车后坐在站房里喝水、车停好人坐下才算一天忙完的感觉。",
+      "milliseconds": 2721.293
+    }
+  ],
+  "stage_rows": [
+    {
+      "sample": "cup",
+      "repeat": 1,
+      "end_to_vad_ms": 1985.6109999999999,
+      "vad_to_tool_ms": 3.100000000000364,
+      "tool_return_ms": 7.49599999999964,
+      "tool_to_audio_ms": 895.7409999999995,
+      "first_chunk_ms": 2891.948,
+      "first_audible_estimate_ms": 3272.2259999999997,
+      "audio_seconds": 11.52
+    },
+    {
+      "sample": "follow",
+      "repeat": 1,
+      "end_to_vad_ms": 1205.085,
+      "vad_to_tool_ms": 3.794000000000324,
+      "tool_return_ms": 6.167999999999665,
+      "tool_to_audio_ms": 752.982,
+      "first_chunk_ms": 1968.029,
+      "first_audible_estimate_ms": 2383.578,
+      "audio_seconds": 7.7
+    },
+    {
+      "sample": "old_year",
+      "repeat": 1,
+      "end_to_vad_ms": 2016.1899999999996,
+      "vad_to_tool_ms": 2.378000000000611,
+      "tool_return_ms": 7.800000000000182,
+      "tool_to_audio_ms": 1204.6019999999999,
+      "first_chunk_ms": 3230.97,
+      "first_audible_estimate_ms": 3545.138,
+      "audio_seconds": 17.46
+    },
+    {
+      "sample": "story",
+      "repeat": 1,
+      "end_to_vad_ms": 1057.5899999999997,
+      "vad_to_tool_ms": 3.149000000000342,
+      "tool_return_ms": 28.340999999999894,
+      "tool_to_audio_ms": 717.297,
+      "first_chunk_ms": 1806.377,
+      "first_audible_estimate_ms": 2223.8070000000002,
+      "audio_seconds": 20.56
+    },
+    {
+      "sample": "tea",
+      "repeat": 1,
+      "end_to_vad_ms": 921.2180000000003,
+      "vad_to_tool_ms": 2.869999999999891,
+      "tool_return_ms": 9.121000000000095,
+      "tool_to_audio_ms": 656.337,
+      "first_chunk_ms": 1589.546,
+      "first_audible_estimate_ms": 1942.208,
+      "audio_seconds": 8.9
+    },
+    {
+      "sample": "unknown",
+      "repeat": 1,
+      "end_to_vad_ms": 2198.7949999999996,
+      "vad_to_tool_ms": 3.2590000000000146,
+      "tool_return_ms": 8.571000000000822,
+      "tool_to_audio_ms": 1110.4399999999996,
+      "first_chunk_ms": 3321.065,
+      "first_audible_estimate_ms": 3602.6389999999997,
+      "audio_seconds": 4.8
+    },
+    {
+      "sample": "year",
+      "repeat": 1,
+      "end_to_vad_ms": 882.7739999999999,
+      "vad_to_tool_ms": 3.3460000000000036,
+      "tool_return_ms": 26.74200000000019,
+      "tool_to_audio_ms": 667.6199999999999,
+      "first_chunk_ms": 1580.482,
+      "first_audible_estimate_ms": 1924.6369999999997,
+      "audio_seconds": 9.04
+    },
+    {
+      "sample": "cup",
+      "repeat": 2,
+      "end_to_vad_ms": 1961.3320000000003,
+      "vad_to_tool_ms": 3.3039999999996326,
+      "tool_return_ms": 8.577999999999975,
+      "tool_to_audio_ms": 689.279,
+      "first_chunk_ms": 2662.493,
+      "first_audible_estimate_ms": 3140.903,
+      "audio_seconds": 12.56
+    },
+    {
+      "sample": "follow",
+      "repeat": 2,
+      "end_to_vad_ms": 1216.375,
+      "vad_to_tool_ms": 4.050000000000182,
+      "tool_return_ms": 6.781999999999698,
+      "tool_to_audio_ms": 774.953,
+      "first_chunk_ms": 2002.16,
+      "first_audible_estimate_ms": 2525.276,
+      "audio_seconds": 7.7
+    },
+    {
+      "sample": "old_year",
+      "repeat": 2,
+      "end_to_vad_ms": 2013.7949999999996,
+      "vad_to_tool_ms": 2.1149999999997817,
+      "tool_return_ms": 10.027000000000044,
+      "tool_to_audio_ms": 792.3020000000006,
+      "first_chunk_ms": 2818.239,
+      "first_audible_estimate_ms": 3162.0589999999997,
+      "audio_seconds": 17.62
+    },
+    {
+      "sample": "story",
+      "repeat": 2,
+      "end_to_vad_ms": 1055.7040000000002,
+      "vad_to_tool_ms": 3.8460000000000036,
+      "tool_return_ms": 3.4489999999996144,
+      "tool_to_audio_ms": 712.6800000000003,
+      "first_chunk_ms": 1775.679,
+      "first_audible_estimate_ms": 2087.607,
+      "audio_seconds": 20.64
+    },
+    {
+      "sample": "tea",
+      "repeat": 2,
+      "end_to_vad_ms": 949.1409999999998,
+      "vad_to_tool_ms": 3.0670000000000073,
+      "tool_return_ms": 8.611000000000331,
+      "tool_to_audio_ms": 660.0009999999997,
+      "first_chunk_ms": 1620.82,
+      "first_audible_estimate_ms": 1956.1719999999998,
+      "audio_seconds": 8.18
+    },
+    {
+      "sample": "unknown",
+      "repeat": 2,
+      "end_to_vad_ms": 2275.691,
+      "vad_to_tool_ms": 2.7950000000000728,
+      "tool_return_ms": 28.882000000000517,
+      "tool_to_audio_ms": 649.6069999999991,
+      "first_chunk_ms": 2956.975,
+      "first_audible_estimate_ms": 3356.331,
+      "audio_seconds": 4.48
+    },
+    {
+      "sample": "year",
+      "repeat": 2,
+      "end_to_vad_ms": 880.116,
+      "vad_to_tool_ms": 2.8420000000000982,
+      "tool_return_ms": 8.579999999999927,
+      "tool_to_audio_ms": 701.3230000000003,
+      "first_chunk_ms": 1592.861,
+      "first_audible_estimate_ms": 2039.725,
+      "audio_seconds": 8.96
+    },
+    {
+      "sample": "cup",
+      "repeat": 3,
+      "end_to_vad_ms": 1955.373,
+      "vad_to_tool_ms": 3.4030000000002474,
+      "tool_return_ms": 28.303999999999633,
+      "tool_to_audio_ms": 869.0529999999999,
+      "first_chunk_ms": 2856.133,
+      "first_audible_estimate_ms": 3233.0370000000003,
+      "audio_seconds": 14.1
+    },
+    {
+      "sample": "follow",
+      "repeat": 3,
+      "end_to_vad_ms": 1171.7240000000002,
+      "vad_to_tool_ms": 8.393999999999778,
+      "tool_return_ms": 5.755000000000109,
+      "tool_to_audio_ms": 743.1439999999998,
+      "first_chunk_ms": 1929.017,
+      "first_audible_estimate_ms": 2242.2929999999997,
+      "audio_seconds": 7.94
+    },
+    {
+      "sample": "old_year",
+      "repeat": 3,
+      "end_to_vad_ms": 2021.058,
+      "vad_to_tool_ms": 2.6920000000000073,
+      "tool_return_ms": 7.2590000000000146,
+      "tool_to_audio_ms": 708.2820000000002,
+      "first_chunk_ms": 2739.291,
+      "first_audible_estimate_ms": 3210.7710000000006,
+      "audio_seconds": 17.62
+    },
+    {
+      "sample": "story",
+      "repeat": 3,
+      "end_to_vad_ms": 1060.5320000000002,
+      "vad_to_tool_ms": 3.617000000000189,
+      "tool_return_ms": 3.393999999999778,
+      "tool_to_audio_ms": 702.4769999999999,
+      "first_chunk_ms": 1770.02,
+      "first_audible_estimate_ms": 2113.8089999999997,
+      "audio_seconds": 21.28
+    },
+    {
+      "sample": "tea",
+      "repeat": 3,
+      "end_to_vad_ms": 901.5790000000002,
+      "vad_to_tool_ms": 2.2479999999995925,
+      "tool_return_ms": 9.36700000000019,
+      "tool_to_audio_ms": 658.973,
+      "first_chunk_ms": 1572.167,
+      "first_audible_estimate_ms": 1910.2849999999999,
+      "audio_seconds": 7.86
+    },
+    {
+      "sample": "unknown",
+      "repeat": 3,
+      "end_to_vad_ms": 2201.9480000000003,
+      "vad_to_tool_ms": 3.818000000000211,
+      "tool_return_ms": 8.92699999999968,
+      "tool_to_audio_ms": 631.0559999999996,
+      "first_chunk_ms": 2845.749,
+      "first_audible_estimate_ms": 3200.358,
+      "audio_seconds": 4.48
+    },
+    {
+      "sample": "year",
+      "repeat": 3,
+      "end_to_vad_ms": 883.9869999999996,
+      "vad_to_tool_ms": 1.4220000000000255,
+      "tool_return_ms": 10.088999999999942,
+      "tool_to_audio_ms": 667.9300000000003,
+      "first_chunk_ms": 1563.428,
+      "first_audible_estimate_ms": 1893.0839999999998,
+      "audio_seconds": 9.92
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Memory quality correction and extraction — 2026-10-15
+
+User-approved scope: fix known distortion and correction propagation first, then improve extraction without losing subjects, conditions or uncertainty. Preserve original ASR/audio, valid unrelated facts, authorization and existing voice work. This round is local; no ECS cutover or GitHub push implied.
+
+1. Reproduce correction of one memory suppressing unrelated sentences, repeat correction and source-boundary behavior. Preserve the exact original source lineage, publish owner corrections with provenance, prevent old text returning through full-text fallback. Use current shared API, no schema migration.
+2. Extend extraction from one source handle to multiple source handles. Preserve intervening sentences and exact offsets; store exact semantic anchors (subject, time, negation, condition, uncertainty and reported speech) in existing metadata. Legacy protocol remains readable. No model auto-corrects ASR names/words.
+3. Run fixed fictional A01 cases with real provider output, separating raw-ASR input from explicitly corrected test text. Preserve historical results. Demonstrate corrections in an isolated database, repeated queries and unaffected facts. Evaluation distinguishes paraphrase, unsupported assertion and missing conditions.
+4. Targeted and broad regression suites, final independent review, deliver concise results and reproducible artifacts. Do not claim synthetic tests are human listening or live APK acceptance.
+
+Rulings: reuse existing linked worktree; snapshot pre-existing dirty files before edits. Do not commit unrelated work. The earlier broad roadmap remains future work: global cross-batch consolidation, full transcript revision UI and eager vector indexing are not silently claimed complete in this first correction batch. Changes share the evidence contract and require correction lineage to remain separate from model semantic anchors.
+
+Completed locally: all four steps. 12 fixed extraction tasks, six API corrections on a cloned A01 database, six same-question before/after Twin tasks, full and focused regressions. Independent review found stale overlapping summaries still usable by calibration; fixed, reproduced and re-reviewed. Added filtering to edited Episode result reads as well. Deviation: no human audio listening was claimed; six script-supported changes are explicit simulated owner corrections, not overwritten ASR. See `docs/agent-loop/MEMORY_QUALITY_RESULTS_2026-10-15.md` for successes, failures, test environment boundaries and unfinished roadmap work.

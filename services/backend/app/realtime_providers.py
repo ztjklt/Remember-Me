@@ -6,6 +6,7 @@ import base64
 import binascii
 import json
 import re
+from collections import OrderedDict
 from collections.abc import AsyncIterator
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -39,6 +40,10 @@ def asr_start(task_id: str, silence_ms: int) -> dict:
                 'heartbeat': True}, 'input': {}}}
 
 
+def endpoint_silence(simple_mode: bool, response_speed: str) -> int:
+    return 1400 if simple_mode else (400 if response_speed=='streamed' else 800)
+
+
 def parse_asr(data: dict) -> dict | None:
     event = data.get('header', {}).get('event')
     if event == 'task-failed':
@@ -61,6 +66,7 @@ async def pcm_from_sse(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
     """Incremental SSE framing, independent of TCP/HTTP boundaries."""
     pending = b''
     count = 0
+    done = False
     async for chunk in chunks:
         pending += chunk
         if len(pending) > 2 * 1024 * 1024:
@@ -70,9 +76,11 @@ async def pcm_from_sse(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
             line = line.rstrip(b'\r')
             if not line.startswith(b'data:'): continue
             data = line[5:].strip()
+            if done: raise RealtimeFailure('TTS_OUTPUT_INVALID')
             if data == b'[DONE]':
                 if not count: raise RealtimeFailure('TTS_EMPTY')
-                return
+                done=True
+                continue
             try:
                 item = json.loads(data)
                 if item.get('error'): raise RealtimeFailure('TTS_PROVIDER_FAILED')
@@ -88,7 +96,7 @@ async def pcm_from_sse(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
                     yield pcm
             except (ValueError, TypeError, AttributeError, binascii.Error) as exc:
                 raise RealtimeFailure('TTS_OUTPUT_INVALID') from exc
-    raise RealtimeFailure('TTS_TRUNCATED', '声音传输中断，可重试播放。')
+    if not done or pending.strip():raise RealtimeFailure('TTS_TRUNCATED', '声音传输中断，可重试播放。')
 
 
 class ParaformerRealtime:
@@ -142,16 +150,53 @@ class XiaomiRealtime:
         self.url = settings.xiaomi_voice_base_url.rstrip('/') + '/chat/completions'
         self.key = settings.xiaomi_voice_api_key.get_secret_value()
         if not self.key: raise RealtimeFailure('TTS_NOT_CONFIGURED')
+        self.client=None
+        self.cache_enabled=False
+        self.audio_cache=OrderedDict()
+        self.cached_bytes=0
+
+    async def close(self):
+        self.audio_cache.clear();self.cached_bytes=0
+        if self.client is not None:
+            await self.client.aclose()
+            self.client=None
 
     async def stream(self, text: str):
+        # Per-call PCM only. The answer is always generated anew; caller guards
+        # both cache reads and every outgoing chunk against current provenance.
+        cached=self.audio_cache.get(text) if self.cache_enabled else None
+        if cached is not None:
+            self.audio_cache.move_to_end(text)
+            for chunk in cached:
+                await asyncio.sleep(0)
+                yield chunk
+            return
+        frames=[];size=0
+        async for chunk in self._stream_uncached(text):
+            if self.cache_enabled and size<=2_000_000:
+                size+=len(chunk)
+                if size<=2_000_000:frames.append(chunk)
+                else:frames=[]
+            yield chunk
+        # Not reached on cancellation, provider failure, or missing DONE.
+        if self.cache_enabled and frames and size<=2_000_000:
+            if text in self.audio_cache:
+                self.cached_bytes-=sum(map(len,self.audio_cache.pop(text)))
+            self.audio_cache[text]=tuple(frames);self.cached_bytes+=size
+            while self.cached_bytes>2_000_000 or len(self.audio_cache)>8:
+                _,old=self.audio_cache.popitem(last=False);self.cached_bytes-=sum(map(len,old))
+
+    async def _stream_uncached(self, text: str):
         if not text.strip() or len(text) > 1500: raise RealtimeFailure('TTS_TEXT_INVALID')
         payload = {'model': 'mimo-v2.5-tts', 'stream': True,
             'messages': [{'role': 'assistant', 'content': text}],
             'audio': {'format': 'pcm16', 'voice': '白桦'}}
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(45, connect=15), trust_env=False,
-                                         follow_redirects=False) as client:
-                async with client.stream('POST', self.url, headers={'Authorization': 'Bearer '+self.key},
+            if self.client is None:
+                self.client=httpx.AsyncClient(timeout=httpx.Timeout(45, connect=15), trust_env=False,
+                    follow_redirects=False,limits=httpx.Limits(max_connections=2,max_keepalive_connections=2,keepalive_expiry=60))
+            async with asyncio.timeout(90):
+                async with self.client.stream('POST', self.url, headers={'Authorization': 'Bearer '+self.key},
                                          json=payload) as response:
                     if response.status_code != 200:
                         code = 'TTS_AUTH_FAILED' if response.status_code in {401,403} else 'TTS_HTTP_FAILED'

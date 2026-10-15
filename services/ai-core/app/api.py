@@ -28,6 +28,7 @@ from .providers.openai_compatible import OpenAICompatibleProvider
 from .providers.ollama import OllamaProvider
 from .twin import DeepSeekTwinProvider, TwinInput, TwinOutput
 from .calibration import DeepSeekCalibrationProvider, CalibrationInput, CalibrationOutput
+from .transcript_correction import CorrectionInput, CorrectionOutput, TranscriptCorrector
 
 def _build_extractor(settings: Settings) -> MemoryExtractor:
     if settings.provider == "fixture":
@@ -74,6 +75,7 @@ def create_app(
     calibration_provider: DeepSeekCalibrationProvider | None = None,
     profile_provider: ProfileProposalProvider | None = None,
     persona_provider: PersonaProvider | None = None,
+    transcript_corrector: TranscriptCorrector | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     active_extractor = extractor or _build_extractor(settings)
@@ -87,8 +89,10 @@ def create_app(
     ) if settings.provider == "deepseek" else None)
     active_profile = profile_provider
     active_persona = persona_provider
+    active_corrector = transcript_corrector
     if settings.provider == "weixin":
         key = settings.weixin_api_key.get_secret_value()
+        active_corrector = transcript_corrector or TranscriptCorrector(active_extractor.provider)
         active_twin = twin_provider or WeixinTwinProvider(api_key=key, focus_hints=settings.twin_focus_hints, verify_answers=settings.twin_verify_answers, structured_answers=settings.twin_structured_answers, quote_answers=settings.twin_quote_answers)
         active_calibration = calibration_provider or WeixinCalibrationProvider(api_key=key)
         active_profile = profile_provider or ProfileProposalProvider(WeixinChat(api_key=key),verify_candidates=settings.profile_verify_candidates)
@@ -168,6 +172,17 @@ def create_app(
         finally:
             slots.release()
 
+    @app.post("/transcripts/correct", response_model=CorrectionOutput)
+    def correct_transcript(payload: CorrectionInput):
+        if active_corrector is None:
+            raise ProviderUnavailable("Transcript correction requires a configured provider")
+        if not slots.acquire(blocking=False):
+            raise ProviderUnavailable("AI Core correction capacity is busy")
+        try:
+            return active_corrector.correct(payload)
+        finally:
+            slots.release()
+
     @app.post("/twin", response_model=TwinOutput)
     async def answer_twin(payload: TwinInput, request: Request) -> TwinOutput:
         if payload.voice_response:
@@ -177,6 +192,7 @@ def create_app(
         return await run_in_threadpool(run_twin,payload)
 
     def run_twin(payload):
+        from .voice_stream import generation_streamed
         if active_twin is None:
             raise ProviderUnavailable("Twin requires the configured DeepSeek adapter")
         # Interactive requests may wait briefly behind background proposals.
@@ -184,7 +200,8 @@ def create_app(
         if not slots.acquire(timeout=15):
             raise ProviderUnavailable("AI Core capacity is busy")
         try:
-            with (active_twin.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds)
+            policy={'retry_after_seconds':settings.voice_retry_after_seconds} if generation_streamed.get() and settings.voice_retry_after_seconds>0 else {}
+            with (active_twin.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,**policy)
                   if payload.voice_response and hasattr(active_twin,'transport_scope') else nullcontext()):
                 return active_twin.answer(payload)
         finally:
@@ -196,6 +213,20 @@ def create_app(
             raise AIOutputInvalid('Voice input required')
         from .voice_stream import voice_response
         return voice_response(lambda:run_twin(payload))
+
+    @app.post('/twin/voice-fast')
+    async def fast_twin(payload: TwinInput):
+        if not payload.voice_response or not getattr(active_twin,'quote_answers',False):
+            raise AIOutputInvalid('Fast voice requires the source-selection adapter')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_twin(payload),review_required=False)
+
+    @app.post('/twin/voice-live')
+    async def live_twin(payload: TwinInput):
+        if not payload.voice_response or not getattr(active_twin,'quote_answers',False):
+            raise AIOutputInvalid('Streaming voice requires source selection')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_twin(payload),review_required=False,stream_generation=True)
 
     @app.post("/calibrate", response_model=CalibrationOutput)
     def calibrate(payload: CalibrationInput) -> CalibrationOutput:
@@ -238,6 +269,19 @@ def create_app(
             raise AIOutputInvalid('Voice input required')
         from .voice_stream import voice_response
         return voice_response(lambda:run_persona(payload))
+
+    @app.post('/persona/voice-fast')
+    async def fast_persona(payload: PersonaInput):
+        if not payload.voice_response:
+            raise AIOutputInvalid('Voice input required')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_persona(payload),review_required=False)
+
+    @app.post('/persona/voice-live')
+    async def live_persona(payload: PersonaInput):
+        if not payload.voice_response:raise AIOutputInvalid('Voice input required')
+        from .voice_stream import voice_response
+        return voice_response(lambda:run_persona(payload),review_required=False,stream_generation=True)
 
     @app.post("/profile-proposals", response_model=ProfileProposalOutput)
     def profile_proposals(payload: ProfileProposalInput):

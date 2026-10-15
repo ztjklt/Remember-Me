@@ -12,7 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..contracts import AICoreOutput
-from ..models import Episode, Evidence, MemoryItem, MemoryRevision
+from ..models import Episode, Evidence, MemoryItem, MemoryRevision, MemoryAudit
 
 
 class MemoryRepository:
@@ -73,10 +73,22 @@ class MemoryRepository:
         self.session.execute(delete(Evidence).where(Evidence.episode_id == episode_id))
 
     def items_for(self, episode_id: str) -> list[MemoryItem]:
-        return list(
+        items = list(
             self.session.scalars(
                 select(MemoryItem)
                 .where(MemoryItem.episode_id == episode_id, MemoryItem.deleted_at.is_(None))
                 .order_by(MemoryItem.ordinal)
             )
         )
+        # Preserve the original processing-result contract for unedited legacy
+        # captures. After a correction/deletion it must not republish a sibling
+        # summary whose source has been withdrawn by that edit.
+        edited = self.session.scalar(select(MemoryAudit.audit_id).join(MemoryItem).where(
+            MemoryItem.episode_id == episode_id).limit(1))
+        if edited:
+            from ..materials import effective_materials
+            episode = self.session.get(Episode, episode_id)
+            effective = {c['memory_item_id'] for c in effective_materials(self.session,
+                episode.subject_id, {episode_id}, enforce_budget=False, include_gaps=False)}
+            items = [item for item in items if item.memory_item_id in effective]
+        return items

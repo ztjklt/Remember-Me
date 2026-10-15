@@ -52,6 +52,7 @@ class CompleteCalibration(BaseModel):
 
 def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[dict] | None:
     snapshot = []
+    effective_by_episode = {}
     for identifier in sorted(set(memory_ids)):
         if identifier.startswith('episode:'):
             episode = session.get(Episode, identifier[len('episode:'):])
@@ -71,6 +72,12 @@ def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[
             return None
         episode = session.get(Episode, item.episode_id)
         if episode is None or episode.subject_id != subject_id:
+            return None
+        if episode.episode_id not in effective_by_episode:
+            from ..materials import effective_materials
+            effective_by_episode[episode.episode_id] = {c['memory_item_id'] for c in effective_materials(
+                session, subject_id, {episode.episode_id}, enforce_budget=False, include_gaps=False)}
+        if identifier not in effective_by_episode[episode.episode_id]:
             return None
         snapshot.append({"memory_item_id": identifier, "content": item.content,
                          "evidence_ids": item.evidence_ids})

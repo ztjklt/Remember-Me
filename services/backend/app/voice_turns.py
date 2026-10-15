@@ -81,9 +81,15 @@ class VoiceTurns:
             if self.closed or turn!=self.turn_id: return
             await self.guard(answer)
             self.current['answer']=answer
-            await self.emit('answer_ready',turn,answer=answer,
-                            reviewed_ms=round((time.monotonic()-start)*1000))
-            # Whole answer is reviewed first. Sentence boundaries are playback
+            duration=round((time.monotonic()-start)*1000)
+            mode=answer.get('response_speed','reviewed')
+            first_sentence=next(iter(split_sentences(answer['answer'])),None)
+            await self.emit('answer_ready',turn,answer=answer,response_speed=mode,
+                            prepared_audio_match=speech.text is not None and speech.text==first_sentence,
+                            initial_preparation_match=speech.first_prepared_text==first_sentence,
+                            tts_preparations=speech.preparations,
+                            answer_ready_ms=duration,**({'reviewed_ms':duration} if mode=='reviewed' else {}))
+            # The complete answer passes its configured checks first. Sentence boundaries are playback
             # accounting only; punctuation is never used to truncate meaning.
             sentences=split_sentences(answer['answer'])
             first=True

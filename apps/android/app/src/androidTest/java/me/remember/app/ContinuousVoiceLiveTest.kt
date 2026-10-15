@@ -50,7 +50,17 @@ class ContinuousVoiceLiveTest {
             if(model.ui.value.subject!=space.text("subject_id"))ui.runOnIdle{model.selectSpace(space)}
             ui.waitUntil(90000){!model.ui.value.busy&&!model.ui.value.spaceChoiceRequired}
             inst.uiAutomation.executeShellCommand("pm grant ${context.packageName} android.permission.RECORD_AUDIO").close()
-            click("对话");click("语音聊聊");click("开始")
+            click("对话");click("语音聊聊")
+            val speed=InstrumentationRegistry.getArguments().getString("responseSpeed","reviewed")
+            val voiceEngine=InstrumentationRegistry.getArguments().getString("voiceEngine","pipeline")
+            if(voiceEngine=="step_realtime"){
+                ui.waitUntil(15000){ui.onAllNodesWithTag("voice-realtime").fetchSemanticsNodes().isNotEmpty()}
+                ui.onNodeWithTag("voice-realtime").performClick()
+            }else if(speed=="reviewed")ui.onNodeWithTag("voice-fast").performClick()
+            report.put("response_speed",speed)
+            report.put("voice_engine",voiceEngine)
+            ui.waitUntil(15000){!model.ui.value.busy}
+            click("开始")
             ui.waitUntil(90000){model.voiceCall.value?.ui?.value?.ready==true||model.ui.value.error!=null}
             assertNull(model.ui.value.error)
             val engine=checkNotNull(model.voiceCall.value)
@@ -65,6 +75,144 @@ class ContinuousVoiceLiveTest {
                 report.put("background_remains_paused",true).put("resumed_controls_visible",true)
                 click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
                 report.put("ended",true).put("ok",true)
+                return
+            }
+            if(InstrumentationRegistry.getArguments().getString("timingDemo")=="true"){
+                // Observe the installed application; never inject a transcript or answer.
+                click("字幕")
+                // Emulator streamAudio can disturb the Windows audio HAL. Keep an
+                // exact copy of live received PCM instead, alongside AudioTrack
+                // progress. This is a digital soundtrack, not speaker-loopback.
+                val socketField=engine.javaClass.getDeclaredField("socket").apply{isAccessible=true}
+                val ws=socketField.get(engine) as okhttp3.WebSocket
+                val listenerField=ws.javaClass.getDeclaredField("listener").apply{isAccessible=true}
+                val original=listenerField.get(ws) as okhttp3.WebSocketListener
+                listenerField.set(ws,object:okhttp3.WebSocketListener(){
+                    override fun onMessage(socket:okhttp3.WebSocket,text:String){
+                        val event=JSONObject(text)
+                        if(event.optString("type")=="audio"){
+                            File(folder,"demo-turn-${event.getLong("turn_id")}.pcm").appendBytes(
+                                android.util.Base64.decode(event.getString("data"),android.util.Base64.NO_WRAP))
+                        }else File(folder,"demo-protocol.jsonl").appendText(event.put("received_epoch_ms",System.currentTimeMillis()).toString()+"\n")
+                        original.onMessage(socket,text)
+                    }
+                    override fun onFailure(socket:okhttp3.WebSocket,t:Throwable,response:okhttp3.Response?){original.onFailure(socket,t,response)}
+                    override fun onClosing(socket:okhttp3.WebSocket,code:Int,reason:String){original.onClosing(socket,code,reason)}
+                    override fun onClosed(socket:okhttp3.WebSocket,code:Int,reason:String){original.onClosed(socket,code,reason)}
+                })
+                val events=org.json.JSONArray()
+                fun mark(kind:String,round:Int,extra:JSONObject=JSONObject()){
+                    synchronized(events){
+                    events.put(extra.put("kind",kind).put("round",round).put("epoch_ms",System.currentTimeMillis()))
+                    File(folder,"timing-events.json").writeText(events.toString(2))
+                    }
+                }
+                val trackField=engine.javaClass.getDeclaredField("track").apply{isAccessible=true}
+                var previousAnswer=""
+                val appPcm=InstrumentationRegistry.getArguments().getString("appPcm")=="true"
+                val interruptDemo=InstrumentationRegistry.getArguments().getString("interruptDemo")=="true"
+                var interruptedTurn=-1L;var interruptionMarked=false
+                val demoRounds=InstrumentationRegistry.getArguments().getString("timingRounds","2").toInt().coerceIn(1,3)
+                if(appPcm){
+                    report.put("synthetic_microphone_injection",false).put("instrumented_app_pcm",true)
+                    // Bypass only the emulator HAL. ASR, answer and TTS remain real.
+                    val paused=engine.javaClass.getDeclaredField("inputPaused").apply{isAccessible=true}
+                    paused.setBoolean(engine,true)
+                    val job=engine.javaClass.getDeclaredField("capture").apply{isAccessible=true}.get(engine) as? kotlinx.coroutines.Job
+                    job?.cancel()
+                    (engine.javaClass.getDeclaredField("recorder").apply{isAccessible=true}.get(engine) as? android.media.AudioRecord)?.stop()
+                    kotlinx.coroutines.runBlocking{job?.join()}
+                    paused.setBoolean(engine,false)
+                    val audio=(1..demoRounds).map{r->ParcelFileDescriptor.AutoCloseInputStream(inst.uiAutomation.executeShellCommand("cat /data/local/tmp/voice-demo-input-$r.pcm")).use{it.readBytes()}}
+                    check(audio.all{it.isNotEmpty()&&it.size%2==0})
+                    Thread{
+                        var round=1;var offset=-1;var tick=System.nanoTime()
+                        while(engine.ui.value.active){
+                            if(round<=demoRounds&&offset<0&&File(folder,"demo-start-$round").exists()){
+                                offset=0;mark("question_started",round)
+                            }
+                            val bytes=if(offset>=0&&round<=demoRounds){
+                                val pcm=audio[round-1];val end=minOf(offset+640,pcm.size)
+                                pcm.copyOfRange(offset,end).also{offset=end}
+                            }else ByteArray(640)
+                            engine.acceptCapturedPcm(bytes)
+                            tick+=20_000_000L
+                            val delay=(tick-System.nanoTime())/1_000_000
+                            if(delay>0)Thread.sleep(delay)
+                            if(offset>=0&&round<=demoRounds&&offset>=audio[round-1].size){
+                                mark("question_input_ended",round);round++;offset=-1
+                            }
+                        }
+                    }.apply{isDaemon=true;start()}
+                }else{
+                File(folder,"demo-connect-mic").writeText("register virtual microphone")
+                ui.waitUntil(20000){File(folder,"demo-microphone-connected").exists()}
+                // Reopen AudioRecord after the emulator virtual microphone exists.
+                click("暂停");ui.waitUntil(10000){engine.ui.value.paused}
+                click("继续");ui.waitUntil(20000){!engine.ui.value.paused&&engine.ui.value.error.isBlank()}
+                Thread.sleep(500)
+                }
+                for(round in 1..demoRounds){
+                    mark("ready_for_question",round)
+                    File(folder,"demo-ready-$round").writeText("inject synthetic question")
+                    var transcript="";var answerSeen=false;var audioSeen=false;var completed=false
+                    var lastAnswerText=""
+                    val deadline=System.currentTimeMillis()+65000
+                    var lastSample=0L;var lastProgress=0L
+                    while(System.currentTimeMillis()<deadline){
+                        val s=engine.ui.value
+                        if(System.currentTimeMillis()-lastProgress>=50){
+                            lastProgress=System.currentTimeMillis()
+                            val pos=runCatching{(trackField.get(engine) as? AudioTrack)?.playbackHeadPosition?:0}.getOrDefault(0)
+                            if(pos>0){
+                                val tf=engine.javaClass.getDeclaredField("trackTurn").apply{isAccessible=true}
+                                mark("playback_progress",round,JSONObject().put("turn_id",tf.getLong(engine)).put("played_samples",pos))
+                            }
+                        }
+                        if(interruptDemo&&round==2&&!interruptionMarked&&engine.lastInterruptedTurn==interruptedTurn&&engine.lastInterruptedSamples>0){
+                            mark("playback_interrupted",1,JSONObject().put("turn_id",interruptedTurn)
+                                .put("played_samples",engine.lastInterruptedSamples).put("stopped_epoch_ms",engine.lastInterruptEpochMs))
+                            interruptionMarked=true
+                        }
+                        if(System.currentTimeMillis()-lastSample>=1000){
+                            lastSample=System.currentTimeMillis()
+                            mark("microphone",round,JSONObject().put("samples",engine.capturedSamples).put("rms",engine.lastInputRms))
+                        }
+                        if(s.transcript!=transcript&&s.transcript.isNotBlank()){
+                            transcript=s.transcript;mark("transcript",round,JSONObject().put("text",transcript))
+                            ui.waitForIdle() // Compose test clock must render the actual state change.
+                        }
+                        if(s.error.isNotBlank()){
+                            mark("error",round,JSONObject().put("message",s.error));fail(s.error)
+                        }
+                        val answerId=s.sources?.let{it.optString("answer_id").ifBlank{it.optString("live_turn_id")}}.orEmpty()
+                        if(answerId.isNotBlank()&&answerId!=previousAnswer){
+                            if(!answerSeen||s.answer!=lastAnswerText){
+                                mark("answer_visible",round,JSONObject().put("text",s.answer).put("answer_id",answerId))
+                                answerSeen=true;lastAnswerText=s.answer;ui.waitForIdle()
+                            }
+                            val played=runCatching{(trackField.get(engine) as? AudioTrack)?.playbackHeadPosition?:0}.getOrDefault(0)
+                            if(played>0&&!audioSeen){
+                                val turnField=engine.javaClass.getDeclaredField("trackTurn").apply{isAccessible=true}
+                                mark("audio_track_started",round,JSONObject().put("turn_id",turnField.getLong(engine)).put("played_samples",played))
+                                audioSeen=true;ui.waitForIdle();shot("demo-$round-answer")
+                            }
+                            if(interruptDemo&&round==1&&audioSeen&&played>=14400){
+                                interruptedTurn=engine.javaClass.getDeclaredField("trackTurn").apply{isAccessible=true}.getLong(engine)
+                                mark("interrupt_ready",round);previousAnswer=answerId;completed=true;break
+                            }
+                            if(audioSeen&&s.status=="我在听"){
+                                mark("playback_finished",round);previousAnswer=answerId;completed=true;break
+                            }
+                        }
+                        Thread.sleep(25)
+                    }
+                    assertTrue("Round $round did not complete playback",answerSeen&&audioSeen&&completed)
+                    if(!(interruptDemo&&round==1))Thread.sleep(1000)
+                }
+                if(interruptDemo)assertTrue("Local VAD did not stop the previous playing turn",interruptionMarked)
+                click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
+                report.put("ok",true).put("timing_demo",true).put("events",events)
                 return
             }
             File(folder,"ready").writeText("inject synthetic question now")

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "LocatedEdit": {
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Before",
+          "type": "string"
+        },
+        "after": {
+          "maxLength": 120,
+          "title": "After",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "word",
+            "punctuation",
+            "name",
+            "number",
+            "meaning"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "auto",
+            "review"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "title": "End",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "category",
+        "action",
+        "reason",
+        "start",
+        "end"
+      ],
+      "title": "LocatedEdit",
+      "type": "object"
+    },
+    "CorrectionInput": {
+      "additionalProperties": false,
+      "properties": {
+        "transcript": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Transcript",
+          "type": "string"
+        }
+      },
+      "required": [
+        "transcript"
+      ],
+      "title": "CorrectionInput",
+      "type": "object"
+    },
+    "CorrectionOutput": {
+      "additionalProperties": false,
+      "properties": {
+        "draft": {
+          "title": "Draft",
+          "type": "string"
+        },
+        "input_sha256": {
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "prompt_version": {
+          "default": "asr-proofread-v1",
+          "title": "Prompt Version",
+          "type": "string"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/LocatedEdit"
+          },
+          "title": "Edits",
+          "type": "array"
+        }
+      },
+      "required": [
+        "draft",
+        "input_sha256",
+        "model_version",
+        "edits"
+      ],
+      "title": "CorrectionOutput",
+      "type": "object"
+    }
+  },
+  "description": "Internal ASR proofreading input/output; drafts require the existing owner confirmation."
+}
