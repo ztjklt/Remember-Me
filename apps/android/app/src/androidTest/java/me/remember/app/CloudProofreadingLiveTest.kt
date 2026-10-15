@@ -28,7 +28,7 @@ class CloudProofreadingLiveTest {
         assertTrue(config.getBoolean("execute_authorized"));assertEquals("https://39.108.183.47",BuildConfig.SERVICE_URL)
         val folder=File(context.getExternalFilesDir(null),"cloud-proofreading").apply{mkdirs()}
         val report=JSONObject().put("physical_phone",false).put("prerecorded_synthetic_input",true).put("version",BuildConfig.VERSION_NAME)
-        fun shot(name:String){val b=inst.uiAutomation.takeScreenshot();File(folder,"$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()}
+        fun shot(name:String){ui.waitForIdle();Thread.sleep(600);val b=inst.uiAutomation.takeScreenshot();File(folder,"$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()}
         fun click(text:String){val n=ui.onAllNodes(hasText(text) and hasClickAction()).onFirst();if(!n.isDisplayed())n.performScrollTo();n.performClick();ui.waitForIdle()}
         val scenario=ActivityScenario.launch<MainActivity>(Intent(context,MainActivity::class.java))
         lateinit var model:NativeWorkbenchModel
@@ -63,8 +63,7 @@ class CloudProofreadingLiveTest {
             // to the fictional fixture; this is test-author review, not model output.
             val checked=draft.replace("该谢就谢","该歇就歇")
             ui.onNodeWithText("核对后的文字").performScrollTo().performTextReplacement(checked)
-            ui.onNodeWithText("同意交由云端模型整理和用于之后的问答。").performScrollTo()
-            ui.onNode(isToggleable() and hasAnySibling(hasText("同意交由云端模型整理和用于之后的问答。"))).performClick()
+            ui.onNode(hasText("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。") and isToggleable()).performScrollTo().performClick()
             shot("03-confirm-text");click("确认文字并整理");idle()
             ui.waitUntil(180000){model.ui.value.stories.any{it.text("episode_id")==ep&&it.text("status") in listOf("ready","failed")}}
             var story=model.ui.value.stories.single{it.text("episode_id")==ep};assertEquals("ready",story.text("status"));assertEquals(raw,story.text("machine_transcript"));assertTrue(story.rows("memories").isNotEmpty())
