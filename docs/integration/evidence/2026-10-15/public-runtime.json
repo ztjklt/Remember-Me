@@ -1,0 +1,61 @@
+{
+  "checked_at": "2026-10-15T14:56:02.241266+00:00",
+  "scope": "Unauthenticated public readiness/version probes; no model/device verification",
+  "services": {
+    "android_ecs": {
+      "/health": {
+        "status": 200,
+        "body": {
+          "status": "ok"
+        }
+      },
+      "/ready": {
+        "status": 200,
+        "body": {
+          "status": "ready",
+          "components": {
+            "database": "ok",
+            "object_store": "ok"
+          }
+        }
+      },
+      "/api/v1/service-info": {
+        "status": 200,
+        "body": {
+          "release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+          "api_version": "0.7.0",
+          "sharing_invitations": true,
+          "registration_allowed": false
+        }
+      }
+    },
+    "ios_cloudbase": {
+      "/health": {
+        "status": 200,
+        "body": {
+          "status": "ok"
+        }
+      },
+      "/ready": {
+        "status": 200,
+        "body": {
+          "status": "ready",
+          "components": {
+            "database": "ok",
+            "object_store": "ok"
+          }
+        }
+      },
+      "/api/v1/service-info": {
+        "status": 200,
+        "body": {
+          "release_id": "ios-wearable-capture-fcb7aa0",
+          "api_version": "0.12.0",
+          "sharing_invitations": true,
+          "registration_allowed": false
+        }
+      }
+    }
+  },
+  "local_probe_note": "First attempt stopped before requests: local SOCKS proxy dependency missing. Retried direct HTTPS with TLS verification."
+}

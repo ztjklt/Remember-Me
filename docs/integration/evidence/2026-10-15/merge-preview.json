@@ -1,0 +1,27 @@
+{
+  "kind": "git merge-tree only; no checkout, index, working-tree or live database mutation",
+  "android": "e5c037cd59dfe010637995c0627c82e1d7e89941",
+  "ios_backend": "7931dde6413466fb5d67021d342f2824cb0604e5",
+  "exit_code": 1,
+  "conflict_files": [
+    "services/ai-core/app/api.py",
+    "services/ai-core/app/config.py",
+    "services/ai-core/app/grounded_twin.py",
+    "services/ai-core/app/profile_proposals.py",
+    "services/ai-core/app/twin.py",
+    "services/ai-core/tests/test_weixin.py",
+    "services/backend/app/access.py",
+    "services/backend/app/api/calibration.py",
+    "services/backend/app/api/twin.py",
+    "services/backend/app/api/voice.py",
+    "services/backend/app/config.py",
+    "services/backend/app/main.py",
+    "services/backend/app/materials.py",
+    "services/backend/app/repositories/person_model.py",
+    "services/backend/app/twin_client.py",
+    "services/backend/app/worker.py",
+    "services/backend/migrations/env.py",
+    "services/backend/pyproject.toml",
+    "services/backend/uv.lock"
+  ]
+}

@@ -1,5 +1,7 @@
 # Remember Me PRD v3.0 Summary
 
+> Current implementation status (2026-10-15): see the [dual-platform handoff](../integration/README.md). This document preserves the product principles and historical phase assumptions; its early undecided-provider and phase labels are not a statement that today's ASR, cloud delivery or Twin are absent. Conversely, the PRD's full voice/hardware/Legacy vision is not a claim that all of it is accepted on both clients.
+
 Agent-readable orientation for [Remember Me PRD v3.0](Remember_Me_PRD_v3.0.docx), the source of product behavior. PRD v3.0 was an Android-first revision of v2.0 and brought the existing Compose prototype into the real development path. A [2026-09-26 Product Owner amendment](../team/00_TEAM_OWNERSHIP.md) now authorizes iOS and Android as parallel client tracks using one shared Backend Contract. This changes platform scope and staffing, not the consent or product principles below. The original v3.0 Android-first comparison remains historical context.
 
 Remember Me is a consent-first product for building a traceable record of how a person remembers, relates, decides, values, and expresses. It is not a transcription tool, an AI memorial, a legal proxy, or a claim of consciousness replication. The product begins while the subject can still participate, then may transition under prior authorization into a Legacy experience for designated recipients.

@@ -1,0 +1,78 @@
+{
+  "android_backend": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "49",
+      "time": "37.229"
+    }
+  ],
+  "ios_backend_isolated": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "41",
+      "time": "24.298"
+    }
+  ],
+  "android_unit": [
+    {
+      "name": "me.remember.app.hardware.Work3200ImportTest",
+      "tests": "7",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.483"
+    },
+    {
+      "name": "me.remember.app.hardware.Work3200SessionTest",
+      "tests": "9",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.018"
+    },
+    {
+      "name": "me.remember.app.integration.ClientTranscriptTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "time": "0.042"
+    }
+  ],
+  "scope": "Backend suites use isolated SQLite and synthetic fixtures; Android JVM tests do not exercise microphones. No natural speaker accuracy or iOS build implied.",
+  "schema_cross_payload": {
+    "ecs_rejects": [
+      "conversation_mode",
+      "previous_answer_id",
+      "request_id"
+    ],
+    "ios_rejects": [
+      "mode",
+      "retrieval_mode"
+    ],
+    "error": "extra_forbidden",
+    "method": "Actual TwinQuestion.model_validate on each pinned source; no network request"
+  },
+  "preflight_failures": [
+    "Android first invocation wildcard expanded into a local log filename; tests did not run.",
+    "Android next invocation missing ANDROID_HOME; tests did not run. Exact class names and SDK environment corrected before successful run.",
+    "One scanner rerun used repository-relative path from packages/contracts; no tests ran. Corrected to repository root, 4 passed."
+  ],
+  "contract": {
+    "tests": 15,
+    "failures": 0,
+    "skipped": 0,
+    "command": "npm test in packages/contracts"
+  },
+  "scanner": {
+    "tests": 4,
+    "failures": 0,
+    "command": "python -m unittest discover -s tools/delivery/tests -p test_platform_sync.py -v from repository root"
+  }
+}

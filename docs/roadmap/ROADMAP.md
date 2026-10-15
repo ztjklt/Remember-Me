@@ -1,5 +1,7 @@
 # Remember Me Engineering Roadmap
 
+> 2026-10-15: the historical phase/authorization table below is not the current release checklist. See the [competition review and integration order](../integration/COMPETITION_REVIEW_2026-10-15.md) for Android 0.12.1, the separately deployed iOS voiceprint backend, verified gaps and pending device work. New integration work must preserve both running paths; PR #94 remains unmerged.
+
 Execution baseline: [current delivery model](../team/00_TEAM_OWNERSHIP.md). Product goals: [PRD v3.0](../PRD/Remember_Me_PRD_v3.0.docx). This file records phase status and exit gates; staffing is assigned per delegated Issue, not by phase or service.
 
 ## Phase status
