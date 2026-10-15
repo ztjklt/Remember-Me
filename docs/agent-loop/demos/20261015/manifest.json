@@ -1,0 +1,38 @@
+[
+  {
+    "file": "step-realtime-1x.mp4",
+    "bytes": 886857,
+    "sha256": "e4c8d20014b860d6f3fad3f5ff0b9fdbdbbd605d36ac10d2736363176cba6710",
+    "historical_source": "services/backend/var/step-integrated-20261015/android-video-01/android-fast-voice.mp4"
+  },
+  {
+    "file": "step-realtime-preview.png",
+    "bytes": 423001,
+    "sha256": "f4cbf104f574f9fc64bcad9057addff79a8d96464ddb66b9b99e232ea99a99de",
+    "historical_source": "services/backend/var/step-integrated-20261015/android-video-01/preview.png"
+  },
+  {
+    "file": "pipeline-1x.mp4",
+    "bytes": 1315698,
+    "sha256": "dc9258ce1756d5cda7b9be0d3e5e3463a2eb50b605e5ad06f4e49c796d8203ff",
+    "historical_source": "services/backend/var/voice-stability-20261014/android-05-video/android-fast-voice.mp4"
+  },
+  {
+    "file": "timeout-unedited-no-audio.mp4",
+    "bytes": 825434,
+    "sha256": "76431d83d1a567e2978bb9178fdcfc5df85353be2303810f48e79e469c7e8c9d",
+    "historical_source": "services/backend/var/voice-stability-20261014/android-04/screen-unedited.mp4"
+  },
+  {
+    "file": "step-timing.json",
+    "bytes": 2507,
+    "sha256": "dbbaf789ab3bebf4818072c46ae95b6f1639a73878069ccde17c48a759075132",
+    "historical_source": "services/backend/var/step-integrated-20261015/android-video-01/timing.json"
+  },
+  {
+    "file": "pipeline-timing.json",
+    "bytes": 3383,
+    "sha256": "c5d0cfe06f367f20c7654f270572741c149a3fcfa101f774dc252e58e9282ec3",
+    "historical_source": "services/backend/var/voice-stability-20261014/android-05-video/timing.json"
+  }
+]

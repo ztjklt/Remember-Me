@@ -178,11 +178,13 @@ class ProcessingWorker:
         lease_seconds: int = 60,
         owner: str | None = None,
         heartbeat_interval_seconds: float | None = None,
+        transcript_corrector=None,
     ) -> None:
         self.database = database
         self.object_store = object_store
         self.stt = stt
         self.ai = ai
+        self.transcript_corrector = transcript_corrector
         self.max_attempts = max_attempts
         self.backoff_seconds = backoff_seconds
         self.lease_seconds = lease_seconds
@@ -411,6 +413,8 @@ class ProcessingWorker:
             episode.capture_metadata['asr_call'] = transcript.metadata
         episode.stt_backend = transcript.backend
         episode.stt_model_version = transcript.model_version
+        from .transcript_correction import apply_automatic_correction
+        apply_automatic_correction(self.database, episode, self.transcript_corrector)
 
     def _extract(self, session, episode: Episode) -> None:  # type: ignore[no-untyped-def]
         """Ask AI Core to turn the transcript into memories, and store the result.
@@ -497,6 +501,7 @@ class ProcessingWorker:
 
 
 def build_worker(database: Database, settings: Settings) -> ProcessingWorker:
+    from .transcript_correction import HttpTranscriptCorrector, correction_policy
     return ProcessingWorker(
         database,
         build_object_store(settings),
@@ -505,6 +510,7 @@ def build_worker(database: Database, settings: Settings) -> ProcessingWorker:
         max_attempts=settings.job_max_attempts,
         backoff_seconds=settings.job_retry_backoff_seconds,
         lease_seconds=settings.job_lease_seconds,
+        transcript_corrector=HttpTranscriptCorrector(settings) if correction_policy(settings) else None,
     )
 
 

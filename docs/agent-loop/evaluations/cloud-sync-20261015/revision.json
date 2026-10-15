@@ -1,0 +1,83 @@
+{
+  "recording_consent_id": "consent_f4dfb968e1bb4b29",
+  "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+  "audio_sha256": "51f1d58700a6d0eb1dd0539ea6f1ae4b1c1463259fa6d29292badcb027c1029f",
+  "episode_id": "ep_007ccf0e26394aff",
+  "revision": {
+    "revision_id": "rev_353168c5c6544248",
+    "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+    "target_memory_id": "mi_44175ae293794df9",
+    "episode_id": "ep_007ccf0e26394aff",
+    "kind": "correction",
+    "status": "pending",
+    "time_text": null,
+    "created_at": "2026-10-15T14:00:38.586850+00:00",
+    "confirmed_at": null
+  },
+  "review": {
+    "state": "reviewing",
+    "transcript": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+    "stt_model_version": "bailian/paraformer-v2",
+    "supplement": "",
+    "machine_transcript": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+    "automatic_correction": {
+      "status": "completed",
+      "draft": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+      "input_sha256": "2fbd570b2cc82f8e0550ca64dcb4845ca770ddaf545e5b234c5e74db5a4d9df6",
+      "model_version": "Deepseek-v4-flash",
+      "prompt_version": "asr-proofread-v1",
+      "edits": [],
+      "completed_at": "2026-10-15T14:00:43.015050+00:00",
+      "elapsed_ms": 1027
+    }
+  },
+  "text_confirmed": true,
+  "confirmed_revision": {
+    "revision_id": "rev_353168c5c6544248",
+    "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+    "target_memory_id": "mi_44175ae293794df9",
+    "episode_id": "ep_007ccf0e26394aff",
+    "kind": "correction",
+    "status": "confirmed",
+    "time_text": null,
+    "created_at": "2026-10-15T14:00:38.586850+00:00",
+    "confirmed_at": "2026-10-15T14:01:25.542951+00:00"
+  },
+  "story": {
+    "episode_id": "ep_007ccf0e26394aff",
+    "status": "ready",
+    "recorded_at": "2026-10-15T15:00:00+00:00",
+    "duration_ms": null,
+    "transcript": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+    "machine_transcript": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+    "reviewed": true,
+    "waiting_for_review": false,
+    "can_reextract_empty": false,
+    "model_version": "Deepseek-v4-flash",
+    "stt_model_version": "bailian/paraformer-v2",
+    "error_code": null,
+    "error_message": null,
+    "unavailable": false,
+    "memories": [
+      {
+        "memory_item_id": "mi_16e2138a56c941b2",
+        "content": "说话人表示蓝色搪瓷杯现在留作纪念，不是每天喝茶用的杯子；这个杯子用过很多年，所以舍不得扔，其他的话不变。",
+        "memory_type": "PREFERENCE",
+        "review_state": "active",
+        "domain": "PREFERENCES",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_f1dfb09d8b82403e",
+            "excerpt": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_007ccf0e26394aff"
+          }
+        ]
+      }
+    ],
+    "notice": null
+  },
+  "ok": true
+}

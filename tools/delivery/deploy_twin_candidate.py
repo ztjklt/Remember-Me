@@ -21,6 +21,17 @@ CONFIG = Path('/etc/remember-me')
 SERVICES = ['ai', 'worker', 'profile', 'api']
 
 
+def release_updates(name, commit, transcript_correction=False):
+    updates = {'REMEMBER_RELEASE_ID': commit}
+    if name == 'ai':
+        updates['AI_PROFILE_VERIFY_CANDIDATES'] = 'true'
+    else:
+        updates['REMEMBER_AI_TIMEOUT_SECONDS'] = '120'
+    if transcript_correction and name in ('api', 'worker'):
+        updates['REMEMBER_TRANSCRIPT_CORRECTION_ENABLED'] = 'true'
+    return updates
+
+
 def run(args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
@@ -65,6 +76,7 @@ def main():
     p.add_argument('--smoke', type=Path, required=True)
     p.add_argument('--evidence', type=Path, required=True)
     p.add_argument('--voice-config', type=Path)
+    p.add_argument('--enable-transcript-correction', action='store_true')
     args = p.parse_args()
     candidate = args.candidate.resolve()
     assert os.geteuid() == 0 and re.fullmatch(r'[a-f0-9]{40}', args.commit)
@@ -130,11 +142,7 @@ subprocess.run(['.venv/bin/python','-m','alembic','upgrade','head'],env=env,chec
         config_changed = True  # All four original files were copied successfully.
         for name in SERVICES:
             path = CONFIG / (name + '.env')
-            updates = {'REMEMBER_RELEASE_ID': args.commit}
-            if name == 'ai':
-                updates['AI_PROFILE_VERIFY_CANDIDATES'] = 'true'
-            else:
-                updates['REMEMBER_AI_TIMEOUT_SECONDS'] = '120'
+            updates = release_updates(name, args.commit, args.enable_transcript_correction)
             if name=='api':
                 updates.update(voice)
             lines = [line for line in path.read_text().splitlines() if line.split('=', 1)[0] not in updates]

@@ -17,7 +17,7 @@ from ..models import (Actor, CalibrationRun, ConsentScope, Episode, Evidence,
                       MemoryItem, TwinAnswer, utcnow)
 from ..repositories.consents import ConsentRepository
 from ..security import current_actor
-from .twin import require_subject
+from .twin import require_subject, TwinQuestion, generate_answer
 
 router = APIRouter(prefix="/api/v1/subjects/{subject_id}/calibrations", tags=["calibration"])
 DIMENSIONS = {"DECISION", "REASONING", "VALUE_PRIORITY", "EMOTIONAL_REACTION", "EXPRESSION"}
@@ -52,6 +52,7 @@ class CompleteCalibration(BaseModel):
 
 def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[dict] | None:
     snapshot = []
+    effective_by_episode = {}
     for identifier in sorted(set(memory_ids)):
         if identifier.startswith('episode:'):
             episode = session.get(Episode, identifier[len('episode:'):])
@@ -71,6 +72,12 @@ def _snapshot(session: Session, subject_id: str, memory_ids: list[str]) -> list[
             return None
         episode = session.get(Episode, item.episode_id)
         if episode is None or episode.subject_id != subject_id:
+            return None
+        if episode.episode_id not in effective_by_episode:
+            from ..materials import effective_materials
+            effective_by_episode[episode.episode_id] = {c['memory_item_id'] for c in effective_materials(
+                session, subject_id, {episode.episode_id}, enforce_budget=False, include_gaps=False)}
+        if identifier not in effective_by_episode[episode.episode_id]:
             return None
         snapshot.append({"memory_item_id": identifier, "content": item.content,
                          "evidence_ids": item.evidence_ids})
@@ -101,10 +108,12 @@ def _check_source(session: Session, row: CalibrationRun) -> bool:
 
 def _view(row: CalibrationRun) -> dict:
     stale = row.status == "stale"
+    hidden = row.status != 'complete' and row.calibration_id.startswith('vcal_')
     return {
         "calibration_id": row.calibration_id, "subject_id": row.subject_id,
         "twin_answer_id": row.twin_answer_id, "question": row.question,
-        "locked_answer": None if stale else row.locked_answer,
+        "locked_answer": None if stale or hidden else row.locked_answer,
+        "answer_hidden": hidden,
         "locked_response_type": row.locked_response_type,
         "locked_model_version": row.locked_model_version,
         "locked_person_model_version": row.locked_person_model_version,
@@ -119,9 +128,23 @@ def _view(row: CalibrationRun) -> dict:
     }
 
 
+@router.post('/prepare-voice')
+def prepare_voice(subject_id: str, body: TwinQuestion, request: Request,
+                  actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+    """Prepare and lock without delivering the model answer to the human UI."""
+    require_subject(session,subject_id,actor)
+    answer=generate_answer(subject_id,body.model_copy(update={'retrieval_mode':'local'}),request,actor,session)
+    return _start(subject_id,StartCalibration(twin_answer_id=answer['answer_id'],
+        cloud_consent_id=body.cloud_consent_id),actor,session,blind=True)
+
+
 @router.post("")
 def start(subject_id: str, body: StartCalibration,
           actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    return _start(subject_id,body,actor,session)
+
+
+def _start(subject_id,body,actor,session,*,blind=False):
     require_subject(session, subject_id, actor)
     ConsentRepository(session).require_active(body.cloud_consent_id, subject_id=subject_id,
                                                scope=ConsentScope.CLOUD_TWIN, actor_id=actor.actor_id)
@@ -146,7 +169,7 @@ def start(subject_id: str, body: StartCalibration,
     if not snapshot or not answer.evidence_ids:
         raise CalibrationNotReady("Twin 回答缺少有效的原始记忆证据。")
     row = CalibrationRun(
-        calibration_id="cal_" + uuid4().hex[:16], subject_id=subject_id,
+        calibration_id=("vcal_" if blind else "cal_") + uuid4().hex[:16], subject_id=subject_id,
         actor_id=actor.actor_id, twin_answer_id=answer.answer_id,
         question=answer.question, locked_answer=answer.answer,
         locked_response_type=answer.response_type,

@@ -45,10 +45,19 @@ class TwinCandidate(BaseModel):
     evidence: list[TwinEvidence]
 
 
+class DialogueContextTurn(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    question: str = Field(min_length=1,max_length=1000)
+    heard_answer: str = Field(max_length=500)
+    interrupted: bool
+
+
 class TwinInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question: str = Field(min_length=1, max_length=1000)
     candidates: list[TwinCandidate] = Field(max_length=24000)
+    dialogue_context: list[DialogueContextTurn] = Field(default_factory=list,max_length=6)
+    voice_response: bool = False
 
     @model_validator(mode='after')
     def material_budget(self):
@@ -105,7 +114,8 @@ class DeepSeekTwinProvider:
             "model": self.model,
             "thinking": {"type": "disabled"},
             "messages": [{"role": "system", "content": TWIN_SYSTEM},
-                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True), ensure_ascii=False)}],
+                         {"role": "user", "content": json.dumps(payload.model_dump(mode='json', exclude_none=True,
+                             exclude={'dialogue_context','voice_response'} if not payload.voice_response else set()), ensure_ascii=False)}],
             "response_format": {"type": "json_object"},
             "max_tokens": 700,
             "temperature": 0,

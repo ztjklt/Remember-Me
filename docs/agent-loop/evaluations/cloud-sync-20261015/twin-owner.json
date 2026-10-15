@@ -1,0 +1,138 @@
+{
+  "run_id": "cloud-sync-20261015-final-pair",
+  "role": "owner",
+  "server": "https://39.108.183.47",
+  "build_type": "internal",
+  "debuggable": false,
+  "app_version": "0.12.1-internal",
+  "app_version_code": 20261023,
+  "fixture": false,
+  "physical_phone": false,
+  "new_asr": false,
+  "tls_validation": "Android default TLS with internal APK trust configuration; no test override",
+  "interaction_method": "Compose UI; saved-answer/asset reads use production model; verification uses authenticated GET",
+  "new_question_attempts": 1,
+  "new_speech_attempts": 1,
+  "style_changed": false,
+  "saved_answer_played": false,
+  "new_answer_played": true,
+  "source_played": true,
+  "logout_cache_cleared": true,
+  "status": "passed",
+  "events": [
+    {
+      "name": "ordinary_login",
+      "at": "2026-10-15T14:03:42.865289Z",
+      "detail": {}
+    },
+    {
+      "name": "native_pages",
+      "at": "2026-10-15T14:03:46.283906Z",
+      "detail": {}
+    },
+    {
+      "name": "new_question_single_submit",
+      "at": "2026-10-15T14:03:55.360470Z",
+      "detail": {}
+    },
+    {
+      "name": "new_answer_voice_single_submit",
+      "at": "2026-10-15T14:04:04.372232Z",
+      "detail": {}
+    },
+    {
+      "name": "playback_verified",
+      "at": "2026-10-15T14:04:16.012991Z",
+      "detail": {
+        "source": "answer:ta_fc44a25ccbf34f52",
+        "duration_ms": 23840,
+        "position_ms": 1183
+      }
+    },
+    {
+      "name": "original_ui_playback",
+      "at": "2026-10-15T14:04:17.864726Z",
+      "detail": {}
+    },
+    {
+      "name": "playback_verified",
+      "at": "2026-10-15T14:04:23.147036Z",
+      "detail": {
+        "source": "ep_52e68d2108fb4810",
+        "duration_ms": 7040,
+        "position_ms": 1196
+      }
+    },
+    {
+      "name": "logout",
+      "at": "2026-10-15T14:04:23.937474Z",
+      "detail": {}
+    },
+    {
+      "name": "completed",
+      "at": "2026-10-15T14:04:26.680083Z",
+      "detail": {}
+    }
+  ],
+  "api_actor_id": "actor_77e96f50ece2467abbc85c86429b1923",
+  "api_display_name": "陈守义 · 虚构人物",
+  "api_subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+  "api_role": "owner",
+  "ordinary_login": true,
+  "server_release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+  "api_version": "0.7.0",
+  "font_scale": 1,
+  "confirmed_understandings": 2,
+  "stories": 11,
+  "voice_ready": true,
+  "style_enabled_before": true,
+  "style_enabled_after": true,
+  "question": "如果我想喝浓一点的茶，你会怎么想？",
+  "new_answer": {
+    "answer_id": "ta_fc44a25ccbf34f52",
+    "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+    "question": "如果我想喝浓一点的茶，你会怎么想？",
+    "answer": "如果是我，我大概会按自己的口味说：我喝茶还是喜欢淡一点，太甜了反而喝不惯，这是我的口味，不是谁规定我只能这么喝。不过这是讲我自己的偏好，你要喝浓的，我不替你做决定。",
+    "mode": "persona",
+    "response_type": "SIMULATION",
+    "model_version": "Deepseek-v4-flash",
+    "prompt_version": "persona-conditional-reviewed-v8",
+    "person_model_version": 16,
+    "source_version": "adfb1a4d33570d97d6b6e095d362a8d62ee0db4c2574dd212f3b31ee41fe8ee5",
+    "created_at": "2026-10-15T14:04:03.846246+00:00",
+    "stale": false,
+    "understanding_ids": [
+      "pc_8664c631c0d7d6b49f8c47338601195ffa476bf0"
+    ],
+    "contribution_ids": [],
+    "coverage": "complete",
+    "evidence": [
+      {
+        "evidence_id": "ev_23a1435afe794db8",
+        "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "episode_id": "ep_ed240efd5e804a3f",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_92116f4f6dde42c4",
+        "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "episode_id": "ep_ed240efd5e804a3f",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_18077b86331d4150",
+        "excerpt": "我喝茶喜欢淡一点，太甜的我喝不惯。",
+        "episode_id": "ep_52e68d2108fb4810",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_ccdecc7f7eec4fc4",
+        "excerpt": "这就是我的口味，不是谁规定我只能这么喝。",
+        "episode_id": "ep_52e68d2108fb4810",
+        "source_type": "SUBJECT"
+      }
+    ]
+  },
+  "answer_api_readback": true,
+  "source_episode_id": "ep_52e68d2108fb4810"
+}

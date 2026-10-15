@@ -63,6 +63,12 @@ class PersonModelRepository:
                 or_(Episode.status == 'ready', Episode.episode_id == include_episode_id)
             ).order_by(Episode.created_at, MemoryItem.ordinal)
         ).all())
+        from ..materials import effective_materials
+        effective = {c['memory_item_id'] for c in effective_materials(
+            session, subject_id, {ep.episode_id for _, ep in memories if ep.status == 'ready'},
+            enforce_budget=False, include_gaps=False)}
+        memories = [(m, ep) for m, ep in memories
+                    if m.memory_item_id in effective or (ep.episode_id == include_episode_id and ep.status != 'ready')]
         traits: list[PersonTrait] = []
         changes = list(session.scalars(select(MemoryRevision).where(
             MemoryRevision.subject_id == subject_id, MemoryRevision.status == 'confirmed',

@@ -1,0 +1,75 @@
+{
+  "current": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117",
+  "services": {
+    "api": {
+      "active": true,
+      "cwd": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117/services/backend"
+    },
+    "ai": {
+      "active": true,
+      "cwd": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117/services/ai-core"
+    },
+    "worker": {
+      "active": true,
+      "cwd": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117/services/backend"
+    },
+    "profile": {
+      "active": true,
+      "cwd": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117/services/backend"
+    }
+  },
+  "health": {
+    "/ready": {
+      "status": "ready",
+      "components": {
+        "database": "ok",
+        "object_store": "ok"
+      }
+    },
+    "/api/v1/service-info": {
+      "release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+      "api_version": "0.7.0",
+      "sharing_invitations": true,
+      "registration_allowed": false
+    }
+  },
+  "config": {
+    "api": {
+      "REMEMBER_RELEASE_ID": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+      "REMEMBER_STT_BACKEND": "paraformer",
+      "REMEMBER_AI_BACKEND": "http",
+      "REMEMBER_AI_CORE_URL": "http://127.0.0.1:8879",
+      "REMEMBER_REALTIME_VOICE_ENABLED": "true",
+      "REMEMBER_REALTIME_VOICE_FAST_ENABLED": "true",
+      "REMEMBER_REALTIME_VOICE_STREAMED_ENABLED": "true",
+      "REMEMBER_REALTIME_VOICE_PREFETCH_ENABLED": "false",
+      "REMEMBER_STEP_REALTIME_ENABLED": "true",
+      "REMEMBER_TRANSCRIPT_CORRECTION_ENABLED": "true",
+      "step_key_configured": true,
+      "voice_allowed_accounts": 2
+    },
+    "ai": {
+      "REMEMBER_RELEASE_ID": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+      "AI_PROVIDER": "weixin",
+      "AI_MODEL": "Deepseek-v4-flash",
+      "AI_VOICE_CALL_TIMEOUT_SECONDS": "8",
+      "AI_VOICE_RETRY_AFTER_SECONDS": "3",
+      "step_key_configured": false
+    },
+    "worker": {
+      "REMEMBER_RELEASE_ID": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+      "REMEMBER_STT_BACKEND": "paraformer",
+      "REMEMBER_AI_BACKEND": "http",
+      "REMEMBER_AI_CORE_URL": "http://127.0.0.1:8879",
+      "REMEMBER_TRANSCRIPT_CORRECTION_ENABLED": "true",
+      "step_key_configured": false
+    },
+    "profile": {
+      "REMEMBER_RELEASE_ID": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+      "REMEMBER_STT_BACKEND": "client",
+      "REMEMBER_AI_BACKEND": "http",
+      "REMEMBER_AI_CORE_URL": "http://127.0.0.1:8879",
+      "step_key_configured": false
+    }
+  }
+}

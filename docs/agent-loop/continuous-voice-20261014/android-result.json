@@ -1,0 +1,12 @@
+{
+  "physical_phone": false,
+  "synthetic_microphone_injection": true,
+  "server": "https:\/\/39.108.183.47",
+  "version": "0.11.0-internal",
+  "recognized": "你喜欢喝什么茶？",
+  "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+  "audio_track_advanced": true,
+  "background_remains_paused": true,
+  "ended": true,
+  "ok": true
+}

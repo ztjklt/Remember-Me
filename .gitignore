@@ -32,6 +32,11 @@ secrets.properties
 /services/ai-core/var/
 /.superpowers/
 
+# Local build/test transcripts; reviewed results belong in dated handoff docs.
+/apps/android/*.log
+/services/backend/*.log
+/services/ai-core/*.log
+
 # Downloaded sherpa-onnx model weights are too large for normal GitHub blobs.
 apps/android/app/src/main/assets/paraformer/model.int8.onnx
 

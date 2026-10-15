@@ -1,0 +1,25 @@
+{
+  "scope": "Live browser canvas and Web Audio captured together by MediaRecorder; prerecorded synthetic questions via loopback SSH relay to ECS; not Android or real microphone",
+  "speed": 1,
+  "editing": "container/codec conversion only; no trims, speed changes or silence removal",
+  "metrics": [
+    {
+      "round": 1,
+      "speech_end_to_audible_ms": 2196.367
+    },
+    {
+      "round": 2,
+      "speech_end_to_audible_ms": 1605.367
+    },
+    {
+      "round": 3,
+      "speech_end_to_audible_ms": 2323.367
+    },
+    {
+      "round": 4,
+      "speech_end_to_audible_ms": 1785.6
+    }
+  ],
+  "raw_webm_sha256": "190c8a6407dcfe5e2b73d247f7964a5ac4feae68f9993bafd44a839d2225f5b0",
+  "mp4_sha256": "8fc3cd83d95fffc9dda2add8ceeb13c989c01c4895ade990b47ca7616fc5bd5e"
+}

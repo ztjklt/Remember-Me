@@ -151,18 +151,43 @@ def search_memories(subject_id: str, q: str, request: Request,
 @router.post("/twin/answers")
 def ask(subject_id: str, payload: TwinQuestion, request: Request,
         actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    return generate_answer(subject_id,payload,request,actor,session)
+
+
+def generate_answer(subject_id, payload, request, actor, session, *, voice_context=None,
+                    cancel_check=lambda: None,on_retrieved=lambda: None,material_cache=None,
+                    on_source_prepared=None,selection_cache=None,prepare_only=False,context_only=False):
+    cancel_check()
     actor_id = actor.actor_id
     from ..narrative import visible_records,contextual_sources
     from ..models import NarrativePreference
     from ..person_context import persona_understandings
     loaded={}
     def load_snapshot():
+        cancel_check()
         # Transactions guard snapshots, never the retrieval or model call.
         publication_lock(session,subject_id)
         require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
         ids=visible_episodes(session,subject_id,actor_id,cloud=True)
         reader=not is_owner(session,subject_id,actor_id)
         if reader: ids-=altered_story_ids(session,ids)
+        current_basis=source_basis(session,subject_id)
+        cache_key=(subject_id,actor_id,payload.cloud_consent_id,payload.retrieval_mode,
+                   current_basis,tuple(sorted(ids)),reader)
+        # Request-local, only after fresh authorization and a complete source
+        # fingerprint under the publication lock. Never cache across actors or
+        # skip the post-retrieval check. This avoids rebuilding the same archive
+        # three times while preserving detection of writes during retrieval.
+        previous=loaded.get('snapshot')
+        if (previous is not None and previous.source_basis==current_basis
+                and loaded['ids']==ids and loaded['reader']==reader):
+            session.commit()
+            return previous
+        cached=material_cache.get(cache_key) if material_cache is not None else None
+        if cached is not None:
+            loaded.clear();loaded.update(cached)
+            session.commit()
+            return loaded['snapshot']
         candidates=effective_materials(session,subject_id,ids,enforce_budget=payload.retrieval_mode=='full')
         sources=contextual_sources(session,subject_id,candidates,visible_episode_ids=ids)
         organized=[r for r in visible_records(session,subject_id,actor_id,sources=sources)
@@ -192,9 +217,14 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
             if episode is None or episode.subject_id!=subject_id:
                 raise SourceChanged('资料归属已变化，请重新提问。')
             wrapped.append(AuthorizedSource(episode.subject_id,source))
+        # effective_materials can register previously unextracted exact spans.
+        # Their persisted IDs are part of the snapshot, so fingerprint after it.
         snapshot=AuthorizedSnapshot(subject_id,source_basis(session,subject_id),tuple(wrapped),tuple(groups))
         loaded.update(ids=ids,reader=reader,candidates=candidates,sources=sources,
-                      organized=organized,understandings=understandings)
+                      organized=organized,understandings=understandings,snapshot=snapshot)
+        if material_cache is not None:
+            material_cache.put((subject_id,actor_id,payload.cloud_consent_id,payload.retrieval_mode,
+                snapshot.source_basis,tuple(sorted(ids)),reader),loaded)
         session.commit()
         return snapshot
     snapshot=load_snapshot()
@@ -202,11 +232,24 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if payload.retrieval_mode=='local':
         provider=build_rag_provider(session,request.app.state.embedding_encoder,
             episode_ids=loaded['ids'],reader=loaded['reader'],sources=loaded['sources'])
-        selection=retrieve_context(payload.question,load_snapshot,provider)
+        retrieval_question=payload.question
+        if voice_context:
+            # Only lookup hints. The model receives history separately as non-evidence.
+            previous=voice_context[-1]['question']
+            if len(previous)+len(retrieval_question)<980:
+                retrieval_question=previous+'；追问：'+retrieval_question
+        selection_key=(subject_id,actor_id,payload.cloud_consent_id,payload.mode,snapshot.signature)
+        selection=selection_cache.get(selection_key,retrieval_question) if selection_cache is not None else None
+        prefetched=selection is not None
+        if selection is None:
+            selection=retrieve_context(retrieval_question,load_snapshot,provider)
+            cancel_check()
+            if selection_cache is not None:selection_cache.put(selection_key,retrieval_question,selection)
         retrieval_audit={'mode':'local','source_basis':selection.source_basis,
             'retriever_version':selection.retriever_version,'hit_ids':list(selection.hit_ids),
             'selected_evidence_ids':list(selection.selected_evidence_ids),
-            'expanded_ids':list(selection.expanded_ids),'character_count':selection.character_count}
+            'expanded_ids':list(selection.expanded_ids),'character_count':selection.character_count,
+            'prefetched_selection':prefetched}
         selected=set(selection.selected_evidence_ids)
         candidates=[dict(c,evidence=[e for e in c['evidence'] if e['evidence_id'] in selected])
                     for c in loaded['candidates'] if any(e['evidence_id'] in selected for e in c['evidence'])]
@@ -238,8 +281,13 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     from ..errors import RequestInvalid
     if payload.mode=='persona' and (not pref or not pref.style_enabled or not examples or not loaded['understandings']):
         raise RequestInvalid('请先由本人开启分身表达，并确认可使用的人物理解和表达范例。')
-    from ..persona_context import visible_contributions
-    contributions=visible_contributions(session,subject_id,actor_id) if payload.mode=='persona' else []
+    from ..persona_context import visible_contributions, select_contributions
+    contributions=visible_contributions(session,subject_id,actor_id,
+        enforce_budget=payload.retrieval_mode=='full',
+        selection_metadata=payload.retrieval_mode=='local') if payload.mode=='persona' else []
+    if payload.retrieval_mode=='local':
+        contributions=select_contributions(contributions,retrieval_question)
+        contributions=[{k:v for k,v in note.items() if k not in {'narrative_ids','status'}} for note in contributions]
     style_over_budget=len(examples)>8 or sum(len(r['text']) for r in examples)>4000
     if sum(map(len,{t for c in candidates for t in c['traits']})) > 24000:
         raise ContextTooLarge('已确认的人物理解超过上下文预算，请拒绝已不适用的候选；没有截断。')
@@ -265,20 +313,43 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     # Retrieval may update cached vectors. Release its transaction before the
     # network call so revocation can proceed while DeepSeek is working.
     session.commit()
+    on_retrieved()
+    cancel_check()
     publication_lock(session, subject_id)
     if basis != source_basis(session, subject_id):
         raise SourceChanged('资料或授权已变化，请重新提问。')
+    require_cloud(session,subject_id,actor_id,payload.cloud_consent_id)
     session.commit()
+    if prepare_only:return {'prepared':True,'retrieval':retrieval_audit}
+    if context_only:
+        # Internal voice adapter only. The public question schema cannot request
+        # this payload. All retrieval, revision and permission checks above apply.
+        if payload.mode=='persona' and style_over_budget:
+            raise ContextTooLarge('表达范例超出本轮范围，请缩小问题范围。')
+        return dict(question=question,mode=payload.mode,candidates=limited,
+            understandings=understandings if payload.mode=='persona' else [],
+            examples=examples if payload.mode=='persona' else [],contributions=contributions,
+            dialogue_context=voice_context or [],source_version=basis,
+            evidence=list(twin_sources.values()),retrieval=retrieval_audit)
     if not limited and not contributions:
         result = {"answer": "现有记录还不足以确定。", "response_type": "UNKNOWN",
                   "evidence_ids": [], "confidence": 0, "model_version": "no-evidence"}
     else:
         if request.app.state.settings.ai_backend != "http":
             raise TwinFailed("请先连接真实的 AI Core 服务。")
+        if on_source_prepared is not None and payload.mode=='evidence':
+            # One private authorized retrieval-hit synthesis can overlap LLM
+            # selection. It never chooses or publishes an answer.
+            hit=next((twin_sources[i] for i in retrieval_audit.get('hit_ids',[])
+                      if i in twin_sources and twin_sources[i]['source_type']=='SUBJECT'),None)
+            if hit is not None and len(hit['excerpt'])<=500:on_source_prepared(hit['excerpt'])
         try:
             if payload.mode=='persona':
-                result=request.app.state.twin_client.persona(dict(question=question,candidates=limited,
-                    understandings=understandings,examples=examples,contributions=contributions))
+                model_input=dict(question=question,candidates=limited,
+                    understandings=understandings,examples=examples,contributions=contributions)
+                if voice_context is not None:
+                    model_input.update(dialogue_context=voice_context,voice_response=True)
+                result=request.app.state.twin_client.persona(model_input)
             else:
                 result = request.app.state.twin_client.answer(question, limited)
         except TwinUnavailable as exc:
@@ -287,9 +358,12 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
                 failure.code = exc.code
                 failure.http_status = 502
             raise failure from exc
+    cancel_check()
     expression=None
     if payload.mode=='persona':
         pass
+    elif voice_context is not None:
+        pass  # Voice answers already have their reviewed wording; no extra style pass.
     elif examples and result.get('response_type')=='SIMULATION' and style_over_budget:
         expression={'status':'unavailable','text':'','model_version':'','prompt_version':'expression-checked-v1',
                     'reason':'表达范例超过8条或4000字，本次仅提供有来源的回答。'}
@@ -331,6 +405,10 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
     if payload.mode=='persona' and kind=='UNKNOWN' and (cited or used_traits or used_notes):
         raise TwinFailed('未知回答不能携带已被删除的事实或人物依据。')
     review_summary['retrieval']=retrieval_audit
+    if 'semantic_review' in result:
+        if result['semantic_review'] not in {'performed','skipped'}:
+            raise TwinFailed('回答核对状态无效。')
+        review_summary['semantic_review']=result['semantic_review']
     if (kind not in {"ORIGINAL", "SIMULATION", "UNKNOWN"} or not isinstance(cited, list)
             or not isinstance(content, str) or len(content) > 500
             or not isinstance(confidence, (float, int)) or not 0 <= confidence <= 1
@@ -373,6 +451,7 @@ def ask(subject_id: str, payload: TwinQuestion, request: Request,
         cloud_consent_id=payload.cloud_consent_id,understanding_ids=used_traits,contribution_ids=used_notes,
         prompt_version=result.get('prompt_version','') if payload.mode=='persona' else '',
         review_summary=review_summary))
+    cancel_check()
     session.commit()
     return answer_view(session, row)
 
@@ -388,6 +467,8 @@ def read_answer(subject_id: str, answer_id: str,
         TwinAnswer.actor_id == actor.actor_id))
     if row is None:
         raise TwinNotFound("Answer not found")
+    from ..twin_validity import require_answer_disclosed
+    require_answer_disclosed(session,answer_id)
     if row.invalidated_at is None and row.source_basis != source_basis(session,subject_id):
         row.invalidated_at=utcnow()
         session.commit()

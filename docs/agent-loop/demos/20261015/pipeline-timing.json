@@ -1,0 +1,63 @@
+{
+  "silence_measurement": "10ms PCM windows, RMS > 200; digital signal, not physical microphone/speaker latency",
+  "turns": [
+    {
+      "round": 1,
+      "interrupted": true,
+      "played_samples": 33728,
+      "question_start": 1791991524728,
+      "question_end": 1791991526918.0,
+      "audio_start": 1791991530514.6667,
+      "audible_start": 1791991530674.6667,
+      "input_tail_ms": 370,
+      "tts_leading_silence_ms": 160,
+      "finished": 1791991531930,
+      "turn_id": 1,
+      "text": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“工作证找到了，我上次把年份说早了一年，第一次独立开12路是1987年，不是1986年。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”\n“所以后来我总说平安回家比多跑一趟重要，主要就是想到家里还有人在等，不是每一天她都等到很晚，也不是我有一场事故要讲给你听，就是这些平常的日子留在我心里了。\n\n”\n“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”",
+      "question": "请讲讲公交工作中的故事。",
+      "latency_ms": 3757,
+      "latency_to_playback_ms": 3227,
+      "text_ms": 2412.0
+    },
+    {
+      "round": 2,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1791991531629,
+      "question_end": 1791991533998.0,
+      "audio_start": 1791991537737.3333,
+      "audible_start": 1791991537877.3333,
+      "input_tail_ms": 350,
+      "tts_leading_silence_ms": 140,
+      "finished": 1791991552370,
+      "turn_id": 5,
+      "text": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+      "question": "你喜欢什么茶？",
+      "latency_ms": 3879,
+      "latency_to_playback_ms": 3389,
+      "text_ms": 3004.0
+    },
+    {
+      "round": 3,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1791991553468,
+      "question_end": 1791991556227.0,
+      "audio_start": 1791991559075.6667,
+      "audible_start": 1791991559215.6667,
+      "input_tail_ms": 280,
+      "tts_leading_silence_ms": 140,
+      "finished": 1791991573673,
+      "turn_id": 7,
+      "text": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”\n“这就是我的口味，不是谁规定我只能这么喝。”",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "latency_ms": 2989,
+      "latency_to_playback_ms": 2569,
+      "text_ms": 2782.0
+    }
+  ],
+  "seconds": 51.72406005859375,
+  "instrumentation_ok": true,
+  "microphone_bypassed": true,
+  "speed": 1
+}

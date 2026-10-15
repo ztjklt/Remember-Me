@@ -59,8 +59,13 @@ def memories(subject_id: str, actor: Actor = Depends(current_actor), session: Se
         Episode.subject_id == subject_id, MemoryItem.deleted_at.is_(None),
         MemoryItem.review_state == 'active', Episode.status == 'ready'
     ).order_by(Episode.created_at.desc(), MemoryItem.ordinal)).all()
+    from ..materials import effective_materials
+    effective = {c['memory_item_id'] for c in effective_materials(session, subject_id,
+        {ep.episode_id for _, ep in rows}, enforce_budget=False, include_gaps=False)}
     items = []
     for memory, episode in rows:
+        if memory.memory_item_id not in effective:
+            continue
         sources = [session.get(Evidence, eid) for eid in memory.evidence_ids]
         items.append({
             "memory_item_id": memory.memory_item_id, "episode_id": episode.episode_id,
@@ -139,8 +144,13 @@ def questions(subject_id: str, actor: Actor = Depends(current_actor), session: S
 @router.patch("/memories/{memory_id}")
 def correct_memory(subject_id: str, memory_id: str, body: Correction, request: Request,
                    actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    from ..access import publication_lock
+    from .twin import SourceChanged
+    publication_lock(session, subject_id)
     _authorized(session, subject_id, actor)
     memory = _memory(session, subject_id, memory_id)
+    if memory.review_state != 'active':
+        raise SourceChanged('这条记忆已退出使用，请修改当前有效版本。')
     content = body.content.strip()
     if not content:
         raise NotFound("Correction is empty")
@@ -153,10 +163,20 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
     session.add(Evidence(evidence_id=evidence_id, episode_id=memory.episode_id,
                          source_type="CALIBRATION", source_ref=f"audit:{audit_id}",
                          excerpt=content, confidence=1.0))
+    metadata = dict(memory.item_metadata or {})
+    from ..language_support import is_owner_supplement
+    # Keep the first source IDs across repeated corrections. The new audit
+    # excerpt has no audio span; it must not erase unrelated sentences or let
+    # the original incorrect sentence re-enter through full-text fallback.
+    if memory.source_type != 'CALIBRATION':
+        metadata['correction_source_ids'] = list(memory.evidence_ids)
+    elif is_owner_supplement(memory):
+        metadata['correction_source_ids'] = []  # Written note never replaced audio.
+    metadata.pop('semantic_anchors', None)  # Anchors belonged to the old wording.
+    metadata['origin'] = 'owner_correction'
+    memory.item_metadata = metadata
     memory.content = content
     memory.source_type = "CALIBRATION"
-    if (memory.item_metadata or {}).get('origin') == 'owner_supplement':
-        memory.item_metadata = {**memory.item_metadata, 'origin':'owner_correction'}
     memory.evidence_ids = [evidence_id]
     memory.confidence = 1.0
     embedding = session.get(MemoryEmbedding, memory_id)
@@ -171,6 +191,8 @@ def correct_memory(subject_id: str, memory_id: str, body: Correction, request: R
 @router.delete("/memories/{memory_id}")
 def delete_memory(subject_id: str, memory_id: str, request: Request,
                   actor: Actor = Depends(current_actor), session: Session = Depends(get_session)) -> dict:
+    from ..access import publication_lock
+    publication_lock(session, subject_id)
     _authorized(session, subject_id, actor)
     memory = _memory(session, subject_id, memory_id)
     session.add(MemoryAudit(audit_id="audit_" + uuid4().hex[:16],

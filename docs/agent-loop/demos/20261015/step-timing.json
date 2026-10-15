@@ -1,0 +1,63 @@
+{
+  "silence_measurement": "10ms PCM windows, RMS > 200; digital signal, not physical microphone/speaker latency",
+  "turns": [
+    {
+      "round": 1,
+      "interrupted": true,
+      "played_samples": 38080,
+      "question_start": 1792037617597,
+      "question_end": 1792037619847.0,
+      "audio_start": 1792037625538.3333,
+      "audible_start": 1792037625838.3333,
+      "input_tail_ms": 300,
+      "tts_leading_silence_ms": 300,
+      "finished": 1792037627117,
+      "turn_id": 1,
+      "text": "记录里他提到，第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录。收车后他在站房坐了一会儿，开车时还绷着，坐下来肩膀才慢慢松了，心里想的是总算平平安安跑完了。他还常跟女儿陈岚说，“平安回家比多跑一趟重要”，这话主要是想到以前收车回家，有时厨房小灯还亮着，家里有人等自己。",
+      "question": "请讲讲公交工作中的故事。",
+      "latency_ms": 5991,
+      "latency_to_playback_ms": 5391,
+      "text_ms": 2848.0
+    },
+    {
+      "round": 2,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792037626868,
+      "question_end": 1792037627996.0,
+      "audio_start": 1792037631720.0,
+      "audible_start": 1792037632020.0,
+      "input_tail_ms": 310,
+      "tts_leading_silence_ms": 300,
+      "finished": 1792037640371,
+      "turn_id": 3,
+      "text": "记录里他提到，喝茶喜欢淡一点，喝不惯太甜的，并强调这是自己的口味，不是谁规定只能这么喝。",
+      "question": "你喜欢什么茶？",
+      "latency_ms": 4024,
+      "latency_to_playback_ms": 3414,
+      "text_ms": 2804.0
+    },
+    {
+      "round": 3,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792037641626,
+      "question_end": 1792037644088.0,
+      "audio_start": 1792037647758.3333,
+      "audible_start": 1792037648068.3333,
+      "input_tail_ms": 420,
+      "tts_leading_silence_ms": 310,
+      "finished": 1792037652146,
+      "turn_id": 5,
+      "text": "记录里他提到，喝茶喜欢淡一点，喝不惯太甜的。",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "latency_ms": 3980,
+      "latency_to_playback_ms": 3250,
+      "text_ms": 2732.0
+    }
+  ],
+  "seconds": 36.986146240234376,
+  "instrumentation_ok": true,
+  "microphone_bypassed": true,
+  "speed": 1
+}

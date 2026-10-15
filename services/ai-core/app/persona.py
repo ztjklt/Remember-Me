@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from .errors import AIOutputInvalid, ProviderTimeout
 from .grounded_twin import source_packet
 from .telemetry import quote_trace_id
-from .twin import TwinCandidate, TwinOutput
+from .twin import TwinCandidate, TwinOutput, DialogueContextTurn
 
 
 PROMPT_VERSION = "persona-conditional-reviewed-v8"
@@ -60,6 +60,8 @@ class PersonaInput(StrictData):
     understandings: list[Understanding] = Field(max_length=32)
     examples: list[PersonaExample] = Field(max_length=8)
     contributions: list[Contribution] = Field(max_length=16)
+    dialogue_context: list[DialogueContextTurn] = Field(default_factory=list,max_length=6)
+    voice_response: bool = False
 
     @model_validator(mode="after")
     def bounded_basis(self):
@@ -98,7 +100,7 @@ class PersonaInput(StrictData):
 class PersonaOutput(TwinOutput):
     understanding_ids: list[Identifier] = Field(max_length=32)
     contribution_ids: list[Identifier] = Field(max_length=16)
-    prompt_version: Literal["persona-conditional-reviewed-v8"] = PROMPT_VERSION
+    prompt_version: Literal["persona-conditional-reviewed-v8", "persona-conditional-fast-v8"] = PROMPT_VERSION
     coverage: Literal["complete", "partial"] = "complete"
     omitted_points: int = Field(default=0, ge=0, le=4)
 
@@ -470,6 +472,14 @@ class PersonaProvider:
             return PersonaOutput(answer=UNKNOWN, response_type="UNKNOWN", evidence_ids=[],
                 understanding_ids=[], contribution_ids=[], confidence=0, model_version="no-evidence", coverage="partial")
 
+        from .voice_stream import generation_streamed,prepare_draft
+        prepared=False
+        def first_point(point,model):
+            nonlocal prepared
+            output,_,_=_render({'points':[point]},packet,aliases,understandings,contributions,model)
+            if not prepared:
+                prepared=True;prepare_draft(output)
+
         def complete(system, request, *, generation=False):
             limit = 2 if generation else 3  # Always reserve final semantic review.
             while True:
@@ -478,8 +488,12 @@ class PersonaProvider:
                     raise ProviderTimeout("Persona request budget exhausted")
                 record["calls"] += 1
                 try:
-                    result = self.chat.complete(system, request,
-                        timeout_seconds=min(self.call_timeout_seconds, remaining))
+                    if payload.voice_response and generation and generation_streamed.get():
+                        result=self.chat.complete_stream(system,request,on_point=first_point,
+                            timeout_seconds=min(self.call_timeout_seconds,remaining))
+                    else:
+                        result = self.chat.complete(system, request,
+                            timeout_seconds=min(self.call_timeout_seconds, remaining))
                     if monotonic() - started >= self.total_timeout_seconds:
                         raise ProviderTimeout("Persona request budget exhausted")
                     return result
@@ -508,6 +522,12 @@ class PersonaProvider:
                 self._record_validation(repaired_exc, record)
                 raise
         record["stage"] = "semantic_review"
+        if payload.voice_response:
+            from .voice_stream import prepare_draft, semantic_review_required
+            prepare_draft(output)
+            if not semantic_review_required.get():
+                record.update(stage='complete',semantic_review='skipped')
+                return output.model_copy(update={'prompt_version':'persona-conditional-fast-v8'})
         review_scope = []
         for index, p in enumerate(draft.points, 1):
             quote_match = "not_applicable"

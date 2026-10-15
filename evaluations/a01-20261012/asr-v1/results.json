@@ -1,0 +1,1238 @@
+{
+  "schema": "a01-asr-comparison-v1",
+  "fiction": true,
+  "summary": {
+    "actual_ASR_tasks": 10,
+    "adapter_invocations": 10,
+    "successful_raw_transcripts": 10,
+    "input_audio_seconds": 556.0,
+    "provider_usage_seconds": 552,
+    "script_characters_without_punctuation": 1554,
+    "script_asr_edit_distance": 54,
+    "key_phrase_checks": 51,
+    "exactly_preserved_key_phrases": 41,
+    "script_asr_difference_ratio": 0.03474903474903475
+  },
+  "episodes": [
+    {
+      "episode_id": "A01_01",
+      "script_sha256": "db8d6b069f8b864d48a87723e22c240c741863e9f7c5718e78c4663fa0602b0c",
+      "audio_sha256": "b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea",
+      "raw_asr_sha256": "efca4e89a0a575c034b3c10cccf0c5303dff46ac1edfd15b00264f85a26be0b9",
+      "script_text": "我叫陈国梁，陈是耳东陈，国是国家的国，梁是房梁的梁。今年七十五六了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班，修机器的。你别看修机器听着简单，机器哪儿响得不对，得听出来，不能拿锤子乱敲。我退休好多年了。家里有老伴儿，叫周桂芳。我们两个孩子，女儿晓宁，儿子小川。还有个外孙女，叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧。我不太会讲大道理，想到哪儿说到哪儿。",
+      "raw_asr_text": "我叫陈国梁，臣是尔东陈，国是国家的国，梁是房梁的梁。今年75 6了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班修机器的。你别看修机器听着简单，机器哪儿想的不对，得听出来，不能拿锤子乱敲。我退休好多年了，家里有老伴儿叫周桂芳，我们两个孩子，女儿小宁，儿子小川，还有个外孙女儿叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧，我不太会讲大道理，想到哪儿说到哪儿。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:26.483928+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea",
+        "audio_bytes": 2734124,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 57
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "1abbe7e0-16ad-4af2-9791-e33f1e497400",
+        "elapsed_seconds": 6.725
+      },
+      "script_characters_without_punctuation": 167,
+      "asr_characters_without_punctuation": 167,
+      "script_asr_edit_distance": 10,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            5,
+            6
+          ],
+          "asr_span": [
+            5,
+            6
+          ],
+          "script_text": "陈",
+          "asr_text": "臣"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            7,
+            8
+          ],
+          "asr_span": [
+            7,
+            8
+          ],
+          "script_text": "耳",
+          "asr_text": "尔"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            24,
+            28
+          ],
+          "asr_span": [
+            24,
+            27
+          ],
+          "script_text": "七十五六",
+          "asr_text": "756"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            74,
+            76
+          ],
+          "asr_span": [
+            73,
+            75
+          ],
+          "script_text": "响得",
+          "asr_text": "想的"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            114,
+            115
+          ],
+          "asr_span": [
+            113,
+            114
+          ],
+          "script_text": "晓",
+          "asr_text": "小"
+        },
+        {
+          "operation": "insert",
+          "script_span": [
+            126,
+            126
+          ],
+          "asr_span": [
+            125,
+            126
+          ],
+          "script_text": "",
+          "asr_text": "儿"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "subject_name",
+          "expected_script_phrase": "陈国梁",
+          "preserved_exactly": true
+        },
+        {
+          "id": "wife_name",
+          "expected_script_phrase": "周桂芳",
+          "preserved_exactly": true
+        },
+        {
+          "id": "daughter_name",
+          "expected_script_phrase": "晓宁",
+          "preserved_exactly": false
+        },
+        {
+          "id": "son_name",
+          "expected_script_phrase": "小川",
+          "preserved_exactly": true
+        },
+        {
+          "id": "granddaughter_name",
+          "expected_script_phrase": "豆豆",
+          "preserved_exactly": true
+        },
+        {
+          "id": "hometown",
+          "expected_script_phrase": "襄阳",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_02",
+      "script_sha256": "3f8a9be84f30ec37f9e9d420023b7052e918f2ebc149b4eb993bce2f3159f281",
+      "audio_sha256": "a964c82243b9d429fd138df03caa7276b191e3e61f33a3989415044552c8ae77",
+      "raw_asr_sha256": "be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36",
+      "script_text": "我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。",
+      "raw_asr_text": "我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:43.150239+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "a964c82243b9d429fd138df03caa7276b191e3e61f33a3989415044552c8ae77",
+        "audio_bytes": 2780204,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 56
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "dcb6dc77-0dd2-4244-b5bd-0485ef4a1e69",
+        "elapsed_seconds": 3.886
+      },
+      "script_characters_without_punctuation": 156,
+      "asr_characters_without_punctuation": 155,
+      "script_asr_edit_distance": 5,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            1,
+            4
+          ],
+          "asr_span": [
+            1,
+            3
+          ],
+          "script_text": "二十二",
+          "asr_text": "22"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            67,
+            68
+          ],
+          "asr_span": [
+            66,
+            67
+          ],
+          "script_text": "机",
+          "asr_text": "击"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            130,
+            131
+          ],
+          "asr_span": [
+            129,
+            130
+          ],
+          "script_text": "死",
+          "asr_text": "私"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "not_motor_fault",
+          "expected_script_phrase": "不是电机坏",
+          "preserved_exactly": false
+        },
+        {
+          "id": "loose_screw",
+          "expected_script_phrase": "一颗小螺丝松了",
+          "preserved_exactly": true
+        },
+        {
+          "id": "self_reflection",
+          "expected_script_phrase": "不一定都是对的",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_03",
+      "script_sha256": "04ec965d3bdb97869e787a356decd5144cd810d0f6f78ebc0064e5d176213800",
+      "audio_sha256": "c8e03283b1767cab4754cf6d87e8a3e9f7dee2a8b5ea6959a52aa30eae0419a0",
+      "raw_asr_sha256": "8c6f971efa73557bdefafb9e5df33f409fd4232a286b5804660d93026e78cf73",
+      "script_text": "桂芳是七六年认识的。朋友介绍，我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油。她看见了也没笑我，就递给我一张纸，说先擦擦吧。我那时候嘴笨，只会问她吃饭没有。后来她跟我说，觉得我这个人老实。我说老实有什么好，她说老实也挺好。我们七七年结婚，日子也不是没吵过。她嫌我什么都憋心里，我嫌她老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放哪儿都找不到。",
+      "raw_asr_text": "桂芳是76年认识的，朋友介绍我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油，他看见了也没笑我，就递给我一张纸说先擦擦吧。我那时候嘴笨，只会问他吃饭没有。后来她跟我说，觉得我这个人老实。我说老师有什么好？她说老师也挺好，我们77年结婚日子也不是没吵过，他嫌我什么都憋心里，我嫌他老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放那儿都找不到。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:47.056575+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "c8e03283b1767cab4754cf6d87e8a3e9f7dee2a8b5ea6959a52aa30eae0419a0",
+        "audio_bytes": 3018284,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 63
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "4886bc01-2cc1-4a9a-bcfb-9b2402fa4814",
+        "elapsed_seconds": 3.997
+      },
+      "script_characters_without_punctuation": 169,
+      "asr_characters_without_punctuation": 169,
+      "script_asr_edit_distance": 11,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            3,
+            5
+          ],
+          "asr_span": [
+            3,
+            5
+          ],
+          "script_text": "七六",
+          "asr_text": "76"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            47,
+            48
+          ],
+          "asr_span": [
+            47,
+            48
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            76,
+            77
+          ],
+          "asr_span": [
+            76,
+            77
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            98,
+            99
+          ],
+          "asr_span": [
+            98,
+            99
+          ],
+          "script_text": "实",
+          "asr_text": "师"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            106,
+            107
+          ],
+          "asr_span": [
+            106,
+            107
+          ],
+          "script_text": "实",
+          "asr_text": "师"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            112,
+            114
+          ],
+          "asr_span": [
+            112,
+            114
+          ],
+          "script_text": "七七",
+          "asr_text": "77"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            125,
+            126
+          ],
+          "asr_span": [
+            125,
+            126
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            136,
+            137
+          ],
+          "asr_span": [
+            136,
+            137
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            163,
+            164
+          ],
+          "asr_span": [
+            163,
+            164
+          ],
+          "script_text": "哪",
+          "asr_text": "那"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "reported_wife_statement",
+          "expected_script_phrase": "她跟我说",
+          "preserved_exactly": true
+        },
+        {
+          "id": "honest_not_teacher",
+          "expected_script_phrase": "我说老实有什么好",
+          "preserved_exactly": false
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_04",
+      "script_sha256": "917da785d65f2fd8dcf60a5ef6df377168000647ba96e338a5034a58437767ea",
+      "audio_sha256": "18dd4a36042ce547629ac376963b9db12d68455685d54bfd3f9d6dcb1dd47345",
+      "raw_asr_sha256": "2ae635dc909a78d4be66ca4ff558e6b37f252e1c8d3b74273f493ae8ebeb188a",
+      "script_text": "晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。",
+      "raw_asr_text": "小宁小时候喜欢画画，画的挺像呀。他上初中的时候说想去学美术，我没答应。我那时候就想学那个以后靠什么吃饭，还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事儿我一直记得，后来他工作了有一年，送我一张画，是咱们家老房子，我看了半天没说什么就挂起来了。我到现在也不知道该怎么跟他说，当年我可能做错了，我不是不相信他，我是怕他以后吃苦，可怕归怕，也不能替他把路全选了。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:51.070731+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "18dd4a36042ce547629ac376963b9db12d68455685d54bfd3f9d6dcb1dd47345",
+        "audio_bytes": 2311724,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 48
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "bfe04801-4729-43e0-a76a-ae98dffbe699",
+        "elapsed_seconds": 4.007
+      },
+      "script_characters_without_punctuation": 167,
+      "asr_characters_without_punctuation": 168,
+      "script_asr_edit_distance": 10,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            0,
+            1
+          ],
+          "asr_span": [
+            0,
+            1
+          ],
+          "script_text": "晓",
+          "asr_text": "小"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            10,
+            11
+          ],
+          "asr_span": [
+            10,
+            11
+          ],
+          "script_text": "得",
+          "asr_text": "的"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            13,
+            15
+          ],
+          "asr_span": [
+            13,
+            15
+          ],
+          "script_text": "样她",
+          "asr_text": "呀他"
+        },
+        {
+          "operation": "insert",
+          "script_span": [
+            76,
+            76
+          ],
+          "asr_span": [
+            76,
+            77
+          ],
+          "script_text": "",
+          "asr_text": "儿"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            83,
+            84
+          ],
+          "asr_span": [
+            84,
+            85
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            128,
+            129
+          ],
+          "asr_span": [
+            129,
+            130
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            144,
+            145
+          ],
+          "asr_span": [
+            145,
+            146
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            148,
+            149
+          ],
+          "asr_span": [
+            149,
+            150
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            161,
+            162
+          ],
+          "asr_span": [
+            162,
+            163
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "daughter_name",
+          "expected_script_phrase": "晓宁",
+          "preserved_exactly": false
+        },
+        {
+          "id": "initial_refusal",
+          "expected_script_phrase": "没答应",
+          "preserved_exactly": true
+        },
+        {
+          "id": "tentative_regret",
+          "expected_script_phrase": "可能做错了",
+          "preserved_exactly": true
+        },
+        {
+          "id": "not_distrust",
+          "expected_script_phrase": "不是不相信",
+          "preserved_exactly": true
+        },
+        {
+          "id": "not_choose_all_paths",
+          "expected_script_phrase": "不能替",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_05",
+      "script_sha256": "18a453e5c80dff552d8a63edda8a86febfbaf5252df8225000969ead32b42e3b",
+      "audio_sha256": "e44f38f59b937e450f052d51e39cf01f9bca20dd7c09cf5deaf87985ddf13e64",
+      "raw_asr_sha256": "80868e5191ab1ae58073251af8ba3d61f7070de35c8f6b629b79ccb1e8f57155",
+      "script_text": "小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。",
+      "raw_asr_text": "小川小时候皮得很拆，我收音机拆完装不回去，我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作忙，打电话也短，我老说没事儿，没事儿，你忙你的。其实挂了电话还想再听两句，老杜就不一样了。我跟他认识几十年，见面先互相损两句，他老说我抠门，我说你才抠上回吃面还是我付的钱。你看人跟人说话是不一样的，跟孩子怕说重了，跟老杜倒不用客气。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:55.091106+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "e44f38f59b937e450f052d51e39cf01f9bca20dd7c09cf5deaf87985ddf13e64",
+        "audio_bytes": 2787884,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 58
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "3ae35f13-c9f0-4bf2-9000-59e6aa3b1760",
+        "elapsed_seconds": 4.035
+      },
+      "script_characters_without_punctuation": 142,
+      "asr_characters_without_punctuation": 144,
+      "script_asr_edit_distance": 2,
+      "diff": [
+        {
+          "operation": "insert",
+          "script_span": [
+            53,
+            53
+          ],
+          "asr_span": [
+            53,
+            54
+          ],
+          "script_text": "",
+          "asr_text": "儿"
+        },
+        {
+          "operation": "insert",
+          "script_span": [
+            55,
+            55
+          ],
+          "asr_span": [
+            56,
+            57
+          ],
+          "script_text": "",
+          "asr_text": "儿"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "son_name",
+          "expected_script_phrase": "小川",
+          "preserved_exactly": true
+        },
+        {
+          "id": "friend_name",
+          "expected_script_phrase": "老杜",
+          "preserved_exactly": true
+        },
+        {
+          "id": "not_scolding",
+          "expected_script_phrase": "没骂他",
+          "preserved_exactly": true
+        },
+        {
+          "id": "wishes_longer_call",
+          "expected_script_phrase": "还想再听两句",
+          "preserved_exactly": true
+        },
+        {
+          "id": "gentle_to_children",
+          "expected_script_phrase": "跟孩子怕说重了",
+          "preserved_exactly": true
+        },
+        {
+          "id": "casual_to_friend",
+          "expected_script_phrase": "不用客气",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_06",
+      "script_sha256": "1c29e0aaf25f9f618dc8e31c4c391169bd11843daaaa3b0c83e4327a951540c0",
+      "audio_sha256": "f511adc0b42a34dba25b23e0614d07278e6af98a86ff91c30279c98a72d468af",
+      "raw_asr_sha256": "11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24",
+      "script_text": "我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+      "raw_asr_text": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:05:59.140923+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "f511adc0b42a34dba25b23e0614d07278e6af98a86ff91c30279c98a72d468af",
+        "audio_bytes": 2511404,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 51
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "a5e6cd2e-4a84-4173-9312-b863f2dad286",
+        "elapsed_seconds": 3.983
+      },
+      "script_characters_without_punctuation": 145,
+      "asr_characters_without_punctuation": 146,
+      "script_asr_edit_distance": 3,
+      "diff": [
+        {
+          "operation": "insert",
+          "script_span": [
+            69,
+            69
+          ],
+          "asr_span": [
+            69,
+            70
+          ],
+          "script_text": "",
+          "asr_text": "儿"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            77,
+            78
+          ],
+          "asr_span": [
+            78,
+            79
+          ],
+          "script_text": "她",
+          "asr_text": "他"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            115,
+            116
+          ],
+          "asr_span": [
+            116,
+            117
+          ],
+          "script_text": "晓",
+          "asr_text": "小"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "granddaughter_name",
+          "expected_script_phrase": "豆豆",
+          "preserved_exactly": true
+        },
+        {
+          "id": "wife_name",
+          "expected_script_phrase": "桂芳",
+          "preserved_exactly": true
+        },
+        {
+          "id": "daughter_name",
+          "expected_script_phrase": "晓宁",
+          "preserved_exactly": false
+        },
+        {
+          "id": "reject_waste",
+          "expected_script_phrase": "不喜欢浪费",
+          "preserved_exactly": true
+        },
+        {
+          "id": "unclear_cause",
+          "expected_script_phrase": "说不清",
+          "preserved_exactly": true
+        },
+        {
+          "id": "possible_cause",
+          "expected_script_phrase": "可能是想起",
+          "preserved_exactly": true
+        },
+        {
+          "id": "irrecoverable_loss",
+          "expected_script_phrase": "补不回来",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_07",
+      "script_sha256": "113c821e779e5e49b9ab06525dc53df971c9b09527c502a27bdcd077b687d090",
+      "audio_sha256": "01fa599e71fb6f4ba4d652ec989fb0032e937baf797fa798d70dc5ab351b539e",
+      "raw_asr_sha256": "0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0",
+      "script_text": "前两年我老忘事。有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面，找了半天。我开始还跟桂芳发脾气，说她动我东西。后来去医院看，医生说是阿尔茨海默病。我听见那个名字，心里咯噔一下。我不怕别人说我老，我怕哪一天认不出家里人。桂芳说慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。",
+      "raw_asr_text": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:06:03.140452+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "01fa599e71fb6f4ba4d652ec989fb0032e937baf797fa798d70dc5ab351b539e",
+        "audio_bytes": 2373164,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 49
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "93cc41b1-f4fb-401b-be31-69f1e1b07b03",
+        "elapsed_seconds": 4.062
+      },
+      "script_characters_without_punctuation": 140,
+      "asr_characters_without_punctuation": 140,
+      "script_asr_edit_distance": 2,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            59,
+            60
+          ],
+          "asr_span": [
+            59,
+            60
+          ],
+          "script_text": "动",
+          "asr_text": "冻"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            75,
+            76
+          ],
+          "asr_span": [
+            75,
+            76
+          ],
+          "script_text": "茨",
+          "asr_text": "斯"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "wife_name",
+          "expected_script_phrase": "桂芳",
+          "preserved_exactly": true
+        },
+        {
+          "id": "diagnosis_spelling",
+          "expected_script_phrase": "阿尔茨海默病",
+          "preserved_exactly": false
+        },
+        {
+          "id": "accusation_not_objective_proof",
+          "expected_script_phrase": "说她动我东西",
+          "preserved_exactly": false
+        },
+        {
+          "id": "fear_family_recognition",
+          "expected_script_phrase": "怕哪一天认不出家里人",
+          "preserved_exactly": true
+        },
+        {
+          "id": "denied_need_but_reassurance",
+          "expected_script_phrase": "嘴上说不用",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_08",
+      "script_sha256": "4b7f45ea7a8ff9b4e50e945847aeebb8b09446dd256fcaded07b9bc4689e7d43",
+      "audio_sha256": "80dfbb549ca6f4f130ccbbfef5c5496fe7c45f0920d878eab832a686c77bcf05",
+      "raw_asr_sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431",
+      "script_text": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快五十年，没享多少清福。我年轻时上夜班，你一个人带两个孩子，白天还要教书。你嘴上不说累，我都知道。现在反过来，还得你提醒我吃药、带我去医院。有时候我脾气不好，不是冲你，是我自己着急。你别老把什么事都揽着，该歇就歇。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有，那个蓝色搪瓷杯别扔，我用了好多年，顺手。",
+      "raw_asr_text": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:06:07.217332+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "80dfbb549ca6f4f130ccbbfef5c5496fe7c45f0920d878eab832a686c77bcf05",
+        "audio_bytes": 2741804,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 57
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "82c0b95b-9283-4cb1-b5a4-c45bec65de2b",
+        "elapsed_seconds": 3.974
+      },
+      "script_characters_without_punctuation": 155,
+      "asr_characters_without_punctuation": 155,
+      "script_asr_edit_distance": 8,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            22,
+            24
+          ],
+          "asr_span": [
+            22,
+            24
+          ],
+          "script_text": "五十",
+          "asr_text": "50"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            26,
+            27
+          ],
+          "asr_span": [
+            26,
+            27
+          ],
+          "script_text": "享",
+          "asr_text": "想"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            29,
+            31
+          ],
+          "asr_span": [
+            29,
+            31
+          ],
+          "script_text": "清福",
+          "asr_text": "轻浮"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            110,
+            111
+          ],
+          "asr_span": [
+            110,
+            111
+          ],
+          "script_text": "歇",
+          "asr_text": "谢"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            112,
+            113
+          ],
+          "asr_span": [
+            112,
+            113
+          ],
+          "script_text": "歇",
+          "asr_text": "谢"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            144,
+            145
+          ],
+          "asr_span": [
+            144,
+            145
+          ],
+          "script_text": "杯",
+          "asr_text": "被"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "wife_name",
+          "expected_script_phrase": "桂芳",
+          "preserved_exactly": true
+        },
+        {
+          "id": "not_directed_at_wife",
+          "expected_script_phrase": "不是冲你",
+          "preserved_exactly": true
+        },
+        {
+          "id": "self_anxiety",
+          "expected_script_phrase": "自己着急",
+          "preserved_exactly": true
+        },
+        {
+          "id": "blue_enamel_cup",
+          "expected_script_phrase": "蓝色搪瓷杯",
+          "preserved_exactly": false
+        },
+        {
+          "id": "rest_wish",
+          "expected_script_phrase": "该歇就歇",
+          "preserved_exactly": false
+        },
+        {
+          "id": "dont_discard",
+          "expected_script_phrase": "别扔",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_09",
+      "script_sha256": "162a6b17f79ac1974a2803bea7f65ffea8d0682b3b01fc408f600a666b133362",
+      "audio_sha256": "7277af4011b4d8103972e37df07366abf3de497423602c42250ca2fe3fcf620a",
+      "raw_asr_sha256": "b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab",
+      "script_text": "晓宁，小川，我跟你们说啊，工作要认真做，身体也得顾着。别老想着给我买东西，我什么都不缺。你们要是忙，不回来也没关系。我知道现在生活不容易。可是有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。晓宁，你那张老房子的画我一直挂着，没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里。你们不用把我当成什么了不起的人，我就是你们爸。",
+      "raw_asr_text": "小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:06:11.206902+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "7277af4011b4d8103972e37df07366abf3de497423602c42250ca2fe3fcf620a",
+        "audio_bytes": 2649644,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 55
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "3da84484-7a44-4a5c-8d48-85160770a76a",
+        "elapsed_seconds": 4.025
+      },
+      "script_characters_without_punctuation": 159,
+      "asr_characters_without_punctuation": 159,
+      "script_asr_edit_distance": 2,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            0,
+            1
+          ],
+          "asr_span": [
+            0,
+            1
+          ],
+          "script_text": "晓",
+          "asr_text": "小"
+        },
+        {
+          "operation": "replace",
+          "script_span": [
+            95,
+            96
+          ],
+          "asr_span": [
+            95,
+            96
+          ],
+          "script_text": "晓",
+          "asr_text": "小"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "daughter_name",
+          "expected_script_phrase": "晓宁",
+          "preserved_exactly": false
+        },
+        {
+          "id": "son_name",
+          "expected_script_phrase": "小川",
+          "preserved_exactly": true
+        },
+        {
+          "id": "busy_no_need_return",
+          "expected_script_phrase": "不回来也没关系",
+          "preserved_exactly": true
+        },
+        {
+          "id": "still_misses",
+          "expected_script_phrase": "还是会想",
+          "preserved_exactly": true
+        },
+        {
+          "id": "picture_not_removed",
+          "expected_script_phrase": "没摘下来过",
+          "preserved_exactly": true
+        },
+        {
+          "id": "radio_repaired",
+          "expected_script_phrase": "修好了",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    },
+    {
+      "episode_id": "A01_10",
+      "script_sha256": "382e80b294f018ddd6e0cd346e6471ef9a202ae179a39a40d0de0fdc65ffa13e",
+      "audio_sha256": "9eb3b97c34c015d25d8a912123f4e27f28e65dffbabbe5acc66028dfcaf25b33",
+      "raw_asr_sha256": "65466bacb0c722811ae363d35636a62db892327fc6385145ec967b19c4ad33b2",
+      "script_text": "我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面，到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后，记得外公会修东西，也会犯错。这样就够了。",
+      "raw_asr_text": "我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说的太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后记得外公会修东西，也会犯错，这样就够了。",
+      "source_type": "fresh_synthetic_audio_real_Paraformer_ASR",
+      "model_version": "bailian/paraformer-v2",
+      "metadata": {
+        "at": "2026-10-11T18:06:15.247321+00:00",
+        "endpoint": "https://llm-fbdekwwuq0uwr42f.cn-beijing.maas.aliyuncs.com",
+        "request_model": "paraformer-v2",
+        "response_model": null,
+        "prompt_version": "bailian-private-file-zh-v1",
+        "prompt_supplied": false,
+        "audio_sha256": "9eb3b97c34c015d25d8a912123f4e27f28e65dffbabbe5acc66028dfcaf25b33",
+        "audio_bytes": 2780204,
+        "audio_transport": "private-temporary-oss",
+        "temporary_retention_hours": 48,
+        "http_status": 200,
+        "usage": {
+          "duration": 58
+        },
+        "validation": "transcript_received_unreviewed",
+        "audio_alignment_verified": false,
+        "task_id": "0539fef6-b2f8-4ed5-93fa-e3e54b514205",
+        "elapsed_seconds": 5.999
+      },
+      "script_characters_without_punctuation": 154,
+      "asr_characters_without_punctuation": 154,
+      "script_asr_edit_distance": 1,
+      "diff": [
+        {
+          "operation": "replace",
+          "script_span": [
+            99,
+            100
+          ],
+          "asr_span": [
+            99,
+            100
+          ],
+          "script_text": "得",
+          "asr_text": "的"
+        }
+      ],
+      "key_phrase_checks": [
+        {
+          "id": "weekday_unknown",
+          "expected_script_phrase": "星期几我真不知道",
+          "preserved_exactly": true
+        },
+        {
+          "id": "possible_alternative_cause",
+          "expected_script_phrase": "也可能是我自己胆子小",
+          "preserved_exactly": true
+        },
+        {
+          "id": "not_invent_words",
+          "expected_script_phrase": "别替我编",
+          "preserved_exactly": true
+        },
+        {
+          "id": "fallible_self_image",
+          "expected_script_phrase": "也会犯错",
+          "preserved_exactly": true
+        },
+        {
+          "id": "granddaughter_name",
+          "expected_script_phrase": "豆豆",
+          "preserved_exactly": true
+        }
+      ],
+      "manual_listening": "pending",
+      "review_status": "raw_machine_output_not_corrected"
+    }
+  ],
+  "findings": [
+    "晓宁在01/04/06/09机器稿均成“小宁”；不能凭同音自动合并，需单独核对后留痕。",
+    "03多个“她”变“他”，04女儿指代也发生他/她差异；原文本可显示上下文，不能把错字当新人身份事实。",
+    "02电机→电击，认死理→认私理；“不是”否定词仍在，但对象拼写改变。",
+    "03老实→老师（后两句），08清福→轻浮、歇→谢、杯→被；部分错字能改变意思。",
+    "07动我东西→冻我东西；阿尔茨海默病→阿尔斯海默病，不能作为医学新结论。",
+    "贵画笔“说不清/可能”、孩子忙可不回与想念、星期几真不知道、不替编话均保留。",
+    "数字正规化（如七六年→76年）会计入这里的编辑距离；该比例不等于ASR准确率。",
+    "未人工听读合成原音，差异可能来自TTS、ASR或排版正规化；不能单凭创作稿确定实际说了哪些音。"
+  ],
+  "transcripts_corrected": false,
+  "text_baseline_overwritten": false,
+  "downstream_model_retests": 0,
+  "manual_listening": "pending",
+  "configuration_provenance": "Existing ECS Paraformer settings copied by parent to ACL-protected ignored local file; no ECS modifications.",
+  "call_policy": "Existing backend ParaformerSttProvider, private temporary OSS, one fresh probe then nine serial; script/gold never supplied to ASR."
+}

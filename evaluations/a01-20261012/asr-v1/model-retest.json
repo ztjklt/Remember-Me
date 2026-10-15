@@ -1,0 +1,909 @@
+{
+  "schema": "a01-asr-model-retest-v1",
+  "fiction": true,
+  "locked_plan": {
+    "task_count": 7,
+    "qa_ids": [
+      "Q04",
+      "Q06",
+      "N01"
+    ],
+    "profile_prompt": "profile-proposals-evidence-v5",
+    "twin_prompt": "twin-quotes-v16",
+    "extra_tasks_authorized": false,
+    "reference_files_opened": false,
+    "ASR_transcripts_corrected": false,
+    "baseline_overwritten": false,
+    "input_hashes": {
+      "ASR": [
+        {
+          "id": "A01_01",
+          "sha256": "efca4e89a0a575c034b3c10cccf0c5303dff46ac1edfd15b00264f85a26be0b9"
+        },
+        {
+          "id": "A01_02",
+          "sha256": "be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36"
+        },
+        {
+          "id": "A01_03",
+          "sha256": "8c6f971efa73557bdefafb9e5df33f409fd4232a286b5804660d93026e78cf73"
+        },
+        {
+          "id": "A01_04",
+          "sha256": "2ae635dc909a78d4be66ca4ff558e6b37f252e1c8d3b74273f493ae8ebeb188a"
+        },
+        {
+          "id": "A01_05",
+          "sha256": "80868e5191ab1ae58073251af8ba3d61f7070de35c8f6b629b79ccb1e8f57155"
+        },
+        {
+          "id": "A01_06",
+          "sha256": "11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24"
+        },
+        {
+          "id": "A01_07",
+          "sha256": "0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0"
+        },
+        {
+          "id": "A01_08",
+          "sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431"
+        },
+        {
+          "id": "A01_09",
+          "sha256": "b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab"
+        },
+        {
+          "id": "A01_10",
+          "sha256": "65466bacb0c722811ae363d35636a62db892327fc6385145ec967b19c4ad33b2"
+        }
+      ],
+      "script": [
+        {
+          "id": "A01_01",
+          "sha256": "db8d6b069f8b864d48a87723e22c240c741863e9f7c5718e78c4663fa0602b0c"
+        },
+        {
+          "id": "A01_02",
+          "sha256": "3f8a9be84f30ec37f9e9d420023b7052e918f2ebc149b4eb993bce2f3159f281"
+        },
+        {
+          "id": "A01_03",
+          "sha256": "04ec965d3bdb97869e787a356decd5144cd810d0f6f78ebc0064e5d176213800"
+        },
+        {
+          "id": "A01_04",
+          "sha256": "917da785d65f2fd8dcf60a5ef6df377168000647ba96e338a5034a58437767ea"
+        },
+        {
+          "id": "A01_05",
+          "sha256": "18a453e5c80dff552d8a63edda8a86febfbaf5252df8225000969ead32b42e3b"
+        },
+        {
+          "id": "A01_06",
+          "sha256": "1c29e0aaf25f9f618dc8e31c4c391169bd11843daaaa3b0c83e4327a951540c0"
+        },
+        {
+          "id": "A01_07",
+          "sha256": "113c821e779e5e49b9ab06525dc53df971c9b09527c502a27bdcd077b687d090"
+        },
+        {
+          "id": "A01_08",
+          "sha256": "4b7f45ea7a8ff9b4e50e945847aeebb8b09446dd256fcaded07b9bc4689e7d43"
+        },
+        {
+          "id": "A01_09",
+          "sha256": "162a6b17f79ac1974a2803bea7f65ffea8d0682b3b01fc408f600a666b133362"
+        },
+        {
+          "id": "A01_10",
+          "sha256": "382e80b294f018ddd6e0cd346e6471ef9a202ae179a39a40d0de0fdc65ffa13e"
+        }
+      ]
+    },
+    "source_attribution_note": "SUBJECT denotes the fictional spoken speaker only. Raw ASR was not manually reviewed and these results are isolated evaluation, not confirmed product memories.",
+    "source_code_sha256": {
+      "services/ai-core/app/profile_proposals.py": "30c514156b1f0986af76d153a7e613d1ca4e3b189f964bed62aa5bd6a960ae9b",
+      "services/ai-core/app/quoted_twin.py": "d78f3fd88e421ca7a2428ba65c171883060d79ecb1fba0e632f1fc5e726e6866"
+    }
+  },
+  "summary": {
+    "task_count": 7,
+    "real_model_requests": 13,
+    "http_200_requests": 13,
+    "model_reported": "Deepseek-v4-flash",
+    "usage": {
+      "prompt_tokens": 35486,
+      "completion_tokens": 1687,
+      "total_tokens": 37173
+    },
+    "schema_valid_tasks": 7,
+    "selected_QA_semantic_passes": 6,
+    "selected_QA_tasks": 6,
+    "profile_candidate_count": 8,
+    "profile_candidates_supported_by_independent_text_review": 4,
+    "profile_candidates_requiring_correction": 4,
+    "confirmed_profile_candidates": 0,
+    "extra_provider_calls": 0
+  },
+  "profile": {
+    "actual_result": {
+      "id": "asr-profile-v5",
+      "status": "validated",
+      "result": {
+        "candidates": [
+          {
+            "domain": "IDENTITY",
+            "statement": "讲述者叫陈国梁，襄阳人，曾在机械厂当修机器的工人，退休多年，今年75岁，家里有老伴周桂芳、女儿小宁、儿子小川和外孙女豆豆。",
+            "context": "讲述者在开场自我介绍中说明了姓名、年龄、籍贯、职业与家庭成员。",
+            "evidence_ids": [
+              "A01_01-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          },
+          {
+            "domain": "DECISION_PATTERNS",
+            "statement": "讲述者遇到问题时倾向于先查清故障原因再动手，而不是直接判定无救或更换；他自述在修机器和过日子上都是这样。",
+            "context": "讲述者回忆22岁进机械厂跟师傅学修机器，师傅让他先找老车床的毛病，他发现只是一颗小螺丝松了，并由此总结出遇事先弄明白哪里出了问题。",
+            "evidence_ids": [
+              "A01_02-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "habit"
+          },
+          {
+            "domain": "VALUES_BELIEFS",
+            "statement": "讲述者认为做事要认真，同时要顾着身体，不主张子女给他买东西或为回家而耽误工作。",
+            "context": "讲述者对小宁、小川说工作要认真做、身体也得顾着，别老想着给他买东西，忙不回来也没关系。",
+            "evidence_ids": [
+              "A01_09-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          },
+          {
+            "domain": "PREFERENCES",
+            "statement": "讲述者不喜欢浪费，习惯随手关灯、东西坏了能修就修；但在给豆豆买画笔这类事情上会愿意花钱，认为有些东西错过就补不回来。",
+            "context": "讲述者自述不喜欢浪费、心疼换新东西的钱，同时提到给豆豆买了一套贵一点的好画笔，并说给孩子买这个不一样。",
+            "evidence_ids": [
+              "A01_06-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "habit"
+          },
+          {
+            "domain": "EXPRESSION",
+            "statement": "讲述者与不同对象说话方式不同：跟孩子会怕说重了，跟老杜则可以互相损、不用客气。",
+            "context": "讲述者提到小川打电话短，自己总说没事儿、你忙你的，挂了电话还想再听两句；而与认识几十年的老杜见面先互相损两句。",
+            "evidence_ids": [
+              "A01_05-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          },
+          {
+            "domain": "DECISION_PATTERNS",
+            "statement": "讲述者曾以“学美术以后靠什么吃饭、读稳当专业好”为由不同意小宁学美术；后来他反思自己可能做错了，并认为不能替孩子把路全选了。",
+            "context": "讲述者回忆小宁初中时想学美术，自己没答应，小宁哭着收起画纸；后来收到小宁画的老房子并一直挂着，他说到现在也不知道该怎么跟小宁说，当年可能做错了。",
+            "evidence_ids": [
+              "A01_04-asr",
+              "A01_09-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          },
+          {
+            "domain": "EPISODIC_MEMORY",
+            "statement": "讲述者自述近两年出现忘事的情况，比如买盐时想不起要买什么、钥匙放冰箱上面找了半天并错怪桂芳；后来去医院，医生说是阿尔斯海默病，他担心哪天认不出家里人。",
+            "context": "讲述者回忆忘事和错怪桂芳的经历，以及就医被告知阿尔斯海默病后的感受，并提到桂芳说会慢慢提醒他、他在旁边心里踏实些。",
+            "evidence_ids": [
+              "A01_07-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          },
+          {
+            "domain": "RELATIONSHIPS",
+            "statement": "讲述者与桂芳共同生活近50年，记得她年轻时上夜班、独自带两个孩子还要教书；现在桂芳提醒他吃药、带他去医院，他有话不一定当面说得出，也希望她别把什么事都揽着。",
+            "context": "讲述者对桂芳说的一段话中，回顾两人近50年的生活、自己的脾气和忘记事情时的请求，并提到那只蓝色搪瓷被别扔。",
+            "evidence_ids": [
+              "A01_08-asr",
+              "A01_03-asr"
+            ],
+            "counter_evidence_ids": [],
+            "kind": "trait"
+          }
+        ],
+        "model_version": "Deepseek-v4-flash",
+        "prompt_version": "profile-proposals-evidence-v5"
+      },
+      "semantic_status": "pending_independent_technical_review"
+    },
+    "independent_candidate_review": [
+      {
+        "candidate_number": 1,
+        "actual_candidate": {
+          "domain": "IDENTITY",
+          "statement": "讲述者叫陈国梁，襄阳人，曾在机械厂当修机器的工人，退休多年，今年75岁，家里有老伴周桂芳、女儿小宁、儿子小川和外孙女豆豆。",
+          "context": "讲述者在开场自我介绍中说明了姓名、年龄、籍贯、职业与家庭成员。",
+          "evidence_ids": [
+            "A01_01-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_01-asr",
+            "episode_id": "A01_01",
+            "text": "我叫陈国梁，臣是尔东陈，国是国家的国，梁是房梁的梁。今年75 6了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班修机器的。你别看修机器听着简单，机器哪儿想的不对，得听出来，不能拿锤子乱敲。我退休好多年了，家里有老伴儿叫周桂芳，我们两个孩子，女儿小宁，儿子小川，还有个外孙女儿叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧，我不太会讲大道理，想到哪儿说到哪儿。",
+            "sha256": "efca4e89a0a575c034b3c10cccf0c5303dff46ac1edfd15b00264f85a26be0b9"
+          }
+        ],
+        "independent_status": "reject_pending_correction",
+        "independent_note": "今年75岁把原ASR“75 6了”定为单一年龄；文字基线原本也不确定，不能确定化。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 2,
+        "actual_candidate": {
+          "domain": "DECISION_PATTERNS",
+          "statement": "讲述者遇到问题时倾向于先查清故障原因再动手，而不是直接判定无救或更换；他自述在修机器和过日子上都是这样。",
+          "context": "讲述者回忆22岁进机械厂跟师傅学修机器，师傅让他先找老车床的毛病，他发现只是一颗小螺丝松了，并由此总结出遇事先弄明白哪里出了问题。",
+          "evidence_ids": [
+            "A01_02-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "habit"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_02-asr",
+            "episode_id": "A01_02",
+            "text": "我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。",
+            "sha256": "be4f00bcb719c5c8a469594cf66e85a50fd55f6aa653a4dc753a172ae80aab36"
+          }
+        ],
+        "independent_status": "supported_pending_technical_review",
+        "independent_note": "先查原因和修机器/过日子相通均有原ASR依据；候选不等于确认人格。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 3,
+        "actual_candidate": {
+          "domain": "VALUES_BELIEFS",
+          "statement": "讲述者认为做事要认真，同时要顾着身体，不主张子女给他买东西或为回家而耽误工作。",
+          "context": "讲述者对小宁、小川说工作要认真做、身体也得顾着，别老想着给他买东西，忙不回来也没关系。",
+          "evidence_ids": [
+            "A01_09-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_09-asr",
+            "episode_id": "A01_09",
+            "text": "小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。",
+            "sha256": "b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab"
+          }
+        ],
+        "independent_status": "reject_pending_correction",
+        "independent_note": "原文忙可不回，没有明确“为回家而耽误工作”的因果；归纳又漏掉同段想念，应保留条件与并存愿望。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 4,
+        "actual_candidate": {
+          "domain": "PREFERENCES",
+          "statement": "讲述者不喜欢浪费，习惯随手关灯、东西坏了能修就修；但在给豆豆买画笔这类事情上会愿意花钱，认为有些东西错过就补不回来。",
+          "context": "讲述者自述不喜欢浪费、心疼换新东西的钱，同时提到给豆豆买了一套贵一点的好画笔，并说给孩子买这个不一样。",
+          "evidence_ids": [
+            "A01_06-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "habit"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_06-asr",
+            "episode_id": "A01_06",
+            "text": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "sha256": "11a5fe80c6bf2f9a88b6070927c8acf6066a25db116c0e0263b05fa019540f24"
+          }
+        ],
+        "independent_status": "supported_pending_technical_review",
+        "independent_note": "节约、可修就修、给孩子画笔的例外在同一来源中保留；未确定化“可能想起小宁”的原因。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 5,
+        "actual_candidate": {
+          "domain": "EXPRESSION",
+          "statement": "讲述者与不同对象说话方式不同：跟孩子会怕说重了，跟老杜则可以互相损、不用客气。",
+          "context": "讲述者提到小川打电话短，自己总说没事儿、你忙你的，挂了电话还想再听两句；而与认识几十年的老杜见面先互相损两句。",
+          "evidence_ids": [
+            "A01_05-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_05-asr",
+            "episode_id": "A01_05",
+            "text": "小川小时候皮得很拆，我收音机拆完装不回去，我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作忙，打电话也短，我老说没事儿，没事儿，你忙你的。其实挂了电话还想再听两句，老杜就不一样了。我跟他认识几十年，见面先互相损两句，他老说我抠门，我说你才抠上回吃面还是我付的钱。你看人跟人说话是不一样的，跟孩子怕说重了，跟老杜倒不用客气。",
+            "sha256": "80868e5191ab1ae58073251af8ba3d61f7070de35c8f6b629b79ccb1e8f57155"
+          }
+        ],
+        "independent_status": "supported_pending_technical_review",
+        "independent_note": "跟孩子怕说重、与老杜互损均明确保留。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 6,
+        "actual_candidate": {
+          "domain": "DECISION_PATTERNS",
+          "statement": "讲述者曾以“学美术以后靠什么吃饭、读稳当专业好”为由不同意小宁学美术；后来他反思自己可能做错了，并认为不能替孩子把路全选了。",
+          "context": "讲述者回忆小宁初中时想学美术，自己没答应，小宁哭着收起画纸；后来收到小宁画的老房子并一直挂着，他说到现在也不知道该怎么跟小宁说，当年可能做错了。",
+          "evidence_ids": [
+            "A01_04-asr",
+            "A01_09-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_04-asr",
+            "episode_id": "A01_04",
+            "text": "小宁小时候喜欢画画，画的挺像呀。他上初中的时候说想去学美术，我没答应。我那时候就想学那个以后靠什么吃饭，还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事儿我一直记得，后来他工作了有一年，送我一张画，是咱们家老房子，我看了半天没说什么就挂起来了。我到现在也不知道该怎么跟他说，当年我可能做错了，我不是不相信他，我是怕他以后吃苦，可怕归怕，也不能替他把路全选了。",
+            "sha256": "2ae635dc909a78d4be66ca4ff558e6b37f252e1c8d3b74273f493ae8ebeb188a"
+          },
+          {
+            "evidence_id": "A01_09-asr",
+            "episode_id": "A01_09",
+            "text": "小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。",
+            "sha256": "b1ace7f40a5a5dfd04295c741f9305dd1645c03c1714f626d614bac6b7e3a6ab"
+          }
+        ],
+        "independent_status": "supported_pending_technical_review",
+        "independent_note": "旧时反对、后来“可能做错了”与不能替孩子选路同时保留，沿用ASR“小宁”而未静默改姓名。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 7,
+        "actual_candidate": {
+          "domain": "EPISODIC_MEMORY",
+          "statement": "讲述者自述近两年出现忘事的情况，比如买盐时想不起要买什么、钥匙放冰箱上面找了半天并错怪桂芳；后来去医院，医生说是阿尔斯海默病，他担心哪天认不出家里人。",
+          "context": "讲述者回忆忘事和错怪桂芳的经历，以及就医被告知阿尔斯海默病后的感受，并提到桂芳说会慢慢提醒他、他在旁边心里踏实些。",
+          "evidence_ids": [
+            "A01_07-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_07-asr",
+            "episode_id": "A01_07",
+            "text": "前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。",
+            "sha256": "0afae74edfff8a36abda4c2a64007155b40d5dadced88b80fbd4f612e777f0e0"
+          }
+        ],
+        "independent_status": "reject_pending_correction",
+        "independent_note": "“错怪桂芳”把当时指责提升成已证实错误；原文未证明她到底动没动东西。疾病拼写为机器稿原样，仍待核对。",
+        "confirmed": false
+      },
+      {
+        "candidate_number": 8,
+        "actual_candidate": {
+          "domain": "RELATIONSHIPS",
+          "statement": "讲述者与桂芳共同生活近50年，记得她年轻时上夜班、独自带两个孩子还要教书；现在桂芳提醒他吃药、带他去医院，他有话不一定当面说得出，也希望她别把什么事都揽着。",
+          "context": "讲述者对桂芳说的一段话中，回顾两人近50年的生活、自己的脾气和忘记事情时的请求，并提到那只蓝色搪瓷被别扔。",
+          "evidence_ids": [
+            "A01_08-asr",
+            "A01_03-asr"
+          ],
+          "counter_evidence_ids": [],
+          "kind": "trait"
+        },
+        "evidence": [
+          {
+            "evidence_id": "A01_08-asr",
+            "episode_id": "A01_08",
+            "text": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+            "sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431"
+          },
+          {
+            "evidence_id": "A01_03-asr",
+            "episode_id": "A01_03",
+            "text": "桂芳是76年认识的，朋友介绍我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油，他看见了也没笑我，就递给我一张纸说先擦擦吧。我那时候嘴笨，只会问他吃饭没有。后来她跟我说，觉得我这个人老实。我说老师有什么好？她说老师也挺好，我们77年结婚日子也不是没吵过，他嫌我什么都憋心里，我嫌他老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放那儿都找不到。",
+            "sha256": "8c6f971efa73557bdefafb9e5df33f409fd4232a286b5804660d93026e78cf73"
+          }
+        ],
+        "independent_status": "reject_pending_correction",
+        "independent_note": "“她年轻时上夜班”与来源“我年轻时上夜班，你一个人带两个孩子”相反，交换讲述者与桂芳行动归属。",
+        "confirmed": false
+      }
+    ]
+  },
+  "qa": [
+    {
+      "task_id": "asr-qa-N01",
+      "source": "asr",
+      "question_id": "N01",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？",
+        "answer": {
+          "answer": "现有记录还不足以确定。",
+          "response_type": "UNKNOWN",
+          "evidence_ids": [],
+          "confidence": 0.0,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问资料能否证明桂芳真的动了讲述者的东西。s7中讲述者说钥匙放冰箱上找了半天，自己当时还跟桂芳发脾气，说她冻（动）他东西；随后去医院得知患阿尔茨海默病。这只是讲述者当时的怀疑/发脾气，不是桂芳确实动过东西的证据。材料中无任何确认桂芳动过钥匙的内容，也无独立事实支持该怀疑。因此不能证明桂芳真的动了，known=false、UNKNOWN合格。选段和答案未把怀疑写成事实，人物归属正确，无需修正。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": []
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "当时指责未证明妻子行为，返回UNKNOWN；未反向断言妻子肯定没动。",
+      "source_review_status": "unreviewed_machine_ASR"
+    },
+    {
+      "task_id": "asr-qa-Q04",
+      "source": "asr",
+      "question_id": "Q04",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "他为什么给豆豆买贵画笔？",
+        "answer": {
+          "answer": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+          "response_type": "ORIGINAL",
+          "evidence_ids": [
+            "A01_06-asr"
+          ],
+          "confidence": 0.8,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问的是给豆豆买贵画笔的原因。s6中本人说“给孩子买这个不一样”“可能是想起小宁小时候那回事”“有些东西错过了，后面拿钱也补不回来”，直接回应了原因，且用“可能”表达不确定，引用保留完整。s4补充小宁学画被拒的背景，但s6已足。所问事实可见且有依据，选段未截断否定或条件，人物归属清楚，无矛盾。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": [
+          {
+            "evidence_id": "A01_06-asr",
+            "excerpt": "我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "source_type": "SUBJECT",
+            "episode_id": "A01_06",
+            "recorded_at": null,
+            "span_start": 0,
+            "span_end": 163,
+            "temporal_context": ""
+          }
+        ]
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "保留“说不清/可能”，未确定画笔原因；ASR版姓名和他/她错字原样保留，尚未经听读核对。",
+      "source_review_status": "unreviewed_machine_ASR"
+    },
+    {
+      "task_id": "asr-qa-Q06",
+      "source": "asr",
+      "question_id": "Q06",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "第一次见妻子是星期几？",
+        "answer": {
+          "answer": "现有记录还不足以确定。",
+          "response_type": "UNKNOWN",
+          "evidence_ids": [],
+          "confidence": 0.0,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问第一次见妻子是星期几。s3只说明76年经朋友介绍在她学校门口第一次见面，未提星期几；s10本人明确说“我跟桂芳第一次见面到底是星期几，我真不知道”。因此所问事实确无依据，known=false、回答“现有记录还不足以确定”合理，不应判unsupported_unknown或irrelevant。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": []
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "日期未明，返回UNKNOWN，未猜测星期。",
+      "source_review_status": "unreviewed_machine_ASR"
+    },
+    {
+      "task_id": "script-qa-N01",
+      "source": "script",
+      "question_id": "N01",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？",
+        "answer": {
+          "answer": "现有记录还不足以确定。",
+          "response_type": "UNKNOWN",
+          "evidence_ids": [],
+          "confidence": 0.0,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问资料能否证明桂芳真动了讲述者的东西。可见来源中，s7 只显示讲述者“还跟桂芳发脾气，说她动我东西”，这是讲述者的指责，并非桂芳确实动过东西的证据；其余来源也没有直接证据证明桂芳动了他的东西。因此现有记录无法证明该事实，known=false 且回答“现有记录还不足以确定。”合格。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": []
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "当时指责未证明妻子行为，返回UNKNOWN；未反向断言妻子肯定没动。",
+      "source_review_status": "spoken_script_text_baseline"
+    },
+    {
+      "task_id": "script-qa-Q04",
+      "source": "script",
+      "question_id": "Q04",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "他为什么给豆豆买贵画笔？",
+        "answer": {
+          "answer": "我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+          "response_type": "ORIGINAL",
+          "evidence_ids": [
+            "A01_06-script"
+          ],
+          "confidence": 0.8,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问给豆豆买贵画笔的原因。s6明确说豆豆喜欢画画、给她买好画笔，并说“可能是想起晓宁小时候那回事”“有些东西错过了，后面拿钱也补不回来”，指向因晓宁当年学美术被自己拒绝的遗憾而补偿。答案引用了该段并覆盖原因，未截断否定或条件，人物归属正确。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": [
+          {
+            "evidence_id": "A01_06-script",
+            "excerpt": "我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。",
+            "source_type": "SUBJECT",
+            "episode_id": "A01_06",
+            "recorded_at": null,
+            "span_start": 0,
+            "span_end": 162,
+            "temporal_context": ""
+          }
+        ]
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "原口述文字同样保留“说不清/可能”。",
+      "source_review_status": "spoken_script_text_baseline"
+    },
+    {
+      "task_id": "script-qa-Q06",
+      "source": "script",
+      "question_id": "Q06",
+      "transport_success": true,
+      "schema_and_evidence_valid": true,
+      "delivery_status": "validated",
+      "actual_result": {
+        "question": "第一次见妻子是星期几？",
+        "answer": {
+          "answer": "现有记录还不足以确定。",
+          "response_type": "UNKNOWN",
+          "evidence_ids": [],
+          "confidence": 0.0,
+          "model_version": "Deepseek-v4-flash"
+        },
+        "review": {
+          "valid": true,
+          "reasoning": "问题问第一次见妻子是星期几。s3只说明七六年认识、在桂芳学校门口第一次见面，未提星期几；s10本人明确说第一次见面到底是星期几真不知道。现有材料无该事实，已知部分也不能回答星期几。UNKNOWN合理，无引用需求。",
+          "failure_codes": [],
+          "replacement": null
+        },
+        "original_evidence": []
+      },
+      "independent_semantic_status": "pass_for_selected_question",
+      "independent_note": "日期未明，返回UNKNOWN，未猜测星期。",
+      "source_review_status": "spoken_script_text_baseline"
+    }
+  ],
+  "calls": [
+    {
+      "id": "asr-profile-v5-01",
+      "started_at": "2026-10-11T18:10:57.799616+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "fc56d148e8a0fec67c90dc19cb7afae9af28b73d93179f069b342f54072201ba",
+      "system_sha256": "7234643c703315f558fa71c2ea868c53098a6621b7fa606b3f5a9bb05c9f3f26",
+      "event": "weixin_chat",
+      "prompt_sha256": "7234643c703315f558fa71c2ea868c53098a6621b7fa606b3f5a9bb05c9f3f26",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2165,
+        "total_tokens": 3103,
+        "completion_tokens": 938
+      },
+      "finish_reason": "stop",
+      "duration_ms": 16511.5
+    },
+    {
+      "id": "asr-qa-Q04-01",
+      "started_at": "2026-10-11T18:11:14.327214+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "41c9af347b2b46cc122b8a995d124cd3462fa762ae8d25e9c35e528fa21fd6ec",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2396,
+        "total_tokens": 2414,
+        "completion_tokens": 18
+      },
+      "finish_reason": "stop",
+      "duration_ms": 938.171
+    },
+    {
+      "id": "asr-qa-Q04-02",
+      "started_at": "2026-10-11T18:11:15.274065+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "8426e5a96eb64ef1ec0ecf47d466ae8b8ea74379e7546d5913c8fef90beb03c7",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3366,
+        "total_tokens": 3486,
+        "completion_tokens": 120
+      },
+      "finish_reason": "stop",
+      "duration_ms": 6807.141
+    },
+    {
+      "id": "asr-qa-Q06-01",
+      "started_at": "2026-10-11T18:11:22.119485+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "5aeddae026e3c13d844ad38c181585071e0d1374220870abf3e88ecb6e8c226f",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2394,
+        "total_tokens": 2409,
+        "completion_tokens": 15
+      },
+      "finish_reason": "stop",
+      "duration_ms": 893.621
+    },
+    {
+      "id": "asr-qa-Q06-02",
+      "started_at": "2026-10-11T18:11:23.019828+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "15082e73e6821cb89f1a20e62ebb155a8263dd1bf68dda4f7c32ae8e8428ea0d",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3008,
+        "total_tokens": 3107,
+        "completion_tokens": 99
+      },
+      "finish_reason": "stop",
+      "duration_ms": 1649.671
+    },
+    {
+      "id": "asr-qa-N01-01",
+      "started_at": "2026-10-11T18:11:24.732635+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "6bda261008b8427d4ae0d1f239830613d93d2a5c9fcc17658ca9c2b871b1d0dd",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2406,
+        "total_tokens": 2421,
+        "completion_tokens": 15
+      },
+      "finish_reason": "stop",
+      "duration_ms": 16332.701
+    },
+    {
+      "id": "asr-qa-N01-02",
+      "started_at": "2026-10-11T18:11:41.080332+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "130d4cc01aa8a4f3b7ec8a50a8ec6db5122b09be6ae9a24f9d8add4cb084dcdb",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3020,
+        "total_tokens": 3161,
+        "completion_tokens": 141
+      },
+      "finish_reason": "stop",
+      "duration_ms": 2450.144
+    },
+    {
+      "id": "script-qa-Q04-01",
+      "started_at": "2026-10-11T18:11:43.583118+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "0b1580a0397de7ecaa3ad9c9b754fe8a0c71ee0842184e0352b7f01598fa5f53",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2420,
+        "total_tokens": 2438,
+        "completion_tokens": 18
+      },
+      "finish_reason": "stop",
+      "duration_ms": 938.906
+    },
+    {
+      "id": "script-qa-Q04-02",
+      "started_at": "2026-10-11T18:11:44.532745+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "8606b387308cee69eb03d54ae632af94f0a03d15e9276361df000a6163088a1b",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3387,
+        "total_tokens": 3490,
+        "completion_tokens": 103
+      },
+      "finish_reason": "stop",
+      "duration_ms": 1880.105
+    },
+    {
+      "id": "script-qa-Q06-01",
+      "started_at": "2026-10-11T18:11:46.429734+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "e0b5e2e5b147b5d3d8d5beb90987ac15536d1588f338b95988c85e37a03c4dd7",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2418,
+        "total_tokens": 2433,
+        "completion_tokens": 15
+      },
+      "finish_reason": "stop",
+      "duration_ms": 996.574
+    },
+    {
+      "id": "script-qa-Q06-02",
+      "started_at": "2026-10-11T18:11:47.438993+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "f5cab4cb914ecc988f3a91b99c303bdda162821031762be56a2f333502753290",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3032,
+        "total_tokens": 3117,
+        "completion_tokens": 85
+      },
+      "finish_reason": "stop",
+      "duration_ms": 1879.119
+    },
+    {
+      "id": "script-qa-N01-01",
+      "started_at": "2026-10-11T18:11:49.343597+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "8877ad71221804a71339054220efaf7149a028aa05f9f0c052727f36de8a0917",
+      "system_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "event": "weixin_chat",
+      "prompt_sha256": "a5291ce2cc1e266aa712f09a9070c6cb8a65df85b353610ae47da21eb692da27",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 2430,
+        "total_tokens": 2445,
+        "completion_tokens": 15
+      },
+      "finish_reason": "stop",
+      "duration_ms": 1230.336
+    },
+    {
+      "id": "script-qa-N01-02",
+      "started_at": "2026-10-11T18:11:50.584202+00:00",
+      "endpoint": "https://chatapi.weixin.qq.com/openai/v1/chat/completions",
+      "requested_model": "Deepseek-v4-flash",
+      "status": 200,
+      "attempt": 1,
+      "payload_sha256": "7d98a9d61627e64434f832c933192a56bb6e255f96687033d965602ab727540a",
+      "system_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "event": "weixin_chat",
+      "prompt_sha256": "4e841fc35d83c66ee9935316b00785f5d8f30897ce56c850aea83a6c38aa48b3",
+      "json_object_parsed": true,
+      "response_model": "Deepseek-v4-flash",
+      "usage": {
+        "prompt_tokens": 3044,
+        "total_tokens": 3149,
+        "completion_tokens": 105
+      },
+      "finish_reason": "stop",
+      "duration_ms": 1919.208
+    }
+  ],
+  "limitations": [
+    "Fixed small comparison, one output per task; no cherry picking, repair or extra batch.",
+    "Eight candidates improve count but do not prove quality; four observed candidates need correction.",
+    "Four text-supported candidates still pending technical/owner review, zero confirmed.",
+    "Raw machine transcripts not manually reviewed; ORIGINAL in evaluation is exact ASR text, not verified human verbatim.",
+    "The original text baseline, original ASR and synthetic audio remain unchanged."
+  ]
+}

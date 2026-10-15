@@ -1,0 +1,28 @@
+{
+  "answer_id": "ta_5e8e2f4b00e64e6e",
+  "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+  "question": "蓝色搪瓷杯现在是每天喝茶用的吗？",
+  "answer": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+  "response_type": "ORIGINAL",
+  "confidence": 0.8,
+  "model_version": "Deepseek-v4-flash",
+  "person_model_version": 4,
+  "source_version": "73d2422a124039f314e4bf67d343316e22feff29315730e77a98f39ef6a95630",
+  "created_at": "2026-10-15T14:04:57.881435+00:00",
+  "stale": false,
+  "mode": "evidence",
+  "understanding_ids": [],
+  "contribution_ids": [],
+  "prompt_version": "",
+  "coverage": null,
+  "omitted_points": null,
+  "expression": null,
+  "evidence": [
+    {
+      "evidence_id": "ev_f1dfb09d8b82403e",
+      "excerpt": "刚才说到蓝色搪瓷杯，我再说清楚一点，这个杯子现在留作纪念，不是每天喝茶用的杯子用过很多年，所以舍不得扔，其他的话不变。",
+      "episode_id": "ep_007ccf0e26394aff",
+      "source_type": "SUBJECT"
+    }
+  ]
+}

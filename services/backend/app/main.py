@@ -147,6 +147,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
+        if settings.embedding_warmup:
+            import asyncio
+            from .retrieval import EmbeddingUnavailable
+            try:
+                # Deployment readiness absorbs one-time model loading. No user
+                # archive, provider request or generated answer is involved.
+                await asyncio.to_thread(_app.state.embedding_encoder.encode,['记忆检索准备'])
+            except EmbeddingUnavailable:
+                logging.getLogger(__name__).warning('retrieval_warmup_unavailable')
         yield
         database.dispose()
 
@@ -157,6 +166,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.state.voice_sessions = {}
     app.state.database = database
     app.state.object_store = object_store
     app.state.stt_provider = stt_provider
@@ -189,6 +199,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(person_model.router)
     app.include_router(pairing.router)
     app.include_router(twin.router)
+    from .api import voice_sessions
+    app.include_router(voice_sessions.router)
     app.include_router(voice.router)
     app.include_router(calibration.router)
     app.include_router(workbench.router)

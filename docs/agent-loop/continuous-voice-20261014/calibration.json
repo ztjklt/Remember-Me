@@ -1,0 +1,76 @@
+{
+  "synthetic_human_audio": true,
+  "human_listening_verified": false,
+  "question": "平时喝茶喜欢浓一点还是淡一点？",
+  "locked_ms": 5507,
+  "blind_answer_read_status": 404,
+  "actual_asr": {
+    "state": "reviewing",
+    "transcript": "我喝茶喜欢淡一点，太甜的我喝不惯。这就是我的口味，不是谁规定我只能这么喝。",
+    "stt_model_version": "bailian/paraformer-v2",
+    "supplement": ""
+  },
+  "reviewed_text": "我喝茶喜欢淡一点，太甜的我喝不惯。这就是我的口味，不是谁规定我只能这么喝。",
+  "review_kind": "technical review of synthetic material",
+  "comparison": {
+    "calibration_id": "vcal_bfeb96f19fbf42ea",
+    "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+    "twin_answer_id": "ta_6732620a90ed4c1e",
+    "question": "平时喝茶喜欢浓一点还是淡一点？",
+    "locked_answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+    "answer_hidden": false,
+    "locked_response_type": "ORIGINAL",
+    "locked_model_version": "Deepseek-v4-flash",
+    "locked_person_model_version": 15,
+    "locked_evidence_ids": [
+      "ev_23a1435afe794db8"
+    ],
+    "status": "complete",
+    "human_episode_id": "ep_52e68d2108fb4810",
+    "summary": "本人补充与Twin答案在口味偏好上一致，均明确表示喝茶喜欢淡一点、喝不惯太甜；两者均强调这是个人口味而非外部规定。情绪自述未出现，无法比较。",
+    "dimensions": [
+      {
+        "dimension": "DECISION",
+        "alignment": "MATCH",
+        "note": "两者均明确选择喝茶淡一点，并排除太甜的口味。",
+        "human_excerpt": "我喝茶喜欢淡一点，太甜的我喝不惯。"
+      },
+      {
+        "dimension": "REASONING",
+        "alignment": "MATCH",
+        "note": "两者均以个人口味、非外部规定作为理由。",
+        "human_excerpt": "这就是我的口味，不是谁规定我只能这么喝。"
+      },
+      {
+        "dimension": "VALUE_PRIORITY",
+        "alignment": "MATCH",
+        "note": "两者均把个人口味自主性置于外部规定之上。",
+        "human_excerpt": "这就是我的口味，不是谁规定我只能这么喝。"
+      },
+      {
+        "dimension": "EMOTIONAL_REACTION",
+        "alignment": "NOT_OBSERVED",
+        "note": "本人补充未直接说明情绪或感受，无法比较。",
+        "human_excerpt": null
+      },
+      {
+        "dimension": "EXPRESSION",
+        "alignment": "MATCH",
+        "note": "两者均使用直接陈述并带有否定外部规定的补充说明，组织顺序一致。",
+        "human_excerpt": "这就是我的口味，不是谁规定我只能这么喝。"
+      }
+    ],
+    "suggested_question": null,
+    "comparison_model_version": "Deepseek-v4-flash",
+    "created_at": "2026-10-13T16:45:57.270324+00:00",
+    "completed_at": "2026-10-13T16:47:23.794058+00:00"
+  },
+  "report_first_audio_ms": 844,
+  "ok": true,
+  "content_review": {
+    "grade": "partial",
+    "finding": "VALUE_PRIORITY 对个人口味自主性的优先级归纳偏强。两段都排除外部规定，并没有给出价值冲突或取舍；应保留未观察到，不作为稳定人格。",
+    "automatic_person_update": false
+  },
+  "harness_issue": "脚本首次请求了不存在的 /episodes/{id}/status，404；改为现有 /episodes/{id}，原 episode 幂等续跑。不是供应商或产品接口失败。"
+}

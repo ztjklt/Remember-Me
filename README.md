@@ -1,5 +1,13 @@
 # Remember Me
 
+> **2026-10-15 夜间双端整合交接：** [比赛前复盘、技术协议与后续开发入口](docs/integration/README.md)。Android 当前下载版为 0.12.1；iOS 声纹后端独立运行在 CloudBase，最新 iOS 客户端源码尚未在本次扫描的分支中找到。已列出 Twin 请求字段、WSS/LiveKit、迁移和 UI 差异，不能只替换服务器地址或整分支覆盖。继续使用 `codex/continuous-voice-20261014`，PR #94 不合并。
+
+> **2026-10-15 ECS＋Android 0.12.1 已同步：** [下载、账号和操作说明](docs/agent-loop/ANDROID_0121_QUICK_START_2026-10-15.md) · [实跑结果与已知问题](docs/agent-loop/CLOUD_SYNC_RESULTS_2026-10-15.md) · [12 张原生截图](docs/agent-loop/screenshots/cloud-sync-20261015/README.md)。API、AI、录音与人物任务统一升级；自动纠错已开启，记忆修订与亲友再分享、连续语音在公网 HTTPS 上实测。属于模拟器验收的内测试用，尚未稳定两秒，人物模拟仍有失败与偏强推断。PR #94 保持未合并。下方各日期记录保留当时状态。
+
+> **2026-10-15 增量交接：** [新增功能、版本范围与分工建议](docs/agent-loop/TEAM_HANDOFF_2026-10-15.md) · [接手运行与发布步骤](docs/agent-loop/HANDOFF_RUNBOOK_2026-10-15.md) · [原速视频与结果入口](docs/agent-loop/demos/20261015/README.md)。继续更新 `codex/continuous-voice-20261014` / [PR #94](https://github.com/ztjklt/Remember-Me/pull/94)，不合并。包含语音提速与 Step 试用、记忆修订联动、ASR 后 LLM 自动校对。代码、ECS 和公开 APK 的启用范围分别列明；自动校对默认关闭，尚未完成云端与手机实跑验收。
+
+> **2026-10-14 Android 0.11.0 连续语音试验版：** [下载安装与语音/校准操作](docs/agent-loop/ANDROID_0110_QUICK_START_2026-10-14.md) · [真实结果、延迟与未完成项](docs/agent-loop/CONTINUOUS_VOICE_RESULTS_2026-10-14.md) · [队长会议要求对照](docs/agent-loop/CONTINUOUS_VOICE_REQUIREMENTS_2026-10-14.md)。ECS与同签名APK已接入持续收音、流式播放和插话取消，先向两个陈守义演示账号开放。模型生成与审阅仍需数秒，尚未达到1—2秒自然接话；实体手机声学与耳机未验收。PR #94待团队评审，未合并。
+
 > **2026-10-13 Android 0.10.0 云端交付：** [下载安装、账号与双角色体验](docs/agent-loop/ANDROID_0100_QUICK_START_2026-10-13.md) · [部署、验证结果与剩余事项](docs/agent-loop/CLOUD_TWIN_DELIVERY_2026-10-13.md) · [录音豆 SDK 接入准备](apps/android/docs/WORK_3200_PREPARATION.md)。ECS 已升级 Twin 与亲友/声音接口，签名内测 APK 直连公网 HTTPS。设备 SDK 仍是接入准备，不是录音豆实机通过。
 
 > **2026-10-12 Twin 与交互融合交接（历史）：** [本次功能、进展与待解决项](docs/agent-loop/TWIN_TEAM_HANDOFF_2026-10-12.md) · [新电脑本地运行](docs/agent-loop/TWIN_LOCAL_SETUP_2026-10-12.md) · [10 张 Android 实跑截图](docs/agent-loop/screenshots/twin-20261012/README.md)。已融合右侧两批按钮与音频交互；该日期的结果仅为本地评审。ECS 后续升级见上方 10 月 13 日记录。CI APK 仍默认连接模拟器宿主机 `10.0.2.2:8891`，不要与签名云端包混用。
@@ -26,7 +34,7 @@
 
 > **2026-09-27 双端集成：** Android 的 #78／#79 和随后提交的 #81 界面与 iOS 的 #76／#77／#80 已接合。Android 单元测试、APK 构建与 lint 通过；iOS UI v6 在 Mac 的 Xcode 27 模拟器目标构建通过。真机运行结果另记，不能由构建结果推断。
 
-Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
+Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. Android and iOS share this product model and an early contract baseline. Their current ECS and CloudBase implementations have diverged; the [platform handoff](docs/integration/PLATFORM_PROTOCOL_2026-10-15.md) identifies the adapters and migration work needed to reunify them.
 
 ## Current status
 

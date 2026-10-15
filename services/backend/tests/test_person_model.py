@@ -13,6 +13,17 @@ from app.tokens import hash_actor_token
 from app.worker import ProcessingWorker
 
 
+def _source_spans(session, episode_id):
+    """The fake extractor omits alignment; these profile fixtures need valid sources."""
+    from app.models import Evidence
+    episode = session.get(Episode, episode_id)
+    for source in session.scalars(select(Evidence).where(Evidence.episode_id == episode_id)):
+        assert episode.transcript.count(source.excerpt) == 1
+        source.span_start = episode.transcript.index(source.excerpt)
+        source.span_end = source.span_start + len(source.excerpt)
+    session.commit()
+
+
 def test_second_episode_correction_delete_and_subject_isolation(app, client, session):
     seeded = seed_development_data(session, subject_name="Ada", actor_name="Ada")
     other = seed_development_data(session, subject_name="Other", actor_name="Other")
@@ -35,6 +46,7 @@ def test_second_episode_correction_delete_and_subject_isolation(app, client, ses
                             json={"transcript": review.json()["transcript"]}).status_code == 200
         worker.run_once()
         worker.run_once()
+        _source_spans(session, episode_id)
     model = client.get(f"/api/v1/subjects/{seeded.subject_id}/person-model", headers=headers).json()
     assert model["version"] == 2
     assert len(model["domains"]) == 7
@@ -87,6 +99,7 @@ def test_conflicting_memories_coexist_and_prompt_for_clarification(app, client, 
                             json={"transcript": text}).status_code == 200
         worker.run_once()
         worker.run_once()
+        _source_spans(session, episode_id)
     rows = list(session.scalars(select(MemoryItem).order_by(MemoryItem.created_at)))
     rows[0].memory_type = rows[1].memory_type = "PREFERENCE"
     rows[0].content = "我喜欢咖啡"

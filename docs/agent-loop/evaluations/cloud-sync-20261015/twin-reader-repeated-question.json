@@ -1,0 +1,124 @@
+{
+  "run_id": "cloud-sync-20261015-reader-repeat-02",
+  "role": "reader",
+  "server": "https://39.108.183.47",
+  "build_type": "internal",
+  "debuggable": false,
+  "app_version": "0.12.1-internal",
+  "app_version_code": 20261023,
+  "fixture": false,
+  "physical_phone": false,
+  "new_asr": false,
+  "tls_validation": "Android default TLS with internal APK trust configuration; no test override",
+  "interaction_method": "Compose UI; saved-answer/asset reads use production model; verification uses authenticated GET",
+  "new_question_attempts": 1,
+  "new_speech_attempts": 0,
+  "style_changed": false,
+  "saved_answer_played": false,
+  "new_answer_played": false,
+  "source_played": true,
+  "logout_cache_cleared": true,
+  "status": "passed",
+  "events": [
+    {
+      "name": "ordinary_login",
+      "at": "2026-10-15T14:09:15.208694Z",
+      "detail": {}
+    },
+    {
+      "name": "native_pages",
+      "at": "2026-10-15T14:09:18.941519Z",
+      "detail": {}
+    },
+    {
+      "name": "new_question_single_submit",
+      "at": "2026-10-15T14:09:26.985134Z",
+      "detail": {}
+    },
+    {
+      "name": "original_ui_playback",
+      "at": "2026-10-15T14:10:16.933957Z",
+      "detail": {}
+    },
+    {
+      "name": "playback_verified",
+      "at": "2026-10-15T14:10:22.570891Z",
+      "detail": {
+        "source": "ep_ed240efd5e804a3f",
+        "duration_ms": 46880,
+        "position_ms": 1165
+      }
+    },
+    {
+      "name": "logout",
+      "at": "2026-10-15T14:10:23.061543Z",
+      "detail": {}
+    },
+    {
+      "name": "completed",
+      "at": "2026-10-15T14:10:26.421007Z",
+      "detail": {}
+    }
+  ],
+  "api_actor_id": "actor_b7841ba32ac74a51b30c1742ac253ede",
+  "api_display_name": "陈守义样例 · 亲友",
+  "api_subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+  "api_role": "reader",
+  "ordinary_login": true,
+  "server_release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+  "api_version": "0.7.0",
+  "font_scale": 1,
+  "confirmed_understandings": 1,
+  "stories": 9,
+  "voice_ready": true,
+  "style_enabled_before": true,
+  "style_enabled_after": true,
+  "question": "如果我想喝浓一点的茶，你会怎么想？",
+  "new_answer": {
+    "answer_id": "ta_c5a624a8976b45b4",
+    "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+    "question": "如果我想喝浓一点的茶，你会怎么想？",
+    "answer": "如果按我平常的口味，我大概会说太浓的我喝不惯；不过你要喝浓一点，那是你的喝法，不是谁规定只能怎么喝。",
+    "mode": "persona",
+    "response_type": "SIMULATION",
+    "model_version": "Deepseek-v4-flash",
+    "prompt_version": "persona-conditional-reviewed-v8",
+    "person_model_version": 16,
+    "source_version": "f52b461af7adda73934e64019edac1e6e8da50a802bc54985a84156f15532100",
+    "created_at": "2026-10-15T14:10:15.814850+00:00",
+    "stale": false,
+    "understanding_ids": [
+      "pc_8664c631c0d7d6b49f8c47338601195ffa476bf0"
+    ],
+    "contribution_ids": [],
+    "coverage": "complete",
+    "evidence": [
+      {
+        "evidence_id": "ev_23a1435afe794db8",
+        "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "episode_id": "ep_ed240efd5e804a3f",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_92116f4f6dde42c4",
+        "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+        "episode_id": "ep_ed240efd5e804a3f",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_18077b86331d4150",
+        "excerpt": "我喝茶喜欢淡一点，太甜的我喝不惯。",
+        "episode_id": "ep_52e68d2108fb4810",
+        "source_type": "SUBJECT"
+      },
+      {
+        "evidence_id": "ev_ccdecc7f7eec4fc4",
+        "excerpt": "这就是我的口味，不是谁规定我只能这么喝。",
+        "episode_id": "ep_52e68d2108fb4810",
+        "source_type": "SUBJECT"
+      }
+    ]
+  },
+  "answer_api_readback": true,
+  "source_episode_id": "ep_ed240efd5e804a3f"
+}

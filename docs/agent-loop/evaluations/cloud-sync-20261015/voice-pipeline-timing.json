@@ -1,0 +1,63 @@
+{
+  "silence_measurement": "10ms PCM windows, RMS > 200; digital signal, not physical microphone/speaker latency",
+  "turns": [
+    {
+      "round": 1,
+      "interrupted": true,
+      "played_samples": 53856,
+      "question_start": 1792072164709,
+      "question_end": 1792072166894.0,
+      "audio_start": 1792072174228.3333,
+      "audible_start": 1792072174348.3333,
+      "input_tail_ms": 370,
+      "tts_leading_silence_ms": 120,
+      "finished": 1792072176450,
+      "turn_id": 1,
+      "text": "“又想起第一次自己跑12路那天了，上回讲到收车以后，我在站房坐了一会儿，就是那一次不是另外一天，开车时还绷着，人坐下来肩膀才慢慢松了。\n\n”\n“我第一次独立出车前，出车记录还有些地方没理顺，他过来帮我整理了一下，车是我自己开的，他帮的是前面的这些准备，第一次跑的就是12路。\n\n”\n“第一次收车，我没立刻回家，在站房坐了一会儿，同事们在旁边聊白天的事，我就听着，具体聊什么已经记不住了，倒是那一下松口气的感觉。”\n“同事在边上说话，我听着心里想的就是今天总算平平安安跑完了，他们说了什么，当时都有谁，我现在记不全了，年份也还没核实，工作证没找到呢。\n\n”",
+      "question": "请讲讲公交工作中的故事。",
+      "latency_ms": 7454,
+      "latency_to_playback_ms": 6964,
+      "text_ms": 6422.0
+    },
+    {
+      "round": 2,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072176125,
+      "question_end": 1792072178494.0,
+      "audio_start": 1792072181005.0,
+      "audible_start": 1792072181145.0,
+      "input_tail_ms": 350,
+      "tts_leading_silence_ms": 140,
+      "finished": 1792072188264,
+      "turn_id": 5,
+      "text": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "question": "你喜欢什么茶？",
+      "latency_ms": 2651,
+      "latency_to_playback_ms": 2161,
+      "text_ms": 2402.0
+    },
+    {
+      "round": 3,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072189389,
+      "question_end": 1792072192145.0,
+      "audio_start": 1792072198442.6667,
+      "audible_start": 1792072198552.6667,
+      "input_tail_ms": 280,
+      "tts_leading_silence_ms": 110,
+      "finished": 1792072209339,
+      "turn_id": 7,
+      "text": "“我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n”\n“我喝茶喜欢淡一点，太甜的我喝不惯。”",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "latency_ms": 6408,
+      "latency_to_playback_ms": 6018,
+      "text_ms": 5557.0
+    }
+  ],
+  "seconds": 46.807359130859375,
+  "instrumentation_ok": true,
+  "microphone_bypassed": true,
+  "speed": 1
+}

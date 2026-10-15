@@ -1,0 +1,13 @@
+{
+  "apk": "remember-me-0.12.1-internal.apk",
+  "sha256": "37260ac2bae5e2c1165cfb3af3c404f47fc4a206bef4c8010e2e9ce5427e9dc3",
+  "bytes": 163917379,
+  "version_name": "0.12.1-internal",
+  "version_code": 20261023,
+  "source_commit": "6efb72d2a50dee5890fd4ca2d56ed112911b52af",
+  "signing_certificate_sha256": "9c99b41e65d934bd0dee3b111543266404b49fb7d799d43c23eb82f46d8e2f75",
+  "server": "https://39.108.183.47",
+  "debuggable": false,
+  "tls_verification": "IP-specific test certificate; no cleartext",
+  "delivery_status": "candidate; cloud and emulator acceptance recorded separately"
+}

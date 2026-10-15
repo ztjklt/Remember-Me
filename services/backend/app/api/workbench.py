@@ -103,6 +103,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
     settings = request.app.state.settings
     from ..cloud_asr import cloud_policy, configured, destination, CLOUD_BACKENDS
     cloud = settings.stt_backend in CLOUD_BACKENDS
+    from ..transcript_correction import correction_policy
     available=False
     if settings.ai_backend=='http':
         import httpx
@@ -118,6 +119,7 @@ def capabilities(request: Request, actor: Actor = Depends(current_actor)):
         'stt_processing': 'client' if settings.stt_backend == 'client' else ('cloud' if cloud else ('test' if settings.stt_backend == 'fake' else 'http')),
         'stt_configured': configured(settings) if cloud else settings.stt_backend == 'http',
         'cloud_asr_policy': cloud_policy(settings) if cloud else None,
+        'transcript_correction_policy': correction_policy(settings) if settings.stt_backend != 'client' else None,
         'stt_model': destination(settings)['model'] if cloud else None,
         'stt_host': destination(settings)['host'] if cloud else None,
         'ai_available':available,
@@ -131,12 +133,15 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
     ids = visible_episodes(session, subject_id, actor.actor_id)
     owner = is_owner(session, subject_id, actor.actor_id)
     altered = altered_story_ids(session, ids) if not owner else set()
+    from ..materials import effective_materials
+    effective = {c['memory_item_id'] for c in effective_materials(session, subject_id,
+        ids - altered, enforce_budget=False, include_gaps=False)}
     items = []
     for episode in session.scalars(select(Episode).where(Episode.episode_id.in_(ids)).order_by(Episode.recorded_at.desc())):
         job = session.scalar(select(Job).where(Job.episode_id == episode.episode_id)) if owner else None
         memory_rows = list(session.scalars(select(MemoryItem).where(
             MemoryItem.episode_id == episode.episode_id, MemoryItem.deleted_at.is_(None))))
-        active = [m for m in memory_rows if m.review_state == 'active']
+        active = [m for m in memory_rows if m.review_state == 'active' and m.memory_item_id in effective]
         # A corrected private replacement must not leak via a formerly shared
         # transcript or original-audio endpoint. The owner retains the history.
         unavailable = episode.episode_id in altered
@@ -146,7 +151,8 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                 break
             sources = [session.get(Evidence, eid) for eid in memory.evidence_ids]
             values.append({'memory_item_id': memory.memory_item_id, 'content': memory.content,
-                'memory_type': memory.memory_type, 'review_state': memory.review_state,
+                'memory_type': memory.memory_type, 'review_state': ('pending' if memory.review_state == 'active'
+                    and memory.memory_item_id not in effective else memory.review_state),
                 'domain': (memory.item_metadata or {}).get('domain'),
                 'source_type': memory.source_type,
                 'origin': (memory.item_metadata or {}).get('origin', 'extracted'),

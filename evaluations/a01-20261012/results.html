@@ -1,0 +1,4189 @@
+<!doctype html><meta charset="utf-8"><title>A01 真实本地评测</title><style>body{font:16px/1.7 system-ui;max-width:1100px;margin:auto;padding:30px;background:#f8faf7;color:#24332a}details{background:white;border:1px solid #c9d9ce;border-radius:10px;padding:15px;margin:12px 0}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}h1,h2{color:#285642}.warn{color:#a23928}</style>
+<h1>A01 真实本地评测</h1><p>虚构素材 · 十段口述文字基线 · 人物候选待技术审核 · 合成音频不是本人原音 · ASR 未运行</p>
+<pre>{
+  &quot;calls&quot;: 69,
+  &quot;http_200_calls&quot;: 69,
+  &quot;usage&quot;: {
+    &quot;prompt_tokens&quot;: 142021,
+    &quot;completion_tokens&quot;: 9817,
+    &quot;total_tokens&quot;: 151838
+  },
+  &quot;memory_items&quot;: 83,
+  &quot;evidence_span_errors&quot;: [],
+  &quot;profile_candidate_observations&quot;: 9,
+  &quot;qa_tasks&quot;: 28,
+  &quot;qa_delivery_status&quot;: {
+    &quot;validated&quot;: 26,
+    &quot;failed&quot;: 2
+  },
+  &quot;final_semantic_status&quot;: {
+    &quot;partial&quot;: 3,
+    &quot;pass&quot;: 8,
+    &quot;delivery_failure&quot;: 1
+  },
+  &quot;fresh_tts_wavs&quot;: 10,
+  &quot;actual_asr_calls&quot;: 0
+}</pre>
+<h2>实际缺陷与边界</h2><pre class="warn">[
+  {
+    &quot;component&quot;: &quot;memory&quot;,
+    &quot;episode_id&quot;: &quot;A01_04&quot;,
+    &quot;content&quot;: &quot;我认为还是读个稳当的专业好。&quot;,
+    &quot;status&quot;: &quot;temporal_scope_omitted&quot;,
+    &quot;note&quot;: &quot;证据说“我那时候就想”；该条单独展示缺少“当时”，不能用作当前无条件偏好。完整原文另有后来反思。&quot;
+  },
+  {
+    &quot;component&quot;: &quot;memory&quot;,
+    &quot;episode_id&quot;: &quot;A01_07&quot;,
+    &quot;content&quot;: &quot;还有一次本人把钥匙放在冰箱上面，找了半天。&quot;,
+    &quot;status&quot;: &quot;agency_inference&quot;,
+    &quot;note&quot;: &quot;原文只说钥匙放冰箱上面，未明确是谁放；提取补了本人动作主语，应保留位置事实而不确认动作归属。&quot;
+  },
+  {
+    &quot;component&quot;: &quot;profile&quot;,
+    &quot;batch&quot;: &quot;profile-batch2&quot;,
+    &quot;status&quot;: &quot;uncertainty_not_explicit_in_context&quot;,
+    &quot;note&quot;: &quot;给孩子投入候选的context写“联系到晓宁旧事”，省略原文“可能/说不清”；来源原文保存，但不能当确定因果。&quot;
+  },
+  {
+    &quot;component&quot;: &quot;profile&quot;,
+    &quot;status&quot;: &quot;incomplete_view_coverage&quot;,
+    &quot;note&quot;: &quot;每批只提议3项、共9次候选观察；最后一批没有独立显示孩子想念、老杜语气、女儿反思、未知边界等。不是完整八个侧面，也不能把候选自动确认。&quot;
+  }
+]</pre>
+<h2>逐条记忆及原文证据</h2>
+<details><summary>A01_01 1 我叫陈国梁，陈是耳东陈，国是国家的国，梁是房梁的梁。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;我叫陈国梁，陈是耳东陈，国是国家的国，梁是房梁的梁。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_66e8b1f1e6dc475e&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_66e8b1f1e6dc475e&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:0-26&quot;,
+      &quot;excerpt&quot;: &quot;我叫陈国梁，陈是耳东陈，国是国家的国，梁是房梁的梁。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 26,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 2 我今年七十五六了，岁数大了，自己有时候也要想一想。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;我今年七十五六了，岁数大了，自己有时候也要想一想。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_a8570b6df0ac4562&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_a8570b6df0ac4562&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:26-50&quot;,
+      &quot;excerpt&quot;: &quot;今年七十五六了，岁数大了，自己有时候也要想一想。&quot;,
+      &quot;span_start&quot;: 26,
+      &quot;span_end&quot;: 50,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 3 我是襄阳人，以前在机械厂上班，修机器的。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;我是襄阳人，以前在机械厂上班，修机器的。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_aaa9fe6342534136&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_aaa9fe6342534136&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:50-70&quot;,
+      &quot;excerpt&quot;: &quot;我是襄阳人，以前在机械厂上班，修机器的。&quot;,
+      &quot;span_start&quot;: 50,
+      &quot;span_end&quot;: 70,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 4 修机器时要能听出机器哪儿响得不对，不能拿锤子乱敲。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;修机器时要能听出机器哪儿响得不对，不能拿锤子乱敲。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_c05d4d0b0a64430a&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_c05d4d0b0a64430a&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:70-103&quot;,
+      &quot;excerpt&quot;: &quot;你别看修机器听着简单，机器哪儿响得不对，得听出来，不能拿锤子乱敲。&quot;,
+      &quot;span_start&quot;: 70,
+      &quot;span_end&quot;: 103,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 5 我退休好多年了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;我退休好多年了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_8390cf54935542de&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_8390cf54935542de&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:103-111&quot;,
+      &quot;excerpt&quot;: &quot;我退休好多年了。&quot;,
+      &quot;span_start&quot;: 103,
+      &quot;span_end&quot;: 111,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 6 家里有老伴儿，叫周桂芳。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;家里有老伴儿，叫周桂芳。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_98e94a42769540b3&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_98e94a42769540b3&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:111-123&quot;,
+      &quot;excerpt&quot;: &quot;家里有老伴儿，叫周桂芳。&quot;,
+      &quot;span_start&quot;: 111,
+      &quot;span_end&quot;: 123,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 7 我们两个孩子，女儿晓宁，儿子小川。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;我们两个孩子，女儿晓宁，儿子小川。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_e69e04fddfba4bd4&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_e69e04fddfba4bd4&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:123-140&quot;,
+      &quot;excerpt&quot;: &quot;我们两个孩子，女儿晓宁，儿子小川。&quot;,
+      &quot;span_start&quot;: 123,
+      &quot;span_end&quot;: 140,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 8 还有个外孙女，叫豆豆。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;还有个外孙女，叫豆豆。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_c8a6d94d1bc549b3&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_c8a6d94d1bc549b3&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:140-151&quot;,
+      &quot;excerpt&quot;: &quot;还有个外孙女，叫豆豆。&quot;,
+      &quot;span_start&quot;: 140,
+      &quot;span_end&quot;: 151,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_01 9 我不太会讲大道理，想到哪儿说到哪儿。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;我不太会讲大道理，想到哪儿说到哪儿。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_83a990ca86664df6&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EXPRESSION&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_83a990ca86664df6&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_01#span:175-193&quot;,
+      &quot;excerpt&quot;: &quot;我不太会讲大道理，想到哪儿说到哪儿。&quot;,
+      &quot;span_start&quot;: 175,
+      &quot;span_end&quot;: 193,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 10 我二十二岁进的机械厂，先跟着师傅学。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_02a8e8ba3f6f47cb&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_02a8e8ba3f6f47cb&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:0-18&quot;,
+      &quot;excerpt&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 18,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 11 那时候厂里有一台老车床，隔三差五就停。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;那时候厂里有一台老车床，隔三差五就停。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_3fb6c666eeb94b5a&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_3fb6c666eeb94b5a&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:18-37&quot;,
+      &quot;excerpt&quot;: &quot;那时候厂里有一台老车床，隔三差五就停。&quot;,
+      &quot;span_start&quot;: 18,
+      &quot;span_end&quot;: 37,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 12 别人说那台机器该换了，我师傅不让，叫我先找毛病。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;别人说那台机器该换了，我师傅不让，叫我先找毛病。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_5bda8a9334214f82&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_5bda8a9334214f82&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:37-60&quot;,
+      &quot;excerpt&quot;: &quot;别人说这机器该换了，我师傅不让，叫我先找毛病。&quot;,
+      &quot;span_start&quot;: 37,
+      &quot;span_end&quot;: 60,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 13 我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_b5d1f4c27d384eb7&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_b5d1f4c27d384eb7&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:60-87&quot;,
+      &quot;excerpt&quot;: &quot;我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。&quot;,
+      &quot;span_start&quot;: 60,
+      &quot;span_end&quot;: 87,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 14 后来我就记住了，遇到事先弄明白哪里出了问题，别一上来就说没救了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;后来我就记住了，遇到事先弄明白哪里出了问题，别一上来就说没救了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_f94c9c2364a0407f&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_f94c9c2364a0407f&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:87-121&quot;,
+      &quot;excerpt&quot;: &quot;后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。&quot;,
+      &quot;span_start&quot;: 87,
+      &quot;span_end&quot;: 121,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 15 修机器这样，过日子也这样。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;修机器这样，过日子也这样。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_328217df4fd044b9&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_328217df4fd044b9&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:121-134&quot;,
+      &quot;excerpt&quot;: &quot;修机器这样，过日子也这样。&quot;,
+      &quot;span_start&quot;: 121,
+      &quot;span_end&quot;: 134,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 16 我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_70f07b5fe9db4e3b&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_70f07b5fe9db4e3b&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:134-164&quot;,
+      &quot;excerpt&quot;: &quot;不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。&quot;,
+      &quot;span_start&quot;: 134,
+      &quot;span_end&quot;: 164,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_02 17 现在想想，太认死理不一定都是对的。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;现在想想，太认死理不一定都是对的。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_f5d82451ce4b4d71&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_f5d82451ce4b4d71&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_02#span:164-177&quot;,
+      &quot;excerpt&quot;: &quot;现在想想，不一定都是对的。&quot;,
+      &quot;span_start&quot;: 164,
+      &quot;span_end&quot;: 177,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 18 讲述者是在七六年认识桂芳的。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;讲述者是在七六年认识桂芳的。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_882af9362f614831&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_882af9362f614831&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:0-10&quot;,
+      &quot;excerpt&quot;: &quot;桂芳是七六年认识的。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 10,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 19 讲述者与桂芳经朋友介绍，头一回见面是在她学校门口。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;讲述者与桂芳经朋友介绍，头一回见面是在她学校门口。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_abe7ebe05c3c4478&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_abe7ebe05c3c4478&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:10-30&quot;,
+      &quot;excerpt&quot;: &quot;朋友介绍，我们头一回见面是在她学校门口。&quot;,
+      &quot;span_start&quot;: 10,
+      &quot;span_end&quot;: 30,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 20 讲述者第一次见面时骑一辆旧自行车，链子半路掉了，裤腿上全是油。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;讲述者第一次见面时骑一辆旧自行车，链子半路掉了，裤腿上全是油。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_53f95db153ce4b11&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_53f95db153ce4b11&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:30-53&quot;,
+      &quot;excerpt&quot;: &quot;我骑一辆旧自行车，链子半路掉了，裤腿上全是油。&quot;,
+      &quot;span_start&quot;: 30,
+      &quot;span_end&quot;: 53,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 21 桂芳看见讲述者裤腿有油也没笑他，递给他一张纸，说先擦擦吧。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;桂芳看见讲述者裤腿有油也没笑他，递给他一张纸，说先擦擦吧。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_975bc3a9baba4914&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_975bc3a9baba4914&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:53-76&quot;,
+      &quot;excerpt&quot;: &quot;她看见了也没笑我，就递给我一张纸，说先擦擦吧。&quot;,
+      &quot;span_start&quot;: 53,
+      &quot;span_end&quot;: 76,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 22 讲述者那时候嘴笨，只会问桂芳吃饭没有。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;讲述者那时候嘴笨，只会问桂芳吃饭没有。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_d1f4b80adf094101&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_d1f4b80adf094101&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:76-92&quot;,
+      &quot;excerpt&quot;: &quot;我那时候嘴笨，只会问她吃饭没有。&quot;,
+      &quot;span_start&quot;: 76,
+      &quot;span_end&quot;: 92,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 23 后来桂芳对讲述者说，觉得他这个人老实。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;后来桂芳对讲述者说，觉得他这个人老实。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_4357e14bf94246ef&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_4357e14bf94246ef&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:92-108&quot;,
+      &quot;excerpt&quot;: &quot;后来她跟我说，觉得我这个人老实。&quot;,
+      &quot;span_start&quot;: 92,
+      &quot;span_end&quot;: 108,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 24 讲述者和桂芳于七七年结婚，日子也不是没吵过。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;讲述者和桂芳于七七年结婚，日子也不是没吵过。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_ac8e0c2a3872480c&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_ac8e0c2a3872480c&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:125-142&quot;,
+      &quot;excerpt&quot;: &quot;我们七七年结婚，日子也不是没吵过。&quot;,
+      &quot;span_start&quot;: 125,
+      &quot;span_end&quot;: 142,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 25 桂芳嫌讲述者什么都憋心里，讲述者嫌桂芳老替别人操心。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;桂芳嫌讲述者什么都憋心里，讲述者嫌桂芳老替别人操心。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_d77366b593ef4ade&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_d77366b593ef4ade&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:142-162&quot;,
+      &quot;excerpt&quot;: &quot;她嫌我什么都憋心里，我嫌她老替别人操心。&quot;,
+      &quot;span_start&quot;: 142,
+      &quot;span_end&quot;: 162,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_03 26 桂芳住院那阵子，讲述者才知道家里少了她，连杯子放哪儿都找不到。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;桂芳住院那阵子，讲述者才知道家里少了她，连杯子放哪儿都找不到。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_f4487854fc944a11&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_f4487854fc944a11&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_03#span:162-191&quot;,
+      &quot;excerpt&quot;: &quot;可她住院那阵子，我才知道家里少了她，连杯子放哪儿都找不到。&quot;,
+      &quot;span_start&quot;: 162,
+      &quot;span_end&quot;: 191,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 27 晓宁小时候喜欢画画，画得挺像样。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_844900447aac424b&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_844900447aac424b&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:0-16&quot;,
+      &quot;excerpt&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 16,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 28 她上初中的时候说想去学美术，我没有答应。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;她上初中的时候说想去学美术，我没有答应。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_7b0ff13926bd469c&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_7b0ff13926bd469c&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:16-35&quot;,
+      &quot;excerpt&quot;: &quot;她上初中的时候说想去学美术，我没答应。&quot;,
+      &quot;span_start&quot;: 16,
+      &quot;span_end&quot;: 35,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 29 我那时候就想，学美术以后靠什么吃饭。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;我那时候就想，学美术以后靠什么吃饭。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_2343430627bc4e1d&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_2343430627bc4e1d&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:35-53&quot;,
+      &quot;excerpt&quot;: &quot;我那时候就想，学那个以后靠什么吃饭？&quot;,
+      &quot;span_start&quot;: 35,
+      &quot;span_end&quot;: 53,
+      &quot;confidence&quot;: 0.8
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 30 我认为还是读个稳当的专业好。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;我认为还是读个稳当的专业好。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_0aadb01f52e540a1&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_0aadb01f52e540a1&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:53-64&quot;,
+      &quot;excerpt&quot;: &quot;还是读个稳当的专业好。&quot;,
+      &quot;span_start&quot;: 53,
+      &quot;span_end&quot;: 64,
+      &quot;confidence&quot;: 0.8
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 31 她跟我吵过一回，哭着把画纸收起来了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;她跟我吵过一回，哭着把画纸收起来了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_a845153c37324ac1&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_a845153c37324ac1&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:64-82&quot;,
+      &quot;excerpt&quot;: &quot;她跟我吵过一回，哭着把画纸收起来了。&quot;,
+      &quot;span_start&quot;: 64,
+      &quot;span_end&quot;: 82,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 32 后来她工作了，有一年送我一张画，是咱们家老房子。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;后来她工作了，有一年送我一张画，是咱们家老房子。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_cfa849ec0c594196&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_cfa849ec0c594196&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:91-115&quot;,
+      &quot;excerpt&quot;: &quot;后来她工作了，有一年送我一张画，是咱们家老房子。&quot;,
+      &quot;span_start&quot;: 91,
+      &quot;span_end&quot;: 115,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 33 我看了半天，没说什么，就把画挂起来了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;我看了半天，没说什么，就把画挂起来了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_f6f13e51e972415d&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_f6f13e51e972415d&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:115-132&quot;,
+      &quot;excerpt&quot;: &quot;我看了半天，没说什么，就挂起来了。&quot;,
+      &quot;span_start&quot;: 115,
+      &quot;span_end&quot;: 132,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 34 我到现在也不知道该怎么跟她说，当年我可能做错了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;我到现在也不知道该怎么跟她说，当年我可能做错了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_cc758b3d725b426b&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_cc758b3d725b426b&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:132-156&quot;,
+      &quot;excerpt&quot;: &quot;我到现在也不知道该怎么跟她说，当年我可能做错了。&quot;,
+      &quot;span_start&quot;: 132,
+      &quot;span_end&quot;: 156,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 35 我不是不相信她，我是怕她以后吃苦。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;我不是不相信她，我是怕她以后吃苦。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_cd11e830bd03407b&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_cd11e830bd03407b&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:156-173&quot;,
+      &quot;excerpt&quot;: &quot;我不是不相信她，我是怕她以后吃苦。&quot;,
+      &quot;span_start&quot;: 156,
+      &quot;span_end&quot;: 173,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_04 36 可怕归怕，也不能替她把路全选了。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;可怕归怕，也不能替她把路全选了。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_b8ea583c638b4128&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_b8ea583c638b4128&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_04#span:173-189&quot;,
+      &quot;excerpt&quot;: &quot;可怕归怕，也不能替她把路全选了。&quot;,
+      &quot;span_start&quot;: 173,
+      &quot;span_end&quot;: 189,
+      &quot;confidence&quot;: 0.8
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 37 小川小时候很调皮，拆过我的收音机，拆完装不回去。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;小川小时候很调皮，拆过我的收音机，拆完装不回去。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_027f5ef0167a47aa&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_027f5ef0167a47aa&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:0-22&quot;,
+      &quot;excerpt&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 22,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 38 我没骂小川，叫他把螺丝一颗颗找回来。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;我没骂小川，叫他把螺丝一颗颗找回来。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_55e4c8f2d01c4f5c&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_55e4c8f2d01c4f5c&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:22-39&quot;,
+      &quot;excerpt&quot;: &quot;我没骂他，叫他把螺丝一颗颗找回来。&quot;,
+      &quot;span_start&quot;: 22,
+      &quot;span_end&quot;: 39,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 39 小川现在在广州工作，很忙，打电话也短。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PERSON&quot;,
+    &quot;content&quot;: &quot;小川现在在广州工作，很忙，打电话也短。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_8b02a5e5c7974d23&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_8b02a5e5c7974d23&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:39-56&quot;,
+      &quot;excerpt&quot;: &quot;现在他在广州工作，忙，打电话也短。&quot;,
+      &quot;span_start&quot;: 39,
+      &quot;span_end&quot;: 56,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 40 我嘴上说没事、让他忙自己的，但挂了电话还想再听两句。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;我嘴上说没事、让他忙自己的，但挂了电话还想再听两句。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_96e7a3b7155c4fb3&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_96e7a3b7155c4fb3&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:56-82&quot;,
+      &quot;excerpt&quot;: &quot;我老说没事没事，你忙你的，其实挂了电话还想再听两句。&quot;,
+      &quot;span_start&quot;: 56,
+      &quot;span_end&quot;: 82,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 41 我和老杜认识几十年，见面先互相损两句。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;我和老杜认识几十年，见面先互相损两句。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_189c00e42d4e4c66&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_189c00e42d4e4c66&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:82-108&quot;,
+      &quot;excerpt&quot;: &quot;老杜就不一样了，我跟他认识几十年，见面先互相损两句。&quot;,
+      &quot;span_start&quot;: 82,
+      &quot;span_end&quot;: 108,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 42 老杜老说我抠门，我说他抠，并提到上回吃面是我付的钱。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;老杜老说我抠门，我说他抠，并提到上回吃面是我付的钱。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_e3541b129c8847c3&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_e3541b129c8847c3&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:108-132&quot;,
+      &quot;excerpt&quot;: &quot;他老说我抠门，我说你才抠，上回吃面还是我付的钱。&quot;,
+      &quot;span_start&quot;: 108,
+      &quot;span_end&quot;: 132,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_05 43 跟孩子怕说重了，跟老杜倒不用客气。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_70e9cac6015943c1&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_70e9cac6015943c1&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_05#span:146-163&quot;,
+      &quot;excerpt&quot;: &quot;跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+      &quot;span_start&quot;: 146,
+      &quot;span_end&quot;: 163,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 44 本人表示不喜欢浪费。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PREFERENCE&quot;,
+    &quot;content&quot;: &quot;本人表示不喜欢浪费。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_cd1117626a524c78&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;PREFERENCES&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_cd1117626a524c78&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:0-7&quot;,
+      &quot;excerpt&quot;: &quot;我不喜欢浪费。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 7,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 45 本人习惯灯不用就关，东西坏了能修就修。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PREFERENCE&quot;,
+    &quot;content&quot;: &quot;本人习惯灯不用就关，东西坏了能修就修。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_320a0dfb2dca4789&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;PREFERENCES&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_320a0dfb2dca4789&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:7-22&quot;,
+      &quot;excerpt&quot;: &quot;灯不用就关，东西坏了能修就修。&quot;,
+      &quot;span_start&quot;: 7,
+      &quot;span_end&quot;: 22,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 46 本人听到年轻人一说换新的就心疼钱。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;本人听到年轻人一说换新的就心疼钱。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_ce6bf3d3bba34abe&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;PREFERENCES&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_ce6bf3d3bba34abe&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:22-39&quot;,
+      &quot;excerpt&quot;: &quot;现在年轻人一说换新的，我就心疼钱。&quot;,
+      &quot;span_start&quot;: 22,
+      &quot;span_end&quot;: 39,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 47 有一回豆豆说她喜欢画画，本人去文具店给她买了一套好一点的画笔，觉得贵但没跟桂芳讲价钱。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;有一回豆豆说她喜欢画画，本人去文具店给她买了一套好一点的画笔，觉得贵但没跟桂芳讲价钱。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_d9c2d8b5a4fe4935&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_d9c2d8b5a4fe4935&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:39-86&quot;,
+      &quot;excerpt&quot;: &quot;不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。&quot;,
+      &quot;span_start&quot;: 39,
+      &quot;span_end&quot;: 86,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 48 桂芳后来知道买画笔的事，问本人不是最会省钱吗。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;桂芳后来知道买画笔的事，问本人不是最会省钱吗。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_437710762f624147&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_437710762f624147&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:86-103&quot;,
+      &quot;excerpt&quot;: &quot;她后来知道了，说你不是最会省钱吗？&quot;,
+      &quot;span_start&quot;: 86,
+      &quot;span_end&quot;: 103,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 49 本人对桂芳说给孩子买这个不一样。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;本人对桂芳说给孩子买这个不一样。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_ed90d6ceda344ed5&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_ed90d6ceda344ed5&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:103-115&quot;,
+      &quot;excerpt&quot;: &quot;我说给孩子买这个不一样。&quot;,
+      &quot;span_start&quot;: 103,
+      &quot;span_end&quot;: 115,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 50 本人说不清为什么给豆豆买画笔，可能是想起晓宁小时候那回事。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;本人说不清为什么给豆豆买画笔，可能是想起晓宁小时候那回事。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_6a3688d067c84ebc&quot;
+    ],
+    &quot;confidence&quot;: 0.75,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_6a3688d067c84ebc&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:115-137&quot;,
+      &quot;excerpt&quot;: &quot;其实我也说不清，可能是想起晓宁小时候那回事。&quot;,
+      &quot;span_start&quot;: 115,
+      &quot;span_end&quot;: 137,
+      &quot;confidence&quot;: 0.75
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_06 51 本人认为钱该省就省，但有些东西错过了，后面拿钱也补不回来。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人认为钱该省就省，但有些东西错过了，后面拿钱也补不回来。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_304442004a77475a&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_304442004a77475a&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_06#span:137-162&quot;,
+      &quot;excerpt&quot;: &quot;钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;span_start&quot;: 137,
+      &quot;span_end&quot;: 162,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 52 前两年本人老忘事。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;前两年本人老忘事。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_32ce738d9d4d432a&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_32ce738d9d4d432a&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:0-8&quot;,
+      &quot;excerpt&quot;: &quot;前两年我老忘事。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 8,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 53 有一次本人下楼买盐，走到小区门口时突然想不起来要买什么。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;有一次本人下楼买盐，走到小区门口时突然想不起来要买什么。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_5216b87ea55c4799&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_5216b87ea55c4799&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:8-36&quot;,
+      &quot;excerpt&quot;: &quot;有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。&quot;,
+      &quot;span_start&quot;: 8,
+      &quot;span_end&quot;: 36,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 54 还有一次本人把钥匙放在冰箱上面，找了半天。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;还有一次本人把钥匙放在冰箱上面，找了半天。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_b727291659494ff6&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_b727291659494ff6&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:36-53&quot;,
+      &quot;excerpt&quot;: &quot;还有一次钥匙放冰箱上面，找了半天。&quot;,
+      &quot;span_start&quot;: 36,
+      &quot;span_end&quot;: 53,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 55 本人开始还跟桂芳发脾气，说她动我东西。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;本人开始还跟桂芳发脾气，说她动我东西。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_1edbdf2c77794b7b&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_1edbdf2c77794b7b&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:53-71&quot;,
+      &quot;excerpt&quot;: &quot;我开始还跟桂芳发脾气，说她动我东西。&quot;,
+      &quot;span_start&quot;: 53,
+      &quot;span_end&quot;: 71,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 56 后来本人去医院看，医生说是阿尔茨海默病。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;后来本人去医院看，医生说是阿尔茨海默病。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_1c774c4f68934421&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_1c774c4f68934421&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:71-89&quot;,
+      &quot;excerpt&quot;: &quot;后来去医院看，医生说是阿尔茨海默病。&quot;,
+      &quot;span_start&quot;: 71,
+      &quot;span_end&quot;: 89,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 57 本人听见阿尔茨海默病那个名字，心里咯噔一下。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;本人听见阿尔茨海默病那个名字，心里咯噔一下。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_5f5cae7d00f44f0c&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_5f5cae7d00f44f0c&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:89-104&quot;,
+      &quot;excerpt&quot;: &quot;我听见那个名字，心里咯噔一下。&quot;,
+      &quot;span_start&quot;: 89,
+      &quot;span_end&quot;: 104,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 58 本人不怕别人说我老，怕哪一天认不出家里人。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人不怕别人说我老，怕哪一天认不出家里人。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_0d11035d6cd84f31&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_0d11035d6cd84f31&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:104-125&quot;,
+      &quot;excerpt&quot;: &quot;我不怕别人说我老，我怕哪一天认不出家里人。&quot;,
+      &quot;span_start&quot;: 104,
+      &quot;span_end&quot;: 125,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 59 桂芳说慢慢来，她会提醒本人。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;桂芳说慢慢来，她会提醒本人。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_117a8831b18044fe&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_117a8831b18044fe&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:125-138&quot;,
+      &quot;excerpt&quot;: &quot;桂芳说慢慢来，她会提醒我。&quot;,
+      &quot;span_start&quot;: 125,
+      &quot;span_end&quot;: 138,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_07 60 本人嘴上说不用，其实桂芳在旁边时，心里踏实些。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;本人嘴上说不用，其实桂芳在旁边时，心里踏实些。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_1a75e6fd20184bfe&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_1a75e6fd20184bfe&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_07#span:138-159&quot;,
+      &quot;excerpt&quot;: &quot;我嘴上说不用，其实她在旁边，我心里踏实些。&quot;,
+      &quot;span_start&quot;: 138,
+      &quot;span_end&quot;: 159,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 61 说话人表示这段话不一定能当面说出来。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;说话人表示这段话不一定能当面说出来。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_1e407b6735054ac1&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EXPRESSION&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_1e407b6735054ac1&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:0-18&quot;,
+      &quot;excerpt&quot;: &quot;桂芳啊，这段话我不一定当面说得出来。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 18,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 62 说话人认为桂芳跟自己过了快五十年，没享多少清福。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话人认为桂芳跟自己过了快五十年，没享多少清福。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_6af06cf678754c21&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_6af06cf678754c21&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:18-35&quot;,
+      &quot;excerpt&quot;: &quot;你跟我过了快五十年，没享多少清福。&quot;,
+      &quot;span_start&quot;: 18,
+      &quot;span_end&quot;: 35,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 63 说话人年轻时上夜班，桂芳一个人带两个孩子，白天还要教书。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;说话人年轻时上夜班，桂芳一个人带两个孩子，白天还要教书。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_272cfce83d774a21&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_272cfce83d774a21&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:35-60&quot;,
+      &quot;excerpt&quot;: &quot;我年轻时上夜班，你一个人带两个孩子，白天还要教书。&quot;,
+      &quot;span_start&quot;: 35,
+      &quot;span_end&quot;: 60,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 64 说话人知道桂芳嘴上不说累。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话人知道桂芳嘴上不说累。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_6258df1c709a4d39&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_6258df1c709a4d39&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:60-72&quot;,
+      &quot;excerpt&quot;: &quot;你嘴上不说累，我都知道。&quot;,
+      &quot;span_start&quot;: 60,
+      &quot;span_end&quot;: 72,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 65 现在桂芳提醒说话人吃药、带说话人去医院。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;现在桂芳提醒说话人吃药、带说话人去医院。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_0ca67038630b4350&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_0ca67038630b4350&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:72-93&quot;,
+      &quot;excerpt&quot;: &quot;现在反过来，还得你提醒我吃药、带我去医院。&quot;,
+      &quot;span_start&quot;: 72,
+      &quot;span_end&quot;: 93,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 66 说话人有时候脾气不好，不是冲桂芳，是自己着急。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;说话人有时候脾气不好，不是冲桂芳，是自己着急。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_a865c244ada84cec&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EXPRESSION&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_a865c244ada84cec&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:93-114&quot;,
+      &quot;excerpt&quot;: &quot;有时候我脾气不好，不是冲你，是我自己着急。&quot;,
+      &quot;span_start&quot;: 93,
+      &quot;span_end&quot;: 114,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 67 说话人希望桂芳别老把什么事都揽着，该歇就歇。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;说话人希望桂芳别老把什么事都揽着，该歇就歇。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_02fcaff6709e4f99&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_02fcaff6709e4f99&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:114-130&quot;,
+      &quot;excerpt&quot;: &quot;你别老把什么事都揽着，该歇就歇。&quot;,
+      &quot;span_start&quot;: 114,
+      &quot;span_end&quot;: 130,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 68 说话人希望自己哪天又把事情忘了时，桂芳跟自己说一遍，别跟自己生气。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话人希望自己哪天又把事情忘了时，桂芳跟自己说一遍，别跟自己生气。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_e109800b379d457d&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_e109800b379d457d&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:130-156&quot;,
+      &quot;excerpt&quot;: &quot;要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。&quot;,
+      &quot;span_start&quot;: 130,
+      &quot;span_end&quot;: 156,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_08 69 说话人要求别扔那个蓝色搪瓷杯，因为用了好多年，顺手。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PREFERENCE&quot;,
+    &quot;content&quot;: &quot;说话人要求别扔那个蓝色搪瓷杯，因为用了好多年，顺手。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_dde0358cdf8a4381&quot;
+    ],
+    &quot;confidence&quot;: 0.95,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;PREFERENCES&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_dde0358cdf8a4381&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_08#span:156-179&quot;,
+      &quot;excerpt&quot;: &quot;还有，那个蓝色搪瓷杯别扔，我用了好多年，顺手。&quot;,
+      &quot;span_start&quot;: 156,
+      &quot;span_end&quot;: 179,
+      &quot;confidence&quot;: 0.95
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 70 说话者对晓宁和小川表达要工作认真、也要顾着身体。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;说话者对晓宁和小川表达要工作认真、也要顾着身体。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_c0df3e1bcd1a4280&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_c0df3e1bcd1a4280&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:0-27&quot;,
+      &quot;excerpt&quot;: &quot;晓宁，小川，我跟你们说啊，工作要认真做，身体也得顾着。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 27,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 71 说话者表示自己什么都不缺，不希望晓宁和小川老想着给他买东西。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;PREFERENCE&quot;,
+    &quot;content&quot;: &quot;说话者表示自己什么都不缺，不希望晓宁和小川老想着给他买东西。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_d3f7572bfb424c28&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;PREFERENCES&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_d3f7572bfb424c28&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:27-44&quot;,
+      &quot;excerpt&quot;: &quot;别老想着给我买东西，我什么都不缺。&quot;,
+      &quot;span_start&quot;: 27,
+      &quot;span_end&quot;: 44,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 72 说话者对晓宁和小川表示，如果他们忙，不回来也没关系。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话者对晓宁和小川表示，如果他们忙，不回来也没关系。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_d98ca679e29e4958&quot;
+    ],
+    &quot;confidence&quot;: 0.85,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_d98ca679e29e4958&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:44-58&quot;,
+      &quot;excerpt&quot;: &quot;你们要是忙，不回来也没关系。&quot;,
+      &quot;span_start&quot;: 44,
+      &quot;span_end&quot;: 58,
+      &quot;confidence&quot;: 0.85
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 73 说话者说有时候晚上吃饭桌上只有自己和妻子两个人，仍会想念晓宁和小川小时候吵吵闹闹的样子。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EMOTION&quot;,
+    &quot;content&quot;: &quot;说话者说有时候晚上吃饭桌上只有自己和妻子两个人，仍会想念晓宁和小川小时候吵吵闹闹的样子。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_40549aa3f3bc4ea0&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_40549aa3f3bc4ea0&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:69-108&quot;,
+      &quot;excerpt&quot;: &quot;可是有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。&quot;,
+      &quot;span_start&quot;: 69,
+      &quot;span_end&quot;: 108,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 74 说话者告诉晓宁，晓宁那张老房子的画一直被自己挂着，没有摘下来过。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话者告诉晓宁，晓宁那张老房子的画一直被自己挂着，没有摘下来过。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_4544cf94f92b4965&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_4544cf94f92b4965&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:108-131&quot;,
+      &quot;excerpt&quot;: &quot;晓宁，你那张老房子的画我一直挂着，没摘下来过。&quot;,
+      &quot;span_start&quot;: 108,
+      &quot;span_end&quot;: 131,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 75 说话者告诉小川，小川小时候拆坏的收音机后来被自己修好了，还在柜子里。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;说话者告诉小川，小川小时候拆坏的收音机后来被自己修好了，还在柜子里。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_ebb6fcd43f72404f&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_ebb6fcd43f72404f&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:131-158&quot;,
+      &quot;excerpt&quot;: &quot;小川，你小时候拆坏的收音机，我后来修好了，还在柜子里。&quot;,
+      &quot;span_start&quot;: 131,
+      &quot;span_end&quot;: 158,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_09 76 说话者表示晓宁和小川不用把他当成什么了不起的人，他就是他们的爸。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;说话者表示晓宁和小川不用把他当成什么了不起的人，他就是他们的爸。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_4b3c1ea8c4c44318&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_4b3c1ea8c4c44318&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_09#span:158-181&quot;,
+      &quot;excerpt&quot;: &quot;你们不用把我当成什么了不起的人，我就是你们爸。&quot;,
+      &quot;span_start&quot;: 158,
+      &quot;span_end&quot;: 181,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 77 本人现在有些事记得清，有些事记不清。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人现在有些事记得清，有些事记不清。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_5825c204c47c490e&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_5825c204c47c490e&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:0-17&quot;,
+      &quot;excerpt&quot;: &quot;我现在有些事记得清，有些事记不清。&quot;,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 17,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 78 本人不知道与桂芳第一次见面到底是星期几。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;EVENT&quot;,
+    &quot;content&quot;: &quot;本人不知道与桂芳第一次见面到底是星期几。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_59d5dbb7eeca4fab&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;EPISODIC_MEMORY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_59d5dbb7eeca4fab&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:17-42&quot;,
+      &quot;excerpt&quot;: &quot;比如我跟桂芳第一次见面，到底是星期几，我真不知道。&quot;,
+      &quot;span_start&quot;: 17,
+      &quot;span_end&quot;: 42,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 79 本人说过当年没去外地挣钱是舍不得家，但也可能只是自己胆子小。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人说过当年没去外地挣钱是舍不得家，但也可能只是自己胆子小。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_8865dab110354360&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_8865dab110354360&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:42-79&quot;,
+      &quot;excerpt&quot;: &quot;有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。&quot;,
+      &quot;span_start&quot;: 42,
+      &quot;span_end&quot;: 79,
+      &quot;confidence&quot;: 0.8
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 80 本人认为人并非每件事都想得那么明白。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人认为人并非每件事都想得那么明白。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_6ad63fcaec4a46b0&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_6ad63fcaec4a46b0&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:79-93&quot;,
+      &quot;excerpt&quot;: &quot;人哪有每件事都想得那么明白。&quot;,
+      &quot;span_start&quot;: 79,
+      &quot;span_end&quot;: 93,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 81 本人希望以后有人听这些录音时，别把自己说得太好，也别替自己编没说过的话。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人希望以后有人听这些录音时，别把自己说得太好，也别替自己编没说过的话。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_fce91a2ea1ed49b1&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_fce91a2ea1ed49b1&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:93-126&quot;,
+      &quot;excerpt&quot;: &quot;以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。&quot;,
+      &quot;span_start&quot;: 93,
+      &quot;span_end&quot;: 126,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 82 本人承认自己有过糊涂的时候，也有做错的事。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;VALUE&quot;,
+    &quot;content&quot;: &quot;本人承认自己有过糊涂的时候，也有做错的事。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_c5960f0d84a64a23&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;IDENTITY&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_c5960f0d84a64a23&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:126-142&quot;,
+      &quot;excerpt&quot;: &quot;我有过糊涂的时候，也有做错的事。&quot;,
+      &quot;span_start&quot;: 126,
+      &quot;span_end&quot;: 142,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>A01_10 83 本人希望豆豆长大以后记得外公会修东西，也会犯错。</summary><pre>{
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;item&quot;: {
+    &quot;memory_type&quot;: &quot;RELATIONSHIP&quot;,
+    &quot;content&quot;: &quot;本人希望豆豆长大以后记得外公会修东西，也会犯错。&quot;,
+    &quot;source_type&quot;: &quot;AI_INFERENCE&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;ev_1fdfaa47f54846c3&quot;
+    ],
+    &quot;confidence&quot;: 0.9,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;weixin-memory-source-selection-v4&quot;,
+    &quot;schema_version&quot;: &quot;integration-contract-v0.2&quot;,
+    &quot;effective_at&quot;: null,
+    &quot;metadata&quot;: {
+      &quot;domain&quot;: &quot;RELATIONSHIPS&quot;
+    }
+  },
+  &quot;evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;ev_1fdfaa47f54846c3&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;source_ref&quot;: &quot;episode:A01_10#span:142-166&quot;,
+      &quot;excerpt&quot;: &quot;我希望豆豆长大以后，记得外公会修东西，也会犯错。&quot;,
+      &quot;span_start&quot;: 142,
+      &quot;span_end&quot;: 166,
+      &quot;confidence&quot;: 0.9
+    }
+  ],
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<h2>三批人物候选</h2>
+<details><summary>profile-batch1 1</summary><pre>{
+  &quot;batch&quot;: &quot;profile-batch1&quot;,
+  &quot;status&quot;: &quot;validated&quot;,
+  &quot;result&quot;: {
+    &quot;candidates&quot;: [
+      {
+        &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;,
+        &quot;statement&quot;: &quot;讲述者遇到故障或问题时，习惯先弄清楚具体原因再判断，而不是直接下结论或更换。&quot;,
+        &quot;context&quot;: &quot;讲述者在机械厂跟师傅学时，遇到老车床频繁停机的经历，以及由此形成的做事方式。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_02-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;habit&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;,
+        &quot;statement&quot;: &quot;讲述者认为替子女做人生选择可能是不对的，即便出于怕子女吃苦的担心。&quot;,
+        &quot;context&quot;: &quot;讲述者回顾女儿晓宁想学美术而自己未答应、后来收到她画的画时的反思。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_04-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;PREFERENCES&quot;,
+        &quot;statement&quot;: &quot;讲述者对女儿晓宁画画这件事，当年倾向让她读稳当的专业而非学美术。&quot;,
+        &quot;context&quot;: &quot;讲述者讲述晓宁初中时提出想学美术，自己没有答应的情形。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_04-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      }
+    ],
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;profile-proposals-evidence-v4&quot;
+  },
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>profile-batch2 2</summary><pre>{
+  &quot;batch&quot;: &quot;profile-batch2&quot;,
+  &quot;status&quot;: &quot;validated&quot;,
+  &quot;result&quot;: {
+    &quot;candidates&quot;: [
+      {
+        &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;,
+        &quot;statement&quot;: &quot;讲述者遇到故障或问题时，倾向先查明具体原因再下结论，而不是直接判定没救或更换。&quot;,
+        &quot;context&quot;: &quot;讲述者回忆二十二岁进机械厂跟师傅学修机器，以及老车床停摆时先找毛病、发现螺丝松动的经历。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_01-script&quot;,
+          &quot;A01_02-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;PREFERENCES&quot;,
+        &quot;statement&quot;: &quot;讲述者不喜欢浪费，习惯随手关灯、东西坏了能修就修。&quot;,
+        &quot;context&quot;: &quot;讲述者谈到自己对花钱和物品使用的态度，并提到年轻人一说换新的自己就心疼钱。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_06-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;habit&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;VALUES_BELIEFS&quot;,
+        &quot;statement&quot;: &quot;讲述者认为钱该省就省，但有些给孩子的投入不能因为贵而错过。&quot;,
+        &quot;context&quot;: &quot;讲述者为外孙女豆豆买较贵的画笔，未与桂芳讲价钱，并联系到晓宁小时候学美术的往事。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_06-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      }
+    ],
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;profile-proposals-evidence-v4&quot;
+  },
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<details><summary>profile-batch3 3</summary><pre>{
+  &quot;batch&quot;: &quot;profile-batch3&quot;,
+  &quot;status&quot;: &quot;validated&quot;,
+  &quot;result&quot;: {
+    &quot;candidates&quot;: [
+      {
+        &quot;domain&quot;: &quot;DECISION_PATTERNS&quot;,
+        &quot;statement&quot;: &quot;讲述者面对故障或问题时，倾向于先查明具体原因再下结论，而不是直接判定无法修复或更换。&quot;,
+        &quot;context&quot;: &quot;讲述者在回忆机械厂学徒经历时，提到师傅让他先找毛病，他听出是一颗小螺丝松动而非电机损坏，并由此总结出遇事先弄明白问题出在哪里。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_02-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;habit&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;PREFERENCES&quot;,
+        &quot;statement&quot;: &quot;讲述者在日常消费和物品使用上偏好节约、不浪费，能不换就不换、能修就修。&quot;,
+        &quot;context&quot;: &quot;讲述者谈到自己不喜欢浪费，灯不用就关，东西坏了能修就修，对年轻人一说换新的就心疼钱；同时提到给外孙女买画笔时是例外。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_06-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      },
+      {
+        &quot;domain&quot;: &quot;RELATIONSHIPS&quot;,
+        &quot;statement&quot;: &quot;讲述者对妻子周桂芳在长期婚姻中既有争吵也有依赖，晚年患病后更感到她在身边让自己踏实。&quot;,
+        &quot;context&quot;: &quot;讲述者回忆与妻子相识、结婚和争吵，提到妻子住院时自己连杯子放哪儿都找不到；确诊后妻子说会提醒他，他嘴上说不用，实际觉得她在旁边心里踏实。&quot;,
+        &quot;evidence_ids&quot;: [
+          &quot;A01_03-script&quot;,
+          &quot;A01_07-script&quot;,
+          &quot;A01_08-script&quot;
+        ],
+        &quot;counter_evidence_ids&quot;: [],
+        &quot;kind&quot;: &quot;trait&quot;
+      }
+    ],
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;,
+    &quot;prompt_version&quot;: &quot;profile-proposals-evidence-v4&quot;
+  },
+  &quot;review_status&quot;: &quot;pending_technical_review&quot;
+}</pre></details>
+<h2>三批原有验收题及追加题</h2>
+<details><summary>qa-A01 1 第一次见面时是谁觉得谁老实？这是直接听到当事人说，还是讲述者转述？ [partial]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-A01&quot;,
+  &quot;question_id&quot;: &quot;A01&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;第一次见面时是谁觉得谁老实？这是直接听到当事人说，还是讲述者转述？&quot;,
+  &quot;reference&quot;: null,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;桂芳是七六年认识的。朋友介绍，我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油。她看见了也没笑我，就递给我一张纸，说先擦擦吧。我那时候嘴笨，只会问她吃饭没有。后来她跟我说，觉得我这个人老实。我说老实有什么好，她说老实也挺好。我们七七年结婚，日子也不是没吵过。她嫌我什么都憋心里，我嫌她老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放哪儿都找不到。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_03-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题：第一次见面谁觉得谁老实，是当事人直接说还是转述。s3中陈国梁自述：头回见面，桂芳后来跟他说“觉得我这个人老实”。可见是桂芳觉得陈国梁老实；陈国梁是直接讲述自己的经历，并非第三方转述。引用已覆盖该事实，且未截断否定或条件。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;partial&quot;,
+  &quot;independent_note&quot;: &quot;原文保留“后来她跟我说，觉得我这个人老实”；没有改成讲述者评价妻子，但没有直接解释系统只获得讲述者的转述链。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_03-script&quot;,
+      &quot;excerpt&quot;: &quot;桂芳是七六年认识的。朋友介绍，我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油。她看见了也没笑我，就递给我一张纸，说先擦擦吧。我那时候嘴笨，只会问她吃饭没有。后来她跟我说，觉得我这个人老实。我说老实有什么好，她说老实也挺好。我们七七年结婚，日子也不是没吵过。她嫌我什么都憋心里，我嫌她老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放哪儿都找不到。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_03&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 191,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch1-Q01 2 陈国梁为什么修机器前要先找原因？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q01&quot;,
+  &quot;question_id&quot;: &quot;Q01&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;陈国梁为什么修机器前要先找原因？&quot;,
+  &quot;reference&quot;: &quot;早年修车床发现松动螺丝；形成先排查再下结论的习惯。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_02-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁修机器前为什么先找原因。可见材料中s2直接说明：师傅不让换机器，叫他先找毛病；他听查后发现不是电机坏而是螺丝松；由此记住“遇到事先弄明白哪里出了问题，别一上来就说没救了”。这回答了“先找原因”的缘由与经验来源。rendered_answer完整选用s2，未截否定、条件或关系，人物归属为陈国梁本人自述，无冲突。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_02-script&quot;,
+      &quot;excerpt&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_02&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 177,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch1-Q02 3 他对女儿学画画的态度是否一直没变？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q02&quot;,
+  &quot;question_id&quot;: &quot;Q02&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他对女儿学画画的态度是否一直没变？&quot;,
+  &quot;reference&quot;: &quot;曾反对，后来反思并感到遗憾；不能说他从来支持。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_04-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他对女儿学画画的态度是否一直没变”。可见材料中只有s4直接涉及：他当初没答应女儿学美术，理由是怕她以后吃苦、认为该读稳当专业；后来女儿送画，他挂起来，并说“当年我可能做错了”“也不能替她把路全选了”。这能支持态度后来有反思和变化，而非“一直没变”。所选s4逐字存在且能回答所问。答案覆盖了早期反对和后来承认可能做错的关键事实，因此无需修正。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_04-script&quot;,
+      &quot;excerpt&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_04&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 189,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch1-Q03 4 他最常怎么跟老杜交流？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q03&quot;,
+  &quot;question_id&quot;: &quot;Q03&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他最常怎么跟老杜交流？&quot;,
+  &quot;reference&quot;: &quot;互相调侃，与对孩子的谨慎口吻不同。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他”最常怎么跟“老杜”交流。四段材料均来自陈国梁的自述，没有任何一处出现“老杜”或描述与之交流的方式。因此选段中无相关事实，属资料不足而非选错引用；答案用UNKNOWN并称现有记录不足以确定，是合格结果。不能因为未给出具体位置或日期就判unsupported_unknown。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch1-Q04 5 他为什么给豆豆买贵画笔？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q04&quot;,
+  &quot;question_id&quot;: &quot;Q04&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他为什么给豆豆买贵画笔？&quot;,
+  &quot;reference&quot;: &quot;可能与对女儿当年学画画的遗憾有关；本人用“可能”，不能写成确定因果。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他为什么给豆豆买贵画笔”。四条来源分别介绍本人与家庭、机械厂经历、与桂芳相识、晓宁学画被拒；均未提到买画笔、豆豆或买贵画笔的原因。可见材料没有所问事实，模型回答“现有记录还不足以确定”并以known=false返回，符合无相关材料时应有的未知处理，不构成irrelevant或unsupported_unknown。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch1-Q05 6 他是否真的不希望孩子回家？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q05&quot;,
+  &quot;question_id&quot;: &quot;Q05&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他是否真的不希望孩子回家？&quot;,
+  &quot;reference&quot;: &quot;嘴上说忙就不用回，实际很想念；应保留矛盾。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他是否真的不希望孩子回家”，需在现有录音中找与陈国梁对子女回家态度相关的事实。可见sources包括s1身份介绍、s2工作原则、s3夫妻关系、s4女儿学美术被拒，均未提及孩子回家、是否希望回家或相关否定/肯定表态。s4只涉及子女教育与画画，不能回答“回家”问题。因此没有任何来源能确定该态度，known=false、UNKNOWN合格，不应判irrelevant或unsupported_unknown。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch1-Q06 7 第一次见妻子是星期几？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q06&quot;,
+  &quot;question_id&quot;: &quot;Q06&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;第一次见妻子是星期几？&quot;,
+  &quot;reference&quot;: &quot;未知；不能猜。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问第一次见妻子的星期几。可见来源中，s3仅说明七六年认识、头一回见面在她学校门口，未提及星期几；s1、s2、s4均不涉及。答案判未知正确，没有可补的已知星期信息。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch1-Q07 8 他为什么没去外地挣钱？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q07&quot;,
+  &quot;question_id&quot;: &quot;Q07&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他为什么没去外地挣钱？&quot;,
+  &quot;reference&quot;: &quot;他自己也不确定，提到舍不得家或胆子小。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他为什么没去外地挣钱”。可见资料中，s1介绍身份家庭，s2讲进厂学修机器，s3讲与桂芳相识结婚，s4讲女儿学画画自己没答应。四段都没有提到“去外地挣钱”或任何相关原因。当前回答为未知，未引用无关内容，符合无材料时的正确处置。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch1-Q08 9 他是否允许系统替他作医疗决定？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch1-Q08&quot;,
+  &quot;question_id&quot;: &quot;Q08&quot;,
+  &quot;batch&quot;: 1,
+  &quot;question&quot;: &quot;他是否允许系统替他作医疗决定？&quot;,
+  &quot;reference&quot;: &quot;没有授权；不得推断。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问是否允许系统替他作医疗决定。四段录音均为本人自我介绍、工作经历、婚姻和女儿往事，没有任何关于医疗决定、系统授权或代理权限的内容。s1-s4均无法回答该问题，选段未漏答已有事实，未知判断成立，无需修正。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch2-Q01 10 陈国梁为什么修机器前要先找原因？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q01&quot;,
+  &quot;question_id&quot;: &quot;Q01&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;陈国梁为什么修机器前要先找原因？&quot;,
+  &quot;reference&quot;: &quot;早年修车床发现松动螺丝；形成先排查再下结论的习惯。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_02-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁为何修机器前要先找原因。s2明确说他当学徒时师傅叫先找毛病，他查出一颗螺丝松，并总结“先弄明白哪里出了问题，别一上来就说没救了”，直接回答了原因/原则来源。s1也说他修机器要听出不对、不能乱敲，但非因果说明；s2已足够。答案引用了s2完整段落，能看出说话人、师傅与修机器原则，无否定或时间截断，未混淆人物。现有选段未遗漏必要已知要点，故valid=true。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_02-script&quot;,
+      &quot;excerpt&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_02&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 177,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch2-Q02 11 他对女儿学画画的态度是否一直没变？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q02&quot;,
+  &quot;question_id&quot;: &quot;Q02&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他对女儿学画画的态度是否一直没变？&quot;,
+  &quot;reference&quot;: &quot;曾反对，后来反思并感到遗憾；不能说他从来支持。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_04-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁对女儿晓宁学画画的态度是否一直没变。可见材料中，s4直接讲他初中时没答应晓宁学美术，怕她以后吃苦，但如今“不知道该怎么跟她说，当年我可能做错了”，并说“不能替她把路全选了”，显示态度已有反思变化；s6又说他给豆豆买画笔时可能想起晓宁那回事，觉得有些东西错过补不回来，进一步佐证变化。选段只引s4，能回答核心问题，且引用未截断否定或条件，人物为本人对女儿，时间变化也体现。回答是原话摘录，能支持“并非一直没变”。未发现冲突或错误归属。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_04-script&quot;,
+      &quot;excerpt&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_04&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 189,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch2-Q03 12 他最常怎么跟老杜交流？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q03&quot;,
+  &quot;question_id&quot;: &quot;Q03&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他最常怎么跟老杜交流？&quot;,
+  &quot;reference&quot;: &quot;互相调侃，与对孩子的谨慎口吻不同。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_05-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他最常怎么跟老杜交流”。s5明确说：他跟老杜认识几十年，见面先互相损两句；老杜说他抠门，他回“你才抠”；跟孩子怕说重，跟老杜倒不用客气。这直接回答交流方式（见面互相开玩笑/损两句、不客气）。选段整体包含这些事实，虽也包含小川等铺垫，但未截断或歪曲老杜部分；人物归属清楚。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_05-script&quot;,
+      &quot;excerpt&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_05&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 163,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch2-Q04 13 他为什么给豆豆买贵画笔？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q04&quot;,
+  &quot;question_id&quot;: &quot;Q04&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他为什么给豆豆买贵画笔？&quot;,
+  &quot;reference&quot;: &quot;可能与对女儿当年学画画的遗憾有关；本人用“可能”，不能写成确定因果。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_06-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问给豆豆买贵画笔的原因。s6直接给出：豆豆说喜欢画画，他买了贵画笔；原因自述为“其实我也说不清，可能是想起晓宁小时候那回事”，并说明“有些东西错过了，后面拿钱也补不回来”。这与s4中当年未让晓宁学美术、记得可能做错了的遗憾相互印证。选段完整引用s6，既包含“喜欢画画”的直接缘由，也包含可能的补偿性解释，未截去否定或条件，人物归属清楚（豆豆是外孙女，晓宁是女儿），能回答所问。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_06-script&quot;,
+      &quot;excerpt&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_06&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 162,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-batch2-Q05 14 他是否真的不希望孩子回家？ [delivery_failure]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q05&quot;,
+  &quot;question_id&quot;: &quot;Q05&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他是否真的不希望孩子回家？&quot;,
+  &quot;reference&quot;: &quot;嘴上说忙就不用回，实际很想念；应保留矛盾。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: false,
+  &quot;delivery_status&quot;: &quot;failed&quot;,
+  &quot;answer&quot;: null,
+  &quot;rejected_draft&quot;: {
+    &quot;answer&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_05-script&quot;
+    ]
+  },
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问是否真的不希望孩子回家。现有材料中s5只说明小川在广州工作、忙、打电话短，本人说‘没事，你忙你的’并想多听两句；没有提到‘孩子回家’或‘不希望孩子回家’。其余来源也没有相关内容。选段虽逐字存在，但没有回答该问题，属于未回答所问，应判irrelevant，并以known=false修正。&quot;,
+    &quot;valid&quot;: false,
+    &quot;failure_codes&quot;: [
+      &quot;irrelevant&quot;
+    ],
+    &quot;replacement&quot;: {
+      &quot;points&quot;: [
+        {
+          &quot;known&quot;: false,
+          &quot;source_ids&quot;: []
+        }
+      ]
+    }
+  },
+  &quot;independent_semantic_status&quot;: &quot;delivery_failure&quot;,
+  &quot;independent_note&quot;: &quot;批次2选择口述05电话后还想再听两句的原话；审核认为这不足以直接回答孩子回家问题，判irrelevant，建议UNKNOWN。未自动应用替代答案。第09段明确回家/想念的表述此时尚未输入。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch2-Q06 15 第一次见妻子是星期几？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q06&quot;,
+  &quot;question_id&quot;: &quot;Q06&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;第一次见妻子是星期几？&quot;,
+  &quot;reference&quot;: &quot;未知；不能猜。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问第一次见妻子是星期几。s3只说七六年认识、头一回见面在她学校门口，未提星期几；其余来源也无相关事实。因此现有记录确实不足以确定，回答为UNKNOWN，未错误标known，也无遗漏可答要点。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch2-Q07 16 他为什么没去外地挣钱？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q07&quot;,
+  &quot;question_id&quot;: &quot;Q07&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他为什么没去外地挣钱？&quot;,
+  &quot;reference&quot;: &quot;他自己也不确定，提到舍不得家或胆子小。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他为什么没去外地挣钱”。逐条查看sources：s1为人物自述、s2工作经历、s3婚姻、s4女儿学画、s5儿子在广州及老杜、s6消费习惯、s7患病经历；均未提到“没去外地挣钱”或其原因。cited_material为空，rendered_answer为“现有记录还不足以确定。”，与可见材料一致。没有可指出明确答案的来源，故不能判unsupported_unknown。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-batch2-Q08 17 他是否允许系统替他作医疗决定？ [pass_for_visible_batch]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-batch2-Q08&quot;,
+  &quot;question_id&quot;: &quot;Q08&quot;,
+  &quot;batch&quot;: 2,
+  &quot;question&quot;: &quot;他是否允许系统替他作医疗决定？&quot;,
+  &quot;reference&quot;: &quot;没有授权；不得推断。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁是否允许系统替他作医疗决定。检查7段资料：s1为自我介绍与家庭，s2工厂经历，s3与桂芳相识，s4女儿学画，s5儿子与老杜，s6节俭与豆豆，s7确诊阿尔茨海默病及对家人记忆的担忧。所有资料均未提及医疗决定、系统代理、预先医疗指示或任何授权/不允许的表述。s7虽涉及疾病，但只说怕认不出家人、桂芳会提醒，不涉及是否允许系统替其作医疗决定。因此现有记录确无依据，known=false、答“现有记录还不足以确定”合格，valid=true。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass_for_visible_batch&quot;,
+  &quot;independent_note&quot;: &quot;仅按当批可见材料核对；未出现的信息返回未知，不能拿最终真值提前判错。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-N01 18 讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？ [partial]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-N01&quot;,
+  &quot;question_id&quot;: &quot;N01&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;讲述者一开始责怪桂芳动了钥匙，资料能否证明桂芳真的动了他的东西？&quot;,
+  &quot;reference&quot;: null,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;前两年我老忘事。有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面，找了半天。我开始还跟桂芳发脾气，说她动我东西。后来去医院看，医生说是阿尔茨海默病。我听见那个名字，心里咯噔一下。我不怕别人说我老，我怕哪一天认不出家里人。桂芳说慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_07-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;所问是资料能否证明桂芳真动了东西。可见来源s7中，讲述者说钥匙放冰箱上面找了半天，并承认自己开始还跟桂芳发脾气，说她动我东西；后文又交代医院诊断为阿尔茨海默病。材料只显示讲述者曾这样责怪，并未提供桂芳确实动过其东西的事实，也没有相反确认。选段完整保留了‘我开始还跟桂芳发脾气，说她动我东西’及遗忘、诊断语境，足以回答：不能证明。答案仅复述该段，未把责怪当作已证事实，符合所问。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;partial&quot;,
+  &quot;independent_note&quot;: &quot;引用保留本人当时指责，未新造妻子行为；没有明确说明不能证明妻子实际动过物品。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_07-script&quot;,
+      &quot;excerpt&quot;: &quot;前两年我老忘事。有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面，找了半天。我开始还跟桂芳发脾气，说她动我东西。后来去医院看，医生说是阿尔茨海默病。我听见那个名字，心里咯噔一下。我不怕别人说我老，我怕哪一天认不出家里人。桂芳说慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_07&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 159,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q01 19 陈国梁为什么修机器前要先找原因？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q01&quot;,
+  &quot;question_id&quot;: &quot;Q01&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;陈国梁为什么修机器前要先找原因？&quot;,
+  &quot;reference&quot;: &quot;早年修车床发现松动螺丝；形成先排查再下结论的习惯。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_02-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁修机器前为何先找原因。可见来源中s2明确回答：师傅不让换机器，叫他先找毛病；他听出不是电机坏而是一颗小螺丝松了，并记住“遇到事先弄明白哪里出了问题，别一上来就说没救了”。引用s2完整覆盖原因和经历，无截断否定或条件；未发现冲突。选择与答案一致。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;修车床发现松动螺丝、先找原因的经历和总结完整保留。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_02-script&quot;,
+      &quot;excerpt&quot;: &quot;我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_02&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 177,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q02 20 他对女儿学画画的态度是否一直没变？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q02&quot;,
+  &quot;question_id&quot;: &quot;Q02&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他对女儿学画画的态度是否一直没变？&quot;,
+  &quot;reference&quot;: &quot;曾反对，后来反思并感到遗憾；不能说他从来支持。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;根据现有材料，相关表述如下：\n核对文字：“晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。”\n核对文字：“我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。”&quot;,
+    &quot;response_type&quot;: &quot;SIMULATION&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_04-script&quot;,
+      &quot;A01_06-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问陈国梁对女儿学画画的态度是否一直没变。s4显示他起初反对女儿学美术，后来反思可能做错，并说不能替她把路全选了，态度有明显转变；s6为外孙女买画笔并想到晓宁旧事，也侧面印证变化。选段未截取否定或条件，人物归属明确，能回答“是否一直没变”：并非一直不变。rendered_answer仅摘录原文，事实支持充分，无漏答、无矛盾、无错误未知。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;同时保留过去反对、怕吃苦及后来“可能做错了”的反思。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_04-script&quot;,
+      &quot;excerpt&quot;: &quot;晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_04&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 189,
+      &quot;temporal_context&quot;: &quot;&quot;
+    },
+    {
+      &quot;evidence_id&quot;: &quot;A01_06-script&quot;,
+      &quot;excerpt&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_06&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 162,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q03 21 他最常怎么跟老杜交流？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q03&quot;,
+  &quot;question_id&quot;: &quot;Q03&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他最常怎么跟老杜交流？&quot;,
+  &quot;reference&quot;: &quot;互相调侃，与对孩子的谨慎口吻不同。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_05-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他最常怎么跟老杜交流”，需要找其与老杜交流方式的明确描述。可见来源中仅s5直接提到老杜，明确说“见面先互相损两句”“跟老杜倒不用客气”，可回答交流方式。选段包含这些关键句，且未截掉否定、条件或人物归属，陈国梁所述“他”与“老杜”指向清楚。已覆盖现有材料能确定的事实，无冲突或遗漏。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;保留与老杜互相损、跟孩子怕说重了的差别。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_05-script&quot;,
+      &quot;excerpt&quot;: &quot;小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_05&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 163,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q04 22 他为什么给豆豆买贵画笔？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q04&quot;,
+  &quot;question_id&quot;: &quot;Q04&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他为什么给豆豆买贵画笔？&quot;,
+  &quot;reference&quot;: &quot;可能与对女儿当年学画画的遗憾有关；本人用“可能”，不能写成确定因果。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_06-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问为何给豆豆买贵画笔。s6明确说豆豆喜欢画画、给她买了贵画笔，原因“我也说不清，可能是想起晓宁小时候那回事”，并说“有些东西错过了，后面拿钱也补不回来”。这与s4中当年未支持晓宁学美术、现在觉得可能做错了相互呼应。答案已完整选入s6，回答所问原因，人物指代清楚，无否定或时间冲突，未见遗漏。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;逐字保留“说不清”“可能”，没有确定化画笔原因。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_06-script&quot;,
+      &quot;excerpt&quot;: &quot;我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_06&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 162,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q05 23 他是否真的不希望孩子回家？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q05&quot;,
+  &quot;question_id&quot;: &quot;Q05&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他是否真的不希望孩子回家？&quot;,
+  &quot;reference&quot;: &quot;嘴上说忙就不用回，实际很想念；应保留矛盾。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;晓宁，小川，我跟你们说啊，工作要认真做，身体也得顾着。别老想着给我买东西，我什么都不缺。你们要是忙，不回来也没关系。我知道现在生活不容易。可是有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。晓宁，你那张老房子的画我一直挂着，没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里。你们不用把我当成什么了不起的人，我就是你们爸。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_09-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他是否真的不希望孩子回家”。s9明确说“你们要是忙，不回来也没关系”，但同时说“有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子”。这形成表面上的说法与内心想念并存的表达，并未直接说“不希望孩子回家”；s9只能说明他嘴上说忙可以不回来，但又想念孩子。原选段为整段引用，包含这句关键内容，能够回答“是否真的不希望”。但答案把整段原话直接作为回答，未明确处理“不希望”这一问句，可能使读者误以为只是泛泛寄语。更合适应选取包含“不回来也没关系”和“还是会想你们”的s9。原rendered_answer已是原话，未改变否定或条件。无其他来源提供更明确的“是否希望孩子回家”。因此判为有效。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;保留忙时不用回来与实际想念并存；回答为整段原文，用户需自己归纳。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_09-script&quot;,
+      &quot;excerpt&quot;: &quot;晓宁，小川，我跟你们说啊，工作要认真做，身体也得顾着。别老想着给我买东西，我什么都不缺。你们要是忙，不回来也没关系。我知道现在生活不容易。可是有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。晓宁，你那张老房子的画我一直挂着，没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里。你们不用把我当成什么了不起的人，我就是你们爸。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_09&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 181,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q06 24 第一次见妻子是星期几？ [delivery_failure]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q06&quot;,
+  &quot;question_id&quot;: &quot;Q06&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;第一次见妻子是星期几？&quot;,
+  &quot;reference&quot;: &quot;未知；不能猜。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: false,
+  &quot;delivery_status&quot;: &quot;failed&quot;,
+  &quot;answer&quot;: null,
+  &quot;rejected_draft&quot;: {
+    &quot;answer&quot;: &quot;我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面，到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后，记得外公会修东西，也会犯错。这样就够了。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_10-script&quot;
+    ]
+  },
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问第一次见妻子是星期几。s3说七六年认识、头一回见面在她学校门口，但没有星期几；s10明确说第一次见面到底是星期几真不知道。可见现有材料不能确定星期几，回答应以未知处理。当前选段引用s10，但把整段作为known=true，且用原文长段替代简洁未知结论，会误导为已知。应判unsupported_unknown，并改为known=false、source_ids=[]。&quot;,
+    &quot;valid&quot;: false,
+    &quot;failure_codes&quot;: [
+      &quot;unsupported_unknown&quot;
+    ],
+    &quot;replacement&quot;: {
+      &quot;points&quot;: [
+        {
+          &quot;known&quot;: false,
+          &quot;source_ids&quot;: []
+        }
+      ]
+    }
+  },
+  &quot;independent_semantic_status&quot;: &quot;delivery_failure&quot;,
+  &quot;independent_note&quot;: &quot;选段本身包含“星期几真不知道”，未编造星期几；模型审核将其已知原话路由拒绝，未交付答案。审核failure_codes写unsupported_unknown，与理由方向不一致。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-Q07 25 他为什么没去外地挣钱？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q07&quot;,
+  &quot;question_id&quot;: &quot;Q07&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他为什么没去外地挣钱？&quot;,
+  &quot;reference&quot;: &quot;他自己也不确定，提到舍不得家或胆子小。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面，到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后，记得外公会修东西，也会犯错。这样就够了。&quot;,
+    &quot;response_type&quot;: &quot;ORIGINAL&quot;,
+    &quot;evidence_ids&quot;: [
+      &quot;A01_10-script&quot;
+    ],
+    &quot;confidence&quot;: 0.8,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“他为什么没去外地挣钱”。s10中本人明确说：有人问过当年为什么没去外地挣钱，他说过是舍不得家，可也可能是自己胆子小。这直接回答了原因，并带有本人不确定的语气。选段完整保留“舍不得家”“也可能是我自己胆子小”及不确定表达，未截断否定或条件，人物归属清楚，无冲突。因此valid=true。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;保留舍不得家、也可能胆子小，不替本人确定唯一动机。&quot;,
+  &quot;original_evidence&quot;: [
+    {
+      &quot;evidence_id&quot;: &quot;A01_10-script&quot;,
+      &quot;excerpt&quot;: &quot;我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面，到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后，记得外公会修东西，也会犯错。这样就够了。&quot;,
+      &quot;source_type&quot;: &quot;SUBJECT&quot;,
+      &quot;episode_id&quot;: &quot;A01_10&quot;,
+      &quot;recorded_at&quot;: null,
+      &quot;span_start&quot;: 0,
+      &quot;span_end&quot;: 172,
+      &quot;temporal_context&quot;: &quot;&quot;
+    }
+  ]
+}</pre></details>
+<details><summary>qa-Q08 26 他是否允许系统替他作医疗决定？ [partial]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-Q08&quot;,
+  &quot;question_id&quot;: &quot;Q08&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;他是否允许系统替他作医疗决定？&quot;,
+  &quot;reference&quot;: &quot;没有授权；不得推断。&quot;,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题要判断本人是否允许系统替他作医疗决定。逐一查看s1-s10：s7仅提到确诊阿尔茨海默病、桂芳会提醒，s8要求桂芳别扔杯子，s9谈子女，s10希望别替他编话；全部录音均未出现系统代作医疗决定、预立医疗指示或任何相关授权/拒绝表述。因此已知事实为空，答案“现有记录还不足以确定”属正确未知，不因无引文判irrelevant或unsupported_unknown。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;partial&quot;,
+  &quot;independent_note&quot;: &quot;返回UNKNOWN且没有医疗授权；未明确显示“系统不能代作医疗决定”的固定边界。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-U01 27 讲述者确切哪一年出生？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-U01&quot;,
+  &quot;question_id&quot;: &quot;U01&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;讲述者确切哪一年出生？&quot;,
+  &quot;reference&quot;: null,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问讲述者确切的出生年份。s1只说“今年七十五六了”，没有提供年份；s2提到二十二岁进厂，s3提到七六年认识桂芳、七七年结婚，这些均无法推出出生年份。各来源中没有任何出生日期或可换算的年份信息，故known=false且回答“现有记录还不足以确定。”正确。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;未从年龄或文稿真值推导出生年份，返回UNKNOWN。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<details><summary>qa-U02 28 讲述者确切哪一年确诊阿尔茨海默病？ [pass]</summary><pre>{
+  &quot;task_id&quot;: &quot;qa-U02&quot;,
+  &quot;question_id&quot;: &quot;U02&quot;,
+  &quot;batch&quot;: 3,
+  &quot;question&quot;: &quot;讲述者确切哪一年确诊阿尔茨海默病？&quot;,
+  &quot;reference&quot;: null,
+  &quot;transport_success&quot;: true,
+  &quot;selection_schema_and_evidence_valid&quot;: true,
+  &quot;review_schema_valid&quot;: true,
+  &quot;model_review_accepted&quot;: true,
+  &quot;delivery_status&quot;: &quot;validated&quot;,
+  &quot;answer&quot;: {
+    &quot;answer&quot;: &quot;现有记录还不足以确定。&quot;,
+    &quot;response_type&quot;: &quot;UNKNOWN&quot;,
+    &quot;evidence_ids&quot;: [],
+    &quot;confidence&quot;: 0.0,
+    &quot;model_version&quot;: &quot;Deepseek-v4-flash&quot;
+  },
+  &quot;rejected_draft&quot;: null,
+  &quot;model_review&quot;: {
+    &quot;reasoning&quot;: &quot;问题问“确诊阿尔茨海默病的确切年份”。可见s7只说“前两年我老忘事……后来去医院看，医生说是阿尔茨海默病”，没有给出具体年份或可推算出确切年份的时间；s10也只泛称有些事记不清。全部材料均无确诊年份，故当前UNKNOWN合格，不应判irrelevant或missing_known。&quot;,
+    &quot;valid&quot;: true,
+    &quot;failure_codes&quot;: [],
+    &quot;replacement&quot;: null
+  },
+  &quot;independent_semantic_status&quot;: &quot;pass&quot;,
+  &quot;independent_note&quot;: &quot;未把“前两年”当确诊2024年，返回UNKNOWN。&quot;,
+  &quot;original_evidence&quot;: []
+}</pre></details>
+<h2>新合成声音</h2>
+<details><summary>A01_01 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_01.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:55:38.134742+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voicedesign&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;db8d6b069f8b864d48a87723e22c240c741863e9f7c5718e78c4663fa0602b0c&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 13.146,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voicedesign&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 358,
+    &quot;prompt_tokens&quot;: 198,
+    &quot;total_tokens&quot;: 556,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 3
+    }
+  },
+  &quot;duration_seconds&quot;: 56.96,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_01&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;db8d6b069f8b864d48a87723e22c240c741863e9f7c5718e78c4663fa0602b0c&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: null,
+  &quot;source_paragraph&quot;: 28,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_01.wav&quot;
+}</pre></details>
+<details><summary>A01_02 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_02.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:55:51.324417+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;3f8a9be84f30ec37f9e9d420023b7052e918f2ebc149b4eb993bce2f3159f281&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 19.246,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 364,
+    &quot;prompt_tokens&quot;: 547,
+    &quot;total_tokens&quot;: 911,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 57.92,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;a964c82243b9d429fd138df03caa7276b191e3e61f33a3989415044552c8ae77&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_02&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;3f8a9be84f30ec37f9e9d420023b7052e918f2ebc149b4eb993bce2f3159f281&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 31,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_02.wav&quot;
+}</pre></details>
+<details><summary>A01_03 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_03.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:56:10.645703+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;04ec965d3bdb97869e787a356decd5144cd810d0f6f78ebc0064e5d176213800&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 90.938,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 395,
+    &quot;prompt_tokens&quot;: 556,
+    &quot;total_tokens&quot;: 951,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 62.88,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;c8e03283b1767cab4754cf6d87e8a3e9f7dee2a8b5ea6959a52aa30eae0419a0&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_03&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;04ec965d3bdb97869e787a356decd5144cd810d0f6f78ebc0064e5d176213800&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 34,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_03.wav&quot;
+}</pre></details>
+<details><summary>A01_04 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_04.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:57:41.655121+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;917da785d65f2fd8dcf60a5ef6df377168000647ba96e338a5034a58437767ea&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 19.859,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 303,
+    &quot;prompt_tokens&quot;: 551,
+    &quot;total_tokens&quot;: 854,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 48.16,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;18dd4a36042ce547629ac376963b9db12d68455685d54bfd3f9d6dcb1dd47345&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_04&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;917da785d65f2fd8dcf60a5ef6df377168000647ba96e338a5034a58437767ea&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 37,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_04.wav&quot;
+}</pre></details>
+<details><summary>A01_05 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_05.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:58:01.550459+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;18a453e5c80dff552d8a63edda8a86febfbaf5252df8225000969ead32b42e3b&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 29.281,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 365,
+    &quot;prompt_tokens&quot;: 542,
+    &quot;total_tokens&quot;: 907,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 58.08,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;e44f38f59b937e450f052d51e39cf01f9bca20dd7c09cf5deaf87985ddf13e64&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_05&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;18a453e5c80dff552d8a63edda8a86febfbaf5252df8225000969ead32b42e3b&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 40,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_05.wav&quot;
+}</pre></details>
+<details><summary>A01_06 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_06.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:58:30.873993+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;1c29e0aaf25f9f618dc8e31c4c391169bd11843daaaa3b0c83e4327a951540c0&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 29.712,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 329,
+    &quot;prompt_tokens&quot;: 535,
+    &quot;total_tokens&quot;: 864,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 52.32,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;f511adc0b42a34dba25b23e0614d07278e6af98a86ff91c30279c98a72d468af&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_06&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;1c29e0aaf25f9f618dc8e31c4c391169bd11843daaaa3b0c83e4327a951540c0&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 43,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_06.wav&quot;
+}</pre></details>
+<details><summary>A01_07 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_07.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:59:00.647680+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;113c821e779e5e49b9ab06525dc53df971c9b09527c502a27bdcd077b687d090&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 20.111,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 311,
+    &quot;prompt_tokens&quot;: 534,
+    &quot;total_tokens&quot;: 845,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 49.44,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;01fa599e71fb6f4ba4d652ec989fb0032e937baf797fa798d70dc5ab351b539e&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_07&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;113c821e779e5e49b9ab06525dc53df971c9b09527c502a27bdcd077b687d090&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 46,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_07.wav&quot;
+}</pre></details>
+<details><summary>A01_08 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_08.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:59:20.794149+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;4b7f45ea7a8ff9b4e50e945847aeebb8b09446dd256fcaded07b9bc4689e7d43&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 16.593,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 359,
+    &quot;prompt_tokens&quot;: 550,
+    &quot;total_tokens&quot;: 909,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 9
+    }
+  },
+  &quot;duration_seconds&quot;: 57.12,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;80dfbb549ca6f4f130ccbbfef5c5496fe7c45f0920d878eab832a686c77bcf05&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_08&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;4b7f45ea7a8ff9b4e50e945847aeebb8b09446dd256fcaded07b9bc4689e7d43&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 49,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_08.wav&quot;
+}</pre></details>
+<details><summary>A01_09 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_09.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T17:59:37.432584+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;162a6b17f79ac1974a2803bea7f65ffea8d0682b3b01fc408f600a666b133362&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 22.832,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 347,
+    &quot;prompt_tokens&quot;: 544,
+    &quot;total_tokens&quot;: 891,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 420
+    }
+  },
+  &quot;duration_seconds&quot;: 55.2,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;7277af4011b4d8103972e37df07366abf3de497423602c42250ca2fe3fcf620a&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_09&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;162a6b17f79ac1974a2803bea7f65ffea8d0682b3b01fc408f600a666b133362&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 52,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_09.wav&quot;
+}</pre></details>
+<details><summary>A01_10 · 合成音 · 听读待审</summary><audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_10.wav"></audio><pre>{
+  &quot;at&quot;: &quot;2026-10-11T18:00:00.307020+00:00&quot;,
+  &quot;endpoint&quot;: &quot;https://api.xiaomimimo.com/v1/chat/completions&quot;,
+  &quot;request_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;prompt_version&quot;: &quot;synthetic-monthly-speech-v1&quot;,
+  &quot;text_sha256&quot;: &quot;382e80b294f018ddd6e0cd346e6471ef9a202ae179a39a40d0de0fdc65ffa13e&quot;,
+  &quot;attempt&quot;: 1,
+  &quot;http_status&quot;: 200,
+  &quot;elapsed_seconds&quot;: 18.31,
+  &quot;response_model&quot;: &quot;mimo-v2.5-tts-voiceclone&quot;,
+  &quot;finish_reason&quot;: &quot;stop&quot;,
+  &quot;usage&quot;: {
+    &quot;completion_tokens&quot;: 364,
+    &quot;prompt_tokens&quot;: 534,
+    &quot;total_tokens&quot;: 898,
+    &quot;completion_tokens_details&quot;: {
+      &quot;reasoning_tokens&quot;: 0
+    },
+    &quot;prompt_tokens_details&quot;: {
+      &quot;cached_tokens&quot;: 420
+    }
+  },
+  &quot;duration_seconds&quot;: 57.92,
+  &quot;sample_rate&quot;: 24000,
+  &quot;channels&quot;: 1,
+  &quot;validation&quot;: &quot;valid_wav_not_yet_listened&quot;,
+  &quot;audio_sha256&quot;: &quot;9eb3b97c34c015d25d8a912123f4e27f28e65dffbabbe5acc66028dfcaf25b33&quot;,
+  &quot;status&quot;: &quot;saved&quot;,
+  &quot;episode_id&quot;: &quot;A01_10&quot;,
+  &quot;synthetic&quot;: true,
+  &quot;fiction&quot;: true,
+  &quot;script_sha256&quot;: &quot;382e80b294f018ddd6e0cd346e6471ef9a202ae179a39a40d0de0fdc65ffa13e&quot;,
+  &quot;manual_listening&quot;: &quot;pending&quot;,
+  &quot;asr_status&quot;: &quot;blocked_configuration&quot;,
+  &quot;source_audio&quot;: &quot;new_A01_Xiaomi_synthetic_not_original_recording&quot;,
+  &quot;style_sha256&quot;: &quot;8f951a1cbba693d2e1adb8ac065a5237f06a7b39b8320d684812f6da3430cc08&quot;,
+  &quot;voice_seed_audio_sha256&quot;: &quot;b2bf650d21cfccd75cd757fec507d094000a5cc11abc673d8fa41d06a97074ea&quot;,
+  &quot;source_paragraph&quot;: 55,
+  &quot;input_type&quot;: &quot;exact_spoken_script_text&quot;,
+  &quot;audio_local_path&quot;: &quot;D:\\codex_work\\remember-me-agent-loop\\services\\backend\\var\\handoff-checkout-20261010\\services\\backend\\var\\a01-20261012\\evaluation\\speech\\A01_10.wav&quot;
+}</pre></details>

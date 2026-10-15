@@ -1,0 +1,13 @@
+{
+  "model": "stepaudio-3-realtime-preview",
+  "rounds": 3,
+  "mode": "tool",
+  "input_rate": 24000,
+  "output_rate": 24000,
+  "vad_silence_ms": 600,
+  "packet_sha256": "673272b8878ec414fc9caccfaf2c4d00a18c3815f906c4d25695625341ec8b79",
+  "prompt_sha256": "d9ddacf82605d103ec94e0f02e62e0bb59070f4513bd59dcb7ed3998265686e6",
+  "retrieval": "frozen authorized packets; online search latency excluded",
+  "production_changed": false,
+  "script_sha256": "dc79e623ab5a3b51cd4db4a560cb377d463efcb9c5e680e7d53b4c22c0a5a2ba"
+}

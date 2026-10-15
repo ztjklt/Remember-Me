@@ -23,6 +23,8 @@ data class NativeState(
     val candidates: List<JSONObject> = emptyList(), val candidateJobs: List<JSONObject> = emptyList(),
     val profileUpdates: List<JSONObject> = emptyList(),
     val asrCapabilities: JSONObject? = null,
+    val stepVoiceAvailable: Boolean = false,
+    val fastVoiceAvailable: Boolean = false,
     val serviceInfo: ServiceInfo = ServiceInfo(),
     val connectionCheck: ConnectionCheck = ConnectionCheck(),
     val invitations: List<JSONObject> = emptyList(), val recipients: List<JSONObject> = emptyList(),
@@ -38,6 +40,7 @@ data class NativeState(
     val answer: JSONObject? = null, val search: List<JSONObject> = emptyList(), val searchQuery:String = "",
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
+    val reviewMachineText: String = "", val reviewCorrection: JSONObject? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
@@ -61,7 +64,11 @@ internal fun NativeState.forSpaceFallback(spaces: List<JSONObject>, selected: JS
 /** Account sessions use Keystore; local originals are scoped to the authenticated identity. */
 class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureService) : ViewModel() {
     private val gate = SessionGate()
+    private val appContext=context.applicationContext
+    private val callState=MutableStateFlow<VoiceCallEngine?>(null)
+    val voiceCall=callState.asStateFlow()
     private val playbackGate = SourcePlaybackGate(gate)
+    private val voiceStartGate = SourcePlaybackGate(gate)
     private val client = BackendClient(gate)
     private val reminders = LocalDailyReminder(context)
     private val savedSession = SavedSession(context)
@@ -180,7 +187,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.busy || state.value.recording) return
         if(state.value.spaces.none { it.text("subject_id") == space.text("subject_id") }) return
         session?.let { spacePreferences.edit().putString("${it.server}:${state.value.actor}", space.text("subject_id")).apply() }
-        stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
+        endVoice();stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
         refresh()
@@ -201,6 +208,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.companionRecording.isNotBlank()) { finishCompanionRecording { leave() } } else if(state.value.recording) { finish { leave() } } else leave()
     }
     private fun clearIdentity() {
+        endVoice()
         reminders.disable(); creationKeys.clear()
         gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null; pendingTransfer = null
         stopSource(); audio.stopPlayback(); state.value = NativeState()
@@ -383,6 +391,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             report("云端转写配置尚未完成，原音保留本机，请配置后再上传。"); return
         }
         val asrPolicy = if(!clientAsr && caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
+        val correctionPolicy = if(!clientAsr) caps.text("transcript_correction_policy").takeIf { it.isNotBlank() } else null
         if(clientAsr && capture.episode.isBlank() && capture.transcript == null) {
             report("请先取回这段原音对应的机器转写，再上传并核对；原音已保存。"); return
         }
@@ -393,7 +402,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             val sending = capture.beginUpload(clientAsr).also { saveCapture(s, it) }
             val consent = io { client.consent(s, subject, "RECORDING") }
             submitCapture(sending,
-                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source) } },
+                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source, correctionPolicy) } },
                 persist = { saveCapture(s, it) },
                 link = { episode, revision ->
                 io { client.json(s, "$path/revisions", "POST", JSONObject().put("episode_id", episode)
@@ -450,11 +459,12 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             check(result.text("state") == "reviewing") { "转写尚未完成或已经提交，请刷新后查看。" }
             val warnings = result.optJSONArray("review_warnings") ?: JSONArray()
             state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"),
+                reviewMachineText = result.text("machine_transcript"), reviewCorrection = result.optJSONObject("automatic_correction"),
                 reviewInitialText = result.text("transcript"), reviewWarnings = (0 until warnings.length()).map { warnings.optString(it) },
                 reviewParagraphPreview = result.optString("paragraph_preview").takeIf { it.isNotBlank() && it != "null" })
         }
     }
-    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null) }
+    fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null, reviewMachineText = "", reviewCorrection = null) }
     fun useParagraphPreview() {
         val current = state.value
         if(current.reviewEpisode != null && current.reviewText == current.reviewInitialText && current.reviewParagraphPreview != null)
@@ -492,6 +502,52 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         return state.value.grants.firstOrNull { cloudProcessingAllowed(it) }?.text("grant_id")
             ?: throw IllegalStateException("记录者尚未允许共享故事参与云端问答。")
     }
+    fun loadVoiceCapabilities() {
+        val s=session?:return
+        operation(s){
+            val value=io{client.json(s,"/api/v1/voice-capabilities")}
+            val engines=value.optJSONArray("engines")
+            val speeds=value.optJSONArray("response_speeds")
+            state.value=state.value.copy(fastVoiceAvailable=value.optBoolean("enabled") &&
+                speeds?.let{a->(0 until a.length()).any{a.optString(it)=="fast"}}==true,
+                stepVoiceAvailable=value.optBoolean("enabled") &&
+                engines?.let{a->(0 until a.length()).any{a.optString(it)=="step_realtime"}}==true)
+        }
+    }
+    fun beginVoice(mode:String,simpleMode:Boolean,calibrationId:String?=null,responseSpeed:String="reviewed",voiceEngine:String="pipeline") {
+        val s=session?:return
+        val subject=state.value.subject
+        if(subject.isBlank()||state.value.recording||state.value.busy||!foreground)return
+        endVoice()
+        val ticket=voiceStartGate.begin(s)
+        operation(s){
+            val capabilities=io{client.json(s,"/api/v1/voice-capabilities")}
+            check(capabilities.optBoolean("enabled")){"这个账号暂未开放语音聊聊。"}
+            check(voiceEngine=="pipeline" || capabilities.optJSONArray("engines")?.let{a->(0 until a.length()).any{a.optString(it)==voiceEngine}}==true){"服务器尚未开放实时试用。"}
+            val streamed=capabilities.optJSONArray("response_speeds")?.let{a->(0 until a.length()).any{a.optString(it)=="streamed"}}==true
+            val speed=if(calibrationId!=null)"reviewed" else if(voiceEngine=="step_realtime")"fast" else if(responseSpeed=="fast"&&streamed)"streamed" else responseSpeed
+            check(speed=="reviewed" || capabilities.optJSONArray("response_speeds")?.let{a->(0 until a.length()).any{a.optString(it)==speed}}==true){"服务器尚未开放快速回复，请关闭开关后开始。"}
+            stopSource();audio.stopPlayback()
+            val consent=io{cloudConsent(s)}
+            val created=io{client.json(s,"/api/v1/subjects/${segment(subject)}/voice-sessions","POST",
+                JSONObject().put("cloud_consent_id",consent).put("mode",mode).put("simple_mode",simpleMode)
+                    .put("policy","continuous-voice-v1").put("cloud_asr_allowed",true).put("cloud_tts_allowed",true)
+                    .put("purpose",if(calibrationId==null)"dialogue" else "calibration_report")
+                    .apply{if(calibrationId!=null)put("calibration_id",calibrationId);if(speed!="reviewed")put("response_speed",speed);if(voiceEngine!="pipeline")put("engine",voiceEngine)})}
+            val published=voiceStartGate.publish(ticket){
+                if(state.value.subject==subject){
+                    val engine=VoiceCallEngine(appContext,
+                        {gate.accepts(s)&&state.value.subject==subject}, {foreground})
+                    callState.value=engine
+                    engine.start(s,created.getString("websocket_path"),created.getString("session_id"))
+                }
+            }
+            if(!published || state.value.subject!=subject)io{
+                runCatching{client.json(s,"/api/v1/voice-sessions/${segment(created.getString("session_id"))}","DELETE")}
+            }
+        }
+    }
+    fun endVoice(){voiceStartGate.invalidate();callState.value?.close();callState.value=null}
     fun ask(question: String, cloudConfirmed: Boolean, mode: String = "evidence") {
         val s = session ?: return
         if(!cloudConfirmed || question.isBlank()) { report("请填写问题并明确同意本次云端文字处理。"); return }
@@ -519,6 +575,18 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         }
     }
     fun closeCalibration() { if(!state.value.recording) state.value=state.value.copy(calibrationId="") }
+    fun prepareVoiceCalibration(question:String,mode:String){
+        val s=session?:return
+        if(!state.value.owner||question.isBlank())return
+        operation(s){
+            stopSource();state.value=state.value.copy(answer=null)
+            val consent=io{cloudConsent(s)}
+            val result=io{client.json(s,"${subjectRoot()}/calibrations/prepare-voice","POST",
+                JSONObject().put("question",question.trim()).put("mode",mode).put("cloud_consent_id",consent))}
+            state.value=state.value.copy(calibrationId=result.text("calibration_id"),
+                calibrations=listOf(result)+state.value.calibrations.filter{it.text("calibration_id")!=result.text("calibration_id")})
+        }
+    }
     fun startCalibration(answer: JSONObject, cloud: Boolean) {
         val s=session?:return; if(!state.value.owner || !cloud) return
         operation(s) {
@@ -767,6 +835,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     fun onForeground(value: Boolean) {
         foreground = value
+        voiceStartGate.setForeground(value)
+        if(!value)callState.value?.pause("已暂停聆听")
         playbackGate.setForeground(value)
         if(!value) { stopSource(); audio.stopPlayback(); if(state.value.companionRecording.isNotBlank()) finishCompanionRecording() else if(state.value.recording) finish() }
         else if(session != null && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()
@@ -799,5 +869,5 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 })) }
         }
     }
-    override fun onCleared() { gate.clear(); stopSource(); audio.release(); super.onCleared() }
+    override fun onCleared() { endVoice();gate.clear(); stopSource(); audio.release(); super.onCleared() }
 }

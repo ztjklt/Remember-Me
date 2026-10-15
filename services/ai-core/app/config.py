@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     twin_verify_answers: bool = Field(default=True, validation_alias="AI_TWIN_VERIFY_ANSWERS")
     twin_structured_answers: bool = Field(default=False, validation_alias="AI_TWIN_STRUCTURED_ANSWERS")
     twin_quote_answers: bool = Field(default=False, validation_alias="AI_TWIN_QUOTE_ANSWERS")
+    voice_call_timeout_seconds: float = Field(
+        default=8.0, gt=0, le=45, allow_inf_nan=False,
+        validation_alias="AI_VOICE_CALL_TIMEOUT_SECONDS",
+    )
+    voice_retry_after_seconds: float = Field(
+        default=0, ge=0, le=10, allow_inf_nan=False,
+        validation_alias='AI_VOICE_RETRY_AFTER_SECONDS',
+    )
     profile_verify_candidates: bool = Field(default=False, validation_alias="AI_PROFILE_VERIFY_CANDIDATES")
     persona_total_timeout_seconds: float = Field(
         default=90.0, gt=0, le=90, allow_inf_nan=False,

@@ -1,0 +1,57 @@
+{
+  "run_id": "cloud-sync-20261015-reader-after-share",
+  "role": "reader",
+  "server": "https://39.108.183.47",
+  "build_type": "internal",
+  "debuggable": false,
+  "app_version": "0.12.1-internal",
+  "app_version_code": 20261023,
+  "fixture": false,
+  "physical_phone": false,
+  "new_asr": false,
+  "tls_validation": "Android default TLS with internal APK trust configuration; no test override",
+  "interaction_method": "Compose UI; saved-answer/asset reads use production model; verification uses authenticated GET",
+  "new_question_attempts": 1,
+  "new_speech_attempts": 0,
+  "style_changed": false,
+  "saved_answer_played": false,
+  "new_answer_played": false,
+  "source_played": false,
+  "logout_cache_cleared": true,
+  "status": "failed",
+  "events": [
+    {
+      "name": "ordinary_login",
+      "at": "2026-10-15T14:07:08.131045Z",
+      "detail": {}
+    },
+    {
+      "name": "native_pages",
+      "at": "2026-10-15T14:07:11.437061Z",
+      "detail": {}
+    },
+    {
+      "name": "new_question_single_submit",
+      "at": "2026-10-15T14:07:19.825284Z",
+      "detail": {}
+    }
+  ],
+  "api_actor_id": "actor_b7841ba32ac74a51b30c1742ac253ede",
+  "api_display_name": "陈守义样例 · 亲友",
+  "api_subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+  "api_role": "reader",
+  "ordinary_login": true,
+  "server_release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+  "api_version": "0.7.0",
+  "font_scale": 1,
+  "confirmed_understandings": 1,
+  "stories": 9,
+  "voice_ready": true,
+  "style_enabled_before": true,
+  "style_enabled_after": true,
+  "question": "如果我想喝浓一点的茶，你会怎么想？",
+  "failed_step": "new_question_single_submit",
+  "error_type": "AssertionError",
+  "error": "new_question_single_submit: 模型回答未通过来源或格式校验，本次未保存答案。",
+  "app_error": "模型回答未通过来源或格式校验，本次未保存答案。"
+}

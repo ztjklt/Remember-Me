@@ -1,0 +1,40 @@
+{
+  "cycles": [
+    {
+      "cycle": 1,
+      "claim_or_direct_recipient": true,
+      "approved": true,
+      "original_audio_matches": true,
+      "corrected_memory_visible": true,
+      "revocation_applied": true
+    },
+    {
+      "cycle": 2,
+      "claim_or_direct_recipient": true,
+      "approved": true,
+      "original_audio_matches": true,
+      "corrected_memory_visible": true,
+      "revocation_applied": true
+    },
+    {
+      "cycle": 3,
+      "claim_or_direct_recipient": true,
+      "approved": true,
+      "original_audio_matches": true,
+      "corrected_memory_visible": true,
+      "revocation_applied": true
+    },
+    {
+      "cycle": 4,
+      "claim_or_direct_recipient": true,
+      "approved": true,
+      "original_audio_matches": true,
+      "corrected_memory_visible": true
+    }
+  ],
+  "final_invitation_id": "invite_2d5a9e478f524b7abc5df1e9018c2b94",
+  "final_share_enabled": true,
+  "reader_actor_id": "actor_128264a870c442539108e68d8913516a",
+  "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+  "episode_id": "ep_007ccf0e26394aff"
+}

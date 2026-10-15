@@ -1,0 +1,916 @@
+<!doctype html><meta charset="utf-8"><title>A01 新音真实ASR对照</title><style>body{font:16px/1.6 system-ui;max-width:1150px;margin:auto;padding:30px;background:#f8faf7;color:#26392b}details{padding:18px;background:white;border:1px solid #ccdacc;border-radius:10px;margin:16px 0}summary{cursor:pointer;font-weight:600}.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}.warn{color:#a53c25}@media(max-width:700px){.pair{display:block}}</style>
+<h1>A01 新合成音与真实 Paraformer 转写</h1><p>虚构语料 · 原始机器稿完整保留 · 不是真人录音 · 未人工听读 · 未覆盖文字基线</p>
+<pre>{
+  &quot;actual_ASR_tasks&quot;: 10,
+  &quot;adapter_invocations&quot;: 10,
+  &quot;successful_raw_transcripts&quot;: 10,
+  &quot;input_audio_seconds&quot;: 556.0,
+  &quot;provider_usage_seconds&quot;: 552,
+  &quot;script_characters_without_punctuation&quot;: 1554,
+  &quot;script_asr_edit_distance&quot;: 54,
+  &quot;key_phrase_checks&quot;: 51,
+  &quot;exactly_preserved_key_phrases&quot;: 41,
+  &quot;script_asr_difference_ratio&quot;: 0.03474903474903475
+}</pre>
+<pre class="warn">晓宁在01/04/06/09机器稿均成“小宁”；不能凭同音自动合并，需单独核对后留痕。
+03多个“她”变“他”，04女儿指代也发生他/她差异；原文本可显示上下文，不能把错字当新人身份事实。
+02电机→电击，认死理→认私理；“不是”否定词仍在，但对象拼写改变。
+03老实→老师（后两句），08清福→轻浮、歇→谢、杯→被；部分错字能改变意思。
+07动我东西→冻我东西；阿尔茨海默病→阿尔斯海默病，不能作为医学新结论。
+贵画笔“说不清/可能”、孩子忙可不回与想念、星期几真不知道、不替编话均保留。
+数字正规化（如七六年→76年）会计入这里的编辑距离；该比例不等于ASR准确率。
+未人工听读合成原音，差异可能来自TTS、ASR或排版正规化；不能单凭创作稿确定实际说了哪些音。</pre>
+<details open><summary>A01_01</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>我叫陈国梁，陈是耳东陈，国是国家的国，梁是房梁的梁。今年七十五六了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班，修机器的。你别看修机器听着简单，机器哪儿响得不对，得听出来，不能拿锤子乱敲。我退休好多年了。家里有老伴儿，叫周桂芳。我们两个孩子，女儿晓宁，儿子小川。还有个外孙女，叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧。我不太会讲大道理，想到哪儿说到哪儿。</p></section><section><h3>原始机器稿（未纠正）</h3><p>我叫陈国梁，臣是尔东陈，国是国家的国，梁是房梁的梁。今年75 6了，岁数大了，自己有时候也要想一想。我是襄阳人，以前在机械厂上班修机器的。你别看修机器听着简单，机器哪儿想的不对，得听出来，不能拿锤子乱敲。我退休好多年了，家里有老伴儿叫周桂芳，我们两个孩子，女儿小宁，儿子小川，还有个外孙女儿叫豆豆。这个东西说是能把我说的话存下来，那我就慢慢说吧，我不太会讲大道理，想到哪儿说到哪儿。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_01.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;subject_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;陈国梁&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;wife_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;周桂芳&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;daughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;晓宁&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;son_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;小川&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;granddaughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;豆豆&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;hometown&quot;,
+      &quot;expected_script_phrase&quot;: &quot;襄阳&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        5,
+        6
+      ],
+      &quot;asr_span&quot;: [
+        5,
+        6
+      ],
+      &quot;script_text&quot;: &quot;陈&quot;,
+      &quot;asr_text&quot;: &quot;臣&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        7,
+        8
+      ],
+      &quot;asr_span&quot;: [
+        7,
+        8
+      ],
+      &quot;script_text&quot;: &quot;耳&quot;,
+      &quot;asr_text&quot;: &quot;尔&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        24,
+        28
+      ],
+      &quot;asr_span&quot;: [
+        24,
+        27
+      ],
+      &quot;script_text&quot;: &quot;七十五六&quot;,
+      &quot;asr_text&quot;: &quot;756&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        74,
+        76
+      ],
+      &quot;asr_span&quot;: [
+        73,
+        75
+      ],
+      &quot;script_text&quot;: &quot;响得&quot;,
+      &quot;asr_text&quot;: &quot;想的&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        114,
+        115
+      ],
+      &quot;asr_span&quot;: [
+        113,
+        114
+      ],
+      &quot;script_text&quot;: &quot;晓&quot;,
+      &quot;asr_text&quot;: &quot;小&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;insert&quot;,
+      &quot;script_span&quot;: [
+        126,
+        126
+      ],
+      &quot;asr_span&quot;: [
+        125,
+        126
+      ],
+      &quot;script_text&quot;: &quot;&quot;,
+      &quot;asr_text&quot;: &quot;儿&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_02</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>我二十二岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停。别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电机坏，是一颗小螺丝松了。后来我就记住了，遇到事啊，先弄明白哪里出了问题，别一上来就说没救了。修机器这样，过日子也这样。不过我这个人有时候也太认死理，别人劝我换个办法，我还不爱听。现在想想，不一定都是对的。</p></section><section><h3>原始机器稿（未纠正）</h3><p>我22岁进的机械厂，先跟着师傅学。那时候厂里有一台老车床，隔三差五就停，别人说这机器该换了，我师傅不让，叫我先找毛病。我趴在旁边听了半天，发现不是电击坏，是一颗小螺丝松了。后来我就记住了，遇到事啊先弄明白哪里出了问题，别一上来就说没救了，修机器这样，过日子也这样。不过我这个人有时候也太认私理，别人劝我换个办法我还不爱听，现在想想不一定都是对的。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_02.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;not_motor_fault&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不是电机坏&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;loose_screw&quot;,
+      &quot;expected_script_phrase&quot;: &quot;一颗小螺丝松了&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;self_reflection&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不一定都是对的&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        1,
+        4
+      ],
+      &quot;asr_span&quot;: [
+        1,
+        3
+      ],
+      &quot;script_text&quot;: &quot;二十二&quot;,
+      &quot;asr_text&quot;: &quot;22&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        67,
+        68
+      ],
+      &quot;asr_span&quot;: [
+        66,
+        67
+      ],
+      &quot;script_text&quot;: &quot;机&quot;,
+      &quot;asr_text&quot;: &quot;击&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        130,
+        131
+      ],
+      &quot;asr_span&quot;: [
+        129,
+        130
+      ],
+      &quot;script_text&quot;: &quot;死&quot;,
+      &quot;asr_text&quot;: &quot;私&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_03</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>桂芳是七六年认识的。朋友介绍，我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油。她看见了也没笑我，就递给我一张纸，说先擦擦吧。我那时候嘴笨，只会问她吃饭没有。后来她跟我说，觉得我这个人老实。我说老实有什么好，她说老实也挺好。我们七七年结婚，日子也不是没吵过。她嫌我什么都憋心里，我嫌她老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放哪儿都找不到。</p></section><section><h3>原始机器稿（未纠正）</h3><p>桂芳是76年认识的，朋友介绍我们头一回见面是在她学校门口。我骑一辆旧自行车，链子半路掉了，裤腿上全是油，他看见了也没笑我，就递给我一张纸说先擦擦吧。我那时候嘴笨，只会问他吃饭没有。后来她跟我说，觉得我这个人老实。我说老师有什么好？她说老师也挺好，我们77年结婚日子也不是没吵过，他嫌我什么都憋心里，我嫌他老替别人操心。可她住院那阵子，我才知道家里少了她，连杯子放那儿都找不到。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_03.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;reported_wife_statement&quot;,
+      &quot;expected_script_phrase&quot;: &quot;她跟我说&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;honest_not_teacher&quot;,
+      &quot;expected_script_phrase&quot;: &quot;我说老实有什么好&quot;,
+      &quot;preserved_exactly&quot;: false
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        3,
+        5
+      ],
+      &quot;asr_span&quot;: [
+        3,
+        5
+      ],
+      &quot;script_text&quot;: &quot;七六&quot;,
+      &quot;asr_text&quot;: &quot;76&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        47,
+        48
+      ],
+      &quot;asr_span&quot;: [
+        47,
+        48
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        76,
+        77
+      ],
+      &quot;asr_span&quot;: [
+        76,
+        77
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        98,
+        99
+      ],
+      &quot;asr_span&quot;: [
+        98,
+        99
+      ],
+      &quot;script_text&quot;: &quot;实&quot;,
+      &quot;asr_text&quot;: &quot;师&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        106,
+        107
+      ],
+      &quot;asr_span&quot;: [
+        106,
+        107
+      ],
+      &quot;script_text&quot;: &quot;实&quot;,
+      &quot;asr_text&quot;: &quot;师&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        112,
+        114
+      ],
+      &quot;asr_span&quot;: [
+        112,
+        114
+      ],
+      &quot;script_text&quot;: &quot;七七&quot;,
+      &quot;asr_text&quot;: &quot;77&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        125,
+        126
+      ],
+      &quot;asr_span&quot;: [
+        125,
+        126
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        136,
+        137
+      ],
+      &quot;asr_span&quot;: [
+        136,
+        137
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        163,
+        164
+      ],
+      &quot;asr_span&quot;: [
+        163,
+        164
+      ],
+      &quot;script_text&quot;: &quot;哪&quot;,
+      &quot;asr_text&quot;: &quot;那&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_04</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>晓宁小时候喜欢画画，画得挺像样。她上初中的时候说想去学美术，我没答应。我那时候就想，学那个以后靠什么吃饭？还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事我一直记得。后来她工作了，有一年送我一张画，是咱们家老房子。我看了半天，没说什么，就挂起来了。我到现在也不知道该怎么跟她说，当年我可能做错了。我不是不相信她，我是怕她以后吃苦。可怕归怕，也不能替她把路全选了。</p></section><section><h3>原始机器稿（未纠正）</h3><p>小宁小时候喜欢画画，画的挺像呀。他上初中的时候说想去学美术，我没答应。我那时候就想学那个以后靠什么吃饭，还是读个稳当的专业好。她跟我吵过一回，哭着把画纸收起来了。这个事儿我一直记得，后来他工作了有一年，送我一张画，是咱们家老房子，我看了半天没说什么就挂起来了。我到现在也不知道该怎么跟他说，当年我可能做错了，我不是不相信他，我是怕他以后吃苦，可怕归怕，也不能替他把路全选了。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_04.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;daughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;晓宁&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;initial_refusal&quot;,
+      &quot;expected_script_phrase&quot;: &quot;没答应&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;tentative_regret&quot;,
+      &quot;expected_script_phrase&quot;: &quot;可能做错了&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;not_distrust&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不是不相信&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;not_choose_all_paths&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不能替&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        0,
+        1
+      ],
+      &quot;asr_span&quot;: [
+        0,
+        1
+      ],
+      &quot;script_text&quot;: &quot;晓&quot;,
+      &quot;asr_text&quot;: &quot;小&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        10,
+        11
+      ],
+      &quot;asr_span&quot;: [
+        10,
+        11
+      ],
+      &quot;script_text&quot;: &quot;得&quot;,
+      &quot;asr_text&quot;: &quot;的&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        13,
+        15
+      ],
+      &quot;asr_span&quot;: [
+        13,
+        15
+      ],
+      &quot;script_text&quot;: &quot;样她&quot;,
+      &quot;asr_text&quot;: &quot;呀他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;insert&quot;,
+      &quot;script_span&quot;: [
+        76,
+        76
+      ],
+      &quot;asr_span&quot;: [
+        76,
+        77
+      ],
+      &quot;script_text&quot;: &quot;&quot;,
+      &quot;asr_text&quot;: &quot;儿&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        83,
+        84
+      ],
+      &quot;asr_span&quot;: [
+        84,
+        85
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        128,
+        129
+      ],
+      &quot;asr_span&quot;: [
+        129,
+        130
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        144,
+        145
+      ],
+      &quot;asr_span&quot;: [
+        145,
+        146
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        148,
+        149
+      ],
+      &quot;asr_span&quot;: [
+        149,
+        150
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        161,
+        162
+      ],
+      &quot;asr_span&quot;: [
+        162,
+        163
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_05</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>小川小时候皮得很，拆我收音机，拆完装不回去。我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作，忙，打电话也短。我老说没事没事，你忙你的，其实挂了电话还想再听两句。老杜就不一样了，我跟他认识几十年，见面先互相损两句。他老说我抠门，我说你才抠，上回吃面还是我付的钱。你看，人跟人说话是不一样的。跟孩子怕说重了，跟老杜倒不用客气。</p></section><section><h3>原始机器稿（未纠正）</h3><p>小川小时候皮得很拆，我收音机拆完装不回去，我没骂他，叫他把螺丝一颗颗找回来。现在他在广州工作忙，打电话也短，我老说没事儿，没事儿，你忙你的。其实挂了电话还想再听两句，老杜就不一样了。我跟他认识几十年，见面先互相损两句，他老说我抠门，我说你才抠上回吃面还是我付的钱。你看人跟人说话是不一样的，跟孩子怕说重了，跟老杜倒不用客气。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_05.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;son_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;小川&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;friend_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;老杜&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;not_scolding&quot;,
+      &quot;expected_script_phrase&quot;: &quot;没骂他&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;wishes_longer_call&quot;,
+      &quot;expected_script_phrase&quot;: &quot;还想再听两句&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;gentle_to_children&quot;,
+      &quot;expected_script_phrase&quot;: &quot;跟孩子怕说重了&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;casual_to_friend&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不用客气&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;insert&quot;,
+      &quot;script_span&quot;: [
+        53,
+        53
+      ],
+      &quot;asr_span&quot;: [
+        53,
+        54
+      ],
+      &quot;script_text&quot;: &quot;&quot;,
+      &quot;asr_text&quot;: &quot;儿&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;insert&quot;,
+      &quot;script_span&quot;: [
+        55,
+        55
+      ],
+      &quot;asr_span&quot;: [
+        56,
+        57
+      ],
+      &quot;script_text&quot;: &quot;&quot;,
+      &quot;asr_text&quot;: &quot;儿&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_06</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>我不喜欢浪费。灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点，我没跟桂芳讲价钱。她后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样。其实我也说不清，可能是想起晓宁小时候那回事。钱该省就省，可有些东西错过了，后面拿钱也补不回来。</p></section><section><h3>原始机器稿（未纠正）</h3><p>我不喜欢浪费，灯不用就关，东西坏了能修就修。现在年轻人一说换新的，我就心疼钱。不过有一回豆豆说她喜欢画画，我去文具店给她买了一套好一点的画笔，贵是贵了点儿。我没跟桂芳讲价钱，他后来知道了，说你不是最会省钱吗？我说给孩子买这个不一样，其实我也说不清，可能是想起小宁小时候那回事，钱该省就省，可有些东西错过了，后面拿钱也补不回来。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_06.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;granddaughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;豆豆&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;wife_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;桂芳&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;daughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;晓宁&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;reject_waste&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不喜欢浪费&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;unclear_cause&quot;,
+      &quot;expected_script_phrase&quot;: &quot;说不清&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;possible_cause&quot;,
+      &quot;expected_script_phrase&quot;: &quot;可能是想起&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;irrecoverable_loss&quot;,
+      &quot;expected_script_phrase&quot;: &quot;补不回来&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;insert&quot;,
+      &quot;script_span&quot;: [
+        69,
+        69
+      ],
+      &quot;asr_span&quot;: [
+        69,
+        70
+      ],
+      &quot;script_text&quot;: &quot;&quot;,
+      &quot;asr_text&quot;: &quot;儿&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        77,
+        78
+      ],
+      &quot;asr_span&quot;: [
+        78,
+        79
+      ],
+      &quot;script_text&quot;: &quot;她&quot;,
+      &quot;asr_text&quot;: &quot;他&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        115,
+        116
+      ],
+      &quot;asr_span&quot;: [
+        116,
+        117
+      ],
+      &quot;script_text&quot;: &quot;晓&quot;,
+      &quot;asr_text&quot;: &quot;小&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_07</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>前两年我老忘事。有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面，找了半天。我开始还跟桂芳发脾气，说她动我东西。后来去医院看，医生说是阿尔茨海默病。我听见那个名字，心里咯噔一下。我不怕别人说我老，我怕哪一天认不出家里人。桂芳说慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。</p></section><section><h3>原始机器稿（未纠正）</h3><p>前两年我老忘事，有一次下楼买盐，走到小区门口，突然想不起来自己要买什么。还有一次钥匙放冰箱上面找了半天，我开始还跟桂芳发脾气，说她冻我东西。后来去医院看，医生说是阿尔斯海默病。我听见那个名字，心里咯噔一下，我不怕别人说我老，我怕哪一天认不出家里人。桂芳说，慢慢来，她会提醒我。我嘴上说不用，其实她在旁边，我心里踏实些。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_07.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;wife_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;桂芳&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;diagnosis_spelling&quot;,
+      &quot;expected_script_phrase&quot;: &quot;阿尔茨海默病&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;accusation_not_objective_proof&quot;,
+      &quot;expected_script_phrase&quot;: &quot;说她动我东西&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;fear_family_recognition&quot;,
+      &quot;expected_script_phrase&quot;: &quot;怕哪一天认不出家里人&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;denied_need_but_reassurance&quot;,
+      &quot;expected_script_phrase&quot;: &quot;嘴上说不用&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        59,
+        60
+      ],
+      &quot;asr_span&quot;: [
+        59,
+        60
+      ],
+      &quot;script_text&quot;: &quot;动&quot;,
+      &quot;asr_text&quot;: &quot;冻&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        75,
+        76
+      ],
+      &quot;asr_span&quot;: [
+        75,
+        76
+      ],
+      &quot;script_text&quot;: &quot;茨&quot;,
+      &quot;asr_text&quot;: &quot;斯&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_08</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>桂芳啊，这段话我不一定当面说得出来。你跟我过了快五十年，没享多少清福。我年轻时上夜班，你一个人带两个孩子，白天还要教书。你嘴上不说累，我都知道。现在反过来，还得你提醒我吃药、带我去医院。有时候我脾气不好，不是冲你，是我自己着急。你别老把什么事都揽着，该歇就歇。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有，那个蓝色搪瓷杯别扔，我用了好多年，顺手。</p></section><section><h3>原始机器稿（未纠正）</h3><p>桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_08.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;wife_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;桂芳&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;not_directed_at_wife&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不是冲你&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;self_anxiety&quot;,
+      &quot;expected_script_phrase&quot;: &quot;自己着急&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;blue_enamel_cup&quot;,
+      &quot;expected_script_phrase&quot;: &quot;蓝色搪瓷杯&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;rest_wish&quot;,
+      &quot;expected_script_phrase&quot;: &quot;该歇就歇&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;dont_discard&quot;,
+      &quot;expected_script_phrase&quot;: &quot;别扔&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        22,
+        24
+      ],
+      &quot;asr_span&quot;: [
+        22,
+        24
+      ],
+      &quot;script_text&quot;: &quot;五十&quot;,
+      &quot;asr_text&quot;: &quot;50&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        26,
+        27
+      ],
+      &quot;asr_span&quot;: [
+        26,
+        27
+      ],
+      &quot;script_text&quot;: &quot;享&quot;,
+      &quot;asr_text&quot;: &quot;想&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        29,
+        31
+      ],
+      &quot;asr_span&quot;: [
+        29,
+        31
+      ],
+      &quot;script_text&quot;: &quot;清福&quot;,
+      &quot;asr_text&quot;: &quot;轻浮&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        110,
+        111
+      ],
+      &quot;asr_span&quot;: [
+        110,
+        111
+      ],
+      &quot;script_text&quot;: &quot;歇&quot;,
+      &quot;asr_text&quot;: &quot;谢&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        112,
+        113
+      ],
+      &quot;asr_span&quot;: [
+        112,
+        113
+      ],
+      &quot;script_text&quot;: &quot;歇&quot;,
+      &quot;asr_text&quot;: &quot;谢&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        144,
+        145
+      ],
+      &quot;asr_span&quot;: [
+        144,
+        145
+      ],
+      &quot;script_text&quot;: &quot;杯&quot;,
+      &quot;asr_text&quot;: &quot;被&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_09</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>晓宁，小川，我跟你们说啊，工作要认真做，身体也得顾着。别老想着给我买东西，我什么都不缺。你们要是忙，不回来也没关系。我知道现在生活不容易。可是有时候晚上吃饭，桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。晓宁，你那张老房子的画我一直挂着，没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里。你们不用把我当成什么了不起的人，我就是你们爸。</p></section><section><h3>原始机器稿（未纠正）</h3><p>小宁小川，我跟你们说啊，工作要认真做，身体也得顾着，别老想着给我买东西，我什么都不缺，你们要是忙不回来也没关系。我知道现在生活不容易，可是有时候晚上吃饭桌上就我跟你妈两个人，我还是会想你们小时候吵吵闹闹的样子。小宁，你那张老房子的画，我一直挂着没摘下来过。小川，你小时候拆坏的收音机，我后来修好了，还在柜子里，你们不用把我当成什么了不起的人我就是你们爸。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_09.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;daughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;晓宁&quot;,
+      &quot;preserved_exactly&quot;: false
+    },
+    {
+      &quot;id&quot;: &quot;son_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;小川&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;busy_no_need_return&quot;,
+      &quot;expected_script_phrase&quot;: &quot;不回来也没关系&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;still_misses&quot;,
+      &quot;expected_script_phrase&quot;: &quot;还是会想&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;picture_not_removed&quot;,
+      &quot;expected_script_phrase&quot;: &quot;没摘下来过&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;radio_repaired&quot;,
+      &quot;expected_script_phrase&quot;: &quot;修好了&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        0,
+        1
+      ],
+      &quot;asr_span&quot;: [
+        0,
+        1
+      ],
+      &quot;script_text&quot;: &quot;晓&quot;,
+      &quot;asr_text&quot;: &quot;小&quot;
+    },
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        95,
+        96
+      ],
+      &quot;asr_span&quot;: [
+        95,
+        96
+      ],
+      &quot;script_text&quot;: &quot;晓&quot;,
+      &quot;asr_text&quot;: &quot;小&quot;
+    }
+  ]
+}</pre></details>
+<details open><summary>A01_10</summary><div class="pair"><section><h3>创作稿（对照用）</h3><p>我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面，到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小。人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说得太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后，记得外公会修东西，也会犯错。这样就够了。</p></section><section><h3>原始机器稿（未纠正）</h3><p>我现在有些事记得清，有些事记不清。比如我跟桂芳第一次见面到底是星期几，我真不知道。有人问我当年为什么没去外地挣钱，我说过是舍不得家，可也可能是我自己胆子小人哪有每件事都想得那么明白。以后要是有人听这些录音，别把我说的太好，也别替我编那些没说过的话。我有过糊涂的时候，也有做错的事。我希望豆豆长大以后记得外公会修东西，也会犯错，这样就够了。</p></section></div>
+<audio controls src="file:///D:/codex_work/remember-me-agent-loop/services/backend/var/handoff-checkout-20261010/services/backend/var/a01-20261012/evaluation/speech/A01_10.wav"></audio>
+<pre>{
+  &quot;key_phrase_checks&quot;: [
+    {
+      &quot;id&quot;: &quot;weekday_unknown&quot;,
+      &quot;expected_script_phrase&quot;: &quot;星期几我真不知道&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;possible_alternative_cause&quot;,
+      &quot;expected_script_phrase&quot;: &quot;也可能是我自己胆子小&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;not_invent_words&quot;,
+      &quot;expected_script_phrase&quot;: &quot;别替我编&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;fallible_self_image&quot;,
+      &quot;expected_script_phrase&quot;: &quot;也会犯错&quot;,
+      &quot;preserved_exactly&quot;: true
+    },
+    {
+      &quot;id&quot;: &quot;granddaughter_name&quot;,
+      &quot;expected_script_phrase&quot;: &quot;豆豆&quot;,
+      &quot;preserved_exactly&quot;: true
+    }
+  ],
+  &quot;diff&quot;: [
+    {
+      &quot;operation&quot;: &quot;replace&quot;,
+      &quot;script_span&quot;: [
+        99,
+        100
+      ],
+      &quot;asr_span&quot;: [
+        99,
+        100
+      ],
+      &quot;script_text&quot;: &quot;得&quot;,
+      &quot;asr_text&quot;: &quot;的&quot;
+    }
+  ]
+}</pre></details>

@@ -39,8 +39,10 @@ import androidx.compose.ui.unit.dp
         Text("和我的想法对照",style=MaterialTheme.typography.titleLarge)
         Text(run.text("question"),style=MaterialTheme.typography.titleMedium)
         if(run.text("status")=="stale") Text("原故事已有变化，请重新聊一聊，再开始对照。") else {
-            Text("当时的 AI 分身回答",style=MaterialTheme.typography.labelLarge)
-            Text(run.text("locked_answer"))
+            if(!run.optBoolean("answer_hidden")){
+                Text("当时的 AI 分身回答",style=MaterialTheme.typography.labelLarge)
+                Text(run.text("locked_answer"))
+            }
             val episode=run.text("human_episode_id")
             val story=state.stories.firstOrNull{it.text("episode_id")==episode}
             val captures=state.local.filter{it.calibrationId==id}
@@ -68,6 +70,12 @@ import androidx.compose.ui.unit.dp
                 }
             }
             if(run.text("status")=="complete") {
+                var speakConsent by remember(id){mutableStateOf(false)}
+                RememberActionButton("听听这次对照",ready){speakConsent=true}
+                if(speakConsent)AlertDialog(onDismissRequest={speakConsent=false},title={Text("听听这次对照")},
+                    text={Text("将差异说明交给云端，用白桦音色播放。")},
+                    confirmButton={TextButton(onClick={speakConsent=false;model.beginVoice("evidence",false,id)}){Text("播放")}},
+                    dismissButton={TextButton(onClick={speakConsent=false}){Text("取消")}})
                 Text("这次对照",style=MaterialTheme.typography.titleMedium)
                 Text(run.text("summary"))
                 val dimensions=mapOf("DECISION" to "选择","REASONING" to "考虑过程","VALUE_PRIORITY" to "更在意什么","EMOTIONAL_REACTION" to "感受","EXPRESSION" to "表达")

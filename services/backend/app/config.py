@@ -73,7 +73,10 @@ class Settings(BaseSettings):
     # with the AI Core owner needs no code change.
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
+    transcript_correction_enabled: bool = False
+    transcript_correction_timeout_seconds: float = Field(default=50.0, ge=1, le=60)
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
+    embedding_warmup: bool = False
     voice_url: str = "http://127.0.0.1:8300"
     voice_timeout_seconds: float = 180.0
     # Disabled until the server operator explicitly binds the fictional A01
@@ -84,6 +87,17 @@ class Settings(BaseSettings):
     xiaomi_voice_model: Literal["mimo-v2.5-tts-voiceclone"] = "mimo-v2.5-tts-voiceclone"
     a01_voice_subject_id: str = ""
     a01_voice_reference_path: str = ""
+
+    # Experimental single-worker WSS calls; opt-in actor IDs, never public by default.
+    realtime_voice_enabled: bool = False
+    realtime_voice_fast_enabled: bool = False
+    realtime_voice_streamed_enabled: bool = False
+    realtime_voice_prefetch_enabled: bool = False
+    step_realtime_enabled: bool = False
+    step_realtime_api_key: SecretStr | None = None
+    realtime_voice_actor_ids: list[str] = Field(default_factory=list)
+    realtime_voice_max_sessions: int = Field(default=8, ge=1, le=32)
+    realtime_voice_max_seconds: int = Field(default=1200, ge=30, le=1800)
 
     # A placeholder provider is refused outside development and test. This is the
     # explicit way to say "yes, here too" — bringing an environment up end to end

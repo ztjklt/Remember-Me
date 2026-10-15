@@ -50,6 +50,8 @@ import org.json.JSONObject
 @Composable
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
     val state by model.ui.collectAsStateWithLifecycle()
+    val call by model.voiceCall.collectAsStateWithLifecycle()
+    if(call!=null){VoiceCallScreen(call!!,model::endVoice);return}
     CompositionLocalProvider(LocalInteractions provides InteractionContext(
         identity = "${state.actor}:${state.subject}", operation = state.operation,
         latest = { model.ui.value.operation }, reduceMotion = appearance.reduceMotion,
@@ -304,10 +306,32 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 confirm = ActionConfirmation("这次修改还没有提交。退出会放弃刚改的文字，原音与机器稿仍然保留。", false, model::closeReview)
             else model.closeReview()
         }
-        NativeDialog("请听原音并核对文字", leaveReview) {
+        NativeDialog("看看这段文字", leaveReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Text(if(appearance.simpleMode) "先听声音，再检查文字。没检查完，可以稍后再来。" else "请修正识别错误，保留原意。确认之后才开始记忆整理。")
-            if(!appearance.simpleMode) Text("留意姓名、‘不/没’、‘可能/还没决定’以及谁在说谁；补充的新信息请写到下方补充框。", style = MaterialTheme.typography.bodySmall)
+            val correction = state.reviewCorrection
+            val changes = correction?.rows("edits").orEmpty()
+            var showChanges by remember(id) { mutableStateOf(false) }
+            if(correction?.text("status") == "completed") {
+                val applied = changes.count { it.text("action") == "auto" }
+                val uncertain = changes.size - applied
+                Text(if(state.reviewText == state.reviewInitialText)
+                    (if(applied > 0) "已自动修订 $applied 处" else "已检查转写文字")
+                    else if(state.reviewText == state.reviewMachineText) "当前为机器原稿" else "当前为你修改的文字")
+                if(uncertain > 0) Text("有 $uncertain 处拿不准，可以听听原音。")
+                if(changes.isNotEmpty()) Action(if(showChanges) "收起修改" else "查看修改") { showChanges = !showChanges }
+                if(showChanges) changes.forEach { change ->
+                    Text(if(change.text("action") == "auto") "${change.text("before")} → ${change.text("after")}"
+                        else "待确认：${change.text("before")}（${change.text("reason")}）")
+                }
+                if(showChanges && state.reviewMachineText.isNotBlank()) {
+                    Action("恢复机器稿", ready) { model.editReview(id, state.reviewMachineText) }
+                    Action("恢复自动修订稿", ready) { model.editReview(id, state.reviewInitialText) }
+                }
+            } else if(correction != null) Text(when(correction.text("status")) {
+                "too_long" -> "这段较长，暂未自动纠错，已保留原稿。"
+                "unavailable" -> "本次未采用自动修订，已保留原稿。"
+                else -> "自动纠错未成功，已保留原稿。"
+            })
             state.reviewWarnings.forEach { Text(it, color = MaterialTheme.colorScheme.error) }
             if(state.reviewParagraphPreview != null) {
                 Text("可以采用识别服务的分段，仅调整换行，仍需听音核对。", style = MaterialTheme.typography.bodySmall)
@@ -324,7 +348,6 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 Action("停止核对原音") { model.stopSource() }
             }
             OutlinedTextField(state.reviewText, { model.editReview(id, it) }, label = { Text("核对后的文字") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
-            Text("人名或方言没识别准，可以在这里解释。书面补充单独保存，问答会参考它，不会冒充录音原话。", style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(state.reviewSupplement, model::editSupplement, label = { Text("本次补充说明（选填）") }, placeholder = { Text("例如：这里的老隗是同事隗师傅；方言‘落屋’指回家。") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
             if(state.vocabulary.isNotBlank()) Action("带入我的用词") { model.editSupplement(listOf(state.reviewSupplement, state.vocabulary).filter { it.isNotBlank() }.joinToString("\n")) }
             Check("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。", cloud, { cloud = it })
@@ -354,7 +377,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     state.local.forEach { capture -> Panel {
         val caps = state.asrCapabilities
         val clientAsr = capture.usesClientTranscript(caps?.text("stt") == "client")
-        var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
+        var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), caps?.text("transcript_correction_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
         Text(recordingDate(capture.recording.createdAt) + " · " + clock(capture.recording.durationMillis))
         Text(if(capture.episode.isBlank()) "尚未上传" else if(!capture.linked) "已上传，关联未完成，请重试" else "已上传", style = MaterialTheme.typography.bodySmall)
         capture.revision?.let { Text("${kindName(it.kind)}旧记忆；关联完成后才可确认转写。", style = MaterialTheme.typography.bodySmall) }
@@ -380,7 +403,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             val destination = if(caps?.text("stt_processing") == "cloud")
                 "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
 
-            Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。" else "同意上传完整原音，交由云端转文字", uploadConsent, { uploadConsent = it }, configured)
+            Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。"
+                else if(!caps?.text("transcript_correction_policy").isNullOrBlank()) "同意云端转文字，并用文字模型修正错词"
+                else "同意上传完整原音，交由云端转文字", uploadConsent, { uploadConsent = it }, configured)
             if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
             RememberActionButton(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent,
                 filled=true, pendingLabel="正在上传原音…", successLabel="已提交识别") { model.upload(capture, uploadConsent) }
@@ -409,6 +434,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
     val style=state.narrative.optJSONObject("style")
     Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
+    VoiceCallEntry(state,model,mode)
     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
         FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
@@ -421,6 +447,10 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     RememberActionButton("提问", !state.busy && !state.recording && question.isNotBlank() && cloud, filled=true,
         icon=Icons.Outlined.ChatBubbleOutline, pendingLabel="正在整理回答…", successLabel="回答已返回") {
         focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud, mode)
+    }
+    if(state.owner) RememberActionButton("先录下我的回答，再对照",!state.busy&&!state.recording&&question.isNotBlank()&&cloud,
+        pendingLabel="正在准备问题…",successLabel="可以开始回答"){
+        focus.clearFocus();keyboard?.hide();model.prepareVoiceCalibration(question,mode)
     }
     state.answer?.let { answer -> Panel {
         Text(if(answer.text("mode")=="persona") "AI 分身" else when(answer.text("response_type")) { "ORIGINAL" -> "来自本人原话"; "SIMULATION" -> "AI 分身"; else -> "还没有足够的记录" }, style = MaterialTheme.typography.titleMedium)

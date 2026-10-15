@@ -1,0 +1,59 @@
+[
+  {
+    "index": 1,
+    "question": "你好，可以和我聊聊吗？",
+    "asr": "你好，可以和我聊聊吗？",
+    "ok": true,
+    "answer": {
+      "answer": "可以，你想聊哪段故事？",
+      "question": "你好，可以和我聊聊吗？",
+      "interaction": true,
+      "source_version": "92e50590b86e869af271fb03416f541513132da87396b907a4fe0c2f17b9fe40",
+      "response_type": "SIMULATION",
+      "model_version": "call-controls-v1",
+      "evidence": [],
+      "voice_timing": {
+        "retrieval_ms": 0
+      }
+    },
+    "first_audio_after_input_end_ms": 1695
+  },
+  {
+    "index": 2,
+    "question": "你喜欢喝什么茶？",
+    "asr": "你喜欢喝什么茶？",
+    "ok": true,
+    "answer": {
+      "answer_id": "ta_dde2b25e232f4486",
+      "subject_id": "subject_6b1f45e2fa8f41198fd34c424b2e44e8",
+      "question": "你喜欢喝什么茶？",
+      "answer": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+      "response_type": "ORIGINAL",
+      "confidence": 0.8,
+      "model_version": "Deepseek-v4-flash",
+      "person_model_version": 16,
+      "source_version": "92e50590b86e869af271fb03416f541513132da87396b907a4fe0c2f17b9fe40",
+      "created_at": "2026-10-13T16:53:56.442836+00:00",
+      "stale": false,
+      "mode": "evidence",
+      "understanding_ids": [],
+      "contribution_ids": [],
+      "prompt_version": "",
+      "coverage": null,
+      "omitted_points": null,
+      "expression": null,
+      "evidence": [
+        {
+          "evidence_id": "ev_23a1435afe794db8",
+          "excerpt": "我喝茶还是喜欢淡一点，太甜了反而喝不惯，这就是我的口味，不是谁规定我只能这么喝。\n\n",
+          "episode_id": "ep_ed240efd5e804a3f",
+          "source_type": "SUBJECT"
+        }
+      ],
+      "voice_timing": {
+        "retrieval_ms": 2194
+      }
+    },
+    "first_audio_after_input_end_ms": 7923
+  }
+]

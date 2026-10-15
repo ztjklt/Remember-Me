@@ -1,0 +1,250 @@
+{
+  "physical_phone": false,
+  "prerecorded_synthetic_input": true,
+  "version": "0.12.1-internal",
+  "episode_id": "ep_5dcb993b71574c4d",
+  "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+  "machine_transcript": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+  "automatic_draft": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没享多少清福。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷杯别扔，我用了好多年顺手。",
+  "correction": {
+    "status": "completed",
+    "draft": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没享多少清福。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷杯别扔，我用了好多年顺手。",
+    "input_sha256": "9363f818b314cb13011b1274c6b85aef6d3fbd9a48bc6f3d0bf69ce79fe1f431",
+    "model_version": "Deepseek-v4-flash",
+    "prompt_version": "asr-proofread-v1",
+    "edits": [
+      {
+        "before": "没想多少轻浮",
+        "after": "没享多少清福",
+        "start": 28,
+        "end": 34,
+        "category": "word",
+        "action": "auto",
+        "reason": "“轻浮”与“清福”音近，且“没享多少清福”符合50年夫妻语境；原词在此明显不成立"
+      },
+      {
+        "before": "该谢就谢",
+        "after": "该歇就歇",
+        "start": 123,
+        "end": 127,
+        "category": "word",
+        "action": "review",
+        "reason": "“谢”与“歇”同音，结合“别老把什么事都揽着”语境更像劝其休息，但“该谢就谢”也可成立，需确认"
+      },
+      {
+        "before": "蓝色搪瓷被",
+        "after": "蓝色搪瓷杯",
+        "start": 158,
+        "end": 163,
+        "category": "word",
+        "action": "auto",
+        "reason": "“被”与“杯”同音，搪瓷杯更符合“用了好多年顺手”的物件"
+      }
+    ],
+    "completed_at": "2026-10-15T13:44:30.229216+00:00",
+    "elapsed_ms": 3647
+  },
+  "story": {
+    "episode_id": "ep_5dcb993b71574c4d",
+    "status": "ready",
+    "recorded_at": "2026-10-15T13:44:12.861885+00:00",
+    "duration_ms": 42000,
+    "transcript": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没享多少清福。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该歇就歇。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷杯别扔，我用了好多年顺手。",
+    "machine_transcript": "桂芳啊，这段话我不一定当面说得出来。你跟我过了快50年，没想多少轻浮。我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。现在反过来，还得你提醒我吃药，带我去医院。有时候我脾气不好，不是冲你是我自己着急。你别老把什么事都揽着，该谢就谢。要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。还有那个蓝色搪瓷被别扔，我用了好多年顺手。",
+    "reviewed": true,
+    "waiting_for_review": false,
+    "can_reextract_empty": false,
+    "model_version": "Deepseek-v4-flash",
+    "stt_model_version": "bailian/paraformer-v2",
+    "error_code": null,
+    "error_message": null,
+    "unavailable": false,
+    "memories": [
+      {
+        "memory_item_id": "mi_763d1945bb8f45c3",
+        "content": "说话者表示这段话自己不一定能当面说出来。",
+        "memory_type": "EMOTION",
+        "review_state": "active",
+        "domain": "EXPRESSION",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_ef655b7bd13242f4",
+            "excerpt": "桂芳啊，这段话我不一定当面说得出来。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_e4abae5d165b4c48",
+        "content": "说话者对桂芳说，她跟自己过了快50年，没享多少清福。",
+        "memory_type": "RELATIONSHIP",
+        "review_state": "active",
+        "domain": "RELATIONSHIPS",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_60ed5096e8794740",
+            "excerpt": "你跟我过了快50年，没享多少清福。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_1c403ca213374e73",
+        "content": "说话者回忆自己年轻时上夜班，桂芳一个人带两个孩子，白天还要教书，嘴上不说累但说话者都知道。",
+        "memory_type": "EVENT",
+        "review_state": "active",
+        "domain": "EPISODIC_MEMORY",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_af26e04ff6c447c8",
+            "excerpt": "我年轻时上夜班，你一个人带两个孩子，白天还要教书，你嘴上不说累我都知道。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_688f5cbad5104851",
+        "content": "说话者说现在反过来，是桂芳提醒自己吃药、带自己去医院。",
+        "memory_type": "RELATIONSHIP",
+        "review_state": "active",
+        "domain": "RELATIONSHIPS",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_a054b0dd0f384dcf",
+            "excerpt": "现在反过来，还得你提醒我吃药，带我去医院。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_b150aa45eaf04687",
+        "content": "说话者说自己有时候脾气不好，不是冲桂芳，是自己着急。",
+        "memory_type": "EMOTION",
+        "review_state": "active",
+        "domain": "EXPRESSION",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_c82f82ad278a470a",
+            "excerpt": "有时候我脾气不好，不是冲你是我自己着急。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_5a5d06971bb94643",
+        "content": "说话者让桂芳别老把什么事都揽着，该歇就歇。",
+        "memory_type": "VALUE",
+        "review_state": "active",
+        "domain": "VALUES_BELIEFS",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_d353925955114390",
+            "excerpt": "你别老把什么事都揽着，该歇就歇。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_608d82c11c834dd2",
+        "content": "说话者说如果自己哪天又把事情忘了，让桂芳跟自己说一遍，别跟自己生气。",
+        "memory_type": "RELATIONSHIP",
+        "review_state": "active",
+        "domain": "RELATIONSHIPS",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_e8c42dcb0ee74e10",
+            "excerpt": "要是我哪天又把事情忘了，你就跟我说一遍，别跟我生气。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      },
+      {
+        "memory_item_id": "mi_44175ae293794df9",
+        "content": "说话者要求那个蓝色搪瓷杯别扔，因为自己用了好多年顺手。",
+        "memory_type": "PREFERENCE",
+        "review_state": "active",
+        "domain": "PREFERENCES",
+        "source_type": "AI_INFERENCE",
+        "origin": "extracted",
+        "evidence": [
+          {
+            "evidence_id": "ev_df5647a322ee4464",
+            "excerpt": "还有那个蓝色搪瓷杯别扔，我用了好多年顺手。",
+            "source_type": "SUBJECT",
+            "episode_id": "ep_5dcb993b71574c4d"
+          }
+        ]
+      }
+    ],
+    "notice": null
+  },
+  "no_memories_before_confirmation": true,
+  "previous_memory": {
+    "memory_item_id": "mi_44175ae293794df9",
+    "content": "说话者要求那个蓝色搪瓷杯别扔，因为自己用了好多年顺手。",
+    "memory_type": "PREFERENCE",
+    "review_state": "active",
+    "domain": "PREFERENCES",
+    "source_type": "AI_INFERENCE",
+    "origin": "extracted",
+    "evidence": [
+      {
+        "evidence_id": "ev_df5647a322ee4464",
+        "excerpt": "还有那个蓝色搪瓷杯别扔，我用了好多年顺手。",
+        "source_type": "SUBJECT",
+        "episode_id": "ep_5dcb993b71574c4d"
+      }
+    ]
+  },
+  "owner_test_correction": "蓝色搪瓷杯现在留作纪念，不是现在每天喝茶用的杯子。",
+  "answer_after_revision": {
+    "answer_id": "ta_812336fad199408a",
+    "subject_id": "subject_1b28d5bc3e5b4cee9fd46e6ae24d49b7",
+    "question": "蓝色搪瓷杯现在是每天喝茶用的吗？",
+    "answer": "根据现有材料，相关表述如下：\n本人书面说明：“蓝色搪瓷杯现在留作纪念，不是现在每天喝茶用的杯子。”",
+    "response_type": "SIMULATION",
+    "confidence": 0.8,
+    "model_version": "Deepseek-v4-flash",
+    "person_model_version": 2,
+    "source_version": "dd7fcca43861895b9c2aa95b3084f572bc22bfca658a238b352b29cd57f7b7b3",
+    "created_at": "2026-10-15T13:46:57.553223+00:00",
+    "stale": false,
+    "mode": "evidence",
+    "understanding_ids": [],
+    "contribution_ids": [],
+    "prompt_version": "",
+    "coverage": null,
+    "omitted_points": null,
+    "expression": null,
+    "evidence": [
+      {
+        "evidence_id": "ev_4e412b0191294c82",
+        "excerpt": "蓝色搪瓷杯现在留作纪念，不是现在每天喝茶用的杯子。",
+        "episode_id": "ep_5dcb993b71574c4d",
+        "source_type": "CALIBRATION"
+      }
+    ]
+  },
+  "ok": true
+}

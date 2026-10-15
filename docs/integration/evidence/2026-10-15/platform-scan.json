@@ -1,0 +1,2512 @@
+{
+  "scope": "Static declarations at pinned commits; not device, deploy, schema-equivalence or semantic validation.",
+  "android": {
+    "ref": "e5c037c",
+    "sha": "e5c037cd59dfe010637995c0627c82e1d7e89941",
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/register",
+        "expression": "'/register'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 81
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/login",
+        "expression": "'/login'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 99
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/logout",
+        "expression": "'/logout'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 115
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/calibrations/prepare-voice",
+        "expression": "'/prepare-voice'",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 131
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/calibrations",
+        "expression": "''",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 141
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/calibrations",
+        "expression": "''",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 186
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/calibrations/{calibration_id}",
+        "expression": "'/{calibration_id}'",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/calibrations/{calibration_id}/complete",
+        "expression": "'/{calibration_id}/complete'",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 211
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contribution-grants",
+        "expression": "'/contribution-grants'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 158
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contribution-grants/{actor_id}",
+        "expression": "'/contribution-grants/{actor_id}'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 163
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions",
+        "expression": "'/contributions'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 204
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions",
+        "expression": "'/contributions'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 226
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}",
+        "expression": "'/contributions/{id}'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 238
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/review",
+        "expression": "'/contributions/{id}/review'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 244
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/recipients",
+        "expression": "'/contributions/{id}/recipients'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 255
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/withdraw",
+        "expression": "'/contributions/{id}/withdraw'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 266
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters",
+        "expression": "'/letters'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 296
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters",
+        "expression": "'/letters'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 310
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters/{id}",
+        "expression": "'/letters/{id}'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 316
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters/{id}",
+        "expression": "'/letters/{id}'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 322
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/model-use",
+        "expression": "'/contributions/{id}/model-use'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 346
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters/{id}/publish",
+        "expression": "'/letters/{id}/publish'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 360
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/letters/{id}/revoke",
+        "expression": "'/letters/{id}/revoke'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 372
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/snapshots/preview",
+        "expression": "'/snapshots/preview'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 451
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/snapshots",
+        "expression": "'/snapshots'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 488
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/snapshots",
+        "expression": "'/snapshots'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 519
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/snapshots/{id}",
+        "expression": "'/snapshots/{id}'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 526
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/snapshots/{id}/revoke",
+        "expression": "'/snapshots/{id}/revoke'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 533
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion",
+        "expression": "''",
+        "file": "services/backend/app/api/companion.py",
+        "line": 544
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/companion/spaces",
+        "expression": "'/spaces'",
+        "file": "services/backend/app/api/companion.py",
+        "line": 554
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/audio",
+        "expression": "''",
+        "file": "services/backend/app/api/companion_audio.py",
+        "line": 69
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/audio/{id}",
+        "expression": "'/{id}'",
+        "file": "services/backend/app/api/companion_audio.py",
+        "line": 103
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/content",
+        "expression": "'/{id}/content'",
+        "file": "services/backend/app/api/companion_audio.py",
+        "line": 108
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/transcribe",
+        "expression": "'/{id}/transcribe'",
+        "file": "services/backend/app/api/companion_audio.py",
+        "line": 120
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/review",
+        "expression": "'/{id}/review'",
+        "file": "services/backend/app/api/companion_audio.py",
+        "line": 169
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents",
+        "expression": "''",
+        "file": "services/backend/app/api/consents.py",
+        "line": 103
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents/authorize",
+        "expression": "'/authorize'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 129
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/consents",
+        "expression": "''",
+        "file": "services/backend/app/api/consents.py",
+        "line": 157
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/consents/{consent_id}",
+        "expression": "'/{consent_id}'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 171
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents/{consent_id}/revoke",
+        "expression": "'/{consent_id}/revoke'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 182
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes",
+        "expression": "''",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 261
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/client-transcribed",
+        "expression": "'/client-transcribed'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 273
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}",
+        "expression": "'/{episode_id}'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 500
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/transcript-review",
+        "expression": "'/{episode_id}/transcript-review'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 527
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/episodes/{episode_id}/transcript-review",
+        "expression": "'/{episode_id}/transcript-review'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 560
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/result",
+        "expression": "'/{episode_id}/result'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 604
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/audio",
+        "expression": "'/{episode_id}/audio'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 650
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/{episode_id}/retry",
+        "expression": "'/{episode_id}/retry'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 660
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/{episode_id}/reextract-empty",
+        "expression": "'/{episode_id}/reextract-empty'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 680
+      },
+      {
+        "method": "GET",
+        "path": "/health",
+        "expression": "'/health'",
+        "file": "services/backend/app/api/health.py",
+        "line": 16
+      },
+      {
+        "method": "GET",
+        "path": "/ready",
+        "expression": "'/ready'",
+        "file": "services/backend/app/api/health.py",
+        "line": 22
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/suggest",
+        "expression": "'/suggest'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 28
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/jobs",
+        "expression": "'/jobs'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 42
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records",
+        "expression": "'/records'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 60
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}",
+        "expression": "'/records/{id}'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 67
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/split",
+        "expression": "'/records/{id}/split'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 77
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/{action}",
+        "expression": "'/records/{id}/{action}'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 95
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/history",
+        "expression": "'/records/{id}/history'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 113
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative",
+        "expression": "''",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 143
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/style",
+        "expression": "'/style'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 164
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/next-question",
+        "expression": "'/next-question'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 180
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/local-pairing/claim",
+        "expression": "'/claim'",
+        "file": "services/backend/app/api/pairing.py",
+        "line": 21
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/memories",
+        "expression": "'/memories'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 55
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/episodes",
+        "expression": "'/episodes'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 88
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/person-model",
+        "expression": "'/person-model'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 103
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/questions",
+        "expression": "'/questions'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 130
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/subjects/{subject_id}/memories/{memory_id}",
+        "expression": "'/memories/{memory_id}'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 144
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/memories/{memory_id}",
+        "expression": "'/memories/{memory_id}'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 191
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates",
+        "expression": "'/updates'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 60
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates",
+        "expression": "'/updates'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 67
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates/{update_id}/confirm",
+        "expression": "'/updates/{update_id}/confirm'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 102
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates/{update_id}/reject",
+        "expression": "'/updates/{update_id}/reject'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 107
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates",
+        "expression": "''",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 111
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/refresh",
+        "expression": "'/refresh'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 127
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/suggest-relations",
+        "expression": "'/suggest-relations'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 132
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/{candidate_id}/confirm",
+        "expression": "'/{candidate_id}/confirm'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 164
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/{candidate_id}/reject",
+        "expression": "'/{candidate_id}/reject'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 168
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/session",
+        "expression": "'/session'",
+        "file": "services/backend/app/api/session.py",
+        "line": 15
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/sharing/preview",
+        "expression": "'/subjects/{subject_id}/sharing/preview'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 60
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/recipients",
+        "expression": "'/subjects/{subject_id}/recipients'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 66
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations",
+        "expression": "'/subjects/{subject_id}/invitations'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 74
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations",
+        "expression": "'/subjects/{subject_id}/invitations'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 81
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/invitations/claim",
+        "expression": "'/invitations/claim'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 110
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations/{invitation_id}/{action}",
+        "expression": "'/subjects/{subject_id}/invitations/{invitation_id}/{action}'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 127
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/transcribe-query",
+        "expression": "'/twin/transcribe-query'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 54
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/memory-search",
+        "expression": "'/memory-search'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 126
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers",
+        "expression": "'/twin/answers'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 151
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers/{answer_id}",
+        "expression": "'/twin/answers/{answer_id}'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 459
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice/profile",
+        "expression": "'/voice/profile'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 149
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/voice/profile/synthetic",
+        "expression": "'/voice/profile/synthetic'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 171
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/voice/profile",
+        "expression": "'/voice/profile'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 201
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice/recipients/{actor_id}",
+        "expression": "'/voice/recipients/{actor_id}'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 251
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/subjects/{subject_id}/voice/recipients/{actor_id}",
+        "expression": "'/voice/recipients/{actor_id}'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 257
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers/{answer_id}/speech",
+        "expression": "'/twin/answers/{answer_id}/speech'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 279
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice/assets/{asset_id}/audio",
+        "expression": "'/voice/assets/{asset_id}/audio'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 325
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/voice-capabilities",
+        "expression": "'/api/v1/voice-capabilities'",
+        "file": "services/backend/app/api/voice_sessions.py",
+        "line": 82
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/voice-sessions",
+        "expression": "'/api/v1/subjects/{subject_id}/voice-sessions'",
+        "file": "services/backend/app/api/voice_sessions.py",
+        "line": 94
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/voice-sessions/{session_id}",
+        "expression": "'/api/v1/voice-sessions/{session_id}'",
+        "file": "services/backend/app/api/voice_sessions.py",
+        "line": 131
+      },
+      {
+        "method": "WEBSOCKET",
+        "path": "/api/v1/voice-sessions/{session_id}/stream",
+        "expression": "'/api/v1/voice-sessions/{session_id}/stream'",
+        "file": "services/backend/app/api/voice_sessions.py",
+        "line": 204
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/vocabulary",
+        "expression": "'/subjects/{subject_id}/vocabulary'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 31
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/vocabulary",
+        "expression": "'/subjects/{subject_id}/vocabulary'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 39
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/spaces",
+        "expression": "'/spaces'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 89
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/capabilities",
+        "expression": "'/capabilities'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 101
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/stories",
+        "expression": "'/subjects/{subject_id}/stories'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 131
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/stories/{episode_id}/audio",
+        "expression": "'/subjects/{subject_id}/stories/{episode_id}/audio'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 178
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants",
+        "expression": "'/subjects/{subject_id}/grants'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 191
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants",
+        "expression": "'/subjects/{subject_id}/grants'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 204
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants/{grant_id}",
+        "expression": "'/subjects/{subject_id}/grants/{grant_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 213
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions",
+        "expression": "'/subjects/{subject_id}/revisions'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 228
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions",
+        "expression": "'/subjects/{subject_id}/revisions'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 256
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions/{revision_id}/confirm",
+        "expression": "'/subjects/{subject_id}/revisions/{revision_id}/confirm'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 262
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests",
+        "expression": "'/subjects/{subject_id}/requests'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 295
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests",
+        "expression": "'/subjects/{subject_id}/requests'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 306
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests/{request_id}",
+        "expression": "'/subjects/{subject_id}/requests/{request_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 322
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/workbench/subjects/{subject_id}/questions/{question_id}",
+        "expression": "'/subjects/{subject_id}/questions/{question_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 340
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/portrait",
+        "expression": "'/subjects/{subject_id}/portrait'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 354
+      }
+    ],
+    "request_model_declarations": {
+      "services/backend/app/api/accounts.py:Credentials": {
+        "username": "str",
+        "password": "str"
+      },
+      "services/backend/app/api/calibration.py:StartCalibration": {
+        "twin_answer_id": "str",
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/calibration.py:CompleteCalibration": {
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/companion_audio.py:Transcribe": {
+        "cloud_asr_policy": "str"
+      },
+      "services/backend/app/api/companion_audio.py:Review": {
+        "revision": "int",
+        "text": "str"
+      },
+      "services/backend/app/api/consents.py:ConsentResponse": {
+        "consent_id": "str",
+        "subject_id": "str",
+        "granted_by_actor_id": "str",
+        "scope": "ConsentScope",
+        "status": "str",
+        "granted_at": "datetime",
+        "revoked_at": "datetime | None",
+        "evidence_ref": "str | None"
+      },
+      "services/backend/app/api/consents.py:GrantConsentRequest": {
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "evidence_ref": "str | None"
+      },
+      "services/backend/app/api/consents.py:AuthorizeRequest": {
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "consent_id": "str | None"
+      },
+      "services/backend/app/api/consents.py:AuthorizeResponse": {
+        "authorized": "bool",
+        "consent_id": "str",
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "granted_at": "datetime"
+      },
+      "services/backend/app/api/episodes.py:TranscriptReview": {
+        "state": "Literal['transcribing', 'reviewing', 'submitted', 'not_required']",
+        "transcript": "str | None",
+        "stt_model_version": "str | None",
+        "supplement": "str",
+        "machine_transcript": "str | None",
+        "automatic_correction": "dict | None"
+      },
+      "services/backend/app/api/episodes.py:ConfirmTranscript": {
+        "transcript": "str",
+        "supplement": "str"
+      },
+      "services/backend/app/api/episodes.py:CaptureEpisodeForm": {
+        "file": "UploadFile",
+        "subject_id": "str",
+        "source": "CaptureSource",
+        "recorded_at": "datetime",
+        "audio_ref": "str",
+        "idempotency_key": "str",
+        "recording_consent_id": "str",
+        "actor_id": "str | None",
+        "duration_ms": "int | None",
+        "metadata": "str | None"
+      },
+      "services/backend/app/api/episodes.py:ClientTranscript": {
+        "text": "str",
+        "audio_sha256": "str",
+        "provider": "Literal['groq']",
+        "model": "Literal['whisper-large-v3']",
+        "audio_export_confirmed": "StrictBool"
+      },
+      "services/backend/app/api/pairing.py:Claim": {
+        "code": "str"
+      },
+      "services/backend/app/api/person_model.py:Correction": {
+        "content": "str"
+      },
+      "services/backend/app/api/profiles.py:RefreshInput": {
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/profiles.py:UpdateInput": {
+        "candidate_id": "str",
+        "action": "Literal['ADD', 'SUPPORT', 'CONFLICT', 'CHANGE']",
+        "target_candidate_id": "str | None",
+        "reason": "str",
+        "time_text": "str"
+      },
+      "services/backend/app/api/session.py:SessionResponse": {
+        "actor_id": "str",
+        "display_name": "str"
+      },
+      "services/backend/app/api/sharing.py:Selection": {
+        "episode_ids": "list[str]",
+        "story_ids": "list[str]"
+      },
+      "services/backend/app/api/sharing.py:ClaimInput": {
+        "code": "str"
+      },
+      "services/backend/app/api/twin.py:TwinQuestion": {
+        "question": "str",
+        "cloud_consent_id": "str",
+        "mode": "Literal['evidence', 'persona']",
+        "retrieval_mode": "Literal['full', 'local']"
+      },
+      "services/backend/app/api/voice.py:SyntheticEnrollment": {
+        "preset": "Literal['a01']",
+        "voice_consent_id": "str"
+      },
+      "services/backend/app/api/voice.py:VoiceGrantInput": {
+        "enabled": "bool"
+      },
+      "services/backend/app/api/voice.py:SavedSpeechInput": {},
+      "services/backend/app/api/voice_sessions.py:CallInput": {
+        "cloud_consent_id": "str",
+        "mode": "Literal['evidence', 'persona']",
+        "policy": "Literal['continuous-voice-v1']",
+        "cloud_asr_allowed": "Literal[True]",
+        "cloud_tts_allowed": "Literal[True]",
+        "simple_mode": "bool",
+        "response_speed": "Literal['reviewed', 'fast', 'streamed']",
+        "engine": "Literal['pipeline', 'step_realtime']",
+        "purpose": "Literal['dialogue', 'calibration_report']",
+        "calibration_id": "str | None"
+      },
+      "services/backend/app/api/workbench.py:Strict": {}
+    },
+    "migrations": [
+      {
+        "revision": "0004_person_model",
+        "down_revision": "0003_ingestion",
+        "file": "services/backend/migrations/versions/0004_person_model.py"
+      },
+      {
+        "revision": "0005_transcript_review",
+        "down_revision": "0004_person_model",
+        "file": "services/backend/migrations/versions/0005_transcript_review.py"
+      },
+      {
+        "revision": "0006_twin_voice",
+        "down_revision": "0005_transcript_review",
+        "file": "services/backend/migrations/versions/0006_twin_voice.py"
+      },
+      {
+        "revision": "0007_calibration",
+        "down_revision": "0006_twin_voice",
+        "file": "services/backend/migrations/versions/0007_calibration.py"
+      },
+      {
+        "revision": "0008_agent_loop",
+        "down_revision": "0007_calibration",
+        "file": "services/backend/migrations/versions/0008_agent_loop.py"
+      },
+      {
+        "revision": "0009_profile_candidates",
+        "down_revision": "0008_agent_loop",
+        "file": "services/backend/migrations/versions/0009_profile_candidates.py"
+      },
+      {
+        "revision": "0010_answer_source_version",
+        "down_revision": "0009_profile_candidates",
+        "file": "services/backend/migrations/versions/0010_answer_source_version.py"
+      },
+      {
+        "revision": "0011_profile_updates",
+        "down_revision": "0010_answer_source_version",
+        "file": "services/backend/migrations/versions/0011_profile_updates.py"
+      },
+      {
+        "revision": "0012_subject_vocabulary",
+        "down_revision": "0011_profile_updates",
+        "file": "services/backend/migrations/versions/0012_subject_vocabulary.py"
+      },
+      {
+        "revision": "0013_account_entry",
+        "down_revision": "0012_subject_vocabulary",
+        "file": "services/backend/migrations/versions/0013_account_entry.py"
+      },
+      {
+        "revision": "0014_profile_relations",
+        "down_revision": "0013_account_entry",
+        "file": "services/backend/migrations/versions/0014_profile_relations.py"
+      },
+      {
+        "revision": "0015_narrative",
+        "down_revision": "0014_profile_relations",
+        "file": "services/backend/migrations/versions/0015_narrative.py"
+      },
+      {
+        "revision": "0016_share_invitations",
+        "down_revision": "0015_narrative",
+        "file": "services/backend/migrations/versions/0016_share_invitations.py"
+      },
+      {
+        "revision": "0017_companion",
+        "down_revision": "0016_share_invitations",
+        "file": "services/backend/migrations/versions/0017_companion.py"
+      },
+      {
+        "revision": "0018_persona_context",
+        "down_revision": "0017_companion",
+        "file": "services/backend/migrations/versions/0018_persona_context.py"
+      },
+      {
+        "revision": "0019_synthetic_voice",
+        "down_revision": "0018_persona_context",
+        "file": "services/backend/migrations/versions/0019_synthetic_voice.py"
+      },
+      {
+        "revision": "0020_companion_raw_asr",
+        "down_revision": "0019_synthetic_voice",
+        "file": "services/backend/migrations/versions/0020_companion_raw_asr.py"
+      },
+      {
+        "revision": "0021_twin_review_summary",
+        "down_revision": "0020_companion_raw_asr",
+        "file": "services/backend/migrations/versions/0021_twin_review_summary.py"
+      }
+    ],
+    "migration_heads": [
+      "0021_twin_review_summary"
+    ],
+    "ios_swift_files": [
+      "apps/ios/RememberMe/AppModel.swift",
+      "apps/ios/RememberMe/BotanicalBrandGeometry.swift",
+      "apps/ios/RememberMe/Network.swift",
+      "apps/ios/RememberMe/RememberMeApp.swift",
+      "apps/ios/RememberMe/Views.swift"
+    ],
+    "ios_last_commit": "d14d1d020fe673aba9a2a3344975e71c2c9ca4a8 2026-10-07T21:45:02+08:00 style: adopt reviewed mobile and garden UI from PR 85",
+    "ios_tree": "93683415ffea9c05a59636572f758bbef5363df5"
+  },
+  "ios_backend": {
+    "ref": "7931dde",
+    "sha": "7931dde6413466fb5d67021d342f2824cb0604e5",
+    "routes": [
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/register",
+        "expression": "'/register'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 76
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/login",
+        "expression": "'/login'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 94
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/accounts/logout",
+        "expression": "'/logout'",
+        "file": "services/backend/app/api/accounts.py",
+        "line": 110
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/calibrations",
+        "expression": "''",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 123
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/calibrations",
+        "expression": "''",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 167
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/calibrations/{calibration_id}",
+        "expression": "'/{calibration_id}'",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 181
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/calibrations/{calibration_id}/complete",
+        "expression": "'/{calibration_id}/complete'",
+        "file": "services/backend/app/api/calibration.py",
+        "line": 192
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents",
+        "expression": "''",
+        "file": "services/backend/app/api/consents.py",
+        "line": 103
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents/authorize",
+        "expression": "'/authorize'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 129
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/consents",
+        "expression": "''",
+        "file": "services/backend/app/api/consents.py",
+        "line": 157
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/consents/{consent_id}",
+        "expression": "'/{consent_id}'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 171
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/consents/{consent_id}/revoke",
+        "expression": "'/{consent_id}/revoke'",
+        "file": "services/backend/app/api/consents.py",
+        "line": 182
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/dialogue-materials",
+        "expression": "''",
+        "file": "services/backend/app/api/dialogue_materials.py",
+        "line": 20
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/dialogue-materials/{episode_id}/confirm",
+        "expression": "'/{episode_id}/confirm'",
+        "file": "services/backend/app/api/dialogue_materials.py",
+        "line": 28
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/dialogue-materials/{episode_id}",
+        "expression": "'/{episode_id}'",
+        "file": "services/backend/app/api/dialogue_materials.py",
+        "line": 52
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/entrustments",
+        "expression": "'/api/v1/subjects/{subject_id}/entrustments'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 78
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/entrustments",
+        "expression": "'/api/v1/subjects/{subject_id}/entrustments'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 96
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/entrustments",
+        "expression": "'/api/v1/entrustments'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 100
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/revoke",
+        "expression": "'/api/v1/entrustments/{plan_id}/revoke'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 109
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/unlock",
+        "expression": "'/api/v1/entrustments/{plan_id}/unlock'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 115
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/entrustments/{plan_id}/unlock",
+        "expression": "'/api/v1/entrustments/{plan_id}/unlock'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 128
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/questions",
+        "expression": "'/api/v1/entrustments/{plan_id}/questions'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 132
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/voice-hint",
+        "expression": "'/api/v1/entrustments/{plan_id}/voice-hint'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 150
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/transcribe-secret",
+        "expression": "'/api/v1/entrustments/{plan_id}/transcribe-secret'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 185
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/subjects/{subject_id}/legacy/steward",
+        "expression": "'/api/v1/subjects/{subject_id}/legacy/steward'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/legacy/verify",
+        "expression": "'/api/v1/subjects/{subject_id}/legacy/verify'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 215
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/start",
+        "expression": "'/api/v1/entrustments/{plan_id}/start'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 241
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/entrustments/{plan_id}/status",
+        "expression": "'/api/v1/entrustments/{plan_id}/status'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 250
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/confirm-identity",
+        "expression": "'/api/v1/entrustments/{plan_id}/confirm-identity'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 255
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/entrustments/{plan_id}/spoken-question",
+        "expression": "'/api/v1/entrustments/{plan_id}/spoken-question'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 270
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/entrustments/{plan_id}/speech/{answer_id}",
+        "expression": "'/api/v1/entrustments/{plan_id}/speech/{answer_id}'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 283
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/legacy/reviews",
+        "expression": "'/api/v1/legacy/reviews'",
+        "file": "services/backend/app/api/entrustments.py",
+        "line": 317
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes",
+        "expression": "''",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 258
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/client-transcribed",
+        "expression": "'/client-transcribed'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 270
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}",
+        "expression": "'/{episode_id}'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 485
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/transcript-review",
+        "expression": "'/{episode_id}/transcript-review'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 512
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/episodes/{episode_id}/transcript-review",
+        "expression": "'/{episode_id}/transcript-review'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 542
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/result",
+        "expression": "'/{episode_id}/result'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 586
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/episodes/{episode_id}/audio",
+        "expression": "'/{episode_id}/audio'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 632
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/{episode_id}/retry",
+        "expression": "'/{episode_id}/retry'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 645
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/episodes/{episode_id}/reextract-empty",
+        "expression": "'/{episode_id}/reextract-empty'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 665
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/episodes/{episode_id}",
+        "expression": "'/{episode_id}'",
+        "file": "services/backend/app/api/episodes.py",
+        "line": 689
+      },
+      {
+        "method": "GET",
+        "path": "/health",
+        "expression": "'/health'",
+        "file": "services/backend/app/api/health.py",
+        "line": 16
+      },
+      {
+        "method": "GET",
+        "path": "/ready",
+        "expression": "'/ready'",
+        "file": "services/backend/app/api/health.py",
+        "line": 22
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/suggest",
+        "expression": "'/suggest'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 28
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/jobs",
+        "expression": "'/jobs'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 42
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records",
+        "expression": "'/records'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 60
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}",
+        "expression": "'/records/{id}'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 67
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/split",
+        "expression": "'/records/{id}/split'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 77
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/{action}",
+        "expression": "'/records/{id}/{action}'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 95
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/records/{id}/history",
+        "expression": "'/records/{id}/history'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 113
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative",
+        "expression": "''",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 143
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/style",
+        "expression": "'/style'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 175
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/narrative/next-question",
+        "expression": "'/next-question'",
+        "file": "services/backend/app/api/narrative.py",
+        "line": 191
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/local-pairing/claim",
+        "expression": "'/claim'",
+        "file": "services/backend/app/api/pairing.py",
+        "line": 21
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/memories",
+        "expression": "'/memories'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 55
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/episodes",
+        "expression": "'/episodes'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 84
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/person-model",
+        "expression": "'/person-model'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 101
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/questions",
+        "expression": "'/questions'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 128
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/subjects/{subject_id}/memories/{memory_id}",
+        "expression": "'/memories/{memory_id}'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 142
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/memories/{memory_id}",
+        "expression": "'/memories/{memory_id}'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 174
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/person-model/coverage",
+        "expression": "'/person-model/coverage'",
+        "file": "services/backend/app/api/person_model.py",
+        "line": 192
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/learning",
+        "expression": "ROOT + '/learning'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 101
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/subjects/{subject_id}/twin/learning",
+        "expression": "ROOT + '/learning'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 108
+      },
+      {
+        "method": "POST",
+        "path": "/internal/personal-learning/claim",
+        "expression": "'/internal/personal-learning/claim'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 141
+      },
+      {
+        "method": "POST",
+        "path": "/internal/personal-learning/jobs/{job_id}/heartbeat",
+        "expression": "'/internal/personal-learning/jobs/{job_id}/heartbeat'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 171
+      },
+      {
+        "method": "POST",
+        "path": "/internal/personal-learning/jobs/{job_id}/result",
+        "expression": "'/internal/personal-learning/jobs/{job_id}/result'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 179
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity/cases",
+        "expression": "ROOT + '/fidelity/cases'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 219
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}",
+        "expression": "ROOT + '/fidelity/cases/{case_id}'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 253
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}/human-answer",
+        "expression": "ROOT + '/fidelity/cases/{case_id}/human-answer'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 257
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}/ratings",
+        "expression": "ROOT + '/fidelity/cases/{case_id}/ratings'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 266
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity",
+        "expression": "ROOT + '/fidelity'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 274
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/fidelity/benchmark",
+        "expression": "ROOT + '/fidelity/benchmark'",
+        "file": "services/backend/app/api/personal_learning.py",
+        "line": 308
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates",
+        "expression": "'/updates'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 60
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates",
+        "expression": "'/updates'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 67
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates/{update_id}/confirm",
+        "expression": "'/updates/{update_id}/confirm'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 102
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/updates/{update_id}/reject",
+        "expression": "'/updates/{update_id}/reject'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 107
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates",
+        "expression": "''",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 111
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/refresh",
+        "expression": "'/refresh'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 127
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/suggest-relations",
+        "expression": "'/suggest-relations'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 132
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/{candidate_id}/confirm",
+        "expression": "'/{candidate_id}/confirm'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 164
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/profile-candidates/{candidate_id}/reject",
+        "expression": "'/{candidate_id}/reject'",
+        "file": "services/backend/app/api/profiles.py",
+        "line": 168
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/capabilities",
+        "expression": "PREFIX + '/capabilities'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 72
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/profile",
+        "expression": "PREFIX + '/profile'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 83
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/profile",
+        "expression": "PREFIX + '/profile'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 105
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/profile/preview",
+        "expression": "PREFIX + '/profile/preview'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 165
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/realtime-samples/{profile_id}",
+        "expression": "'/api/v1/realtime-samples/{profile_id}'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 206
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/calls",
+        "expression": "PREFIX + '/calls'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 217
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/twin/voice/calls/{call_id}",
+        "expression": "PREFIX + '/calls/{call_id}'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 270
+      },
+      {
+        "method": "GET",
+        "path": "/internal/voice-calls/{call_id}/authorize",
+        "expression": "'/internal/voice-calls/{call_id}/authorize'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 280
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/answers",
+        "expression": "'/internal/voice-calls/{call_id}/answers'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 287
+      },
+      {
+        "method": "GET",
+        "path": "/internal/voice-calls/{call_id}/speech/{answer_id}",
+        "expression": "'/internal/voice-calls/{call_id}/speech/{answer_id}'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 317
+      },
+      {
+        "method": "POST",
+        "path": "/internal/realtime/maintenance",
+        "expression": "'/internal/realtime/maintenance'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 372
+      },
+      {
+        "method": "WEBSOCKET",
+        "path": "/internal/voice-calls/{call_id}/listen",
+        "expression": "'/internal/voice-calls/{call_id}/listen'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 378
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/interrupt",
+        "expression": "'/internal/voice-calls/{call_id}/interrupt'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 384
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/end",
+        "expression": "'/internal/voice-calls/{call_id}/end'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 393
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/samples",
+        "expression": "'/internal/voice-calls/{call_id}/samples'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 401
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/utterances",
+        "expression": "'/internal/voice-calls/{call_id}/utterances'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 428
+      },
+      {
+        "method": "GET",
+        "path": "/internal/voice-calls/{call_id}/utterances/{turn_id}",
+        "expression": "'/internal/voice-calls/{call_id}/utterances/{turn_id}'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 457
+      },
+      {
+        "method": "POST",
+        "path": "/internal/voice-calls/{call_id}/turn-complete",
+        "expression": "'/internal/voice-calls/{call_id}/turn-complete'",
+        "file": "services/backend/app/api/realtime.py",
+        "line": 474
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/recording-device/capabilities",
+        "expression": "'/capabilities'",
+        "file": "services/backend/app/api/recording_device.py",
+        "line": 16
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/recording-device/session",
+        "expression": "'/session'",
+        "file": "services/backend/app/api/recording_device.py",
+        "line": 21
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/session",
+        "expression": "'/session'",
+        "file": "services/backend/app/api/session.py",
+        "line": 15
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/sharing/preview",
+        "expression": "'/subjects/{subject_id}/sharing/preview'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 60
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/recipients",
+        "expression": "'/subjects/{subject_id}/recipients'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 66
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations",
+        "expression": "'/subjects/{subject_id}/invitations'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 74
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations",
+        "expression": "'/subjects/{subject_id}/invitations'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 81
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/invitations/claim",
+        "expression": "'/invitations/claim'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 110
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/invitations/{invitation_id}/{action}",
+        "expression": "'/subjects/{subject_id}/invitations/{invitation_id}/{action}'",
+        "file": "services/backend/app/api/sharing.py",
+        "line": 127
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings/capabilities",
+        "expression": "'/capabilities'",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 44
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings",
+        "expression": "''",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 58
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings",
+        "expression": "''",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 101
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}",
+        "expression": "'/{recording_id}'",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 116
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}/process",
+        "expression": "'/{recording_id}/process'",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 123
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}/audio",
+        "expression": "'/{recording_id}/audio'",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 139
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}",
+        "expression": "'/{recording_id}'",
+        "file": "services/backend/app/api/speaker_recordings.py",
+        "line": 148
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/transcribe-query",
+        "expression": "'/twin/transcribe-query'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 68
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/memory-search",
+        "expression": "'/memory-search'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 142
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers",
+        "expression": "'/twin/answers'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 168
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers/{answer_id}/remember",
+        "expression": "'/twin/answers/{answer_id}/remember'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 400
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers/{answer_id}",
+        "expression": "'/twin/answers/{answer_id}'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 456
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/twin/chat-memory",
+        "expression": "'/twin/chat-memory'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 501
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/subjects/{subject_id}/twin/chat-memory",
+        "expression": "'/twin/chat-memory'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 527
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/twin/chat-memory",
+        "expression": "'/twin/chat-memory'",
+        "file": "services/backend/app/api/twin.py",
+        "line": 547
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice/profile",
+        "expression": "'/voice/profile'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 56
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/voice/profile",
+        "expression": "'/voice/profile'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 66
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/twin/answers/{answer_id}/speech",
+        "expression": "'/twin/answers/{answer_id}/speech'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 104
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice/assets/{asset_id}/audio",
+        "expression": "'/voice/assets/{asset_id}/audio'",
+        "file": "services/backend/app/api/voice.py",
+        "line": 155
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects/{subject_id}/voice-identities",
+        "expression": "''",
+        "file": "services/backend/app/api/voiceprints.py",
+        "line": 15
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/subjects/{subject_id}/voice-identities/{identity_id}",
+        "expression": "'/{identity_id}'",
+        "file": "services/backend/app/api/voiceprints.py",
+        "line": 19
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/subjects/{subject_id}/voice-identities/recording/{episode_id}",
+        "expression": "'/recording/{episode_id}'",
+        "file": "services/backend/app/api/voiceprints.py",
+        "line": 28
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/vocabulary",
+        "expression": "'/subjects/{subject_id}/vocabulary'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 31
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/workbench/subjects/{subject_id}/vocabulary",
+        "expression": "'/subjects/{subject_id}/vocabulary'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 39
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/spaces",
+        "expression": "'/spaces'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 89
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/capabilities",
+        "expression": "'/capabilities'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 101
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/stories",
+        "expression": "'/subjects/{subject_id}/stories'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 131
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/stories/{episode_id}/audio",
+        "expression": "'/subjects/{subject_id}/stories/{episode_id}/audio'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 174
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants",
+        "expression": "'/subjects/{subject_id}/grants'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 189
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants",
+        "expression": "'/subjects/{subject_id}/grants'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 202
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/workbench/subjects/{subject_id}/grants/{grant_id}",
+        "expression": "'/subjects/{subject_id}/grants/{grant_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 211
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions",
+        "expression": "'/subjects/{subject_id}/revisions'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 226
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions",
+        "expression": "'/subjects/{subject_id}/revisions'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 254
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/revisions/{revision_id}/confirm",
+        "expression": "'/subjects/{subject_id}/revisions/{revision_id}/confirm'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 260
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests",
+        "expression": "'/subjects/{subject_id}/requests'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 293
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests",
+        "expression": "'/subjects/{subject_id}/requests'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 304
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/workbench/subjects/{subject_id}/requests/{request_id}",
+        "expression": "'/subjects/{subject_id}/requests/{request_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 320
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/workbench/subjects/{subject_id}/questions/{question_id}",
+        "expression": "'/subjects/{subject_id}/questions/{question_id}'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 338
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/workbench/subjects/{subject_id}/portrait",
+        "expression": "'/subjects/{subject_id}/portrait'",
+        "file": "services/backend/app/api/workbench.py",
+        "line": 352
+      }
+    ],
+    "request_model_declarations": {
+      "services/backend/app/api/accounts.py:Credentials": {
+        "username": "str",
+        "password": "str"
+      },
+      "services/backend/app/api/calibration.py:StartCalibration": {
+        "twin_answer_id": "str",
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/calibration.py:CompleteCalibration": {
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/consents.py:ConsentResponse": {
+        "consent_id": "str",
+        "subject_id": "str",
+        "granted_by_actor_id": "str",
+        "scope": "ConsentScope",
+        "status": "str",
+        "granted_at": "datetime",
+        "revoked_at": "datetime | None",
+        "evidence_ref": "str | None"
+      },
+      "services/backend/app/api/consents.py:GrantConsentRequest": {
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "evidence_ref": "str | None"
+      },
+      "services/backend/app/api/consents.py:AuthorizeRequest": {
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "consent_id": "str | None"
+      },
+      "services/backend/app/api/consents.py:AuthorizeResponse": {
+        "authorized": "bool",
+        "consent_id": "str",
+        "subject_id": "str",
+        "scope": "ConsentScope",
+        "granted_at": "datetime"
+      },
+      "services/backend/app/api/dialogue_materials.py:Confirm": {
+        "text": "str | None"
+      },
+      "services/backend/app/api/entrustments.py:Strict": {},
+      "services/backend/app/api/episodes.py:TranscriptReview": {
+        "state": "Literal['transcribing', 'reviewing', 'submitted', 'not_required']",
+        "transcript": "str | None",
+        "stt_model_version": "str | None",
+        "supplement": "str"
+      },
+      "services/backend/app/api/episodes.py:ConfirmTranscript": {
+        "transcript": "str",
+        "supplement": "str"
+      },
+      "services/backend/app/api/episodes.py:CaptureEpisodeForm": {
+        "file": "UploadFile",
+        "subject_id": "str",
+        "source": "CaptureSource",
+        "recorded_at": "datetime",
+        "audio_ref": "str",
+        "idempotency_key": "str",
+        "recording_consent_id": "str",
+        "actor_id": "str | None",
+        "duration_ms": "int | None",
+        "metadata": "str | None"
+      },
+      "services/backend/app/api/episodes.py:ClientTranscript": {
+        "text": "str",
+        "audio_sha256": "str",
+        "provider": "Literal['groq']",
+        "model": "Literal['whisper-large-v3']",
+        "audio_export_confirmed": "StrictBool"
+      },
+      "services/backend/app/api/pairing.py:Claim": {
+        "code": "str"
+      },
+      "services/backend/app/api/person_model.py:Correction": {
+        "content": "str"
+      },
+      "services/backend/app/api/personal_learning.py:Body": {},
+      "services/backend/app/api/profiles.py:RefreshInput": {
+        "cloud_consent_id": "str"
+      },
+      "services/backend/app/api/profiles.py:UpdateInput": {
+        "candidate_id": "str",
+        "action": "Literal['ADD', 'SUPPORT', 'CONFLICT', 'CHANGE']",
+        "target_candidate_id": "str | None",
+        "reason": "str",
+        "time_text": "str"
+      },
+      "services/backend/app/api/realtime.py:CallRequest": {
+        "cloud_consent_id": "str",
+        "voice_consent_id": "str",
+        "policy": "str",
+        "voice_mode": "Literal['personal', 'default']",
+        "recording_consent_id": "str | None",
+        "speaker_consent_id": "str | None",
+        "enroll_owner_voice": "bool"
+      },
+      "services/backend/app/api/realtime.py:InterruptRequest": {
+        "turn_id": "str"
+      },
+      "services/backend/app/api/recording_device.py:DeviceSessionInput": {
+        "installation_id": "str"
+      },
+      "services/backend/app/api/session.py:SessionResponse": {
+        "actor_id": "str",
+        "display_name": "str"
+      },
+      "services/backend/app/api/sharing.py:Selection": {
+        "episode_ids": "list[str]",
+        "story_ids": "list[str]"
+      },
+      "services/backend/app/api/sharing.py:ClaimInput": {
+        "code": "str"
+      },
+      "services/backend/app/api/speaker_recordings.py:ProcessInput": {
+        "policy": "str",
+        "accept_current_policy": "bool"
+      },
+      "services/backend/app/api/twin.py:TwinQuestion": {
+        "question": "str",
+        "cloud_consent_id": "str",
+        "conversation_mode": "bool",
+        "previous_answer_id": "str | None",
+        "request_id": "str | None"
+      },
+      "services/backend/app/api/twin.py:RememberMessage": {
+        "cloud_consent_id": "str",
+        "recording_consent_id": "str",
+        "confirmed": "StrictBool"
+      },
+      "services/backend/app/api/twin.py:ChatMemoryPreference": {
+        "enabled": "StrictBool"
+      },
+      "services/backend/app/api/workbench.py:Strict": {}
+    },
+    "migrations": [
+      {
+        "revision": "0004_person_model",
+        "down_revision": "0003_ingestion",
+        "file": "services/backend/migrations/versions/0004_person_model.py"
+      },
+      {
+        "revision": "0005_transcript_review",
+        "down_revision": "0004_person_model",
+        "file": "services/backend/migrations/versions/0005_transcript_review.py"
+      },
+      {
+        "revision": "0006_twin_voice",
+        "down_revision": "0005_transcript_review",
+        "file": "services/backend/migrations/versions/0006_twin_voice.py"
+      },
+      {
+        "revision": "0007_calibration",
+        "down_revision": "0006_twin_voice",
+        "file": "services/backend/migrations/versions/0007_calibration.py"
+      },
+      {
+        "revision": "0008_agent_loop",
+        "down_revision": "0007_calibration",
+        "file": "services/backend/migrations/versions/0008_agent_loop.py"
+      },
+      {
+        "revision": "0009_profile_candidates",
+        "down_revision": "0008_agent_loop",
+        "file": "services/backend/migrations/versions/0009_profile_candidates.py"
+      },
+      {
+        "revision": "0010_answer_source_version",
+        "down_revision": "0009_profile_candidates",
+        "file": "services/backend/migrations/versions/0010_answer_source_version.py"
+      },
+      {
+        "revision": "0011_profile_updates",
+        "down_revision": "0010_answer_source_version",
+        "file": "services/backend/migrations/versions/0011_profile_updates.py"
+      },
+      {
+        "revision": "0012_subject_vocabulary",
+        "down_revision": "0011_profile_updates",
+        "file": "services/backend/migrations/versions/0012_subject_vocabulary.py"
+      },
+      {
+        "revision": "0013_account_entry",
+        "down_revision": "0012_subject_vocabulary",
+        "file": "services/backend/migrations/versions/0013_account_entry.py"
+      },
+      {
+        "revision": "0014_profile_relations",
+        "down_revision": "0013_account_entry",
+        "file": "services/backend/migrations/versions/0014_profile_relations.py"
+      },
+      {
+        "revision": "0015_narrative",
+        "down_revision": "0014_profile_relations",
+        "file": "services/backend/migrations/versions/0015_narrative.py"
+      },
+      {
+        "revision": "0016_share_invitations",
+        "down_revision": "0015_narrative",
+        "file": "services/backend/migrations/versions/0016_share_invitations.py"
+      },
+      {
+        "revision": "0017_evidence_chunks",
+        "down_revision": "0016_share_invitations",
+        "file": "services/backend/migrations/versions/0017_evidence_chunk_embeddings.py"
+      },
+      {
+        "revision": "0018_twin_conversations",
+        "down_revision": "0017_evidence_chunks",
+        "file": "services/backend/migrations/versions/0018_twin_conversations.py"
+      },
+      {
+        "revision": "0019_realtime_voice",
+        "down_revision": "0018_twin_conversations",
+        "file": "services/backend/migrations/versions/0019_realtime_voice.py"
+      },
+      {
+        "revision": "0020_chat_memory",
+        "down_revision": "0019_realtime_voice",
+        "file": "services/backend/migrations/versions/0020_chat_memory.py"
+      },
+      {
+        "revision": "0021_personal_learning",
+        "down_revision": "0020_chat_memory",
+        "file": "services/backend/migrations/versions/0021_personal_learning.py"
+      },
+      {
+        "revision": "0022_speaker_recordings",
+        "down_revision": "0021_personal_learning",
+        "file": "services/backend/migrations/versions/0022_speaker_recordings.py"
+      },
+      {
+        "revision": "0023_dialogue_capture",
+        "down_revision": "0022_speaker_recordings",
+        "file": "services/backend/migrations/versions/0023_dialogue_capture.py"
+      },
+      {
+        "revision": "0024_voiceprint_entrust",
+        "down_revision": "0023_dialogue_capture",
+        "file": "services/backend/migrations/versions/0024_voiceprint_entrust.py"
+      }
+    ],
+    "migration_heads": [
+      "0024_voiceprint_entrust"
+    ],
+    "ios_swift_files": [
+      "apps/ios/RememberMe/AppModel.swift",
+      "apps/ios/RememberMe/BotanicalBrandGeometry.swift",
+      "apps/ios/RememberMe/Network.swift",
+      "apps/ios/RememberMe/RememberMeApp.swift",
+      "apps/ios/RememberMe/Views.swift"
+    ],
+    "ios_last_commit": "d14d1d020fe673aba9a2a3344975e71c2c9ca4a8 2026-10-07T21:45:02+08:00 style: adopt reviewed mobile and garden UI from PR 85",
+    "ios_tree": "93683415ffea9c05a59636572f758bbef5363df5"
+  },
+  "comparison": {
+    "declared_routes_only_android": [
+      "DELETE /api/v1/voice-sessions/{session_id}",
+      "GET /api/v1/companion/spaces",
+      "GET /api/v1/subjects/{subject_id}/voice/recipients/{actor_id}",
+      "GET /api/v1/voice-capabilities",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/audio/{id}",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/content",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/contribution-grants",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/contributions",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/letters",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/letters/{id}",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/snapshots",
+      "GET /api/v1/workbench/subjects/{subject_id}/companion/snapshots/{id}",
+      "POST /api/v1/subjects/{subject_id}/calibrations/prepare-voice",
+      "POST /api/v1/subjects/{subject_id}/voice-sessions",
+      "POST /api/v1/subjects/{subject_id}/voice/profile/synthetic",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/audio",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/transcribe",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/contributions",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/review",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/withdraw",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/letters",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/letters/{id}/publish",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/letters/{id}/revoke",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/snapshots",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/snapshots/preview",
+      "POST /api/v1/workbench/subjects/{subject_id}/companion/snapshots/{id}/revoke",
+      "PUT /api/v1/subjects/{subject_id}/voice/recipients/{actor_id}",
+      "PUT /api/v1/workbench/subjects/{subject_id}/companion/audio/{id}/review",
+      "PUT /api/v1/workbench/subjects/{subject_id}/companion/contribution-grants/{actor_id}",
+      "PUT /api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/model-use",
+      "PUT /api/v1/workbench/subjects/{subject_id}/companion/contributions/{id}/recipients",
+      "PUT /api/v1/workbench/subjects/{subject_id}/companion/letters/{id}",
+      "WEBSOCKET /api/v1/voice-sessions/{session_id}/stream"
+    ],
+    "declared_routes_only_ios_backend": [
+      "DELETE /api/v1/entrustments/{plan_id}/unlock",
+      "DELETE /api/v1/episodes/{episode_id}",
+      "DELETE /api/v1/subjects/{subject_id}/dialogue-materials/{episode_id}",
+      "DELETE /api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}",
+      "DELETE /api/v1/subjects/{subject_id}/twin/chat-memory",
+      "DELETE /api/v1/subjects/{subject_id}/twin/voice/calls/{call_id}",
+      "DELETE /api/v1/subjects/{subject_id}/voice-identities/{identity_id}",
+      "GET /api/v1/entrustments",
+      "GET /api/v1/entrustments/{plan_id}/speech/{answer_id}",
+      "GET /api/v1/entrustments/{plan_id}/status",
+      "GET /api/v1/legacy/reviews",
+      "GET /api/v1/realtime-samples/{profile_id}",
+      "GET /api/v1/subjects/{subject_id}/dialogue-materials",
+      "GET /api/v1/subjects/{subject_id}/entrustments",
+      "GET /api/v1/subjects/{subject_id}/person-model/coverage",
+      "GET /api/v1/subjects/{subject_id}/recording-device/capabilities",
+      "GET /api/v1/subjects/{subject_id}/speaker-recordings",
+      "GET /api/v1/subjects/{subject_id}/speaker-recordings/capabilities",
+      "GET /api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}",
+      "GET /api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}/audio",
+      "GET /api/v1/subjects/{subject_id}/twin/chat-memory",
+      "GET /api/v1/subjects/{subject_id}/twin/fidelity",
+      "GET /api/v1/subjects/{subject_id}/twin/fidelity/benchmark",
+      "GET /api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}",
+      "GET /api/v1/subjects/{subject_id}/twin/learning",
+      "GET /api/v1/subjects/{subject_id}/twin/voice/capabilities",
+      "GET /api/v1/subjects/{subject_id}/twin/voice/profile",
+      "GET /api/v1/subjects/{subject_id}/twin/voice/profile/preview",
+      "GET /api/v1/subjects/{subject_id}/voice-identities",
+      "GET /internal/voice-calls/{call_id}/authorize",
+      "GET /internal/voice-calls/{call_id}/speech/{answer_id}",
+      "GET /internal/voice-calls/{call_id}/utterances/{turn_id}",
+      "POST /api/v1/entrustments/{plan_id}/confirm-identity",
+      "POST /api/v1/entrustments/{plan_id}/questions",
+      "POST /api/v1/entrustments/{plan_id}/revoke",
+      "POST /api/v1/entrustments/{plan_id}/spoken-question",
+      "POST /api/v1/entrustments/{plan_id}/start",
+      "POST /api/v1/entrustments/{plan_id}/transcribe-secret",
+      "POST /api/v1/entrustments/{plan_id}/unlock",
+      "POST /api/v1/entrustments/{plan_id}/voice-hint",
+      "POST /api/v1/subjects/{subject_id}/dialogue-materials/{episode_id}/confirm",
+      "POST /api/v1/subjects/{subject_id}/entrustments",
+      "POST /api/v1/subjects/{subject_id}/legacy/verify",
+      "POST /api/v1/subjects/{subject_id}/recording-device/session",
+      "POST /api/v1/subjects/{subject_id}/speaker-recordings",
+      "POST /api/v1/subjects/{subject_id}/speaker-recordings/{recording_id}/process",
+      "POST /api/v1/subjects/{subject_id}/twin/answers/{answer_id}/remember",
+      "POST /api/v1/subjects/{subject_id}/twin/fidelity/cases",
+      "POST /api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}/human-answer",
+      "POST /api/v1/subjects/{subject_id}/twin/fidelity/cases/{case_id}/ratings",
+      "POST /api/v1/subjects/{subject_id}/twin/voice/calls",
+      "POST /api/v1/subjects/{subject_id}/twin/voice/profile",
+      "POST /api/v1/subjects/{subject_id}/voice-identities/recording/{episode_id}",
+      "POST /internal/personal-learning/claim",
+      "POST /internal/personal-learning/jobs/{job_id}/heartbeat",
+      "POST /internal/personal-learning/jobs/{job_id}/result",
+      "POST /internal/realtime/maintenance",
+      "POST /internal/voice-calls/{call_id}/answers",
+      "POST /internal/voice-calls/{call_id}/end",
+      "POST /internal/voice-calls/{call_id}/interrupt",
+      "POST /internal/voice-calls/{call_id}/samples",
+      "POST /internal/voice-calls/{call_id}/turn-complete",
+      "POST /internal/voice-calls/{call_id}/utterances",
+      "PUT /api/v1/subjects/{subject_id}/legacy/steward",
+      "PUT /api/v1/subjects/{subject_id}/twin/chat-memory",
+      "PUT /api/v1/subjects/{subject_id}/twin/learning",
+      "WEBSOCKET /internal/voice-calls/{call_id}/listen"
+    ],
+    "shared_route_count_not_compatibility": 81,
+    "changed_request_models": {
+      "services/backend/app/api/episodes.py:TranscriptReview": {
+        "android": {
+          "state": "Literal['transcribing', 'reviewing', 'submitted', 'not_required']",
+          "transcript": "str | None",
+          "stt_model_version": "str | None",
+          "supplement": "str",
+          "machine_transcript": "str | None",
+          "automatic_correction": "dict | None"
+        },
+        "ios_backend": {
+          "state": "Literal['transcribing', 'reviewing', 'submitted', 'not_required']",
+          "transcript": "str | None",
+          "stt_model_version": "str | None",
+          "supplement": "str"
+        }
+      },
+      "services/backend/app/api/twin.py:TwinQuestion": {
+        "android": {
+          "question": "str",
+          "cloud_consent_id": "str",
+          "mode": "Literal['evidence', 'persona']",
+          "retrieval_mode": "Literal['full', 'local']"
+        },
+        "ios_backend": {
+          "question": "str",
+          "cloud_consent_id": "str",
+          "conversation_mode": "bool",
+          "previous_answer_id": "str | None",
+          "request_id": "str | None"
+        }
+      }
+    },
+    "shared_migration_revisions": [
+      "0004_person_model",
+      "0005_transcript_review",
+      "0006_twin_voice",
+      "0007_calibration",
+      "0008_agent_loop",
+      "0009_profile_candidates",
+      "0010_answer_source_version",
+      "0011_profile_updates",
+      "0012_subject_vocabulary",
+      "0013_account_entry",
+      "0014_profile_relations",
+      "0015_narrative",
+      "0016_share_invitations"
+    ],
+    "ios_client_tree_identical": true
+  }
+}
