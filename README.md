@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-10-15 ECS＋Android 0.12.1 已同步：** [下载、账号和操作说明](docs/agent-loop/ANDROID_0121_QUICK_START_2026-10-15.md) · [实跑结果与已知问题](docs/agent-loop/CLOUD_SYNC_RESULTS_2026-10-15.md) · [12 张原生截图](docs/agent-loop/screenshots/cloud-sync-20261015/README.md)。API、AI、录音与人物任务统一升级；自动纠错已开启，记忆修订与亲友再分享、连续语音在公网 HTTPS 上实测。属于模拟器验收的内测试用，尚未稳定两秒，人物模拟仍有失败与偏强推断。PR #94 保持未合并。下方各日期记录保留当时状态。
+
 > **2026-10-15 增量交接：** [新增功能、版本范围与分工建议](docs/agent-loop/TEAM_HANDOFF_2026-10-15.md) · [接手运行与发布步骤](docs/agent-loop/HANDOFF_RUNBOOK_2026-10-15.md) · [原速视频与结果入口](docs/agent-loop/demos/20261015/README.md)。继续更新 `codex/continuous-voice-20261014` / [PR #94](https://github.com/ztjklt/Remember-Me/pull/94)，不合并。包含语音提速与 Step 试用、记忆修订联动、ASR 后 LLM 自动校对。代码、ECS 和公开 APK 的启用范围分别列明；自动校对默认关闭，尚未完成云端与手机实跑验收。
 
 > **2026-10-14 Android 0.11.0 连续语音试验版：** [下载安装与语音/校准操作](docs/agent-loop/ANDROID_0110_QUICK_START_2026-10-14.md) · [真实结果、延迟与未完成项](docs/agent-loop/CONTINUOUS_VOICE_RESULTS_2026-10-14.md) · [队长会议要求对照](docs/agent-loop/CONTINUOUS_VOICE_REQUIREMENTS_2026-10-14.md)。ECS与同签名APK已接入持续收音、流式播放和插话取消，先向两个陈守义演示账号开放。模型生成与审阅仍需数秒，尚未达到1—2秒自然接话；实体手机声学与耳机未验收。PR #94待团队评审，未合并。

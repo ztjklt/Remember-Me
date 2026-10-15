@@ -1,5 +1,7 @@
 # 10 月 15 日团队交接：连续语音、记忆修订与自动校对
 
+> **后续云端同步已完成：** ECS 四服务与签名 Android 0.12.1 已升级，自动校对已开启，公开下载、12 张实跑截图和原速视频见[使用说明](ANDROID_0121_QUICK_START_2026-10-15.md)与[本轮结果](CLOUD_SYNC_RESULTS_2026-10-15.md)。下文“尚未部署／未发布”是本日较早的源码交接快照，不能再作为当前部署状态；质量限制仍保留。PR #94 不合并。
+
 本次把上次交接之后的源码、验证工具、真实调用结果和演示材料一起交给团队。继续使用 [codex/continuous-voice-20261014](https://github.com/ztjklt/Remember-Me/tree/codex/continuous-voice-20261014)，更新 [PR #94](https://github.com/ztjklt/Remember-Me/pull/94)，保持未合并。
 
 ## 交接范围与分支关系

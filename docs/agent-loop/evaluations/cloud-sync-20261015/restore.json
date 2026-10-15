@@ -1,0 +1,8 @@
+{
+  "database": "remember_paired_restore_20261015t134239z_test",
+  "migration": "0021_twin_review_summary",
+  "restored_files": 38,
+  "audio_hash_match": true,
+  "config_archive_retained_on_server_only": true,
+  "migration_source": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117"
+}

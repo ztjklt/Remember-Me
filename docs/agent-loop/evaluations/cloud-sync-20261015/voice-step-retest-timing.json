@@ -1,0 +1,63 @@
+{
+  "silence_measurement": "10ms PCM windows, RMS > 200; digital signal, not physical microphone/speaker latency",
+  "turns": [
+    {
+      "round": 1,
+      "interrupted": true,
+      "played_samples": 50881,
+      "question_start": 1792072773427,
+      "question_end": 1792072775612.0,
+      "audio_start": 1792072780460.0,
+      "audible_start": 1792072780770.0,
+      "input_tail_ms": 370,
+      "tts_leading_silence_ms": 310,
+      "finished": 1792072782752,
+      "turn_id": 1,
+      "text": "记录里他提到第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录。收车后他在站房坐了一会儿，开车时还绷着，坐下来肩膀才慢慢松了，心里想着总算平平安安跑完了。他还常跟女儿陈岚说“平安回家比多跑一趟重要”，这话源于以前收车回家看见厨房灯还亮着、玉琴在等他。",
+      "question": "请讲讲公交工作中的故事。",
+      "latency_ms": 5158,
+      "latency_to_playback_ms": 4478,
+      "text_ms": 2476.0
+    },
+    {
+      "round": 2,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072782428,
+      "question_end": 1792072784792.0,
+      "audio_start": 1792072788377.0,
+      "audible_start": 1792072788687.0,
+      "input_tail_ms": 350,
+      "tts_leading_silence_ms": 310,
+      "finished": 1792072797060,
+      "turn_id": 3,
+      "text": "记录里他提到，自己喝茶喜欢淡一点，太甜的喝不惯，还强调这是自己的口味，不是谁规定只能这么喝。",
+      "question": "钱不说工作了，你喜欢什么茶？",
+      "latency_ms": 3895,
+      "latency_to_playback_ms": 3235,
+      "text_ms": 2561.0
+    },
+    {
+      "round": 3,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072798283,
+      "question_end": 1792072801040.0,
+      "audio_start": 1792072804724.3333,
+      "audible_start": 1792072805034.3333,
+      "input_tail_ms": 280,
+      "tts_leading_silence_ms": 310,
+      "finished": 1792072813076,
+      "turn_id": 5,
+      "text": "记录里他提到，自己喝茶喜欢淡一点，太甜的喝不惯，还强调这是自己的口味，不是谁规定只能这么喝。",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "latency_ms": 3994,
+      "latency_to_playback_ms": 3404,
+      "text_ms": 2655.0
+    }
+  ],
+  "seconds": 42.21016796875,
+  "instrumentation_ok": true,
+  "microphone_bypassed": true,
+  "speed": 1
+}

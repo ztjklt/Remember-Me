@@ -1,0 +1,20 @@
+{
+  "previous": "/opt/remember-me/releases/paired-step-realtime-20261015",
+  "release": "/opt/remember-me/releases/paired-cloud-sync-20261015-9f70117",
+  "commit": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+  "snapshot": "/var/lib/remember-me/backups/paired-20261015T134239Z",
+  "ready": {
+    "status": "ready",
+    "components": {
+      "database": "ok",
+      "object_store": "ok"
+    }
+  },
+  "service_info": {
+    "release_id": "9f70117ee6ae0ad27e8910cfb753a640169018e5",
+    "api_version": "0.7.0",
+    "sharing_invitations": true,
+    "registration_allowed": false
+  },
+  "switched": true
+}

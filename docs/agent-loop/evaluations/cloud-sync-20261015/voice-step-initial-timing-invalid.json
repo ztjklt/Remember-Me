@@ -1,0 +1,63 @@
+{
+  "silence_measurement": "10ms PCM windows, RMS > 200; digital signal, not physical microphone/speaker latency",
+  "turns": [
+    {
+      "round": 1,
+      "interrupted": true,
+      "played_samples": 53856,
+      "question_start": 1792072281784,
+      "question_end": 1792072283968.0,
+      "audio_start": 1792072289269.0,
+      "audible_start": 1792072289559.0,
+      "input_tail_ms": 370,
+      "tts_leading_silence_ms": 290,
+      "finished": 1792072281996,
+      "turn_id": 1,
+      "text": "记录里他提到第一次独立开12路是1987年，出车前车队同事王建国帮他整理了出车记录。收车后他在站房坐了一会儿，开车时还绷着，坐下来肩膀才慢慢松了，心里想着总算平平安安跑完了。他还记得工作证放在胸前口袋，出门总摸一下怕忘带。",
+      "question": "请讲讲公交工作中的故事。",
+      "latency_ms": 5591,
+      "latency_to_playback_ms": 4931,
+      "text_ms": 3032.0
+    },
+    {
+      "round": 2,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072291202,
+      "question_end": 1792072293569.0,
+      "audio_start": 1792072297772.6667,
+      "audible_start": 1792072298062.6667,
+      "input_tail_ms": 350,
+      "tts_leading_silence_ms": 290,
+      "finished": 1792072306524,
+      "turn_id": 3,
+      "text": "记录里他提到，自己喝茶喜欢淡一点，太甜的喝不惯，还强调这是自己的口味，不是谁规定只能这么喝。",
+      "question": "钱不说工作了，你喜欢什么茶？",
+      "latency_ms": 4494,
+      "latency_to_playback_ms": 3854,
+      "text_ms": 2953.0
+    },
+    {
+      "round": 3,
+      "interrupted": false,
+      "played_samples": null,
+      "question_start": 1792072307785,
+      "question_end": 1792072310541.0,
+      "audio_start": 1792072314731.3333,
+      "audible_start": 1792072314931.3333,
+      "input_tail_ms": 280,
+      "tts_leading_silence_ms": 200,
+      "finished": 1792072323129,
+      "turn_id": 5,
+      "text": "记录里他提到，自己喝茶喜欢淡一点，太甜的喝不惯，还强调这是自己的口味，不是谁规定只能这么喝。",
+      "question": "刚才说的茶浓一点还是淡一点？",
+      "latency_ms": 4390,
+      "latency_to_playback_ms": 3910,
+      "text_ms": 3026.0
+    }
+  ],
+  "seconds": 44.1039091796875,
+  "instrumentation_ok": true,
+  "microphone_bypassed": true,
+  "speed": 1
+}

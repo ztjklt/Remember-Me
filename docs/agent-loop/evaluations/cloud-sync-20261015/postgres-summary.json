@@ -1,0 +1,13 @@
+{
+  "testsuite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "718",
+    "time": "365.366",
+    "timestamp": "2026-10-15T21:28:05.894627+08:00",
+    "hostname": "iZwz93rjbt04swcxzd7lhpZ"
+  },
+  "junit_sha256": "55a66ecfb139600275dc601986de1aec49777fbe61db42236751a2f03abb97b6"
+}
