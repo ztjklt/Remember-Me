@@ -22,8 +22,10 @@
 
 ## 尚需实际设备验证
 
-iOS 目标 1.13.0 / 2026101506。新扩展 `me.remember.personal.ios.recording-activity` 无描述文件；Xcode 自动签名返回 `No Accounts`，已提示用户在 Xcode Settings → Accounts 登录同一团队 BZ5FA6MS43。**当前不能宣称新版已安装，手机仍为此前成功安装的 1.12.1 / 2026101505。**
+iOS 1.13.0 / 2026101506。用户完成 Xcode 登录后，主 App 与新扩展 `me.remember.personal.ios.recording-activity` 的描述文件均通过核对，Release 签名构建及 `codesign --verify --deep --strict` 通过。已覆盖安装至「黑幕」iPhone 15 Pro Max，未卸载原 App。安装日志 `build/hardware-device-install.log`，签名日志 `build/hardware-signature-verified.log`，构建日志 `build/hardware-signing-after-login.log`。系统安装清单再次核对版本 1.13.0 / 2026101506；最初启动因锁屏被拒，随后重试 `devicectl device process launch` 成功；启动日志 `build/hardware-device-launch-retry.log`。
 
-待签名后验证锁屏 10–30 分钟录音、实际耳机中断、真实 D3200 绑定／取回文件／长时间佩戴、后台蓝牙传输及真实多人声纹效果。iOS 强制结束进程或厂商连接中断不能保证继续传输；硬件独立录制的文件可在重连后取回。未编造真实硬件已连接或同步成功的结果。
+仍需验证锁屏 10–30 分钟录音、实际耳机中断、真实 D3200 绑定／取回文件／长时间佩戴、后台蓝牙传输及真实多人声纹效果。iOS 强制结束进程或厂商连接中断不能保证继续传输；硬件独立录制的文件可在重连后取回。未编造真实硬件已连接或同步成功的结果。
 
 本次未改 Android；官方专有 SDK 二进制留在本地 ignored Vendor 目录，准备方式见 iOS README。
+
+视觉后续：按用户要求对齐 App 风格，1.13.1 / 2026101507 已覆盖安装；详见 [录音状态样式验证](RECORDING_ACTIVITY_STYLE_2026_10_15.md)。
