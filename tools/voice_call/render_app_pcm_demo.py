@@ -36,6 +36,9 @@ def main(a):
         recognized=[e['text'] for e in events if e['kind']=='transcript' and e['round']==r and e['epoch_ms']<=answer['epoch_ms']]
         stops=[e for e in events if e['kind']=='playback_interrupted' and e['round']==r]
         stop=stops[0] if stops else None
+        if stop:
+            assert audio_start <= stop['stopped_epoch_ms'] <= stop['epoch_ms'], 'Inconsistent interruption timestamps; do not render this capture'
+            assert 0 < stop['played_samples'] <= len(pcm), 'Invalid interrupted playback position'
         turns.append(dict(round=r,interrupted=bool(stop),played_samples=stop['played_samples'] if stop else None,question_start=get('question_started',r)['epoch_ms'],question_end=end,
             audio_start=audio_start,audible_start=audible_start,input_tail_ms=round(tail_ms),tts_leading_silence_ms=round(lead_ms),finished=stop['stopped_epoch_ms'] if stop else get('playback_finished',r)['epoch_ms'],turn_id=played['turn_id'],
             text=final_answer['text'],question=recognized[-1],latency_ms=round(audible_start-end),latency_to_playback_ms=round(audio_start-input_end),

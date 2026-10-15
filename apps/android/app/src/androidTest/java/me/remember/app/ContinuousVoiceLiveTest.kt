@@ -169,9 +169,12 @@ class ContinuousVoiceLiveTest {
                                 mark("playback_progress",round,JSONObject().put("turn_id",tf.getLong(engine)).put("played_samples",pos))
                             }
                         }
-                        if(interruptDemo&&round==2&&!interruptionMarked&&engine.lastInterruptedTurn==interruptedTurn&&engine.lastInterruptedSamples>0){
+                        // The capture path publishes these fields while holding the engine monitor.
+                        // Read one snapshot, after flush finishes, rather than mixing two interrupts.
+                        val interruptSnapshot=synchronized(engine){Triple(engine.lastInterruptedTurn,engine.lastInterruptedSamples,engine.lastInterruptEpochMs)}
+                        if(interruptDemo&&round==2&&!interruptionMarked&&interruptSnapshot.first==interruptedTurn&&interruptSnapshot.second>0){
                             mark("playback_interrupted",1,JSONObject().put("turn_id",interruptedTurn)
-                                .put("played_samples",engine.lastInterruptedSamples).put("stopped_epoch_ms",engine.lastInterruptEpochMs))
+                                .put("played_samples",interruptSnapshot.second).put("stopped_epoch_ms",interruptSnapshot.third))
                             interruptionMarked=true
                         }
                         if(System.currentTimeMillis()-lastSample>=1000){
