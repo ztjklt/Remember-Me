@@ -43,8 +43,8 @@ class CloudProofreadingLiveTest {
             ui.waitUntil(90000){model.ui.value.actor.isNotBlank()&&!model.ui.value.busy};idle()
             assertTrue(model.ui.value.owner)
             val source=File(context.filesDir,"cloud-proofreading-synthetic.wav");source.writeBytes(shellBytes("cat /data/local/tmp/remember-proofreading-sample.wav"))
-            val capture=LocalCapture(AudioRecording(source.path,42000,"audio/wav",source.length(),24000,1,Instant.now().toString()),config.getString("run_id"),source="IMPORT")
-            act{model.upload(capture,true)}
+            val capture=model.ui.value.local.firstOrNull{it.key==config.getString("run_id")} ?: LocalCapture(AudioRecording(source.path,42000,"audio/wav",source.length(),24000,1,Instant.now().toString()),config.getString("run_id"),source="IMPORT")
+            if(capture.episode.isBlank())act{model.upload(capture,true)}
             val ep=model.ui.value.local.single{it.key==capture.key}.episode
             assertTrue(ep.isNotBlank());report.put("episode_id",ep).put("subject_id",model.ui.value.subject)
             ui.waitUntil(180000){model.ui.value.stories.any{it.text("episode_id")==ep&&it.optBoolean("waiting_for_review")}}
@@ -63,7 +63,9 @@ class CloudProofreadingLiveTest {
             // to the fictional fixture; this is test-author review, not model output.
             val checked=draft.replace("该谢就谢","该歇就歇")
             ui.onNodeWithText("核对后的文字").performScrollTo().performTextReplacement(checked)
-            click("同意交由云端模型整理和用于之后的问答。");shot("03-confirm-text");click("确认文字并整理");idle()
+            ui.onNodeWithText("同意交由云端模型整理和用于之后的问答。").performScrollTo()
+            ui.onNode(isToggleable() and hasAnySibling(hasText("同意交由云端模型整理和用于之后的问答。"))).performClick()
+            shot("03-confirm-text");click("确认文字并整理");idle()
             ui.waitUntil(180000){model.ui.value.stories.any{it.text("episode_id")==ep&&it.text("status") in listOf("ready","failed")}}
             var story=model.ui.value.stories.single{it.text("episode_id")==ep};assertEquals("ready",story.text("status"));assertEquals(raw,story.text("machine_transcript"));assertTrue(story.rows("memories").isNotEmpty())
             report.put("story",story).put("no_memories_before_confirmation",true)
