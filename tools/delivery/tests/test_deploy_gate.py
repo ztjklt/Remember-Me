@@ -9,6 +9,17 @@ spec.loader.exec_module(module)
 
 
 class SmokeGateTest(unittest.TestCase):
+    def test_proofreading_is_explicit_and_preserves_other_capabilities(self):
+        for service in module.SERVICES:
+            normal = module.release_updates(service, 'commit')
+            enabled = module.release_updates(service, 'commit', True)
+            self.assertNotIn('REMEMBER_TRANSCRIPT_CORRECTION_ENABLED', normal)
+            self.assertEqual(enabled.get('REMEMBER_TRANSCRIPT_CORRECTION_ENABLED'),
+                             'true' if service in ('api', 'worker') else None)
+            self.assertEqual(enabled['REMEMBER_RELEASE_ID'], 'commit')
+            self.assertFalse(any('KEY' in key or 'REGISTRATION' in key or 'VOICE' in key
+                                 for key in enabled))
+
     def setUp(self):
         clause = '第一次独立开12路是1987年，不是1986年。'
         answer = {'mode': 'evidence', 'stale': False, 'model_version': 'Deepseek-v4-flash',
