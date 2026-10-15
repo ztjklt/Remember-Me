@@ -684,3 +684,18 @@ def reextract_empty(episode_id: str, request: Request, actor: Actor = Depends(cu
     invalidate_answers(session, request.app.state.object_store, episode.subject_id)
     session.commit()
     return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus.EXTRACTING, trace_id=episode.trace_id or None)
+
+
+@router.delete("/{episode_id}")
+def delete_recording(episode_id: str, request: Request, actor: Actor = Depends(current_actor),
+                     session: Session = Depends(get_session)) -> dict:
+    from ..access import Hidden
+    from ..recording_deletion import delete_recording as erase
+    # Authorize without the ordinary read helper, which hides deleted tombstones
+    # but must not prevent an owner retrying failed object-store cleanup.
+    from ..access import require_owner
+    row = session.get(Episode, episode_id)
+    if row is None: raise Hidden('录音不存在。')
+    require_owner(session, row.subject_id, actor.actor_id)
+    subject_id = row.subject_id
+    return erase(session, request.app.state.object_store, subject_id, episode_id, actor.actor_id)

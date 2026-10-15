@@ -59,7 +59,7 @@ class EpisodeRepository:
         handler uses it: see `require_for`.
         """
         episode = self.get(episode_id)
-        if episode is None:
+        if episode is None or (episode.capture_metadata or {}).get("deleted_at"):
             raise EpisodeNotFound(f"No episode with id {episode_id}")
         return episode
 
@@ -80,7 +80,7 @@ class EpisodeRepository:
         one Actor enumerate another's recordings by id.
         """
         episode = self.for_actor(episode_id, actor_id=actor_id)
-        if episode is None:
+        if episode is None or (episode.capture_metadata or {}).get("deleted_at"):
             raise EpisodeNotFound(f"No episode with id {episode_id}")
         return episode
 

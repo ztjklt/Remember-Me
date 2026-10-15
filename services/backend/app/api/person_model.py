@@ -95,7 +95,7 @@ def episodes(subject_id: str, actor: Actor = Depends(current_actor), session: Se
         "model_version": item.model_version, "error_code": item.error_code,
         "speaker_report": (item.capture_metadata or {}).get("speaker_report"),
         "capture_origin": (item.capture_metadata or {}).get("origin"),
-    } for item in rows]}
+    } for item in rows if not (item.capture_metadata or {}).get("deleted_at") or (item.capture_metadata or {}).get("cleanup_object_key")]}
 
 
 @router.get("/person-model")

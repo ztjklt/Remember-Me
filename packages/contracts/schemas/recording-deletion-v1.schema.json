@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner recording deletion receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["deleted", "cleanup_pending"],
+  "properties": {"deleted": {"const": true}, "cleanup_pending": {"type": "boolean"}}
+}

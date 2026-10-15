@@ -94,3 +94,7 @@ The [approved LiveKit/CosyVoice proposal](../../docs/architecture/realtime-twin-
 ## Personal learning v0.9 (2026-10-14)
 
 The direct Product / Integration Owner request is recorded in [the personal-learning proposal](../../docs/architecture/twin-personal-learning-proposal.md). MODEL_TRAINING is a separate owner grant. v0.9 adds strict preference, verified human reference/rating and real training-result shapes; all v0.1–v0.8 shapes remain unchanged. Training remains a candidate until independent held-out human validation. Model loss, recording counts and LLM diagnoses never become personality-completion percentages.
+
+## Recording deletion (2026-10-15)
+
+Owner-authorized right-swipe deletion adds `DELETE /api/v1/episodes/{episode_id}` with [strict receipt](schemas/recording-deletion-v1.schema.json). Existing integration shapes stay unchanged. See [scope and semantics](../../docs/architecture/recording-swipe-deletion-2026-10-15.md).

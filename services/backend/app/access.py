@@ -39,7 +39,8 @@ def altered_story_ids(session, episode_ids):
 
 def visible_episodes(session, subject_id, actor_id, *, cloud=False):
     if is_owner(session, subject_id, actor_id):
-        return set(session.scalars(select(Episode.episode_id).where(Episode.subject_id == subject_id)))
+        return {ep.episode_id for ep in session.scalars(select(Episode).where(Episode.subject_id == subject_id))
+                if not (ep.capture_metadata or {}).get("deleted_at")}
     subject = session.get(Subject, subject_id)
     if subject is None or subject.owner_actor_id is None:
         raise Hidden('人物空间不可用。')
