@@ -56,7 +56,7 @@ class ContinuousVoiceLiveTest {
             if(voiceEngine=="step_realtime"){
                 ui.waitUntil(15000){ui.onAllNodesWithTag("voice-realtime").fetchSemanticsNodes().isNotEmpty()}
                 ui.onNodeWithTag("voice-realtime").performClick()
-            }else if(speed=="reviewed")ui.onNodeWithTag("voice-fast").performClick()
+            }else if(speed!="reviewed")ui.onNodeWithTag("voice-fast").assertIsOff().performClick()
             report.put("response_speed",speed)
             report.put("voice_engine",voiceEngine)
             ui.waitUntil(15000){!model.ui.value.busy}
