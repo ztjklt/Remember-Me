@@ -61,3 +61,30 @@ def test_matched_wearable_sources_stop_training_when_either_voice_grant_is_revok
     assert list(session.scalars(select(PersonTrait).where(PersonTrait.subject_id==own.subject_id)))==[]
     assert all(m.review_state=='pending' for m in session.scalars(select(MemoryItem).where(MemoryItem.episode_id==eid)))
     assert client.get(f'/api/v1/episodes/{eid}/audio',headers=h).status_code==200
+
+
+def test_mixed_wearable_spans_keep_only_verified_owner_and_exclude_overlap(app,client,session):
+    from types import SimpleNamespace as N
+    from app.contracts import SourceType
+    own=seed_development_data(session,subject_name='QA',actor_name='QA')
+    headers={'Authorization':'Bearer '+own.actor_token}
+    grant=client.post('/api/v1/consents',headers=headers,json={'subject_id':own.subject_id,'scope':'SPEAKER_IDENTIFICATION'}).json()['consent_id']
+    identity=vp.enroll(session,own.subject_id,own.actor_id,grant,[1.,0.],'qa-encoder-v1',{'kind':'fixture','id':'reference'},role='subject',label='QA',person_key='subject');session.commit()
+    phrases=['我喜欢散步。','我喜欢游泳。','我们一起说话。']
+    text=''.join(phrases);first=len(phrases[0]);second=first+len(phrases[1])
+    ep=N(source='WORK_3200',subject_id=own.subject_id,actor_id=own.actor_id,transcript=text,capture_metadata={
+        'voiceprint_consent_id':grant,'speaker_report':{'voiceprint_model_version':'qa-encoder-v1',
+        'speakers':[{'speaker_id':0,'voice_identity_id':identity.identity_id,'is_subject':True,'voiceprint_status':'matched'},
+                    {'speaker_id':1,'is_subject':False,'voiceprint_status':'unknown'}],
+        'segments':[{'speaker_id':0,'is_subject':True,'text':phrases[0]},
+                    {'speaker_id':1,'is_subject':False,'text':phrases[1]},
+                    {'speaker_id':0,'is_subject':True,'overlap':True,'text':phrases[2]}]}})
+    evidence=[N(evidence_id='owner',span_start=0,span_end=first,source_type=SourceType.SUBJECT),
+              N(evidence_id='contact',span_start=first,span_end=second,source_type=SourceType.SUBJECT),
+              N(evidence_id='overlap',span_start=second,span_end=len(text),source_type=SourceType.SUBJECT),
+              N(evidence_id='crossing',span_start=0,span_end=second,source_type=SourceType.SUBJECT)]
+    memories=[N(evidence_ids=[e.evidence_id],source_type=SourceType.SUBJECT) for e in evidence]
+    excluded=vp.classify_recorded_evidence(ep,N(evidence=evidence,memory_items=memories),session)
+    assert excluded=={'contact','overlap','crossing'}
+    assert memories[0].source_type==SourceType.SUBJECT
+    assert all(m.source_type==SourceType.THIRD_PARTY for m in memories[1:])
