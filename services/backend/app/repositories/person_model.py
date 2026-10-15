@@ -77,7 +77,7 @@ class PersonModelRepository:
         from ..errors import AppError
         verified=[]
         for memory,episode in memories:
-            if (episode.capture_metadata or {}).get('origin')=='natural_dialogue':
+            if episode.source=='WORK_3200' or (episode.capture_metadata or {}).get('origin')=='natural_dialogue':
                 try:require_verified_episode(session,episode)
                 except AppError:continue
             verified.append((memory,episode))

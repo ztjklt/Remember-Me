@@ -188,6 +188,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             'api_version':'0.12.0','sharing_invitations':True,
             'registration_allowed':allowed if allowed is not None else settings.environment in {'development','test'}}
     app.include_router(consents.router)
+    from .api import recording_device
+    app.include_router(recording_device.router)
     app.include_router(episodes.router)
     app.include_router(person_model.router)
     app.include_router(pairing.router)

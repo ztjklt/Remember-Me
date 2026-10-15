@@ -18,7 +18,7 @@ def coverage(session,subject):
             evidence=session.get(Evidence,eid)
             ep=session.get(Episode,evidence.episode_id) if evidence else None
             if not evidence or not ep or ep.subject_id!=subject or ep.status!='ready' or evidence.source_type not in ('SUBJECT','CALIBRATION') or not evidence.excerpt.strip():valid=False;break
-            if (ep.capture_metadata or {}).get('origin')=='natural_dialogue':
+            if ep.source=='WORK_3200' or (ep.capture_metadata or {}).get('origin')=='natural_dialogue':
                 try:require_verified_episode(session,ep)
                 except AppError:valid=False;break
             rows=list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id==ep.episode_id,MemoryItem.deleted_at.is_(None),MemoryItem.review_state=='active')))

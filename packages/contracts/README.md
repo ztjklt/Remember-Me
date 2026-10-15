@@ -1,3 +1,5 @@
+2026-10-15：新增已授权 [后台录音豆切片](../../docs/architecture/background-wearable-capture-2026-10-15.md)。Owner 作用域 `GET /api/v1/subjects/{id}/recording-device/capabilities` 与 `POST .../session`（`installation_id` 为 20–64 位字母／数字／连字符）提供 SDK 临时会话，响应见 `schemas/recording-device-v1.schema.json`，`Cache-Control: no-store`。不向移动端提供厂商长期 app_key。`WORK_3200` 录音复用既有 Capture，自动记忆必须有当前有效的本人声纹匹配；未知／亲友段保留为待核对内容。旧客户端形状不变。
+
 # Integration Contract v0.12
 
 2026-10-15 Product / Integration Owner 授权：真正的 Subject 内声纹模板与跨段匹配，普通／多人录音与同一手机多人 Twin 对话；仅匹配本人声音自动更新记忆；指定账号＋语音辅助确认＋密语的专属范围托付；独立人物模型资料覆盖图。v0.11 定义完整保留，新形状在 v0.12。见 [批准修订](../../docs/architecture/voiceprint-personal-model-contract-v0.12.md)。声纹不代替账号、密码或授权，声音无法确认时继续交流。交接由事先指定照护人记录核验，不能由声音或 LLM 自动触发。

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recording-device-v1.schema.json",
+  "title": "Owner-scoped Soundcore D3200 device session v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "user_id",
+    "device_id",
+    "token",
+    "license_json",
+    "license_signature",
+    "token_expires_at",
+    "environment",
+    "sdk_version",
+    "product_code"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "device_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "token": {
+      "type": "string",
+      "minLength": 1
+    },
+    "license_json": {
+      "type": "string",
+      "minLength": 1
+    },
+    "license_signature": {
+      "type": "string",
+      "minLength": 1
+    },
+    "token_expires_at": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "environment": {
+      "const": "development"
+    },
+    "sdk_version": {
+      "const": "V1.3.01"
+    },
+    "product_code": {
+      "const": "D3200"
+    }
+  }
+}

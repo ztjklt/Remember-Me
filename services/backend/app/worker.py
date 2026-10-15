@@ -457,7 +457,7 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the extract stage with no transcript"
             )
 
-        if (episode.capture_metadata or {}).get('speaker_verification'):
+        if episode.source!='WORK_3200' and (episode.capture_metadata or {}).get('speaker_verification'):
             from .voiceprints import require_verified_episode
             require_verified_episode(session,episode)
         payload = AICoreInput(
@@ -473,14 +473,14 @@ class ProcessingWorker:
             trace_id=episode.trace_id,
         )
         output = self.ai.process(payload)
-        if (episode.capture_metadata or {}).get('speaker_verification'):
+        if episode.source!='WORK_3200' and (episode.capture_metadata or {}).get('speaker_verification'):
             from .access import publication_lock
             publication_lock(session,episode.subject_id)
             session.expire_all()
             from .voiceprints import require_verified_episode
             require_verified_episode(session,episode)
         from .voiceprints import classify_recorded_evidence
-        classify_recorded_evidence(episode,output)
+        classify_recorded_evidence(episode,output,session)
         MemoryRepository(session).store_result(episode, output)
 
     def _model(self, session, episode: Episode) -> None:
@@ -495,16 +495,25 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the model stage with no result"
             )
         metadata = episode.capture_metadata or {}
-        if metadata.get('origin')=='natural_dialogue':
+        if metadata.get('origin')=='natural_dialogue' or episode.source=='WORK_3200' or metadata.get('capture_mode')=='background_continuous':
             from sqlalchemy import select
             from .realtime_models import VoiceCall
             from .access import publication_lock
             publication_lock(session,episode.subject_id)
             busy=session.scalar(select(VoiceCall).where(VoiceCall.subject_id==episode.subject_id,VoiceCall.ended_at.is_(None),VoiceCall.active_turn!='',VoiceCall.active_turn!=VoiceCall.completed_turn_id))
             if busy:raise DialoguePublishDeferred('对话继续，资料稍后自动整理。')
-        if metadata.get('speaker_verification'):
+        if episode.source!='WORK_3200' and metadata.get('speaker_verification'):
             from .voiceprints import require_verified_episode
             require_verified_episode(session,episode)
+        if episode.source=='WORK_3200':
+            from types import SimpleNamespace
+            from .models import Evidence,MemoryItem
+            from .voiceprints import classify_recorded_evidence
+            evidence=list(session.scalars(select(Evidence).where(Evidence.episode_id==episode.episode_id)))
+            memories=list(session.scalars(select(MemoryItem).where(MemoryItem.episode_id==episode.episode_id,MemoryItem.deleted_at.is_(None))))
+            classify_recorded_evidence(episode,SimpleNamespace(evidence=evidence,memory_items=memories),session)
+            for memory in memories:
+                if memory.source_type=='THIRD_PARTY':memory.review_state='pending'
         from .language_support import store_supplement
         store_supplement(session, episode)
         PersonModelRepository(session).rebuild(

@@ -130,10 +130,15 @@ def revoke(session,identifier,store=None):
     rows=list(session.scalars(select(VoiceIdentity).where(VoiceIdentity.consent_id==identifier)))
     subjects=set()
     for row in rows:row.revoked_at=utcnow();row.vectors=[];row.sources=[];subjects.add(row.subject_id)
+    for ep in session.scalars(select(Episode).where(Episode.source=='WORK_3200')):
+        if (ep.capture_metadata or {}).get('voiceprint_consent_id')==identifier:
+            ep.capture_metadata={**ep.capture_metadata,'speaker_verification':'revoked'}
+            for memory in session.scalars(select(MemoryItem).where(MemoryItem.episode_id==ep.episode_id)):memory.review_state='pending'
+            subjects.add(ep.subject_id)
     for subject in subjects:
         ids={r.identity_id for r in rows if r.subject_id==subject}
         for ep in session.scalars(select(Episode).where(Episode.subject_id==subject)):
-            if (ep.capture_metadata or {}).get('voice_identity_id') in ids:
+            if any(episode_uses_identity(ep, identity_id) for identity_id in ids):
                 for m in session.scalars(select(MemoryItem).where(MemoryItem.episode_id==ep.episode_id)):m.review_state='pending'
                 ep.capture_metadata={**ep.capture_metadata,'speaker_verification':'revoked'}
         PersonModelRepository(session).rebuild(subject)
@@ -145,7 +150,27 @@ def owner_registered(session,subject,settings):
     try:return any(r.role=='subject' for r in active(session,subject,encoder(settings.voiceprint_model_path).version))
     except Exception:return False
 
+def recorded_subject_speakers(session,episode):
+    metadata=episode.capture_metadata or {};report=metadata.get('speaker_report') or {};valid=set()
+    grant=session.get(Consent,metadata.get('voiceprint_consent_id')) if metadata.get('voiceprint_consent_id') else None
+    if not grant or grant.status!='granted' or grant.scope!='SPEAKER_IDENTIFICATION' or grant.subject_id!=episode.subject_id or grant.granted_by_actor_id!=episode.actor_id:return valid
+    for speaker in report.get('speakers',[]):
+        identity=session.get(VoiceIdentity,speaker.get('voice_identity_id')) if speaker.get('voice_identity_id') else None
+        reference=session.get(Consent,identity.consent_id) if identity else None
+        if speaker.get('speaker_id') is not None and identity and reference and reference.status=='granted' and reference.scope=='SPEAKER_IDENTIFICATION' and reference.subject_id==episode.subject_id and reference.granted_by_actor_id==episode.actor_id and identity.subject_id==episode.subject_id and identity.role=='subject' and not identity.revoked_at and identity.vectors and identity.encoder_version==report.get('voiceprint_model_version') and speaker.get('is_subject') and speaker.get('voiceprint_status')=='matched':valid.add(speaker.get('speaker_id'))
+    return valid
+
+
+def episode_uses_identity(episode,identity_id):
+    metadata=episode.capture_metadata or {}
+    return metadata.get('voice_identity_id')==identity_id or (episode.source=='WORK_3200' and any(s.get('voice_identity_id')==identity_id for s in (metadata.get('speaker_report') or {}).get('speakers',[])))
+
+
 def require_verified_episode(session,episode):
+    if episode.source=='WORK_3200':
+        if not recorded_subject_speakers(session,episode):raise RequestInvalid('这段录音暂未匹配有效的本人声音。')
+        return
+
     identifier=(episode.capture_metadata or {}).get('voice_identity_id')
     row=session.get(VoiceIdentity,identifier) if identifier else None
     if not row or row.role!='subject' or row.subject_id!=episode.subject_id or row.revoked_at or not row.vectors:raise RequestInvalid('这条对话尚未匹配本人声音；可以继续聊，不能作为本人资料保存。')
@@ -170,7 +195,7 @@ def invalidate_identity(session,row,store):
     from .retrieval import invalidate_answers
     row.revoked_at=utcnow();row.vectors=[];row.sources=[]
     for ep in session.scalars(select(Episode).where(Episode.subject_id==row.subject_id)):
-        if (ep.capture_metadata or {}).get('voice_identity_id')==row.identity_id:
+        if episode_uses_identity(ep,row.identity_id):
             ep.capture_metadata={**ep.capture_metadata,'speaker_verification':'revoked'}
             for m in session.scalars(select(MemoryItem).where(MemoryItem.episode_id==ep.episode_id)):m.review_state='pending'
     if row.role=='subject':
@@ -181,7 +206,7 @@ def invalidate_identity(session,row,store):
             discard(session,store,sample)
     PersonModelRepository(session).rebuild(row.subject_id);invalidate_answers(session,store,row.subject_id);session.commit()
 
-def classify_recorded_evidence(episode,output):
+def classify_recorded_evidence(episode,output,session=None):
     """Keep known other speakers out of the ordinary recording Person pipeline.
 
     This does not manufacture identity when an old, manually reviewed recording
@@ -189,13 +214,18 @@ def classify_recorded_evidence(episode,output):
     """
     report=(episode.capture_metadata or {}).get('speaker_report') or {}
     speakers=report.get('speakers',[])
-    if not speakers or not (len(speakers)>1 or any(s.get('voiceprint_status')=='matched' for s in speakers)):return set()
+    automatic=getattr(episode,'source',None)=='WORK_3200' or (episode.capture_metadata or {}).get('capture_mode')=='background_continuous'
+    if not automatic and (not speakers or not (len(speakers)>1 or any(s.get('voiceprint_status')=='matched' for s in speakers))):return set()
+    valid=recorded_subject_speakers(session,episode) if automatic and session is not None else set()
     text=episode.transcript or '';cursor=0;owner=[]
     for segment in report.get('segments',[]):
-        phrase=segment.get('text','');start=text.find(phrase,cursor)
+        from .chinese_text import simplified_transcript
+        phrase=simplified_transcript(segment.get('text',''))
+        if not phrase:continue
+        start=text.find(phrase,cursor)
         if start<0:continue
         end=start+len(phrase);cursor=end
-        if segment.get('is_subject') and not segment.get('overlap'):owner.append((start,end))
+        if segment.get('is_subject') and not segment.get('overlap') and (not automatic or segment.get('speaker_id') in valid):owner.append((start,end))
     from .contracts import SourceType
     excluded=set()
     for evidence in output.evidence:

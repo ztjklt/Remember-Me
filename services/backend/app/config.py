@@ -78,6 +78,8 @@ class Settings(BaseSettings):
     ai_core_path: str = "/process"
     ai_timeout_seconds: float = 30.0
     voiceprint_model_path: str = ""
+    soundcore_app_id: str = ""
+    soundcore_app_key: SecretStr = SecretStr("")
     embedding_model: str = "BAAI/bge-small-zh-v1.5"
     personal_trainer_secret: SecretStr = SecretStr("")
     personal_training_base_model: str = "Qwen/Qwen3-0.6B-MLX-4bit"
