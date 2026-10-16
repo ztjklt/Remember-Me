@@ -70,7 +70,13 @@ class RecorderHomeVisualTest {
                 controller.authorize()
             }
             ui.waitUntil(20000) { controller.ui.value.authorized }
-            click("今天"); click("连接")
+            click("今天")
+            // A restored capture shows the expanded card ("设备"); a settled
+            // home shows the compact disconnected row ("连接"). Both open the
+            // same device panel. Do not couple pairing coverage to cloud history.
+            val entry = ui.onAllNodes(hasClickAction() and (hasText("连接") or hasText("设备"))).onFirst()
+            if (!entry.isDisplayed()) entry.performScrollTo()
+            entry.performClick(); ui.waitForIdle()
             ui.runOnIdle { controller.scan() }
             ui.onNodeWithText("正在搜索设备").assertIsDisplayed(); shot("00a-searching")
             ui.runOnIdle {
