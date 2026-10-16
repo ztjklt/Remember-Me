@@ -56,6 +56,45 @@ def setup_call(app,client,session):
     return owner,oh,rh,body
 
 
+def test_reviewed_voice_prepares_retrieval_without_early_answer_or_audio(app,client,session,monkeypatch):
+    owner,oh,_,body=setup_call(app,client,session)
+    app.state.settings.realtime_voice_prefetch_enabled=True
+    requests=[];prepared=threading.Event()
+    class ASR:
+        def __init__(self,*args):pass
+        async def __aenter__(self):return self
+        async def __aexit__(self,*args):pass
+        async def send(self,audio):pass
+        async def events(self):
+            yield dict(type='transcript',text='我家以前在哪里',final=False)
+            await asyncio.to_thread(prepared.wait,.7)
+            yield dict(type='transcript',text='我家以前不在哪里？',final=True)
+            await asyncio.sleep(10)
+    def generate(*args,**kwargs):
+        requests.append((args[1].question,kwargs))
+        if kwargs.get('prepare_only'):
+            prepared.set();return None
+        raise RuntimeError('End fixture after inspecting the real final dispatch')
+    monkeypatch.setattr(api,'ParaformerRealtime',ASR)
+    monkeypatch.setattr(api,'generate_answer',generate)
+    created=client.post(f'/api/v1/subjects/{owner.subject_id}/voice-sessions',headers=oh,json=body).json()
+    assert app.state.voice_sessions[created['session_id']].payload.response_speed=='reviewed'
+    events=[]
+    with client.websocket_connect(created['websocket_path'],headers=oh) as ws:
+        while True:
+            event=ws.receive_json();events.append(event)
+            if event['type']=='error':break
+        ws.send_json({'type':'end'})
+    assert prepared.is_set()
+    assert [q for q,_ in requests]==['我家以前在哪里','我家以前不在哪里？']
+    early,final=[kw for _,kw in requests]
+    assert early['material_cache'] is final['material_cache']
+    assert early['selection_cache'] is final['selection_cache']
+    assert final['on_source_prepared'] is None  # Never speak an unreviewed source.
+    assert final['material_cache'] is not None and final['selection_cache'] is not None
+    assert not any(e['type'] in {'audio','answer_ready'} for e in events)
+
+
 def test_step_engine_requires_explicit_gate_and_keeps_pipeline_default(app,client,session):
     from pydantic import SecretStr
     owner,oh,_,body=setup_call(app,client,session)

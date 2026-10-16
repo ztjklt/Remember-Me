@@ -48,6 +48,7 @@ def main(args):
             for index,item in enumerate(json.loads(args.packets.read_text(encoding='utf8'))):
                 payload=TwinInput.model_validate(item['payload']); payload.voice_response=True
                 modes=[False,True] if (repeat+index)%2 else [True,False]
+                if args.route!='both':modes=[args.route=='direct']
                 for direct in modes:
                     calls=[];begin=time.monotonic()
                     record=dict(case=item['id'],repeat=repeat+1,direct_original=direct,
@@ -66,7 +67,7 @@ def main(args):
                     print(json.dumps({k:record.get(k) for k in ('case','repeat','direct_original','status','duration_ms','error')}),flush=True)
                     if record.get('error') in {'ProviderAuthenticationFailed','ProviderRateLimited'}:
                         return
-                    time.sleep(1)
+                    time.sleep(args.pause_seconds)
     finally:chat.close()
 
 
@@ -76,4 +77,6 @@ if __name__=='__main__':
     parser.add_argument('--packets',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--repeats',type=int,default=1)
+    parser.add_argument('--route',choices=['both','direct','control'],default='both')
+    parser.add_argument('--pause-seconds',type=float,default=5)
     main(parser.parse_args())

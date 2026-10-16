@@ -314,8 +314,10 @@ async def stream(websocket:WebSocket,session_id:str):
                     cloud_consent_id=call.payload.cloud_consent_id,mode=call.payload.mode,retrieval_mode='local'),
                     request,actor,session,voice_context=history,cancel_check=bridge.check,
                     on_retrieved=lambda:timing.update(retrieval_ms=round((time.monotonic()-started)*1000)),
-                    material_cache=material_cache if call.payload.response_speed=='streamed' else None,
-                    selection_cache=selection_cache if call.payload.response_speed=='streamed' and settings.realtime_voice_prefetch_enabled else None,
+                    # Preparation is local retrieval only. Reviewed answers keep
+                    # the same model/review path and fresh authorization checks.
+                    material_cache=material_cache if call.payload.response_speed in {'reviewed','streamed'} else None,
+                    selection_cache=selection_cache if call.payload.response_speed in {'reviewed','streamed'} and settings.realtime_voice_prefetch_enabled else None,
                     on_source_prepared=(lambda text:bridge._blocking(on_draft,text))
                         if call.payload.response_speed=='streamed' and on_draft is not None else None)
                 return dict(result,voice_timing=timing,response_speed=call.payload.response_speed)
@@ -377,7 +379,7 @@ async def stream(websocket:WebSocket,session_id:str):
                         if turns.current is not None:
                             # ASR confirms speech if local VAD missed it.
                             await turns.interrupt()
-                        if call.payload.engine=='step_realtime' or (call.payload.response_speed=='streamed' and settings.realtime_voice_prefetch_enabled):
+                        if call.payload.engine=='step_realtime' or (call.payload.response_speed in {'reviewed','streamed'} and settings.realtime_voice_prefetch_enabled):
                             prefetcher.offer(event['text'],list(turns.history))
             except asyncio.CancelledError: raise
             except Exception as exc:
