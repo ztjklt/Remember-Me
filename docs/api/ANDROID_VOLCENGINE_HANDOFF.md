@@ -19,6 +19,8 @@
 
 当前关闭自助注册，需要管理员安排独立联调账号。Android 现有另一套后端的账号不一定能在此地址使用；`subject_id` 应从本次登录后的空间列表读取。账号密码、用户登录 token 和实际 RTC 房间票据不提交 Git。
 
+新建空白账号注意：当前服务沿用 Twin 的首次初始化门槛，读取语音能力前还要求该空间有本人有效 `RECORDING` 许可；缺少时会返回 404，不能据此判断账号密码或空间有误。用户在客户端明确确认录音用途后，先通过 `/api/v1/consents` 建立该许可，再读取语音能力。管理员创建账号不会预先授予任何用途；`CLOUD_TWIN`、`VOICE` 在通话前仍分别确认。已有录音许可也不等于本次通话自动采集，是否上传原话仍由本次通话的可选采集字段和声纹许可共同决定。
+
 ## Android SDK
 
 Android 需要集成自己的火山 RTC SDK 并实现媒体适配器。官方提供 [Android SDK 接入说明](https://docs.volcengine.com/docs/real_time_communication/Android-1?lang=zh)和 [SDK 获取／Maven 配置](https://docs.volcengine.com/docs/real_time_communication/GetSDK?lang=en)：Maven 仓库为 `https://artifact.bytedance.com/repository/Volcengine/`，依赖坐标为 `com.volcengine:VolcEngineRTC:<已验证版本>`。Android 负责人按所需音频场景、房间消息及 PCM 播放 API 验证并固定版本；本轮未选定或验证 Android SDK 版本。
@@ -38,9 +40,9 @@ iOS 仓库已提供 `apps/ios/scripts/prepare-volcengine.sh`，下载并校验�
 | 1 | `GET /api/v1/service-info` | 查询服务信息 |
 | 2 | `POST /api/v1/accounts/login` | JSON：`username`、`password`；读取 `actor_token` |
 | 3 | `GET /api/v1/workbench/spaces` | 选择本账号的 owner 空间，读取 `subject_id` |
-| 4 | `GET /api/v1/subjects/{S}/twin/voice/capabilities?transport=volcengine&features=2` | 读取当前 `notice`、`policy`、`available` 和可选能力 |
-| 5 | `GET /api/v1/consents?subject_id={S}` | 查有效许可；用户明确同意后，才按需 POST 许可 |
-| 6 | `POST /api/v1/consents` | JSON：`subject_id`、`scope`、`evidence_ref`；默认声音也需要独立 `CLOUD_TWIN`、`VOICE` 许可 |
+| 4 | `GET /api/v1/consents?subject_id={S}` | 查有效许可；新空白账号先处理首次录音用途确认 |
+| 5 | `POST /api/v1/consents` | JSON：`subject_id`、`scope`、`evidence_ref`；本人明确确认后先初始化 `RECORDING`；默认声音也需要另行确认 `CLOUD_TWIN`、`VOICE` |
+| 6 | `GET /api/v1/subjects/{S}/twin/voice/capabilities?transport=volcengine&features=2` | 完成首次初始化后读取当前 `notice`、`policy`、`available` 和可选能力；根据实际通话说明完成尚未确认的用途 |
 | 7 | `POST /api/v1/subjects/{S}/twin/voice/volcengine/calls` | 申请当前用户、房间的短期票据 |
 | 8 | Android SDK 加入 RTC 房间 | 使用票据的 `app_id`、`room`、`participant_identity`、`token`；先保持麦克风关闭 |
 | 9 | `POST /api/v1/subjects/{S}/twin/voice/volcengine/calls/{C}/activate` | 原生进房成功后调用，再启用麦克风；根据真实机器人事件显示监听状态 |
