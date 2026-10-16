@@ -152,6 +152,17 @@ def test_malformed_or_inconsistent_review_cannot_publish(monkeypatch, bad_review
     assert response.status_code == 502 and len(chat.requests) == 2
 
 
+def test_voice_review_with_copied_draft_mode_stays_fail_closed(monkeypatch):
+    checked = review()
+    checked['points'][0]['mode'] = 'SIMULATION'
+    chat = ScriptedChat({'points': [point()]}, checked)
+    data = payload()
+    data['voice_response'] = True
+    response = post(monkeypatch, data, chat)
+    assert response.status_code == 502 and len(chat.requests) == 2
+    assert 'answer' not in response.json()
+
+
 @pytest.mark.parametrize("bad_point", [
     point(understanding_ids=["invented"]),
     point(understanding_ids=[], contribution_ids=["c1"]),

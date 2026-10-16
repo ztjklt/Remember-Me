@@ -555,7 +555,14 @@ class PersonaProvider:
                 point_semantic_scope_complete_required=True,
                 question_coverage_checked_separately=True,
                 attribution_label_verified=p.mode == "ATTRIBUTED", quote_match=quote_match))
-        checked, _ = complete(REVIEW_SYSTEM, {**packet, "response_schema": PersonaReview.model_json_schema(),
+        review_system = REVIEW_SYSTEM
+        if payload.voice_response:
+            # Keep the review shape separate from draft/review_scope metadata.
+            # Strict parsing below still rejects extra fields; no coercion or
+            # second vote can turn a malformed/negative review into acceptance.
+            review_system += "\n语音审阅结构核对 v1：输出points的每项仅有point_index、verdict、codes、rationale、depends_on五个字段；coverage仅有status、codes、missing_question_parts、rationale四个字段。draft及review_scope中的mode、text、question_part等是输入信息，不要复制到审阅输出。先完成上述全部语义检查，再核对JSON字段与response_schema完全一致。"
+            record['review_shape_policy'] = 'voice-review-shape-v1'
+        checked, _ = complete(review_system, {**packet, "response_schema": PersonaReview.model_json_schema(),
             "draft": draft.model_dump(), "cited_material": cited, "review_scope": review_scope,
             # Coverage is an outcome of this review, not an input default that
             # could pre-judge it. Per-point completeness is semantic scope only.
