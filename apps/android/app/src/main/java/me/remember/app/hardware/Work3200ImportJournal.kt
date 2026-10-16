@@ -10,6 +10,7 @@ import java.security.MessageDigest
 import java.util.UUID
 
 data class HardwareImport(val importId: String, val idempotencyKey: String, val episodeId: String?)
+data class HardwareDownloadReceipt(val importId: String, val fileId: Int, val bytes: Long, val sha256: String, val rawFile: File)
 data class HardwareUploadCandidate(val file: File, val audio: PreparedHardwareAudio, val idempotencyKey: String, val episodeId: String?, val source: String = "WORK_3200")
 
 /** Pass a dedicated app-private root; vendor downloads and prepared derivatives have separate folders. */
@@ -35,6 +36,19 @@ class Work3200ImportJournal(directory: File) {
     }
     private fun view(row: JSONObject) = HardwareImport(row.getString("id"), row.getString("key"), row.optString("episode").takeIf { it.isNotBlank() })
     private fun load(id: String): JSONObject = JSONObject(within(entryFile(id), entries).readText()).also { require(it.getString("id") == id) }
+    private fun receipt(row: JSONObject, scope: HardwareScope): HardwareDownloadReceipt {
+        requireScope(row, scope)
+        val file = within(File(root, row.getString("raw")), rawDirectory)
+        val digest = sha(file)
+        require(digest == row.getString("raw_sha256")) { "本机录音校验未通过，请重新下载。" }
+        return HardwareDownloadReceipt(row.getString("id"), row.getJSONObject("identity").getInt("file"), file.length(), digest, file)
+    }
+    fun rawReceipt(id: String, scope: HardwareScope): HardwareDownloadReceipt = locked { receipt(load(id), scope) }
+    fun downloaded(scope: HardwareScope): List<HardwareDownloadReceipt> = locked {
+        entries.listFiles().orEmpty().filter { it.extension == "json" }.mapNotNull {
+            runCatching { receipt(load(it.nameWithoutExtension), scope) }.getOrNull()
+        }.sortedByDescending { it.fileId }
+    }
     private fun requireScope(row: JSONObject, scope: HardwareScope) {
         val identity = row.getJSONObject("identity")
         require(identity.getString("server") == scope.server && identity.getString("actor") == scope.actorId && identity.getString("subject") == scope.subjectId) { "Import belongs to another account or subject" }

@@ -183,6 +183,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(RequestValidationError, _request_error_handler)
     app.include_router(health.router)
     app.include_router(session.router)
+    from .api import hardware
+    app.include_router(hardware.router)
     from .api import accounts
     app.include_router(accounts.router)
     from .api import sharing

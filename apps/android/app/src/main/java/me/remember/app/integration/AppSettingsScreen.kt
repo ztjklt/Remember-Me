@@ -56,6 +56,7 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             SettingsEntry("账号与空间", "当前身份、换号与退出", Icons.Outlined.AccountCircle) { section = "account" }
             SettingsEntry("外观与阅读", "${appearance.theme.title} · ${appearance.scene.title}", Icons.Outlined.Palette) { section = "appearance" }
             SettingsEntry("设备权限与提醒", "麦克风、通知与系统设置", Icons.Outlined.Security) { section = "permissions" }
+            if(state.owner) SettingsEntry("连接录音豆", "扫描连接、绑定与下载录音", Icons.Outlined.Bluetooth) { section = "recorder" }
             SettingsEntry("亲友与分享", "邀请、完整分享范围与撤销", Icons.Outlined.PeopleOutline) { section = "sharing" }
             if(state.owner) SettingsEntry("我的用词", "补充人名和方言含义", Icons.Outlined.EditNote) { section = "vocabulary" }
             SettingsEntry("待处理与核对", "录音、亲友问题、人物理解", Icons.Outlined.FactCheck) { section = "pending" }
@@ -87,6 +88,7 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("文字大小跟随手机系统设置。外观选择只保存在这台设备上。", style = MaterialTheme.typography.bodySmall)
         }
         "permissions" -> DevicePermissions(state, model)
+        "recorder" -> if(state.owner) Work3200Screen(model)
         "sharing" -> { ClaimInvitationPanel(state, model); SharingPanel(state, model, confirm) }
         "vocabulary" -> if(state.owner) {
             var text by remember(state.subject, state.vocabulary) { mutableStateOf(state.vocabulary) }

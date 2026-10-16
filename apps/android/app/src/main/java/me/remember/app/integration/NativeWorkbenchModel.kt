@@ -76,6 +76,21 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
     val ui = state.asStateFlow()
+    fun hardwareScope(): me.remember.app.hardware.HardwareScope {
+        val current = checkNotNull(session) { "请先登录。" }
+        check(state.value.owner) { "请进入本人空间连接录音豆。" }
+        return me.remember.app.hardware.HardwareScope(current.server, state.value.actor, state.value.subject)
+    }
+    suspend fun hardwareGrant(scope: me.remember.app.hardware.HardwareScope, deviceId: String): JSONObject {
+        val current = checkNotNull(session)
+        check(hardwareScope() == scope)
+        val result = withContext(Dispatchers.IO) {
+            client.json(current, "/api/v1/hardware/work3200/credentials", "POST", JSONObject().put("device_id", deviceId))
+        }
+        gate.requireCurrent(current)
+        check(hardwareScope() == scope)
+        return result
+    }
     private val companionFiles = File(context.filesDir, "companion-audio").apply { mkdirs() }
     private val companionLedger = AtomicFile(File(context.filesDir,"companion-drafts.json"))
     private val creationKeys = mutableMapOf<String, String>()

@@ -13,6 +13,20 @@ class Work3200ImportTest {
     private val scope = HardwareScope("https://example.invalid", "actor-a", "subject-a")
     private val recording = DeviceRecording(1700000000, 0, 160, 20, 0)
 
+    @Test fun downloadReceiptsSurviveRestartAndEnforceScopeAndChecksum() {
+        val root = temp.newFolder()
+        val journal = Work3200ImportJournal(root)
+        val raw = File(journal.rawDirectory, "retained.raw").apply { writeBytes(ByteArray(160) { 7 }) }
+        val saved = journal.recordDownloaded(scope, "device-a", recording, raw)
+        val reopened = Work3200ImportJournal(root)
+        assertEquals(160L, reopened.downloaded(scope).single().bytes)
+        assertTrue(reopened.downloaded(scope.copy(actorId = "other")).isEmpty())
+        reject { reopened.rawReceipt(saved.importId, scope.copy(actorId = "other")) }
+        raw.writeBytes(ByteArray(160) { 8 })
+        reject { reopened.rawReceipt(saved.importId, scope) }
+        assertTrue(reopened.downloaded(scope).isEmpty())
+    }
+
     private fun wav(): ByteArray = ByteBuffer.allocate(684).order(ByteOrder.LITTLE_ENDIAN).apply {
         put("RIFF".toByteArray()); putInt(676); put("WAVEfmt ".toByteArray()); putInt(16)
         putShort(1); putShort(1); putInt(16000); putInt(32000); putShort(2); putShort(16)

@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     enable_workbench: bool = False
     allow_account_registration: bool | None = None
     allowed_hosts: list[str] = ['127.0.0.1', 'localhost', '[::1]', 'testserver']
+    work3200_app_id: str = ''
+    work3200_app_key: SecretStr = SecretStr('')
+    work3200_environment: Literal['DEVELOPMENT', 'PRODUCTION'] = 'DEVELOPMENT'
 
     # SQLite is the local development and test default. Deployment supplies a
     # PostgreSQL DSN and adds the driver (see ADR-0001 D3).

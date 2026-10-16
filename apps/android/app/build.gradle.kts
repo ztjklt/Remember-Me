@@ -4,6 +4,14 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// The vendor archive is supplied privately; it must never enter public source control.
+val soundcoreArchive = providers.gradleProperty("rememberSoundcoreSdk").orNull
+val soundcoreEnabled = soundcoreArchive != null
+require(!providers.gradleProperty("rememberRequireHardwareSdk").orElse("false").get().toBoolean() || soundcoreEnabled) {
+    "This device build requires -PrememberSoundcoreSdk=<private .aar path>"
+}
+if (soundcoreEnabled) require(file(soundcoreArchive!!).isFile) { "Soundcore archive is missing" }
+
 android {
     namespace = "me.remember.app"
     compileSdk = 35
@@ -12,8 +20,9 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261023
-        versionName = "0.12.1-internal"
+        versionCode = 20261024
+        versionName = "0.13.0-device-internal"
+        buildConfigField("boolean", "SOUNDCORE_ENABLED", soundcoreEnabled.toString())
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
         require(serviceUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+"))) { "rememberServiceUrl must be a service root URL" }
         buildConfigField("String", "SERVICE_URL", "\"$serviceUrl\"")
@@ -45,10 +54,23 @@ android {
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+    sourceSets.getByName("main").java.srcDir(if (soundcoreEnabled) "src/soundcore/java" else "src/noSoundcore/java")
+    packaging { resources.excludes += setOf("META-INF/INDEX.LIST", "META-INF/DEPENDENCIES", "META-INF/io.netty.versions.properties") }
 }
 
 dependencies {
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.2.1")
+    if (soundcoreEnabled) {
+        implementation(files(soundcoreArchive!!))
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+        implementation("org.jetbrains.kotlinx:atomicfu:0.29.0")
+        implementation("io.ktor:ktor-client-okhttp:2.3.13")
+        implementation("io.ktor:ktor-client-websockets:2.3.13")
+        implementation("io.ktor:ktor-client-logging:2.3.13")
+        implementation("com.madgag.spongycastle:core:1.58.0.0")
+        implementation("com.madgag.spongycastle:prov:1.58.0.0")
+    }
     implementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
