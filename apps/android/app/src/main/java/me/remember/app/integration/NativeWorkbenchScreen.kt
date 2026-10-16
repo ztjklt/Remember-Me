@@ -621,8 +621,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                 Text(title,style=MaterialTheme.typography.titleLarge)
                 OutlinedButton(onClick=close,modifier=Modifier.fillMaxWidth().heightIn(min=60.dp)) {Text("关闭")}
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
-            } else Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(title, style = MaterialTheme.typography.titleLarge); TextButton(onClick = close) { Text("关闭") }; content()
+            } else Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                    Text(title,Modifier.weight(1f),style=MaterialTheme.typography.titleLarge)
+                    TextButton(onClick=close) { Text("关闭") }
+                }
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp),content=content)
             }
         }
     }

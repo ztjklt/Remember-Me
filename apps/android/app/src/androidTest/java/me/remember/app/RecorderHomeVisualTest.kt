@@ -76,14 +76,19 @@ class RecorderHomeVisualTest {
             ui.runOnIdle { events.recording(1, -1, fileId); events.recordingDuration(18000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
             ui.onAllNodes(hasText("标记重点", substring=true) and hasClickAction()).assertCountEquals(0)
+            ui.onNodeWithText("双敲机身标重点").assertIsDisplayed(); shot("00-recording-before-marker")
             ui.runOnIdle { events.realtimeMarker(fileId, 200); events.markers(fileId, intArrayOf(1200)) }
-            ui.onNodeWithText("正在记录这一刻").performScrollTo(); shot("01-recording-simulated-events")
+            ui.onNodeWithText("正在录音").assertIsDisplayed(); shot("01-recording-simulated-events")
             click("我的"); click("今天")
             ui.runOnIdle { assertSame(controller, model.recorder()); assertTrue(controller.ui.value.connected) }
             click("设备")
             ui.onNodeWithText("关闭").assertExists()
             ui.onNodeWithTag("recorder-status-row").performScrollTo().assertIsDisplayed()
             ui.onNodeWithText("数据来自录音豆",substring=true).assertDoesNotExist()
+            ui.onNodeWithText("连接期间持续计时",substring=true).assertDoesNotExist()
+            ui.onNodeWithText("传输：",substring=true).assertDoesNotExist()
+            ui.onNodeWithText("连接录音豆").assertDoesNotExist()
+            ui.onNodeWithText("导出连接与下载记录").assertDoesNotExist()
             shot("01b-device-status-simulated-events")
             ui.runOnIdle { events.recording(0, 88340, -1) }
             ui.waitUntil(15000) { controller.ui.value.percent == 40 && controller.ui.value.busy == "download" }
