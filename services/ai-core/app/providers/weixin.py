@@ -344,7 +344,7 @@ class CompactExtraction(BaseModel):
 
 
 class WeixinProvider(WeixinChat):
-    prompt_version = 'weixin-memory-highlights-v6'
+    prompt_version = 'weixin-memory-highlights-v6.1'
 
     def generate(self, request):
         from ..memory_units import ground_units
@@ -380,14 +380,31 @@ class WeixinProvider(WeixinChat):
         highlights = validated_highlights(request.payload)
         if highlights:
             instruction += INSTRUCTION
-        raw,version=self.complete(instruction,{'sources':[
+        material={'sources':[
             {'source_id':id,'text':text,
              'priority_weight':2.0 if overlaps(match.start(),match.end(),highlights) else 1.0}
-            for (id,text),match in zip(sources.items(),matches)]})
+            for (id,text),match in zip(sources.items(),matches)]}
+        started=perf_counter()
+        raw,version=self.complete(instruction,material)
         try:
             items=raw.get('memories',[]) if isinstance(raw,dict) else []
             if isinstance(items,list) and any(isinstance(item,dict) and 'source_ids' in item for item in items):
-                return ground_units(raw,matches,request,version)
+                try:
+                    return ground_units(raw,matches,request,version)
+                except AIOutputInvalid as exc:
+                    # A common model error is paraphrasing optional anchors.
+                    # Retry once within the original 45 s budget; retain every
+                    # source and priority, and never weaken exact-span checks.
+                    if exc.message!='Semantic anchor has no exact source': raise
+                    remaining=45-(perf_counter()-started)
+                    if remaining<=0: raise
+                    logger.warning(json.dumps({'event':'extraction_anchor_repair','attempt':2}))
+                    repair=('上次结果未通过原文校验：anchors中出现了所选原文没有的改写。'
+                        '重新生成完整JSON，每个anchor必须逐字复制所选source_ids对应text中的连续短语；'
+                        '一个字也不能添加、替换或改人称。无法逐字引用时anchors用空对象{}。'
+                        'statement仍须有原文依据，保留全部重点和普通来源的审阅。')
+                    raw,version=self.complete(instruction+repair,material,timeout_seconds=remaining)
+                    return ground_units(raw,matches,request,version)
             if isinstance(items,list) and any(isinstance(item,dict) and 'source_id' in item for item in items):
                 selected=SelectedExtraction.model_validate(raw)
                 if any(item.source_id not in sources for item in selected.memories):

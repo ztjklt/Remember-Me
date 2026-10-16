@@ -7,7 +7,7 @@ from app.providers.weixin import WeixinProvider
 
 def run(text, item):
     provider = WeixinProvider(api_key='test-only')
-    provider.complete = lambda *args: ({'memories': [item]}, 'test-model')
+    provider.complete = lambda *args, **kwargs: ({'memories': [item]}, 'test-model')
     try:
         return MemoryExtractor(provider=provider,model='test',model_version='test').process(
             AICoreInput(episode_id='ep',subject_id='subject',transcript=text,existing_model_version='v1'))

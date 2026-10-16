@@ -217,7 +217,7 @@ def test_extraction_keeps_actual_uppercase_model_and_offsets():
     output=MemoryExtractor(provider=provider,model='Deepseek-v4-flash',model_version='requested').process(AICoreInput(episode_id='ep1',subject_id='s1',transcript='我喜欢散步',trace_id='t1',existing_model_version="v1"))
     assert output.model_version=='DeepSeek-Actual'
     assert output.memory_items[0].model_version=='DeepSeek-Actual'
-    assert output.memory_items[0].prompt_version=='weixin-memory-highlights-v6'
+    assert output.memory_items[0].prompt_version=='weixin-memory-highlights-v6.1'
     assert output.evidence[0].excerpt=='我喜欢散步'
 
 

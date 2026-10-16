@@ -32,7 +32,10 @@ def stage(payload, name):
         assert not path.is_absolute() and '..' not in path.parts
         assert str(path).startswith(('services/backend/', 'services/ai-core/'))
         old=previous/path
-        assert (digest(old) if old.exists() else None)==item['before'], f'Live source drift: {path}'
+        # Older Windows-authored deployments retain CRLF; compare source text
+        # against Git's LF baseline without accepting any semantic drift.
+        actual=hashlib.sha256(old.read_text(encoding='utf-8').encode()).hexdigest() if old.exists() else None
+        assert actual==item['before'], f'Live source drift: {path}'
         assert digest(payload/'files'/path)==item['after']
     shutil.copytree(previous,candidate,symlinks=True,ignore=shutil.ignore_patterns('__pycache__','.pytest_cache'))
     for item in manifest['files']:
@@ -47,7 +50,7 @@ def validate(payload):
     record=json.loads((payload/'deployment.json').read_text()); candidate=Path(record['candidate'])
     for item in record['files']: assert digest(candidate/item['path'])==item['after']
     suites={'backend':['test_recording_highlights','test_paraformer_asr','test_worker','test_work3200_ingestion','test_transcript_correction'],
-            'ai-core':['test_recording_highlights','test_extractor','test_weixin']}
+            'ai-core':['test_recording_highlights','test_memory_semantic_units','test_extractor','test_weixin']}
     for service, tests in suites.items():
         folder=candidate/'services'/service
         env={**os.environ,'PYTHONPATH':str(payload/'test-support')}
