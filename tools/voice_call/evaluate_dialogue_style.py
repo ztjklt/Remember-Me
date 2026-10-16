@@ -8,6 +8,7 @@ import argparse
 import json
 from pathlib import Path
 import sys
+from contextlib import nullcontext
 from time import monotonic
 
 
@@ -16,6 +17,7 @@ def main():
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--transport', choices=['voice','direct'], default='voice')
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit('Use a new output path to retain every attempt.')
@@ -39,7 +41,7 @@ def main():
             heard_answer='平常我大概会先问清楚，再决定。', interrupted=False)]),
         ('unknown', '我第一次参加这种活动是哪一年？', []),
     ]
-    report = dict(scope='synthetic material only; no user records or TTS', cases=[])
+    report = dict(scope='synthetic material only; no user records or TTS', transport=args.transport,cases=[])
     try:
         for name, question, history in cases:
             entry = dict(case=name, question=question, status='started')
@@ -47,8 +49,11 @@ def main():
             args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
             start = monotonic()
             try:
-                result = PersonaProvider(chat).answer(PersonaInput.model_validate(
-                    dict(basis, question=question, dialogue_context=history)))
+                with (chat.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,
+                        json_retry_after_seconds=settings.voice_retry_after_seconds)
+                      if args.transport=='voice' else nullcontext()):
+                    result = PersonaProvider(chat).answer(PersonaInput.model_validate(
+                        dict(basis, question=question, dialogue_context=history)))
                 entry.update(status='completed', result=result.model_dump(mode='json'))
             except Exception as exc:
                 entry.update(status='failed', error_type=type(exc).__name__)

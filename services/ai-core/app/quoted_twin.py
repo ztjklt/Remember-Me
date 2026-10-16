@@ -238,19 +238,28 @@ class QuotedTwin:
                 if calls>=limit or monotonic()-start>65:
                     raise ProviderTimeout('Quote request budget exhausted')
                 calls+=1
+                call_started=monotonic()
+                call_record={'stage':record['stage'],'call':calls,'status':'failed'}
                 try:
                     if payload.voice_response and generation_streamed.get() and reserve_review:
                         options={'validate_result':lambda raw,model:render_ids(raw,payload,model)} if getattr(self.chat,'supports_stream_validation',False) else {}
-                        return self.chat.complete_stream(system,request,on_point=first_point,**options)
-                    return self.chat.complete(system,request)
+                        result=self.chat.complete_stream(system,request,on_point=first_point,**options)
+                    else:
+                        result=self.chat.complete(system,request)
+                    call_record['status']='returned'
+                    return result
                 except ProviderRateLimited:raise
                 except (ProviderTimeout,ProviderUnavailable):
+                    if payload.voice_response and getattr(self.chat,'json_retry_managed',False):raise
                     if payload.voice_response and generation_streamed.get() and getattr(self.chat,'stream_retry_managed',False):raise
                     # Reuse precisely the same authorized payload. A retry consumes
                     # the shared three-request budget, including semantic repair.
                     if attempt or calls>=limit or monotonic()-start>65:raise
                     logger.warning(json.dumps({'event':'quote_transport_retry','prompt_version':VERSION,'calls':calls}))
                     sleep(.3)
+                finally:
+                    call_record['duration_ms']=round((monotonic()-call_started)*1000,3)
+                    record.setdefault('stage_calls',[]).append(call_record)
             raise AssertionError('unreachable')
         record['stage']='selection'
         raw,model=complete(selection_system,packet,reserve_review=True)

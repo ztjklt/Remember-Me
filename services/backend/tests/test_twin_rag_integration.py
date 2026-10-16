@@ -15,6 +15,27 @@ def setup(app,client,session):
     return o,r,oh,rh,ep,other,source,extra,root,spy
 
 
+def test_local_vectors_survive_fresh_authorization_snapshot(app,client,session):
+    """Regression: publication_lock used to roll back every new embedding."""
+    from types import SimpleNamespace
+    from app.api.twin import TwinQuestion, generate_answer
+    from app.models import MemoryEmbedding
+    from test_twin_voice import TinyEncoder
+    o,_,oh,_,_,_,_,_,_=prepare(app,client,session)
+    class CountingEncoder(TinyEncoder):
+        def __init__(self):self.calls=[]
+        def encode(self,texts):self.calls.append(list(texts));return super().encode(texts)
+    encoder=CountingEncoder();app.state.embedding_encoder=encoder
+    question=TwinQuestion(question='喜欢散步吗？',retrieval_mode='local',cloud_consent_id=cloud(client,o.subject_id,oh))
+    first=generate_answer(o.subject_id,question,SimpleNamespace(app=app),o,session,context_only=True)
+    assert session.scalars(select(MemoryEmbedding)).all(), 'Fresh snapshot rolled back the vector cache'
+    before=len(encoder.calls)
+    second=generate_answer(o.subject_id,question,SimpleNamespace(app=app),o,session,context_only=True)
+    assert len(encoder.calls)==before+1, 'Unchanged archive was embedded again'
+    assert encoder.calls[-1]==[question.question]
+    assert first['candidates']==second['candidates'] and first['source_version']==second['source_version']
+
+
 def provider(monkeypatch, source, callback=None):
     class Picker:
         seen=None

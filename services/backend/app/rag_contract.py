@@ -311,6 +311,12 @@ class LocalRetrievalAdapter:
                 raise RagSourceChanged("本地检索范围或来源已变化，请重新检索。")
         hints = retrieval.retrieve(self.session, request.subject_id, request.query,
             self.encoder, limit=request.budget.max_hits, episode_ids=set(self.episode_ids), reader=self.reader)
+        # Retrieval writes only the derived, content/version-keyed vector cache.
+        # Commit it before load_snapshot starts a NEW authorization transaction:
+        # publication_lock intentionally rolls back any open transaction, which
+        # otherwise made every spoken question re-embed the unchanged archive.
+        # The caller still reloads permissions/fingerprints before using hints.
+        self.session.commit()
         scores = {}
         for hint in hints:
             for evidence in hint["evidence"]:

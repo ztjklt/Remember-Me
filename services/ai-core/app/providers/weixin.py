@@ -74,11 +74,12 @@ class WeixinChat:
             limits=httpx.Limits(max_connections=4,max_keepalive_connections=2,keepalive_expiry=5))
 
     @contextmanager
-    def transport_scope(self, *, timeout_seconds=None, retry_after_seconds=0):
+    def transport_scope(self, *, timeout_seconds=None, retry_after_seconds=0, json_retry_after_seconds=0):
         """One worker/request owns the loop and pool; cancellation still closes streams."""
         with asyncio.Runner() as runner:
             client=self._async_client()
-            policy=dict(delay=retry_after_seconds, deadline=perf_counter()+(timeout_seconds or 45), remaining=2)
+            policy=dict(delay=retry_after_seconds, deadline=perf_counter()+(timeout_seconds or 45), remaining=2,
+                        json_delay=json_retry_after_seconds)
             token=_transport_scope.set((self,runner,client,timeout_seconds,policy))
             try:yield
             finally:
@@ -89,6 +90,11 @@ class WeixinChat:
     def stream_retry_managed(self):
         scope=_transport_scope.get()
         return bool(scope is not None and scope[0] is self and scope[4]['delay']>0)
+
+    @property
+    def json_retry_managed(self):
+        scope=_transport_scope.get()
+        return bool(scope is not None and scope[0] is self and scope[4]['json_delay']>0)
 
     supports_stream_validation = True
 
@@ -103,18 +109,45 @@ class WeixinChat:
     async def _bounded_bytes(self, body, headers, timeout_seconds, telemetry):
         # HTTPX timeout alone limits each I/O phase/read, not the whole request.
         # This scope cancels connection, headers and a slow/dripping response.
-        async with asyncio.timeout(timeout_seconds):
-            async with self._request_client() as client:
-                async with client.stream('POST', self.base_url + '/chat/completions',
-                        json=body, headers=headers, timeout=min(45, timeout_seconds),
-                        follow_redirects=False) as response:
-                    self._check_status(response, telemetry)
-                    chunks = bytearray()
-                    async for chunk in response.aiter_bytes(chunk_size=65536):
-                        if len(chunks) + len(chunk) > self.max_response_bytes:
-                            raise AIOutputInvalid('Weixin output too large')
-                        chunks.extend(chunk)
-                    return chunks
+        trace=TransportTrace(telemetry,perf_counter())
+        try:
+            async with asyncio.timeout(timeout_seconds):
+                async with self._request_client() as client:
+                    async with client.stream('POST', self.base_url + '/chat/completions',
+                            json=body, headers=headers, timeout=min(45, timeout_seconds),
+                            extensions={'trace':trace}, follow_redirects=False) as response:
+                        trace.headers()
+                        self._check_status(response, telemetry)
+                        chunks = bytearray()
+                        async for chunk in response.aiter_bytes(chunk_size=65536):
+                            if len(chunks) + len(chunk) > self.max_response_bytes:
+                                raise AIOutputInvalid('Weixin output too large')
+                            chunks.extend(chunk)
+                        return chunks
+        except (httpx.TimeoutException,TimeoutError):
+            trace.timeout(); raise
+        except asyncio.CancelledError:
+            telemetry.update(cancelled=True,cancelled_phase=trace.active); raise
+
+    @staticmethod
+    def _decode(chunks, telemetry):
+        envelope = json.loads(chunks, parse_constant=reject_constant)
+        model = envelope['model']
+        if not isinstance(model, str) or not model.strip() or len(model) > 128:
+            raise AIOutputInvalid('Weixin model identity missing')
+        telemetry['response_model'] = model
+        usage = envelope.get('usage', {})
+        telemetry['usage'] = {k:v for k,v in usage.items() if k in {'prompt_tokens','completion_tokens','total_tokens','prompt_cache_hit_tokens','prompt_cache_miss_tokens'} and isinstance(v,int) and not isinstance(v,bool)} if isinstance(usage,dict) else {}
+        choice = envelope['choices'][0]
+        finish = choice.get('finish_reason')
+        telemetry['finish_reason'] = finish if finish in {'stop','length','content_filter','tool_calls'} else 'unknown'
+        if finish != 'stop' or choice['message'].get('refusal'):
+            raise AIOutputInvalid('Weixin output incomplete or refused')
+        result = json.loads(choice['message']['content'], parse_constant=reject_constant)
+        if not isinstance(result, dict):
+            raise AIOutputInvalid('Weixin output must be an object')
+        telemetry['json_object_parsed'] = True
+        return result, model
 
     def complete_stream(self,system,payload,*,on_point,timeout_seconds=None,validate_result=None):
         from ..cancellation import check_cancelled,cancellable
@@ -263,7 +296,22 @@ class WeixinChat:
                 # complete is synchronous; Persona's HTTP route runs in a worker
                 # thread. Existing unbudgeted consumers keep their sync client.
                 scope=_transport_scope.get()
-                operation=cancellable(self._bounded_bytes(body, headers, timeout_seconds, telemetry))
+                async def managed():
+                    from .voice_race import bounded_race
+                    async def attempt(number):
+                        attempt_start=perf_counter()
+                        entry={'number':number,'start_ms':round((attempt_start-started)*1000,3)}
+                        telemetry.setdefault('attempts',[]).append(entry)
+                        try:
+                            data=await self._bounded_bytes(body,headers,timeout_seconds,entry)
+                            # A malformed fast response cannot cancel a valid slower one.
+                            self._decode(data,entry)
+                            telemetry['winner']=number
+                            telemetry.update({k:v for k,v in entry.items() if k not in {'number','start_ms'}})
+                            return data
+                        finally:entry['duration_ms']=round((perf_counter()-attempt_start)*1000,3)
+                    return await bounded_race(attempt,delay=scope[4]['json_delay'],timeout=timeout_seconds)
+                operation=cancellable(managed() if self.json_retry_managed else self._bounded_bytes(body, headers, timeout_seconds, telemetry))
                 chunks=(scope[1].run(operation,context=copy_context()) if scope is not None and scope[0] is self
                         else asyncio.run(operation))
             else:
@@ -275,23 +323,7 @@ class WeixinChat:
                         if len(chunks) + len(chunk) > self.max_response_bytes:
                             raise AIOutputInvalid('Weixin output too large')
                         chunks.extend(chunk)
-            envelope = json.loads(chunks, parse_constant=reject_constant)
-            model = envelope['model']
-            if not isinstance(model, str) or not model.strip() or len(model) > 128:
-                raise AIOutputInvalid('Weixin model identity missing')
-            telemetry['response_model'] = model
-            usage = envelope.get('usage', {})
-            telemetry['usage'] = {k:v for k,v in usage.items() if k in {'prompt_tokens','completion_tokens','total_tokens','prompt_cache_hit_tokens','prompt_cache_miss_tokens'} and isinstance(v,int) and not isinstance(v,bool)} if isinstance(usage,dict) else {}
-            choice = envelope['choices'][0]
-            finish = choice.get('finish_reason')
-            telemetry['finish_reason'] = finish if finish in {'stop','length','content_filter','tool_calls'} else 'unknown'
-            if finish != 'stop' or choice['message'].get('refusal'):
-                raise AIOutputInvalid('Weixin output incomplete or refused')
-            result = json.loads(choice['message']['content'], parse_constant=reject_constant)
-            if not isinstance(result, dict):
-                raise AIOutputInvalid('Weixin output must be an object')
-            telemetry['json_object_parsed'] = True
-            return result, model
+            return self._decode(chunks,telemetry)
         except (httpx.TimeoutException, TimeoutError) as exc:
             raise ProviderTimeout('Weixin timed out') from exc
         except httpx.TransportError as exc:

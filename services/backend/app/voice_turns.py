@@ -5,6 +5,7 @@ import base64
 import re
 import time
 import logging
+import json
 logger=logging.getLogger(__name__)
 
 
@@ -66,13 +67,21 @@ class VoiceTurns:
 
     async def _respond(self, turn, question, history):
         start=time.monotonic()
+        stage_times={'event':'voice_turn_timing','session_id':self.session_id,'turn_id':turn,'tts':[]}
         from .prepared_speech import PreparedSpeech, sentences as split_sentences
         async def authorized_tts(text):
             # Every NEW provider dispatch, including unpublished preparation,
             # must still be authorized. Playback guards alone are too late.
             await self.guard()
             if self.closed or turn!=self.turn_id:raise asyncio.CancelledError
-            async for chunk in self.tts(text):yield chunk
+            tts_start=time.monotonic()
+            tts_timing={'start_ms':round((tts_start-start)*1000)}
+            stage_times['tts'].append(tts_timing)
+            try:
+                async for chunk in self.tts(text):
+                    tts_timing.setdefault('first_pcm_ms',round((time.monotonic()-tts_start)*1000))
+                    yield chunk
+            finally:tts_timing['duration_ms']=round((time.monotonic()-tts_start)*1000)
         speech=PreparedSpeech(authorized_tts)
         try:
             await self.guard()
@@ -82,6 +91,7 @@ class VoiceTurns:
             await self.guard(answer)
             self.current['answer']=answer
             duration=round((time.monotonic()-start)*1000)
+            stage_times.update(answer_ready_ms=duration,**answer.get('voice_timing',{}))
             mode=answer.get('response_speed','reviewed')
             first_sentence=next(iter(split_sentences(answer['answer'])),None)
             await self.emit('answer_ready',turn,answer=answer,response_speed=mode,
@@ -103,6 +113,7 @@ class VoiceTurns:
                             'samples':self.samples,'sample_rate':24000}
                     if first:
                         fields['first_audio_ms']=round((time.monotonic()-start)*1000); first=False
+                        stage_times['first_audio_ms']=fields['first_audio_ms']
                     await self.emit('audio',turn,**fields)
                 self.segments.append((self.samples,sentence))
             self.audio_complete=True
@@ -118,6 +129,8 @@ class VoiceTurns:
             await self.emit('error',turn,code=code,message='本轮未完成，请重试。',stop_playback=True)
         finally:
             await speech.close()
+            stage_times['total_ms']=round((time.monotonic()-start)*1000)
+            logger.info(json.dumps(stage_times))
 
     async def close(self):
         self.closed=True; self.turn_id+=1; self.history=[]; self.current=None

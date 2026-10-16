@@ -491,6 +491,8 @@ class PersonaProvider:
                 if record["calls"] >= limit or remaining <= 0:
                     raise ProviderTimeout("Persona request budget exhausted")
                 record["calls"] += 1
+                call_started=monotonic()
+                call_record={'stage':record['stage'],'call':record['calls'],'status':'failed'}
                 try:
                     if payload.voice_response and generation and generation_streamed.get():
                         result=self.chat.complete_stream(system,request,on_point=first_point,
@@ -500,10 +502,16 @@ class PersonaProvider:
                             timeout_seconds=min(self.call_timeout_seconds, remaining))
                     if monotonic() - started >= self.total_timeout_seconds:
                         raise ProviderTimeout("Persona request budget exhausted")
+                    call_record['status']='returned'
                     return result
                 except ProviderTimeout:
+                    if payload.voice_response and getattr(self.chat,'json_retry_managed',False):
+                        raise
                     if record["calls"] >= limit or monotonic() - started >= self.total_timeout_seconds:
                         raise
+                finally:
+                    call_record['duration_ms']=round((monotonic()-call_started)*1000,3)
+                    record.setdefault('stage_calls',[]).append(call_record)
 
         record["stage"] = "generation"
         request = {**packet, "response_schema": PersonaDraft.model_json_schema()}

@@ -173,7 +173,7 @@ def test_local_adapter_preserves_existing_retrieve_scope_and_filters_rank_hints(
             {"score": 0.8, "evidence": [{"evidence_id": "e1"}]},
         ]
     monkeypatch.setattr(retrieval, "retrieve", retrieve)
-    session = object()
+    session = SimpleNamespace(commit=lambda:None)
     encoder = SimpleNamespace(version="fixture-embedding-v1")
     adapter = build_rag_provider(session, encoder, episode_ids={"ep1"}, reader=True)
     assert isinstance(adapter, LocalRetrievalAdapter)
@@ -196,7 +196,7 @@ def test_unextracted_original_can_seed_local_retrieval_without_a_memory_item(mon
     current = snapshot(source("raw", text="台灯坏了先看看原因。"),
                        source("condition", text="但电线露出来要先拔插头。"),
                        source("unrelated", "ep2", "晚饭吃面。"))
-    adapter = build_rag_provider(object(), SimpleNamespace(version="fixture"),
+    adapter = build_rag_provider(SimpleNamespace(commit=lambda:None), SimpleNamespace(version="fixture"),
         episode_ids={"ep1", "ep2"}, reader=True, sources=current.source_map)
     selected = retrieve_context("台灯", lambda: current, adapter)
     assert selected.hit_ids == ("raw",)
