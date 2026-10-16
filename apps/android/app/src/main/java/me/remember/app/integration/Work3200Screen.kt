@@ -150,6 +150,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
     val saved=state.downloads.any { it.fileId==state.recordingFileId }
     val syncFailed=state.recordPhase==DeviceRecordPhase.ENDED && !saved && state.busy.isEmpty() &&
         listOf("未完成","失败","无法","重试","未收到","超时").any { state.message.contains(it) }
+    val awaitingFile=state.recordPhase==DeviceRecordPhase.ENDED && !saved && !syncFailed
     if(condensed && !active && !syncFailed && state.busy.isEmpty()) {
         Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
             Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=4.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
@@ -170,18 +171,20 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
                 state.recordPhase==DeviceRecordPhase.PAUSED -> "录音已暂停"
                 state.busy=="download" -> "收到录音，正在同步"
                 state.busy in setOf("verify","decode") -> "已收到，正在准备转文字"
+                awaitingFile -> "正在接收录音"
                 state.recordPhase==DeviceRecordPhase.UNKNOWN -> "连接恢复后确认录音状态"
                 !state.connected || !state.bound -> "连接后，就可以开始了"
+                saved -> "录音已保存"
                 else -> "按下录音豆，开始记录"
             },style=MaterialTheme.typography.headlineSmall)
             if(active) Text(clock(state.elapsedMs),style=MaterialTheme.typography.displayMedium)
-            if(state.busy in setOf("download","verify","decode","list")) {
+            if(state.busy in setOf("download","verify","decode","list") || awaitingFile) {
                 state.percent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
                     ?: LinearProgressIndicator(Modifier.fillMaxWidth())
                 if(state.progress.isNotBlank()) Text(state.progress,style=MaterialTheme.typography.bodyMedium)
-            } else if(!active && state.connected && state.bound) Text("录完自动转文字",style=MaterialTheme.typography.bodyLarge)
-            if(active) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                DeviceMarkerStatus(state)
+            } else if(!active && !saved && state.connected && state.bound && !syncFailed) Text("录完自动转文字",style=MaterialTheme.typography.bodyLarge)
+            if(active) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { DeviceMarkerStatus(state) }
                 TextButton(onClick={controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME)},enabled=state.busy.isEmpty()) {
                     Text(if(state.recordPhase==DeviceRecordPhase.RECORDING) "暂停" else "继续")
                 }
