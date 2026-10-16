@@ -13,6 +13,31 @@ class Work3200ImportTest {
     private val scope = HardwareScope("https://example.invalid", "actor-a", "subject-a")
     private val recording = DeviceRecording(1700000000, 0, 160, 20, 0)
 
+    @Test fun markersBeforeAndAfterDownloadSurviveRestartAndStayScoped() {
+        val root = temp.newFolder()
+        val journal = Work3200ImportJournal(root)
+        journal.saveMarkers(scope, "device-a", recording.fileId, listOf(RecorderMark(10, "phone")))
+        val raw = File(journal.rawDirectory, "marks.raw").apply { writeBytes(ByteArray(160)) }
+        val saved = journal.recordDownloaded(scope, "device-a", recording, raw)
+        journal.saveMarkers(scope, "device-a", recording.fileId, listOf(RecorderMark(10, "device"), RecorderMark(10, "device")))
+        val reopened = Work3200ImportJournal(root)
+        assertEquals(2, reopened.markers(saved.importId, scope).size)
+        assertTrue(reopened.markers(scope.copy(actorId = "other"), "device-a", recording.fileId).isEmpty())
+        reject { reopened.markers(saved.importId, scope.copy(actorId = "other")) }
+    }
+
+    @Test fun uploadedDerivativeCanBeReusedButNotReplaced() {
+        val journal = Work3200ImportJournal(temp.newFolder())
+        val raw = File(journal.rawDirectory, "replay.raw").apply { writeBytes(ByteArray(160)) }
+        val saved = journal.recordDownloaded(scope, "device-a", recording, raw)
+        val prepared = File(journal.preparedDirectory, "replay.wav").apply { writeBytes(wav()) }
+        journal.prepare(saved.importId, scope, prepared, "fixture")
+        journal.markUploaded(saved.importId, scope, "episode")
+        assertEquals("episode", journal.prepare(saved.importId, scope, prepared, "fixture").episodeId)
+        prepared.appendBytes(byteArrayOf(1))
+        reject { journal.prepare(saved.importId, scope, prepared, "fixture") }
+    }
+
     @Test fun downloadReceiptsSurviveRestartAndEnforceScopeAndChecksum() {
         val root = temp.newFolder()
         val journal = Work3200ImportJournal(root)
