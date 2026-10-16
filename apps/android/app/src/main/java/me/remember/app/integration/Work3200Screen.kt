@@ -9,6 +9,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +74,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         return
     }
     val active=state.recordPhase in setOf(DeviceRecordPhase.RECORDING,DeviceRecordPhase.PAUSED)
+    RecorderProductHero()
     if(state.connected) RecorderDeviceStatusRow(state)
     if(active) Text("${if(state.recordPhase==DeviceRecordPhase.PAUSED) "已暂停" else "正在录音"} · ${clock(state.elapsedMs)}",style=MaterialTheme.typography.titleMedium)
     if (!BuildConfig.SOUNDCORE_ENABLED) Text("当前安装包未包含录音豆 SDK，请安装设备联调版。", color = MaterialTheme.colorScheme.error)
@@ -79,9 +82,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
     if(!idle || !state.connected || !state.bound || !routineMessage) Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(when(state.busy) { "download" -> "正在同步录音"; "verify","decode" -> "正在准备转文字"; "list" -> "正在读取设备录音"; else -> state.message })
-            if (!idle) state.percent?.let { LinearProgressIndicator(progress = { it / 100f }, modifier = Modifier.fillMaxWidth()) }
-                ?: LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (state.progress.isNotEmpty()) Text(state.progress)
+            if (!idle) key(state.busy, state.recordingFileId) { RecorderProgress(state.percent) }
         }
     }
     if (!state.authorized) Button(onClick = {
@@ -99,7 +100,9 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
     }
     if (state.connected) {
         if (!state.bound) OutlinedButton(onClick = controller::bind, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("首次使用：绑定这颗录音豆") }
-        TextButton(onClick = { filesExpanded=!filesExpanded; if(filesExpanded && !active && idle) controller.listFiles() }) { Text(if(filesExpanded) "收起设备录音" else if(state.listComplete) "设备录音 ${state.files.size}" else "设备录音") }
+        RecorderMenuRow(if(state.listComplete) "设备录音 ${state.files.size}" else "设备录音", Icons.Outlined.GraphicEq, filesExpanded) {
+            filesExpanded=!filesExpanded; if(filesExpanded && !active && idle) controller.listFiles()
+        }
         if(filesExpanded) OutlinedButton(onClick=controller::listFiles,enabled=idle && !active) {Text("刷新列表")}
         if (state.recordPhase == DeviceRecordPhase.ENDED && idle && state.downloads.none { it.fileId==state.recordingFileId }) OutlinedButton(onClick = controller::retrySync) { Text("重试同步") }
     }
@@ -120,7 +123,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
             }
         }
     }
-    TextButton(onClick={downloadsExpanded=!downloadsExpanded}) {Text(if(downloadsExpanded) "收起手机原音" else "手机原音 ${state.downloads.size}")}
+    RecorderMenuRow("手机原音 ${state.downloads.size}", Icons.Outlined.PhoneAndroid, downloadsExpanded) {downloadsExpanded=!downloadsExpanded}
     (if (downloadsExpanded) state.downloads else emptyList()).forEach { receipt ->
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 2.dp) {
             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -140,7 +143,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
     }
     if (state.playing) OutlinedButton(onClick = controller::stopPlayback) { Text("停止播放") }
     if(state.connected) RecorderMaintenancePanel(controller,state)
-    TextButton(onClick={diagnostics=!diagnostics}) {Text(if(diagnostics) "收起连接排查" else "连接遇到问题？")}
+    RecorderMenuRow("连接帮助", Icons.Outlined.HelpOutline, diagnostics) {diagnostics=!diagnostics}
     if(diagnostics) TextButton(onClick = { reportFile.launch("remember-device-diagnostics.json") }, enabled = idle) { Text("导出连接与下载记录") }
     if (state.connected || !idle || state.authorized) TextButton(onClick = { controller.disconnect() },enabled=state.maintenanceAction!=RecorderCommand.OTA) { Text(if(idle) "断开连接" else "取消当前操作") }
 }
@@ -179,9 +182,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
             },style=MaterialTheme.typography.headlineSmall)
             if(active) Text(clock(state.elapsedMs),style=MaterialTheme.typography.displayMedium)
             if(state.busy in setOf("download","verify","decode","list") || awaitingFile) {
-                state.percent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
-                    ?: LinearProgressIndicator(Modifier.fillMaxWidth())
-                if(state.progress.isNotBlank()) Text(state.progress,style=MaterialTheme.typography.bodyMedium)
+                key(state.busy, state.recordingFileId) { RecorderProgress(state.percent) }
             } else if(!active && !saved && state.connected && state.bound && !syncFailed) Text("录完自动转文字",style=MaterialTheme.typography.bodyLarge)
             if(active) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { DeviceMarkerStatus(state) }

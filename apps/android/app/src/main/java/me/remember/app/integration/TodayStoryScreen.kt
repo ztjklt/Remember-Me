@@ -67,7 +67,7 @@ import androidx.compose.ui.platform.testTag
             val error=state.captureErrors[pendingCapture.key]
             Text(error ?: if(state.uploadKey==pendingCapture.key) "收到录音，正在上传转写" else "录音已保存，等待转写",style=MaterialTheme.typography.titleMedium)
             if(error!=null) TextButton(onClick={model.upload(pendingCapture,true)}) { Text("重试转写") }
-            else if(state.uploadKey==pendingCapture.key) state.uploadPercent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
+            else if(state.uploadKey==pendingCapture.key) key(pendingCapture.key) { RecorderProgress(state.uploadPercent) }
         }
     }
     val drafts=state.stories.mapNotNull { state.drafts[it.text("episode_id")] }
@@ -84,21 +84,16 @@ import androidx.compose.ui.platform.testTag
         val failed=processing.text("status")=="failed"
         Text(if(failed) "处理暂未完成" else if(processing.optBoolean("reviewed")) "已保存，正在整理记忆" else "已保存，正在转文字",style=MaterialTheme.typography.titleMedium)
         if(failed) TextButton(onClick={model.retry(processing.text("episode_id"))},enabled=!state.busy) { Text("重试处理") }
-        else LinearProgressIndicator(Modifier.fillMaxWidth())
+        else key(processing.text("episode_id"), processing.optBoolean("reviewed")) {
+            RecorderProgress(captureStageProgress(processing.text("status"), processing.optBoolean("reviewed"))?.percent, flow=true)
+        }
     }
     val recent=state.stories.firstOrNull { it.text("status")=="ready" && it.text("episode_id")==state.draftFocus }
         ?: state.stories.firstOrNull { it.text("status")=="ready" }
-    if(recent!=null && draft==null && processing==null && pendingCapture==null && !receiving) Panel {
-        val hasMemories=recent.rows("memories").isNotEmpty()
-        Text(if(hasMemories) "已加入记忆" else "录音已保存",style=MaterialTheme.typography.titleMedium)
-        if(!hasMemories) Text("这段暂未提取出记忆。")
-        recent.rows("memories").take(2).forEach { Text(it.text("content"),maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
-        val analysis=recent.optJSONObject("cumulative_analysis")?.text("status")
-        if(analysis in setOf("failed","authorization_required")) Text("累计分析暂未完成，已保存的记忆不受影响。",style=MaterialTheme.typography.bodyMedium)
-        TextButton(onClick={openStory(recent.text("episode_id"))}) { Text(if(hasMemories) "查看这条记忆" else "查看录音") }
-    }
+    if(recent!=null && draft==null && processing==null && pendingCapture==null && !receiving)
+        CompletedMemoryCard(recent) { openStory(recent.text("episode_id")) }
     if(!receiving) TextButton(onClick=library,modifier=Modifier.fillMaxWidth()) { Icon(Icons.Outlined.AutoStories,null);Spacer(Modifier.width(8.dp));Text("全部录音与记忆") }
-    if(manage) NativeDialog("录音豆",{manage=false}) { Work3200Screen(model) }
+    if(manage) RecorderDeviceDialog({manage=false}) { Work3200Screen(model) }
     if(state.narrative.optJSONObject("next_question")!=null && !receiving && draft==null && processing==null && pendingCapture==null && recent==null) {
         var expanded by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
         TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "收起话题" else "不知道从哪讲？") }

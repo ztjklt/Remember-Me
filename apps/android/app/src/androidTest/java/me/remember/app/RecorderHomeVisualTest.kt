@@ -73,6 +73,20 @@ class RecorderHomeVisualTest {
             ui.runOnIdle { controller.connect(NearbyRecorder("soundcore Work · 演示事件", "D3200", "visual-mac", "visual-uuid", true)) }
             ui.waitUntil(10000) { controller.ui.value.connected && controller.ui.value.busy.isEmpty() }
             click("今天")
+            shot("00-home-before-recording")
+            click("设备")
+            ui.onNodeWithTag("recorder-product-hero").assertIsDisplayed()
+            ui.onNodeWithText("设备设置").assertIsDisplayed()
+            shot("00-connected-product")
+            if (InstrumentationRegistry.getArguments().getString("motionCapture") == "true") {
+                ui.mainClock.autoAdvance = false
+                File(folder,"motion-ready-0163.txt").writeText("Product animation on emulator; simulated SDK connection")
+                // Drive the Compose test clock at wall-clock speed for a direct
+                // screen recording of the production GPU transform.
+                repeat(140) { ui.mainClock.advanceTimeBy(100); Thread.sleep(100) }
+                ui.mainClock.autoAdvance = true
+            }
+            click("关闭")
             ui.runOnIdle { events.recording(1, -1, fileId); events.recordingDuration(18000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
             ui.onAllNodes(hasText("标记重点", substring=true) and hasClickAction()).assertCountEquals(0)
@@ -94,6 +108,9 @@ class RecorderHomeVisualTest {
             ui.waitUntil(15000) { controller.ui.value.percent == 40 && controller.ui.value.busy == "download" }
             ui.onNodeWithText("关闭").assertDoesNotExist()
             ui.onNodeWithText("收到录音，正在同步").assertIsDisplayed(); shot("02-download-simulated-events")
+            ui.runOnIdle { events.progress(fileId, bytes.size * 70 / 100, bytes.size, 0, false) }
+            Thread.sleep(1200)
+            shot("02b-download-70-percent")
             ui.runOnIdle { events.progress(fileId, bytes.size, bytes.size, 1, false); events.receivedSdkFile(fileId, received) }
             ui.waitUntil(30000) { controller.ui.value.busy.isEmpty() && controller.ui.value.downloads.any { it.fileId==fileId } }
             shot("03-saved-synthetic-audio")

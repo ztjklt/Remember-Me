@@ -7,6 +7,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,7 +39,7 @@ import me.remember.app.hardware.*
     var confirmation by remember(state.device?.key) { mutableStateOf<Pair<String,()->Unit>?>(null) }
     val firmware=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(controller::importFirmware) }
     val logs=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(controller::exportDeviceLogs) }
-    TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "收起设备维护" else "设备信息与维护") }
+    RecorderMenuRow("设备设置", Icons.Outlined.Settings, expanded) {expanded=!expanded}
     if(expanded) {
         Text(state.deviceInfo.ifBlank {"固件未返回"})
         Text("传输：${state.maintenance.channel}")
