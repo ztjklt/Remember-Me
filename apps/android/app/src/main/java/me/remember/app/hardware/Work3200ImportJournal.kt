@@ -16,6 +16,7 @@ data class HardwareUploadCandidate(val file: File, val audio: PreparedHardwareAu
 
 /** Pass a dedicated app-private root; vendor downloads and prepared derivatives have separate folders. */
 class Work3200ImportJournal(directory: File) {
+    companion object { private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>() }
     private val root = directory.apply { require(mkdirs() || isDirectory) }.canonicalFile
     val rawDirectory: File = File(root, "raw").apply { require(mkdirs() || isDirectory) }
     val preparedDirectory: File = File(root, "prepared").apply { require(mkdirs() || isDirectory) }
@@ -88,9 +89,9 @@ class Work3200ImportJournal(directory: File) {
             Files.move(pending.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         } finally { pending.delete() }
     }
-    private fun <T> locked(block: () -> T): T = FileChannel.open(File(root, "journal.lock").toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use {
+    private fun <T> locked(block: () -> T): T = synchronized(locks.computeIfAbsent(root.path) { Any() }) { FileChannel.open(File(root, "journal.lock").toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use {
         channel -> channel.lock().use { block() }
-    }
+    } }
     fun recordDownloaded(scope: HardwareScope, deviceKey: String, file: DeviceRecording, raw: File): HardwareImport = locked {
         requireDeviceKey(deviceKey)
         val original = within(raw, rawDirectory); val digest = sha(original)

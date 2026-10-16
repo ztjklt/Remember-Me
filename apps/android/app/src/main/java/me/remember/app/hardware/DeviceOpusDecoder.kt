@@ -17,7 +17,7 @@ import java.util.UUID
  * Android MediaCodec's Opus output is read from the reported PCM format (usually 48 kHz).
  */
 object DeviceOpusDecoder {
-    fun decode(raw: File, target: File): File {
+    fun decode(raw: File, target: File, progress: (Long, Long) -> Unit = { _, _ -> }): File {
         if (target.isFile) { Work3200Audio.inspectPcmWav(target); return target }
         require(raw.length() in 160L..(8L * 1024 * 1024) && raw.length() % 160 == 0L) { "Unsupported raw framing" }
         val pending = File(target.parentFile, "${UUID.randomUUID()}.pending")
@@ -53,6 +53,7 @@ object DeviceOpusDecoder {
                                     require(count == 160 && opusPacketDurationUs(packet) == 20_000L) { "Unexpected Opus packet duration" }
                                     codec.getInputBuffer(slot)!!.apply { clear(); put(packet) }
                                     codec.queueInputBuffer(slot, 0, packet.size, frames * 20_000, 0); frames++
+                                    if (frames % 25 == 0L) progress(frames * 160, raw.length())
                                 }
                             }
                         }

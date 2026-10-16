@@ -44,7 +44,19 @@ public final class Soundcore1302Bridge implements HardwareTransport {
                 return epoch == generation && address.equals(mac) && id.equals(uuid);
             }
             @Override public void onGetDeviceInfo(String address, String id, com.oceanwing.soundcore.spplink.service.deviceinfo.DeviceInfo info) {
-                if (current(address, id)) events.info(info.getDeviceBattery(), info.getFirmwareVersion(), info.getFreeMemoryKB(), info.getTotalMemoryKB());
+                if (current(address, id)) {
+                    events.info(info.getDeviceBattery(), info.getFirmwareVersion(), info.getFreeMemoryKB(), info.getTotalMemoryKB());
+                    events.recordingSnapshot(info.getRecording(), info.getRecodingOriginalTime());
+                }
+            }
+            @Override public void onAudioRecordStatusChanged(String address, String id, int status, int duration, int fileId) {
+                if (current(address, id)) events.recording(status, duration, fileId);
+            }
+            @Override public void onAudioRecordDuration(String address, String id, long duration) {
+                if (current(address, id)) events.recordingDuration(duration);
+            }
+            @Override public void onReceiveAudioFragment(String address, String id, int fileId, byte[] audio, boolean append, int sequence, boolean marked) {
+                if (current(address, id) && marked) events.realtimeMarker(fileId, sequence);
             }
             @Override public void onGetDeviceInfoError(String address, String id, int code) {
                 if (current(address, id)) events.error("device_info", code);
@@ -109,7 +121,10 @@ public final class Soundcore1302Bridge implements HardwareTransport {
         requireAuthorized(); final long epoch = generation;
         sdk.startScan(true, true, new ArrayList<>(), new OnReceiveScanResult() {
             public void onScanSuccess(BlueDeviceModel device) {
-                if (epoch == generation) events.found(device.getProductCode(), device.getDeviceName(), device.getMacAddress(), device.getUuid());
+                if (epoch == generation) {
+                    events.found(device.getProductCode(), device.getDeviceName(), device.getMacAddress(), device.getUuid());
+                    events.bindingAdvertisement(device.getMacAddress(), device.getUuid(), "1".equals(device.getBindingStatus()));
+                }
             }
             public void onScanError(int code) {
                 // The SDK reports normal scan timeout/user stop as 1/2. A queued stop
@@ -141,6 +156,8 @@ public final class Soundcore1302Bridge implements HardwareTransport {
         });
     }
     public synchronized void bind() { requireConnected(); sdk.bindingDevice(mac, uuid, true); }
+    public synchronized void refreshInfo() { requireConnected(); sdk.getDeviceInfo(mac, uuid); }
+    public synchronized void realtime(File directory) { requireConnected(); sdk.acquireRealtimeAudioData(mac, uuid, directory.getPath()); }
     public synchronized void listFiles() { requireConnected(); sdk.getAllAudioRecordFiles(mac, uuid); }
     public synchronized void transfer(DeviceRecording recording, File privateDownloadDirectory) {
         requireConnected();

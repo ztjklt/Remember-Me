@@ -25,9 +25,9 @@ class HardwareCloudChainTest {
         repeat(2) {
             lateinit var controller: Work3200Controller
             ui.runOnIdle {
-                controller = Work3200Controller(ui.activity, model.hardwareScope()) { scope, device ->
+                controller = Work3200Controller(ui.activity, model.hardwareScope(), getGrant = { scope, device ->
                     model.hardwareGrant(scope, device).also { onlineRequests++ }
-                }
+                })
                 controller.authorize()
             }
             try {

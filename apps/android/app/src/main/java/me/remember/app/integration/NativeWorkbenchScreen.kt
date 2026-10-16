@@ -202,7 +202,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     Column(Modifier.weight(1f).clipToBounds().rememberPageEntrance("$identity:$tab").then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         when(tab) {
                             0 -> {
-                                if(appearance.simpleMode) SimpleHome(state, {revision=null;recordingPage=true},
+                                if(appearance.simpleMode && !state.owner) SimpleHome(state, {revision=null;recordingPage=true},
                                     {tab=1;archiveMode=3}, {tab=1;archiveMode=0}, {tab=2})
                                 else if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
                                     {tab=1;archiveMode=0},{model.review(it)})
@@ -379,6 +379,11 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         val clientAsr = capture.usesClientTranscript(caps?.text("stt") == "client")
         var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), caps?.text("transcript_correction_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
         Text(recordingDate(capture.recording.createdAt) + " · " + clock(capture.recording.durationMillis))
+        Text(if(capture.source == "WORK_3200") "来源：录音豆" else if(capture.source == "IMPORT") "来源：导入" else "来源：手机录音", style = MaterialTheme.typography.labelMedium)
+        if(state.uploadKey == capture.key) {
+            Text(state.uploadPercent?.let { if(it == 100) "原音已发送，等待服务器确认…" else "上传原音 $it%" } ?: "准备上传…")
+            state.uploadPercent?.let { percent -> LinearProgressIndicator(progress = { percent / 100f }, modifier = Modifier.fillMaxWidth()) }
+        }
         Text(if(capture.episode.isBlank()) "尚未上传" else if(!capture.linked) "已上传，关联未完成，请重试" else "已上传", style = MaterialTheme.typography.bodySmall)
         capture.revision?.let { Text("${kindName(it.kind)}旧记忆；关联完成后才可确认转写。", style = MaterialTheme.typography.bodySmall) }
         Action("播放本机原音", !state.busy && !state.recording) { model.playLocal(capture) }

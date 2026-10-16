@@ -3,6 +3,11 @@ package me.remember.app.hardware
 import java.io.File
 
 interface HardwareEvents {
+    fun recording(status: Int, durationMs: Int, fileId: Int) { }
+    fun recordingDuration(durationMs: Long) { }
+    fun recordingSnapshot(recording: Int?, startedAt: Int) { }
+    fun bindingAdvertisement(mac: String, uuid: String, bound: Boolean) { }
+    fun realtimeMarker(fileId: Int, sequence: Int) { }
     fun auth(result: HardwareAuthResult)
     fun found(productCode: String?, name: String?, mac: String?, uuid: String?)
     fun connected()
@@ -18,6 +23,8 @@ interface HardwareEvents {
 }
 
 interface HardwareTransport : AutoCloseable {
+    fun refreshInfo() { }
+    fun realtime(directory: File) { }
     fun initialize(application: Any, credentials: Work3200Credentials)
     fun scan()
     fun stopScan()

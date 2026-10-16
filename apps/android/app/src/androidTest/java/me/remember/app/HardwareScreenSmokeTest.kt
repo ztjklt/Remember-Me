@@ -24,12 +24,16 @@ class HardwareScreenSmokeTest {
         ui.waitUntil(60_000) { model.ui.value.actor.isNotBlank() && !model.ui.value.busy || model.ui.value.error != null }
         assertNull(model.ui.value.error)
         assertTrue(model.ui.value.owner)
+        lateinit var retained: me.remember.app.hardware.Work3200Controller
+        ui.runOnIdle { retained = model.recorder() }
         fun click(text: String) {
             val node = ui.onAllNodes(hasText(text) and hasClickAction()).onFirst()
             if (!node.isDisplayed()) node.performScrollTo()
             node.performClick()
         }
+        ui.onNodeWithText("录音豆录音").assertExists()
         click("我的"); click("连接录音豆")
+        ui.runOnIdle { assertSame(retained, model.recorder()) }
         ui.onNodeWithText("准备连接").assertExists()
         ui.onNodeWithText("手机已保存：0 段").assertExists()
         ui.onNodeWithText("准备连接").performScrollTo()
@@ -39,6 +43,12 @@ class HardwareScreenSmokeTest {
         val screenshot = automation.takeScreenshot()
         File(ui.activity.getExternalFilesDir(null), "hardware-page-smoke.png").outputStream().use { screenshot.compress(Bitmap.CompressFormat.PNG, 100, it) }
         screenshot.recycle()
+        click("今天")
+        ui.onNodeWithText("录音豆录音").assertExists()
+        ui.runOnIdle { assertSame(retained, model.recorder()) }
+        click("手机")
+        ui.onNodeWithText("用手机讲一段").assertExists()
+        click("录音豆")
         ui.runOnIdle { model.logout() }
         ui.waitUntil(15_000) { model.ui.value.actor.isBlank() }
     }

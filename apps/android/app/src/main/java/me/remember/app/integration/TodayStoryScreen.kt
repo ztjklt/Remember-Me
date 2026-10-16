@@ -22,6 +22,20 @@ import me.remember.app.core.designsystem.LocalSimpleMode
 
 @Composable internal fun TodayStoryScreen(state: NativeState, model: NativeWorkbenchModel,
     record: () -> Unit, library: () -> Unit, review: (String) -> Unit) {
+    var source by rememberSaveable(state.actor, state.subject) { mutableStateOf(model.preferredCaptureSource()) }
+    val recorder by model.recorder().ui.collectAsState()
+    val deviceRecording = recorder.recordPhase in setOf(me.remember.app.hardware.DeviceRecordPhase.RECORDING, me.remember.app.hardware.DeviceRecordPhase.PAUSED)
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        listOf("recorder" to "录音豆", "phone" to "手机").forEach { (value, label) ->
+            FilterChip(selected = source == value, onClick = { source = value; model.selectCaptureSource(value) },
+                enabled = !state.recording && !deviceRecording, label = { Text(label) })
+        }
+    }
+    if (source == "recorder") {
+        Work3200Screen(model, compact = true)
+        val hardware = state.local.filter { it.source == "WORK_3200" }.take(3)
+        if (hardware.isNotEmpty()) CaptureTab(state.copy(local = hardware), model, null, {})
+    } else {
     Surface(shape=RoundedCornerShape(32.dp),color=MaterialTheme.colorScheme.secondaryContainer.copy(alpha=.92f)) {
         Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(
             MaterialTheme.colorScheme.secondaryContainer,MaterialTheme.colorScheme.primaryContainer.copy(alpha=.6f))))
@@ -29,7 +43,14 @@ import me.remember.app.core.designsystem.LocalSimpleMode
             Icon(Icons.Outlined.Spa,null,Modifier.size(36.dp),tint=MaterialTheme.colorScheme.primary)
             Text("今天，想留下什么？",style=MaterialTheme.typography.headlineSmall)
             Text("一件往事，或一句想说的话。",style=MaterialTheme.typography.bodyLarge)
-            RememberActionButton("讲一段", !state.busy, filled=true, icon=Icons.Outlined.Mic, onClick=record)
+            RememberActionButton("用手机讲一段", !state.busy, filled=true, icon=Icons.Outlined.Mic, onClick=record)
+        }
+    }
+    }
+    state.stories.filter { story -> state.local.any { it.source == "WORK_3200" && it.episode == story.text("episode_id") } }.take(3).forEach { story ->
+        Text(if (story.optBoolean("waiting_for_review")) "录音豆录音 · 等待核对文字" else "录音豆录音 · ${processingLabel(story.text("status"))}")
+        TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) {
+            Text(if(story.optBoolean("waiting_for_review")) "核对本段文字" else "查看本段处理结果")
         }
     }
     val pending=state.stories.filter{it.optBoolean("waiting_for_review") || it.text("status")!="ready"}

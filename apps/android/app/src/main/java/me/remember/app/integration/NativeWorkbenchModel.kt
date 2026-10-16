@@ -15,6 +15,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.security.MessageDigest
+import me.remember.app.hardware.*
 
 data class NativeState(
     val actor: String = "", val actorName: String = "", val spaces: List<JSONObject> = emptyList(),
@@ -45,6 +46,7 @@ data class NativeState(
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
     val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback(), val dailyReminder: Boolean = false
+    ,val uploadKey: String = "", val uploadPercent: Int? = null
 ) {
     val owner get() = space?.text("role") == "owner"
     val subject get() = space?.text("subject_id").orEmpty()
@@ -76,6 +78,32 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var session: BackendSession? = null
     private val state = MutableStateFlow(NativeState())
     val ui = state.asStateFlow()
+    private var deviceController: Work3200Controller? = null
+    fun recorder(): Work3200Controller {
+        val scope = hardwareScope()
+        if (deviceController?.identity != scope) {
+            deviceController?.close()
+            deviceController = Work3200Controller(appContext, scope, ::hardwareGrant, onPrepared = { receipt, candidate ->
+                if (runCatching { hardwareScope() }.getOrNull() == scope) acceptRecorderAudio(receipt, candidate)
+            })
+        }
+        return checkNotNull(deviceController)
+    }
+    private fun closeRecorder() { deviceController?.close(); deviceController = null }
+    fun preferredCaptureSource(): String = spacePreferences.getString("capture-source:${state.value.actor}:${state.value.subject}", "recorder") ?: "recorder"
+    fun selectCaptureSource(value: String) {
+        require(value in setOf("recorder", "phone"))
+        spacePreferences.edit().putString("capture-source:${state.value.actor}:${state.value.subject}", value).apply()
+    }
+    private fun acceptRecorderAudio(receipt: HardwareDownloadReceipt, candidate: HardwareUploadCandidate) {
+        val s = session ?: return
+        val existing = state.value.local.firstOrNull { it.key == candidate.idempotencyKey }
+        val recording = AudioRecording(audioPath = candidate.file.path, durationMillis = candidate.audio.durationMs,
+            mimeType = candidate.audio.mimeType, byteSize = candidate.audio.byteSize, sampleRate = candidate.audio.sampleRate,
+            channelCount = candidate.audio.channels, createdAt = java.time.Instant.ofEpochSecond(receipt.fileId.toLong()).toString(), title = "录音豆录音")
+        saveCapture(s, existing ?: LocalCapture(recording, candidate.idempotencyKey, episode = candidate.episodeId.orEmpty(),
+            linked = candidate.episodeId != null, source = "WORK_3200", hardwareImportId = receipt.importId))
+    }
     fun hardwareScope(): me.remember.app.hardware.HardwareScope {
         val current = checkNotNull(session) { "请先登录。" }
         check(state.value.owner) { "请进入本人空间连接录音豆。" }
@@ -202,7 +230,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.busy || state.value.recording) return
         if(state.value.spaces.none { it.text("subject_id") == space.text("subject_id") }) return
         session?.let { spacePreferences.edit().putString("${it.server}:${state.value.actor}", space.text("subject_id")).apply() }
-        endVoice();stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
+        closeRecorder(); endVoice();stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
         refresh()
@@ -223,6 +251,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.companionRecording.isNotBlank()) { finishCompanionRecording { leave() } } else if(state.value.recording) { finish { leave() } } else leave()
     }
     private fun clearIdentity() {
+        closeRecorder()
         endVoice()
         reminders.disable(); creationKeys.clear()
         gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null; pendingTransfer = null
@@ -270,7 +299,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 row.optJSONObject("revision")?.let { RevisionTarget(it.text("memory"), it.text("kind"), it.text("time")) }, row.optBoolean("linked"),
                 row.optJSONObject("client_transcript")?.let { runCatching { ClientTranscript.parse(it.toString()) }.getOrNull() }, row.optBoolean("upload_attempted"),
                 if(row.has("upload_with_transcript")) row.getBoolean("upload_with_transcript") else null,
-                row.text("calibration_id"), row.text("source").ifBlank { "ANDROID_MIC" }) }
+                row.text("calibration_id"), row.text("source").ifBlank { "ANDROID_MIC" }, row.text("hardware_import_id")) }
         }.reversed()
     }
     private fun saveCapture(s: BackendSession, capture: LocalCapture) {
@@ -279,7 +308,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val row = JSONObject().put("path", capture.recording.audioPath).put("key", capture.key).put("episode", capture.episode).put("linked", capture.linked)
             .put("upload_attempted", capture.uploadAttempted)
             .put("calibration_id",capture.calibrationId).put("source",capture.source)
-        if(capture.source == "IMPORT") row.put("imported_recording",RecordingMetadata.encode(capture.recording))
+        if(capture.source in setOf("IMPORT", "WORK_3200")) row.put("imported_recording",RecordingMetadata.encode(capture.recording))
+        if(capture.hardwareImportId.isNotBlank()) row.put("hardware_import_id",capture.hardwareImportId)
         capture.transcript?.let { row.put("client_transcript", it.toJson()) }
         capture.uploadWithTranscript?.let { row.put("upload_with_transcript", it) }
         capture.revision?.let { row.put("revision", JSONObject().put("memory", it.memory).put("kind", it.kind).put("time", it.time)) }
@@ -307,6 +337,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val selected = spaces.firstOrNull { it.text("subject_id") == state.value.subject }
             ?: if(state.value.spaceChoiceRequired) initialSpace(spaces, null) else spaces.firstOrNull()
         if(selected?.text("subject_id").orEmpty() != state.value.subject) {
+            closeRecorder()
             stopSource(); audio.stopPlayback()
             state.value = state.value.forSpaceFallback(spaces, selected)
         } else state.value = state.value.copy(spaces = spaces, space = selected,
@@ -416,14 +447,33 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             if(clientAsr) capture.transcript?.requireMatches(File(capture.recording.audioPath))
             val sending = capture.beginUpload(clientAsr).also { saveCapture(s, it) }
             val consent = io { client.consent(s, subject, "RECORDING") }
-            submitCapture(sending,
-                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source, correctionPolicy) } },
-                persist = { saveCapture(s, it) },
+            val hardwareIdentity = if(capture.source == "WORK_3200") hardwareScope() else null
+            val hardwareJournal = hardwareIdentity?.let { Work3200ImportJournal(File(appContext.filesDir, "work3200-imports")) }
+            val metadata = if(hardwareIdentity != null && hardwareJournal != null) io {
+                val candidate = hardwareJournal.uploadCandidate(capture.hardwareImportId, hardwareIdentity)
+                require(candidate.idempotencyKey == capture.key && candidate.file.canonicalPath == File(capture.recording.audioPath).canonicalPath)
+                val receipt = hardwareJournal.rawReceipt(capture.hardwareImportId, hardwareIdentity)
+                JSONObject().put("import_id", capture.hardwareImportId).put("raw_sha256", receipt.sha256)
+                    .put("file_id", receipt.fileId).put("markers", JSONArray().apply {
+                        hardwareJournal.markers(capture.hardwareImportId, hardwareIdentity).forEach { put(JSONObject().put("offset_ms", it.offsetMs).put("origin", it.origin)) }
+                    })
+            } else null
+            state.value = state.value.copy(uploadKey = capture.key, uploadPercent = 0)
+            try { submitCapture(sending,
+                upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source, correctionPolicy, metadata) { sent, total ->
+                    viewModelScope.launch { if(gate.accepts(s) && state.value.uploadKey == capture.key)
+                        state.value = state.value.copy(uploadPercent = transferPercent(sent, total)) }
+                } } },
+                persist = { saved ->
+                    saveCapture(s, saved)
+                    if(saved.episode.isNotBlank() && hardwareIdentity != null && hardwareJournal != null)
+                        io { hardwareJournal.markUploaded(capture.hardwareImportId, hardwareIdentity, saved.episode) }
+                },
                 link = { episode, revision ->
                 io { client.json(s, "$path/revisions", "POST", JSONObject().put("episode_id", episode)
                     .put("target_memory_id", revision.memory).put("kind", revision.kind)
                     .put("time_text", revision.time.ifBlank { null })) }
-            })
+            }) } finally { if(gate.accepts(s)) state.value = state.value.copy(uploadKey = "", uploadPercent = null) }
             state.value = state.value.copy(notice = if(clientAsr) "原音与机器稿已保存到服务器，请到档案核对文字后再整理。" else "上传已接收，原音留在本机。等待转写后核对文字。")
             refreshNow(s)
         }
@@ -884,5 +934,5 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 })) }
         }
     }
-    override fun onCleared() { endVoice();gate.clear(); stopSource(); audio.release(); super.onCleared() }
+    override fun onCleared() { closeRecorder(); endVoice();gate.clear(); stopSource(); audio.release(); super.onCleared() }
 }

@@ -53,7 +53,8 @@ class BackendClient(private val gate: SessionGate) {
         }
         return json(session, "/api/v1/consents", "POST", JSONObject().put("subject_id", subject).put("scope", scope)).getString("consent_id")
     }
-    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC", correctionPolicy: String? = null): String {
+    fun upload(session: BackendSession, subject: String, consent: String, audio: AudioRecording, key: String, cloudAsrPolicy: String? = null, transcript: ClientTranscript? = null, calibrationId: String = "", source: String = "ANDROID_MIC", correctionPolicy: String? = null,
+        hardware: JSONObject? = null, progress: (Long, Long) -> Unit = { _, _ -> }): String {
         val file = File(audio.audioPath)
         require(file.isFile && file.length() > 0) { "本机原音不存在或为空。" }
         require(source in setOf("ANDROID_MIC", "IMPORT", "WORK_3200"))
@@ -72,13 +73,14 @@ class BackendClient(private val gate: SessionGate) {
                         cloudAsrPolicy?.let { put("cloud_asr_policy", it) }
                         correctionPolicy?.takeIf { it.isNotBlank() }?.let { put("transcript_correction_policy", it) }
                         if(calibrationId.isNotBlank()) put("calibration_id", calibrationId)
+                        if(source == "WORK_3200" && hardware != null) put("hardware", hardware)
                     }.toString())
                 transcript?.let { fields["client_transcript"] = it.toJson().toString() }
                 fields.forEach { (name, value) -> write("--$boundary\r\nContent-Disposition: form-data; name=\"$name\"\r\n\r\n$value\r\n") }
                 val extension = file.extension.filter { it.isLetterOrDigit() }.take(8).ifBlank { "m4a" }
                 val mime = audio.mimeType.takeIf { it.matches(Regex("audio/[a-zA-Z0-9.+-]+")) } ?: "application/octet-stream"
                 write("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"recording.$extension\"\r\nContent-Type: $mime\r\n\r\n")
-                file.inputStream().use { it.copyTo(output) }
+                file.inputStream().use { copyAudioWithProgress(it, output, file.length(), progress) }
                 write("\r\n--$boundary--\r\n")
             }
             val response = readResponse(connection)
