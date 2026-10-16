@@ -309,6 +309,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         NativeDialog("看看这段文字", leaveReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             val correction = state.reviewCorrection
+            RecordingHighlights(state.reviewHighlights,state.reviewText != state.reviewInitialText)
             val changes = correction?.rows("edits").orEmpty()
             var showChanges by remember(id) { mutableStateOf(false) }
             if(correction?.text("status") == "completed") {

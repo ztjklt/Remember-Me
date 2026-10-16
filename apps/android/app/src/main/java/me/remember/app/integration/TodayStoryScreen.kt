@@ -49,7 +49,9 @@ import me.remember.app.core.designsystem.LocalSimpleMode
     }
     state.stories.filter { story -> state.local.any { it.source == "WORK_3200" && it.episode == story.text("episode_id") } }.take(3).forEach { story ->
         Text(if (story.optBoolean("waiting_for_review")) "录音豆录音 · 等待核对文字" else "录音豆录音 · ${processingLabel(story.text("status"))}")
+        RecordingHighlights(story.optJSONObject("recording_highlights"))
         if (story.text("status") == "ready") story.rows("memories").take(3).forEach { memory ->
+            if(memory.optJSONObject("recording_priority")!=null) Text("来自你标记的重点",style=MaterialTheme.typography.labelMedium)
             Text(memory.text("content"), style = MaterialTheme.typography.bodyLarge)
         }
         if (story.optBoolean("waiting_for_review")) TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) { Text("核对本段文字") }

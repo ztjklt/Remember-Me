@@ -42,6 +42,7 @@ data class NativeState(
     val reviewEpisode: String? = null, val reviewText: String = "", val local: List<LocalCapture> = emptyList(),
     val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
     val reviewMachineText: String = "", val reviewCorrection: JSONObject? = null,
+    val reviewHighlights: JSONObject? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
@@ -526,6 +527,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             val warnings = result.optJSONArray("review_warnings") ?: JSONArray()
             state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"),
                 reviewMachineText = result.text("machine_transcript"), reviewCorrection = result.optJSONObject("automatic_correction"),
+                reviewHighlights = result.optJSONObject("recording_highlights"),
                 reviewInitialText = result.text("transcript"), reviewWarnings = (0 until warnings.length()).map { warnings.optString(it) },
                 reviewParagraphPreview = result.optString("paragraph_preview").takeIf { it.isNotBlank() && it != "null" })
         }

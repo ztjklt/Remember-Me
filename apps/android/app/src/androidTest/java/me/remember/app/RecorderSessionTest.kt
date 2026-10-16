@@ -26,6 +26,43 @@ class RecorderSessionTest {
     }
     @Test fun physicalEventsWaitForLiveDrainAndSaveExactlyOneFile() = runSession(true)
     @Test fun cancelledPendingRealtimeRequestDoesNotBlockOfflineSync() = runSession(false)
+    @Test fun maintenanceIsIsolatedAndWifiCancelCannotCancelOtherCommands() {
+        lateinit var controller: Work3200Controller
+        lateinit var fake: FakeRecorder
+        val scope=HardwareScope("https://example.invalid","test-${UUID.randomUUID()}","subject")
+        main { controller=Work3200Controller(instrumentation.targetContext,scope,::grant,
+            transportFactory={FakeRecorder(it,false).also { fake=it }}); controller.authorize() }
+        try {
+            await("authorized"){controller.ui.value.authorized}
+            main {controller.connect(NearbyRecorder("A","D3200","A","A"))}
+            await("connected"){controller.ui.value.connected}
+            main {fake.events.deviceLogs(listOf(RecorderLog(10,20)),true)}
+            await("logs"){controller.ui.value.maintenance.logs.size==1}
+            main {controller.runCommand(RecorderCommand.LOG_DOWNLOAD,10); controller.closeWifi()}
+            assertEquals("maintenance",controller.ui.value.busy)
+            assertEquals(RecorderCommand.LOG_DOWNLOAD,fake.commands.single())
+            main {fake.events.commandResult(RecorderCommand.LOG_DOWNLOAD,true,"test completion")}
+            await("completion retained"){controller.ui.value.busy.isEmpty()}
+            main {fake.events.linkRecovering()}
+            await("wifi handover retains session"){controller.ui.value.reconnecting && controller.ui.value.authorized}
+            main {fake.events.connected()}
+            await("bluetooth recovered"){controller.ui.value.connected && !controller.ui.value.reconnecting}
+            assertEquals(10,controller.ui.value.maintenance.logs.single().id)
+            main {controller.disconnect();controller.authorize()}
+            await("reauthorized"){controller.ui.value.authorized}
+            main {controller.connect(NearbyRecorder("B","D3200","B","B"))}
+            await("B connected"){controller.ui.value.connected}
+            assertTrue(controller.ui.value.maintenance.logs.isEmpty())
+            main {controller.runCommand(RecorderCommand.LOG_DELETE,10)}
+            assertTrue(fake.commands.isEmpty())
+            main {fake.events.recording(1,0,1700000010)}
+            await("recording"){controller.ui.value.recordPhase==DeviceRecordPhase.RECORDING}
+            main {controller.runCommand(RecorderCommand.RESET);controller.runCommand(RecorderCommand.PAUSE)}
+            assertEquals(listOf(RecorderCommand.PAUSE),fake.commands)
+            main {fake.events.recording(2,-1,-1);fake.events.commandResult(RecorderCommand.PAUSE,true,"paused")}
+            await("paused"){controller.ui.value.recordPhase==DeviceRecordPhase.PAUSED && controller.ui.value.busy.isEmpty()}
+        } finally {main {controller.close()}}
+    }
     private fun runSession(realtimeStarted: Boolean) {
         lateinit var controller: Work3200Controller
         lateinit var fake: FakeRecorder
@@ -66,6 +103,8 @@ class RecorderSessionTest {
     }
     private inner class FakeRecorder(val events: HardwareEvents, val realtimeStarted: Boolean) : HardwareTransport {
         var transfers = 0
+        val commands=mutableListOf<RecorderCommand>()
+        override fun command(command: RecorderCommand,fileId: Int,firmware: RecorderFirmware?) { commands.add(command) }
         override fun initialize(application: Any, credentials: Work3200Credentials) { events.auth(HardwareAuthResult(true, true, true, Long.MAX_VALUE, false, null)) }
         override fun scan() { }
         override fun stopScan() { }

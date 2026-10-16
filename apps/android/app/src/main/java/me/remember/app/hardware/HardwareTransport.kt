@@ -3,6 +3,18 @@ package me.remember.app.hardware
 import java.io.File
 
 interface HardwareEvents {
+    fun commandResult(command: RecorderCommand, success: Boolean, detail: String) { }
+    fun maintenanceProgress(command: RecorderCommand, percent: Int?, detail: String, complete: Boolean) { }
+    fun deviceDetails(details: RecorderDetails) { }
+    fun batteryChanged(device: Int, box: Int) { }
+    fun chargingChanged(device: Boolean, box: Boolean) { }
+    fun deviceLogs(logs: List<RecorderLog>, collecting: Boolean) { }
+    fun channel(name: String) { }
+    fun sdkInfo(version: String, product: String) { }
+    fun realtimeSwitch(fileId: Int) { }
+    fun linkRecovering() { }
+    fun audioFragment(fileId: Int, audio: ByteArray, append: Boolean, sequence: Int, marked: Boolean) { }
+    fun supplement(fileId: Int, current: Int, total: Int) { }
     fun transferIdle(idle: Boolean) { }
     fun transferRejected(fileId: Int) { }
     fun recording(status: Int, durationMs: Int, fileId: Int) { }
@@ -25,6 +37,12 @@ interface HardwareEvents {
 }
 
 interface HardwareTransport : AutoCloseable {
+    fun command(command: RecorderCommand, fileId: Int = 0, firmware: RecorderFirmware? = null) { throw UnsupportedOperationException("SDK capability unavailable") }
+    fun transferWifi(recording: DeviceRecording, directory: File) { throw UnsupportedOperationException("Wi-Fi unavailable") }
+    fun closeWifi() { }
+    fun isTransferring(): Boolean = false
+    fun logDirectory(): File? = null
+    fun configureLogDirectory(directory: File) { }
     fun refreshInfo() { }
     fun realtime(directory: File) { }
     fun initialize(application: Any, credentials: Work3200Credentials)

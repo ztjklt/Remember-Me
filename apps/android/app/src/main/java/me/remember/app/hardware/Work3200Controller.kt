@@ -27,7 +27,9 @@ data class RecorderUi(
     val recordPhase: DeviceRecordPhase = DeviceRecordPhase.IDLE, val recordingFileId: Int? = null,
     val elapsedMs: Long = 0, val recordMarks: List<RecorderMark> = emptyList(),
     val savedMarks: Map<String, List<RecorderMark>> = emptyMap(), val percent: Int? = null,
-    val preparingId: String? = null, val realtimeMarked: Boolean = false
+    val preparingId: String? = null, val realtimeMarked: Boolean = false,
+    val maintenance: RecorderMaintenance = RecorderMaintenance(), val wifiTransfer: Boolean = false, val reconnecting: Boolean = false,
+    val maintenanceAction: RecorderCommand? = null
 )
 
 /** Identity-scoped session; UI composition never owns the SDK lifetime. */
@@ -61,6 +63,10 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     private var drainTimedOut = false
     private data class Download(val recording: DeviceRecording, val device: NearbyRecorder, val directory: File)
     private var downloading: Download? = null
+    private var wifiDownload = false
+    private var maintenanceCommand: RecorderCommand? = null
+    private var maintenanceFile = 0
+    private var linkDeadline: Job? = null
     private val log = ArrayDeque<String>()
     init {
         refreshDownloads()
@@ -144,6 +150,8 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         mutable.value = mutable.value.copy(busy = "auth", message = "正在验证厂商授权…", needsGrant = false)
         try {
             transport = transportFactory(events(current))
+            val scopeKey=UUID.nameUUIDFromBytes("${identity.server}/${identity.actorId}/${identity.subjectId}".toByteArray())
+            transport!!.configureLogDirectory(File(app.filesDir,"recorder-logs/$scopeKey/${UUID.randomUUID()}"))
             timeout(45_000, "厂商授权验证超时，请检查手机网络后重试。")
             transport!!.initialize(app, credentials)
         } catch (_: Exception) { disconnect("录音豆通信组件未能启动，请检查权限后重试，并导出连接记录。"); record("sdk initialization failed") }
@@ -153,6 +161,55 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             if (current != epoch || closed) return@post
             try { action() } catch (_: Exception) { disconnect("设备数据处理未完成，请重新连接；已保存的文件仍在本机。"); record("callback rejected") }
         } }
+        override fun commandResult(command: RecorderCommand, success: Boolean, detail: String) = post {
+            record("command=$command success=$success detail=${detail.take(120)}")
+            val result = "$detail：${if (success) "已收到设备成功回执" else "未完成，请检查设备后重试"}"
+            mutable.value = mutable.value.copy(maintenance = mutable.value.maintenance.copy(result = result))
+            if (maintenanceCommand != command) return@post
+            deadline?.cancel(); maintenanceCommand = null
+            mutable.value = mutable.value.copy(busy = "", maintenanceAction=null, percent = null, progress = "", message = result)
+            if (success && command in setOf(RecorderCommand.UNBIND, RecorderCommand.RESET)) disconnect(result)
+            else if (success && command == RecorderCommand.DELETE_RECORDING) listFiles()
+            else if (success && command in setOf(RecorderCommand.LOG_DELETE, RecorderCommand.LOG_ENABLE, RecorderCommand.LOG_DISABLE)) runCommand(RecorderCommand.LOG_LIST)
+        }
+        override fun maintenanceProgress(command: RecorderCommand, percent: Int?, detail: String, complete: Boolean) = post {
+            if (maintenanceCommand != command) return@post
+            mutable.value = mutable.value.copy(percent = percent?.coerceIn(0,100), progress = detail,
+                maintenance = mutable.value.maintenance.copy(result = detail))
+            if (complete) commandResult(command,true,"$detail 已传输完成，可导出设备日志")
+        }
+        override fun deviceDetails(details: RecorderDetails) = post { mutable.value = mutable.value.copy(maintenance = mutable.value.maintenance.copy(details = details)) }
+        override fun batteryChanged(device: Int, box: Int) = post {
+            val percent = device.takeIf { it in 0..10 }?.times(10)?.let { "$it%" } ?: "未知"
+            mutable.value = mutable.value.copy(deviceInfo = mutable.value.deviceInfo.replace(Regex("电量 [^ ]+"),"电量 $percent"),
+                maintenance = mutable.value.maintenance.copy(details = mutable.value.maintenance.details.copy(boxBattery=box)))
+        }
+        override fun chargingChanged(device: Boolean, box: Boolean) = post { mutable.value = mutable.value.copy(maintenance = mutable.value.maintenance.copy(
+            details = mutable.value.maintenance.details.copy(charging=device,boxCharging=box))) }
+        override fun deviceLogs(logs: List<RecorderLog>, collecting: Boolean) = post { mutable.value = mutable.value.copy(
+            maintenance=mutable.value.maintenance.copy(logs=logs.sortedByDescending { it.id },collecting=collecting)) }
+        override fun channel(name: String) = post { mutable.value=mutable.value.copy(maintenance=mutable.value.maintenance.copy(channel=name)); record("channel=$name") }
+        override fun sdkInfo(version: String, product: String) = post { mutable.value=mutable.value.copy(maintenance=mutable.value.maintenance.copy(sdk="$product / $version")); record("sdk=$version product=$product") }
+        override fun realtimeSwitch(fileId: Int) = post {
+            record("wifi switched to live file=$fileId")
+            // This is a file identity, not a transport mode. Offline requests are
+            // interrupted by the physical recording; keep the device source intact.
+            if(downloading!=null) operationFailed("设备开始了新的录音；本次离线下载暂停，原文件保留在设备上。")
+            this.recording(1,0,fileId)
+        }
+        override fun linkRecovering() = post {
+            mutable.value=mutable.value.copy(connected=false,reconnecting=true,message="Wi-Fi 已关闭，正在恢复录音豆蓝牙连接。")
+            linkDeadline?.cancel(); linkDeadline=jobs.launch {delay(45_000); if(mutable.value.reconnecting) disconnect("蓝牙恢复超时，已下载的录音保留，请重新连接。")}
+        }
+        override fun audioFragment(fileId: Int, audio: ByteArray, append: Boolean, sequence: Int, marked: Boolean) = post {
+            if (timeline.fileId != fileId) return@post
+            val m=mutable.value.maintenance
+            mutable.value=mutable.value.copy(maintenance=m.copy(liveBytes=m.liveBytes+audio.size,livePackets=m.livePackets+1))
+        }
+        override fun supplement(fileId: Int, current: Int, total: Int) = post {
+            if (downloading?.recording?.fileId == fileId) mutable.value=mutable.value.copy(
+                percent=transferPercent(current.toLong(),total.toLong()),progress="补齐丢失数据包 $current / $total")
+        }
         override fun auth(result: HardwareAuthResult) = post {
             if (!session.onAuth(ticket!!, result)) return@post
             record("auth success=${result.success} online=${result.isOnline} license=${result.licenseValid} code=${result.error?.code}")
@@ -184,7 +241,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             if (status == 1) {
                 stopPlayback()
                 notice("录音豆正在采集声音，按设备按钮结束后会自动同步到手机。")
-                if (realtimeFile != activeFileId && mutable.value.busy.isEmpty()) {
+                if (realtimeFile != activeFileId && (mutable.value.busy.isEmpty() || maintenanceCommand==RecorderCommand.RESUME)) {
                     realtimeFile = activeFileId
                     val folder = File(journal.rawDirectory, "live-${UUID.randomUUID()}").apply { mkdirs() }
                     mutable.value = mutable.value.copy(realtimeMarked = false)
@@ -218,6 +275,15 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         }
         override fun connected() = post {
             val device = mutable.value.device ?: return@post
+            if(mutable.value.reconnecting) {
+                if(session.connected(ticket!!,device.key)) {
+                    linkDeadline?.cancel(); mutable.value=mutable.value.copy(connected=true,reconnecting=false)
+                    record("BLE recovered after Wi-Fi")
+                    if(mutable.value.busy.isEmpty()) notice("蓝牙已恢复，录音豆可以继续使用。")
+                    scheduleNextFile()
+                }
+                return@post
+            }
             if (mutable.value.busy != "connect" || !session.connected(ticket!!, device.key)) return@post
             deadline?.cancel()
             mutable.value = mutable.value.copy(connected = true, busy = "", message = "已连接录音豆。按设备按钮开始或结束录音，首页会显示状态。")
@@ -294,6 +360,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                     }
                     if (current != epoch) return@launch
                     downloading = null
+                    if (wifiDownload) { runCatching { transport?.closeWifi() }; wifiDownload = false; mutable.value=mutable.value.copy(wifiTransfer=false) }
                     timeline.completed(fileId)
                     mutable.value = mutable.value.copy(busy = "", percent = null, progress = "", message = "录音已保存到手机，正在准备试听和转写。")
                     record("download saved file=$fileId bytes=${receipt.bytes} sha256=${receipt.sha256}")
@@ -319,6 +386,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                 "sync_time_binding", "device_info" -> record("nonfatal info error=$code")
                 "file_list" -> operationFailed("读取设备录音列表未完成（$code）。连接保留，可点刷新或重试同步。")
                 "file_transfer", "received_file_path" -> operationFailed("本段同步未完成（$code）。原录音仍在设备上，可重试同步。")
+                "wifi" -> { runCatching { transport?.closeWifi() }; wifiDownload=false; operationFailed("Wi-Fi 同步未完成（$code）。原文件保留，可重新连接后使用蓝牙下载。") }
                 else -> disconnect("设备操作未完成（$operation/$code）。请重新连接后重试。")
             }
         }
@@ -337,11 +405,12 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         if (mutable.value.busy == "scan") mutable.value = mutable.value.copy(busy = "", message = if (mutable.value.nearby.isEmpty()) "未发现录音豆。请靠近设备、确认有电并处于可发现状态后重试。" else "扫描结束，请选择自己的录音豆。")
     }
     fun connect(device: NearbyRecorder) {
-        if (mutable.value.busy !in setOf("", "scan") || !mutable.value.authorized) return
+        if (mutable.value.busy !in setOf("", "scan") || !mutable.value.authorized || mutable.value.connected) return
         stopScan()
         if (lastDevice?.key != device.key) { timeline = RecorderTimeline(); listAttempts.clear() }
         lastDevice = device
-        mutable.value = mutable.value.copy(busy = "connect", device = device, bound = false, deviceInfo = "", realtimeMarked = false, message = "正在连接 ${device.name}…")
+        mutable.value = mutable.value.copy(busy = "connect", device = device, bound = false, deviceInfo = "", realtimeMarked = false,
+            maintenance=RecorderMaintenance(sdk=mutable.value.maintenance.sdk), message = "正在连接 ${device.name}…")
         timeout(45_000, "连接超时。请检查录音豆是否正被其他 App 占用，再重新连接。")
         runCatching { transport!!.connect(device.mac, device.uuid) }.onFailure { disconnect("无法建立设备连接，请重新准备连接。") }
     }
@@ -360,23 +429,27 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             transport!!.listFiles()
         }.onFailure { operationFailed("暂时无法读取录音列表，请重试。") }
     }
-    fun download(file: DeviceRecording) {
+    fun download(file: DeviceRecording, wifi: Boolean = false) {
         val device = mutable.value.device ?: return
         if (!mutable.value.connected || mutable.value.busy.isNotEmpty() || !mutable.value.listComplete || file.code != 0 || file.sizeBytes <= 0 ||
+            file !in mutable.value.files ||
             timeline.phase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) return
         if (transferDraining()) { waitForTransferDrain(); return }
         runCatching {
             val directory = File(journal.rawDirectory, UUID.randomUUID().toString()).apply { check(mkdirs()) }
             downloading = Download(file, device, directory)
-            mutable.value = mutable.value.copy(busy = "download", percent = 0, progress = "同步到手机 0%", message = "正在同步录音到手机，可以切换 App 内页面。")
+            wifiDownload = wifi
+            mutable.value = mutable.value.copy(busy = "download", wifiTransfer=wifi, percent = 0, progress = "同步到手机 0%", message = "正在同步录音到手机，可以切换 App 内页面。")
             record("download begin file=${file.fileId} expected=${file.sizeBytes}")
             timeout(10 * 60_000, "同步超时。未完成的文件不会标为已下载，请重试同步。", connectionFatal = false)
-            transport!!.transfer(file, directory)
+            if(wifi) transport!!.transferWifi(file,directory) else transport!!.transfer(file, directory)
         }.onFailure { operationFailed("同步未能开始，请重试。") }
     }
     private fun operationFailed(message: String) {
+        if(wifiDownload) { runCatching { transport?.closeWifi() }; wifiDownload=false }
         deadline?.cancel(); nextFile?.cancel(); listing = null; downloading = null
-        mutable.value = mutable.value.copy(busy = "", percent = null, progress = "", preparingId = null, message = message)
+        maintenanceCommand = null
+        mutable.value = mutable.value.copy(busy = "", maintenanceAction=null, wifiTransfer=false, percent = null, progress = "", preparingId = null, message = message)
     }
     private fun scheduleNextFile(delayMs: Long = 1000) {
         nextFile?.cancel()
@@ -430,6 +503,48 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         val id = timeline.fileId ?: return
         if (timeline.phase !in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) return
         storeMarks(id, listOf(RecorderMark(timeline.elapsedMs(), "phone")))
+    }
+    fun runCommand(command: RecorderCommand, fileId: Int = 0) {
+        if (!mutable.value.connected || !recorderCommandAllowed(command,timeline.phase,mutable.value.busy.isNotEmpty(),deviceTransferBusy)) return
+        if(command !in setOf(RecorderCommand.PAUSE,RecorderCommand.RESUME,RecorderCommand.LOG_STOP) &&
+            runCatching { transport!!.isTransferring() }.getOrDefault(true)) { notice("设备正在传输数据，请完成后再操作。"); return }
+        if(command == RecorderCommand.LOG_STOP && maintenanceCommand != RecorderCommand.LOG_DOWNLOAD) return
+        if(command == RecorderCommand.DELETE_RECORDING && mutable.value.files.none { it.fileId == fileId }) return
+        if(command in setOf(RecorderCommand.LOG_DOWNLOAD,RecorderCommand.LOG_DELETE) && mutable.value.maintenance.logs.none { it.id == fileId }) return
+        if(command == RecorderCommand.OTA && mutable.value.maintenance.firmware == null) { notice("请先导入官方固件资料包。"); return }
+        maintenanceCommand=command; maintenanceFile=fileId
+        mutable.value=mutable.value.copy(busy="maintenance",maintenanceAction=command,message="正在等待设备执行操作…",percent=null)
+        timeout(if(command==RecorderCommand.OTA) 15*60_000L else if(command==RecorderCommand.LOG_DOWNLOAD) 5*60_000L else 20_000L,
+            "设备操作未收到完成回执。请检查设备状态；本机录音保留。",connectionFatal=false)
+        runCatching { transport!!.command(command,fileId,mutable.value.maintenance.firmware) }
+            .onFailure { operationFailed("设备操作未能启动，请检查连接和设备状态。") }
+    }
+    fun stopLogTransfer() = runCommand(RecorderCommand.LOG_STOP,maintenanceFile)
+    fun closeWifi() {
+        if(!wifiDownload || downloading==null || mutable.value.busy!="download") return
+        operationFailed("正在关闭 Wi-Fi 通道，未完成的原音仍保留在设备上。")
+    }
+    fun importFirmware(uri: Uri) {
+        if(mutable.value.busy.isNotEmpty()) return
+        val current=epoch
+        jobs.launch {
+            try {
+                val firmware=withContext(Dispatchers.IO) { RecorderFirmwareImport.read(app.contentResolver.openInputStream(uri)!!, File(app.filesDir,"recorder-firmware")) }
+                if(current==epoch) mutable.value=mutable.value.copy(maintenance=mutable.value.maintenance.copy(firmware=firmware),
+                    message="固件文件完整性检查通过。请核实来自官方且适用于此设备，再确认升级。")
+            } catch(e: Exception) { if(e is CancellationException) throw e; if(current==epoch) notice("固件包型号、版本或校验不符合要求，未执行升级。") }
+        }
+    }
+    fun exportDeviceLogs(uri: Uri) {
+        val root=transport?.logDirectory() ?: return
+        jobs.launch { try {
+            withContext(Dispatchers.IO) { app.contentResolver.openOutputStream(uri,"wt")!!.use { out ->
+                java.util.zip.ZipOutputStream(out).use { zip -> root.walkTopDown().filter { it.isFile && it.canonicalFile.toPath().startsWith(root.canonicalFile.toPath()) }.forEach { file ->
+                    zip.putNextEntry(java.util.zip.ZipEntry(file.relativeTo(root).invariantSeparatorsPath)); file.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
+                } }
+            } }
+            notice("设备日志已导出到你选择的位置。")
+        } catch(e: Exception) { if(e is CancellationException) throw e; notice("设备日志导出失败，请重新选择位置。") } }
     }
     fun keepConnectedInBackground() {
         try { RecorderConnectionService.start(app, this) }
@@ -493,6 +608,8 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     private fun stopTransport() {
         ++epoch; deadline?.cancel(); scanTimeout?.cancel(); nextFile?.cancel(); realtimeFile = null
         drainDeadline?.cancel(); drainTimedOut = false; deviceTransferBusy = false
+        maintenanceCommand=null; wifiDownload=false
+        linkDeadline?.cancel()
         runCatching { transport?.close() }; transport = null
         session.close(); ticket = null; listing = null; downloading = null
     }
@@ -502,6 +619,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         timeline.disconnected(); publishTimeline()
         RecorderConnectionService.release(app, this)
         mutable.value = mutable.value.copy(busy = "", authorized = false, connected = false, device = null,
+            maintenance=RecorderMaintenance(),wifiTransfer=false,reconnecting=false,maintenanceAction=null,
             bound = false, nearby = emptyList(), deviceInfo = "", files = emptyList(), listComplete = false, progress = "", percent = null,
             preparingId = null, message = message)
         record("session closed")

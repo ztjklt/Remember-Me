@@ -79,6 +79,9 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (state.recordPhase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) {
             Text("按录音豆按钮结束后，本段会自动同步到手机。")
             OutlinedButton(onClick = controller::addMark) { Text("标记重点 · ${state.recordMarks.size}") }
+            OutlinedButton(onClick = { controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME) }, enabled=state.busy.isEmpty()) {
+                Text(if(state.recordPhase==DeviceRecordPhase.RECORDING) "暂停录音豆" else "恢复录音豆录音")
+            }
             Text("手机添加的重点保存在本 App；设备重点在回传后显示。", style = MaterialTheme.typography.bodySmall)
         }
         if (state.realtimeMarked) Text("已收到设备重点标记，准确时间将在文件同步后显示。")
@@ -96,7 +99,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (permissionNames.any { context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) permissions.launch(permissionNames)
         else prepare()
     }, enabled = idle && BuildConfig.SOUNDCORE_ENABLED, modifier = Modifier.fillMaxWidth()) { Text("准备连接") }
-    if (state.authorized && !state.connected) {
+    if (state.authorized && !state.connected && !state.reconnecting) {
         Button(onClick = controller::scan, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("扫描附近录音豆") }
         if (state.busy == "scan") OutlinedButton(onClick = controller::stopScan) { Text("停止扫描") }
         state.nearby.forEach { device ->
@@ -111,9 +114,10 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (!state.bound) OutlinedButton(onClick = controller::bind, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("首次使用：绑定这颗录音豆") }
         if (compact) TextButton(onClick = { manage = !manage }) { Text(if (manage) "收起设备录音" else "设备录音与连接管理") }
         if (manage) Button(onClick = controller::listFiles, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("读取 / 刷新设备录音") }
+        if (manage) RecorderMaintenancePanel(controller,state)
         if (state.recordPhase == DeviceRecordPhase.ENDED && idle) OutlinedButton(onClick = controller::retrySync) { Text("重试同步") }
     }
-    if ((manage || !state.connected) && (state.connected || !idle || state.authorized)) TextButton(onClick = { controller.disconnect() }) { Text("断开 / 取消当前操作") }
+    if ((manage || !state.connected) && (state.connected || !idle || state.authorized)) TextButton(onClick = { controller.disconnect() },enabled=state.maintenanceAction!=RecorderCommand.OTA) { Text("断开 / 取消当前操作") }
     if (state.needsGrant) {
         Text("授权服务尚未就绪时", style = MaterialTheme.typography.titleMedium)
         Text("导出本机申请给开发人员，再导入对应的短期授权文件。无需填写密钥或开启 USB 调试。")
@@ -127,6 +131,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
                 Text(recordingTime(file.fileId), style = MaterialTheme.typography.titleMedium)
                 Text("${file.durationMs / 1000} 秒 · 设备标记 ${file.sizeBytes} 字节")
                 Button(onClick = { controller.download(file) }, enabled = idle && state.listComplete && file.code == 0 && file.sizeBytes > 0) { Text("下载到手机") }
+                RecorderFileActions(controller,state,file)
                 if (file.code != 0) Text("设备暂不允许下载此文件（${file.code}）。")
             }
         }
