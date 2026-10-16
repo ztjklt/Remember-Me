@@ -45,37 +45,5 @@ import me.remember.app.core.designsystem.atmosphere
 
 @Composable internal fun VoiceCallScreen(engine:VoiceCallEngine,onEnd:()->Unit){
     val state by engine.ui.collectAsStateWithLifecycle()
-    var captions by remember{mutableStateOf(false)}
-    var sources by remember{mutableStateOf(false)}
-    BackHandler{onEnd()}
-    Column(Modifier.fillMaxSize().atmosphere(scene=NatureScene.Lake).systemBarsPadding().padding(24.dp),
-        horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(20.dp)){
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
-            Text("语音聊聊",style=MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.weight(1f));SuggestionChip(onClick={},label={Text("AI 分身")})
-        }
-        Spacer(Modifier.weight(.5f))
-        Box(Modifier.size(128.dp).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha=.85f),CircleShape),contentAlignment=Alignment.Center){
-            Icon(if(state.paused)Icons.Outlined.MicOff else Icons.Outlined.GraphicEq,null,
-                Modifier.size(58.dp),tint=MaterialTheme.colorScheme.onPrimaryContainer)
-        }
-        Text(state.status,style=MaterialTheme.typography.headlineMedium)
-        if(state.error.isNotBlank())Text(state.error,color=MaterialTheme.colorScheme.error)
-        Row(horizontalArrangement=Arrangement.spacedBy(16.dp)){
-            TextButton(onClick={captions=!captions}){Text(if(captions)"收起字幕" else "字幕")}
-            if(state.sources!=null)TextButton(onClick={sources=!sources}){Text("相关故事")}
-        }
-        if(captions||sources)Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)){
-            if(captions){
-                if(state.transcript.isNotBlank())Card{Text(state.transcript,Modifier.padding(16.dp))}
-                if(state.answer.isNotBlank())Card{Text(state.answer,Modifier.padding(16.dp))}
-            }
-            if(sources)state.sources?.rows("evidence")?.forEach{e->Card{Text(e.text("excerpt"),Modifier.padding(16.dp))}}
-        }else Spacer(Modifier.weight(1f))
-        if(state.active&&state.inputEnabled)Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-            FilledTonalButton(onClick={engine.toggleMute()}){Text(if(state.muted)"取消静音" else "静音")}
-            FilledTonalButton(onClick={if(state.paused)engine.resume() else engine.pause()}){Text(if(state.paused)"继续" else "暂停")}
-        }
-        Button(onClick=onEnd,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp),colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.errorContainer,contentColor=MaterialTheme.colorScheme.onErrorContainer)){Text("结束")}
-    }
+    VoiceCallContent(state,{if(state.paused)engine.resume() else engine.pause()},engine::interrupt,onEnd)
 }

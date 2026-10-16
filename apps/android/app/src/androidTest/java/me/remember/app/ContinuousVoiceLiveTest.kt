@@ -79,7 +79,7 @@ class ContinuousVoiceLiveTest {
             }
             if(InstrumentationRegistry.getArguments().getString("timingDemo")=="true"){
                 // Observe the installed application; never inject a transcript or answer.
-                click("字幕")
+                ui.onNodeWithTag("voice-details").performClick()
                 // Emulator streamAudio can disturb the Windows audio HAL. Keep an
                 // exact copy of live received PCM instead, alongside AudioTrack
                 // progress. This is a digital soundtrack, not speaker-loopback.
@@ -148,8 +148,10 @@ class ContinuousVoiceLiveTest {
                 File(folder,"demo-connect-mic").writeText("register virtual microphone")
                 ui.waitUntil(20000){File(folder,"demo-microphone-connected").exists()}
                 // Reopen AudioRecord after the emulator virtual microphone exists.
+                click("收起")
                 click("暂停");ui.waitUntil(10000){engine.ui.value.paused}
                 click("继续");ui.waitUntil(20000){!engine.ui.value.paused&&engine.ui.value.error.isBlank()}
+                ui.onNodeWithTag("voice-details").performClick()
                 Thread.sleep(500)
                 }
                 for(round in 1..demoRounds){
@@ -214,7 +216,7 @@ class ContinuousVoiceLiveTest {
                     if(!(interruptDemo&&round==1))Thread.sleep(1000)
                 }
                 if(interruptDemo)assertTrue("Local VAD did not stop the previous playing turn",interruptionMarked)
-                click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
+                click("结束通话");ui.waitUntil(10000){model.voiceCall.value==null}
                 report.put("ok",true).put("timing_demo",true).put("events",events)
                 return
             }
@@ -225,7 +227,7 @@ class ContinuousVoiceLiveTest {
             val trackField=engine.javaClass.getDeclaredField("track").apply{isAccessible=true}
             ui.waitUntil(30000){runCatching{(trackField.get(engine) as? AudioTrack)?.playbackHeadPosition?:0}.getOrDefault(0)>0}
             report.put("audio_track_advanced",true)
-            click("字幕");shot("02-response")
+            ui.onNodeWithTag("voice-details").performClick();shot("02-response");click("收起")
             val oldTrack=trackField.get(engine) as AudioTrack
             val oldAnswerId=checkNotNull(engine.ui.value.sources).getString("answer_id")
             File(folder,"interrupt-ready").writeText("inject second question during playback")

@@ -51,7 +51,12 @@ import org.json.JSONObject
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
     val state by model.ui.collectAsStateWithLifecycle()
     val call by model.voiceCall.collectAsStateWithLifecycle()
-    if(call!=null){VoiceCallScreen(call!!,model::endVoice);return}
+    if(call!=null){
+        CompositionLocalProvider(LocalInteractions provides InteractionContext(reduceMotion=appearance.reduceMotion)) {
+            VoiceCallScreen(call!!,model::endVoice)
+        }
+        return
+    }
     CompositionLocalProvider(LocalInteractions provides InteractionContext(
         identity = "${state.actor}:${state.subject}", operation = state.operation,
         latest = { model.ui.value.operation }, reduceMotion = appearance.reduceMotion,
@@ -431,13 +436,14 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     }
 }
 
-@Composable private fun AskTab(state: NativeState, model: NativeWorkbenchModel, initialQuestion:String="", openPerson: () -> Unit = {}) {
+@Composable internal fun AskTab(state: NativeState, model: NativeWorkbenchModel, initialQuestion:String="", openPerson: () -> Unit = {}) {
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var question by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion) }
     var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
     var mode by rememberSaveable(state.actor,state.subject) { mutableStateOf("evidence") }
     var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
+    var tools by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
     val style=state.narrative.optJSONObject("style")
     Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
     VoiceCallEntry(state,model,mode)
@@ -445,18 +451,21 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
         FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
     }
-    if(state.owner && style!=null) RememberToggle("允许分身使用已确认的理解与表达",style.optBoolean("enabled"),{enabled -> model.mutation("/narrative/style","PUT",JSONObject().put("revision",style.optInt("revision")).put("enabled",enabled))},enabled=!state.busy&&!state.recording)
     LaunchedEffect(style?.optBoolean("enabled")) { if(style?.optBoolean("enabled")!=true) mode="evidence" }
     OutlinedTextField(question, { question = it }, label = { Text("想了解什么？") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
 
-    Check("同意本次将问题和有权访问的核对文字发送给云端文字模型。", cloud, { cloud = it })
+    Check("同意将问题与已授权的核对文字交由云端回答", cloud, { cloud = it })
     RememberActionButton("提问", !state.busy && !state.recording && question.isNotBlank() && cloud, filled=true,
         icon=Icons.Outlined.ChatBubbleOutline, pendingLabel="正在整理回答…", successLabel="回答已返回") {
         focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud, mode)
     }
-    if(state.owner) RememberActionButton("先录下我的回答，再对照",!state.busy&&!state.recording&&question.isNotBlank()&&cloud,
+    if(state.owner) TextButton(onClick={tools=!tools}) { Text(if(tools) "收起对话工具" else "对话工具") }
+    if(state.owner && tools) {
+    if(style!=null) RememberToggle("允许分身使用已确认的理解与表达",style.optBoolean("enabled"),{enabled -> model.mutation("/narrative/style","PUT",JSONObject().put("revision",style.optInt("revision")).put("enabled",enabled))},enabled=!state.busy&&!state.recording)
+    RememberActionButton("先录下我的回答，再对照",!state.busy&&!state.recording&&question.isNotBlank()&&cloud,
         pendingLabel="正在准备问题…",successLabel="可以开始回答"){
         focus.clearFocus();keyboard?.hide();model.prepareVoiceCalibration(question,mode)
+    }
     }
     state.answer?.let { answer -> Panel {
         Text(if(answer.text("mode")=="persona") "AI 分身" else when(answer.text("response_type")) { "ORIGINAL" -> "来自本人原话"; "SIMULATION" -> "AI 分身"; else -> "还没有足够的记录" }, style = MaterialTheme.typography.titleMedium)
@@ -464,7 +473,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         personaCoverageHint(answer)?.let {Text(it,style=MaterialTheme.typography.bodyMedium)}
         if(answer.text("response_type")!="UNKNOWN") RememberActionButton("听这条回答", !state.busy,
             pendingLabel="正在准备声音…",successLabel="声音已取回") { model.speakAnswer(answer) }
-        if(state.owner && answer.text("response_type")!="UNKNOWN") {
+        if(state.owner && tools && answer.text("response_type")!="UNKNOWN") {
             var compareCloud by remember(answer.text("answer_id")) { mutableStateOf(false) }
             Check("同意将两段回答交由云端比较",compareCloud,{compareCloud=it})
             RememberActionButton("和我的想法对照",!state.busy&&!state.recording&&compareCloud,
@@ -479,8 +488,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             state.companion.rows("contributions").filter{it.text("id") in contributions}.forEach {Text(it.text("author_display_name")+"的补记："+it.text("text"))}
         }
     } }
-    if(state.owner) CalibrationSection(state,model,openPerson)
-    if(state.owner) {
+    if(state.owner && (tools || state.calibrationId.isNotBlank())) CalibrationSection(state,model,openPerson)
+    if(state.owner && tools) {
         var voiceSettings by remember { mutableStateOf(false) }
         var voiceConsent by remember(state.subject) { mutableStateOf(false) }
         TextButton(onClick={voiceSettings=!voiceSettings}) { Text("分身声音与亲友许可") }
