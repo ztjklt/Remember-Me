@@ -62,5 +62,10 @@ def highlight_report(episode):
     return {'version': VERSION, 'state': ('no_markers' if not markers else
         'timestamps_unavailable' if not timeline else 'mapped' if len(mapped) == len(markers) else 'partially_mapped' if mapped else 'unmapped'),
         'marker_count': len(markers), 'mapped_count': len(mapped),
+        'device_marker_count': sum(origin == 'device' for _, origin in markers),
+        'phone_marker_count': sum(origin == 'phone' for _, origin in markers),
+        'device_marker_pending': isinstance(hardware, dict) and hardware.get('device_marker_pending') is True,
+        'markers': [{'offset_ms': point, 'origin': origin, 'mapped': (point, origin) in mapped}
+                    for point, origin in markers],
         'unmapped_count': len(markers) - len(mapped), 'window_before_ms': 10000,
         'window_after_ms': 5000, 'spans': [spans[k] for k in sorted(spans)]}

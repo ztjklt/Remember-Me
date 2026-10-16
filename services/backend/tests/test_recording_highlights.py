@@ -20,6 +20,26 @@ def test_mark_maps_to_exact_reviewed_sentence_and_preserves_negation():
     assert r['spans'][0]['priority_weight'] == 2.0
 
 
+def test_device_points_and_phone_notes_are_distinct_even_without_sentence_alignment():
+    r = highlight_report(episode(asr_timeline=[], markers=[
+        {'offset_ms': 1000, 'origin': 'device'},
+        {'offset_ms': 2000, 'origin': 'phone'},
+        {'offset_ms': 2000, 'origin': 'phone'}]))
+    assert r['device_marker_count'] == 1
+    assert r['phone_marker_count'] == 1
+    assert r['markers'] == [
+        {'offset_ms': 1000, 'origin': 'device', 'mapped': False},
+        {'offset_ms': 2000, 'origin': 'phone', 'mapped': False}]
+
+
+def test_signal_without_verified_offset_is_pending_not_an_invented_point():
+    e = episode(markers=[])
+    e.capture_metadata['hardware']['device_marker_pending'] = True
+    r = highlight_report(e)
+    assert r['device_marker_pending'] is True
+    assert r['device_marker_count'] == 0
+
+
 def test_changed_or_ambiguous_sentence_does_not_guess_alignment():
     for text in ['我爱散步。我会借钱投资。', '我不会借钱投资。我不会借钱投资。']:
         r = highlight_report(episode(text))
