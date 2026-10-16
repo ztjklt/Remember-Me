@@ -17,15 +17,22 @@ class RecorderConnectionService : Service() {
     private var observation: Job? = null
     private var owned: Work3200Controller? = null
     override fun onBind(intent: Intent?): IBinder? = null
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "disconnect") { active?.disconnect(); stopSelf(); return START_NOT_STICKY }
-        val controller = active ?: run { stopSelf(); return START_NOT_STICKY }
-        owned = controller
+    override fun onCreate() {
+        super.onCreate()
+        // A failed grant can release the controller before onStartCommand.
+        // Fulfil Android's foreground-start obligation even for that cancelled
+        // start; otherwise it kills the app after the foreground deadline.
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel(CHANNEL, "录音豆连接", NotificationManager.IMPORTANCE_LOW))
         val initial = notification("正在连接录音豆")
         if (Build.VERSION.SDK_INT >= 29) startForeground(ID, initial, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
         else startForeground(ID, initial)
+    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "disconnect") { active?.disconnect(); stopSelf(); return START_NOT_STICKY }
+        val controller = active ?: run { stopSelf(); return START_NOT_STICKY }
+        owned = controller
+        val manager = getSystemService(NotificationManager::class.java)
         observation?.cancel()
         observation = jobs.launch {
             controller.ui.map { state -> when {
