@@ -7,22 +7,116 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06185570CF756F1671731564 /* person-review-contract.json in Resources */ = {isa = PBXBuildFile; fileRef = EFC08C8BE4D1C54A799E781F /* person-review-contract.json */; };
 		069F3E1C3FFB679D5381D396 /* CloudConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5713FE1328EFBDF9CA2DD08 /* CloudConnection.swift */; };
+		0CBDE6AE806A9CFFAC7F8F75 /* SoundcoreWorkAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36C475A714164DCB7DA67FB /* SoundcoreWorkAdapter.swift */; };
+		0EE244FEF6254EEE7D27EAC3 /* PersonReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAFB312D3BA23199A049F6EB /* PersonReview.swift */; };
+		0F761C7CD75A91E985FE72D7 /* TwinVoiceCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 570EA20D7C2E1FE23A133578 /* TwinVoiceCall.swift */; };
+		169B184C1D0B0A75D909F786 /* RMInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD9EB87B8310B484DB40018 /* RMInputs.swift */; };
+		16BDA9ED8CAD28AD7B2EC314 /* SpeakerRecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565C7AE02F7B3DD30BBEA082 /* SpeakerRecordingView.swift */; };
+		1AC43DE9254D78479D7E574C /* DesignSystemShowcase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33579CA34B5903A53ED99B3D /* DesignSystemShowcase.swift */; };
+		1BFB1EE4B57E485FF690A53E /* TwinAtmosphere.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23E931995D7F7BEE2E74219E /* TwinAtmosphere.swift */; };
+		201AAFD31E8272BA7EF056C9 /* VolcengineVoiceTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8D7E1179DE3C66DD458E1C5 /* VolcengineVoiceTransport.swift */; };
+		234DA9AB9AF779981D28DF9C /* GardenNarrativeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DE68E2FCED7BA63AB32090F /* GardenNarrativeViews.swift */; };
+		24348C299A99A7A7270DC576 /* VoiceReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A67CEE464F5E8FA3D658563 /* VoiceReviewTests.swift */; };
 		25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA939DD4DAD788A194194175 /* AppModel.swift */; };
+		2A4FFBC7D1190F65D0F04B07 /* RecordingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117AF6043CDE692B2F906B67 /* RecordingActivityAttributes.swift */; };
+		2AD70BE8A1734D50DEC7C04C /* RMFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BB3B5C5BAA969CC31F4466 /* RMFeedback.swift */; };
 		2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */; };
+		2BF7FF25CF519BCFC86ECAD4 /* TwinVoiceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2739B560176F8CE7BBAF161 /* TwinVoiceAPI.swift */; };
+		2C43E55570BA18C2EE60B466 /* WearablePriorityTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20B281092BFBA50538406772 /* WearablePriorityTimeline.swift */; };
+		2EECEDCBA0FF35B03F487049 /* RealXBase.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B517B2B889A52E5CD3034331 /* RealXBase.xcframework */; };
+		2FE98F3A1ECDEDDF7AA7B5F0 /* ForgetMeNotFlower.swift in Sources */ = {isa = PBXBuildFile; fileRef = A827124CDF0BEF3AF5DDC0E3 /* ForgetMeNotFlower.swift */; };
+		3507C98FDF77DED11628DB02 /* SoundcoreAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6613EB9A474CD3CFF4FEA2D /* SoundcoreAudioTests.swift */; };
+		35589562E45BDAC4B19E6290 /* WearablePriorityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4998AB3A5D4C8B5A432739D /* WearablePriorityTests.swift */; };
+		365F191EA413F440F85F30BA /* DeviceRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEE7DD81FB6CA1FD52233219 /* DeviceRecordingTests.swift */; };
+		38A2FC0D68D8AC69CBC12BB8 /* RMDesignSystemUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31C976A5225ADDE9E888B0C6 /* RMDesignSystemUITests.swift */; };
+		3ABB794A1500399B5116BB37 /* RecordingAudioEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B4D53A0867E7CAE817B752 /* RecordingAudioEvents.swift */; };
+		3D35BF88AC382843EB031C13 /* GardenParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67BA8BB01EFC97F89848A06A /* GardenParityUITests.swift */; };
 		3E23EE228E0C8583AC86D91A /* LocalRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */; };
+		3F65907CDB104658505B699B /* AutomaticCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69F592347DF1B76845763AA1 /* AutomaticCaptureTests.swift */; };
+		452B6EEDF6DF1F12F0D8617F /* SoundcoreCallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68FC442AAD65FE4B69CC8510 /* SoundcoreCallbackTests.swift */; };
+		45F9936E975EF8D47D009DA6 /* DialogueMaterials.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9FB5191C012005FDA47954 /* DialogueMaterials.swift */; };
+		48224075E2CE41EC7C507ED7 /* PersonalLearningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85C43CBD5AF91CBFE4A4E996 /* PersonalLearningView.swift */; };
+		4CE1B9EE7178088D61BB52F7 /* CaptureWorkflowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2690F285835734CB44DDB852 /* CaptureWorkflowUITests.swift */; };
+		4F634D78B2FC72038F233D74 /* PersonReviewUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A39C767023BEC2A4EDA57C79 /* PersonReviewUITests.swift */; };
+		515C54861BF73DAEE089FF88 /* PersonalModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE03E8B783B4B369C87CDB30 /* PersonalModelView.swift */; };
+		522FE3BE3CFA08B1174916BB /* GuestAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E0927E9A0353A6978C36638 /* GuestAccess.swift */; };
+		5302D5443DC5D0098E8940AC /* VolcengineVoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5B93A30507C30BF888F290E /* VolcengineVoiceTests.swift */; };
+		53F22C20FCAEF3C11F591067 /* PersonalLearningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 478DEADBC36AC526F376DF00 /* PersonalLearningTests.swift */; };
+		5B2E4EEEF586F1B735934D94 /* PersonalLearningUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EF45B3D1744AA9A9076EC63 /* PersonalLearningUITests.swift */; };
+		60A1319993A7E5E7055784D5 /* RTCFFmpeg.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B114505FD0E6A212FEB2D24B /* RTCFFmpeg.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		60AB60CBD565CDCF41D3AB5B /* EntrustmentDraftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12383B844086A37E0F735086 /* EntrustmentDraftTests.swift */; };
+		670419A18FBFC188D5616276 /* GuestAccessUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0490B78818158D03765FAB97 /* GuestAccessUITests.swift */; };
+		68742F0C868316DFBFDA92D5 /* DeviceRecordingImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D94219DDD548911563725C /* DeviceRecordingImporter.swift */; };
+		6BC2479BB1A5CFC3E152FAC5 /* EntrustmentUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3781BCC2E1268E8B9304DDA4 /* EntrustmentUITests.swift */; };
+		737CE5560D69190BF1F1A66A /* SpeakerRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A05041FE5E0F261AA6338A18 /* SpeakerRecordingTests.swift */; };
+		75199AEDCDCD0C77E5E70449 /* RecordingLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10F05CAE85880461C71809FD /* RecordingLifecycleTests.swift */; };
+		7648B16130C9D02AFC59EE1E /* CaptureWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FAD0EC1470BC01341ABE5F7 /* CaptureWorkflow.swift */; };
+		78A2F385437FD56BD99049B2 /* MemoryGardenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 575A486B78E8457CFB8B4213 /* MemoryGardenTests.swift */; };
+		7A413E421B90B28F1AEE1B3B /* RTCFFmpeg.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B114505FD0E6A212FEB2D24B /* RTCFFmpeg.xcframework */; };
+		7B181E76B98761657CB2EA99 /* PersonalVoicePCMPlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BB0F7ACB7E78B2232D3530 /* PersonalVoicePCMPlaybackTests.swift */; };
+		7D3FDEE85855DCC71B059B18 /* RMDesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773335D4F041D56941FE23A0 /* RMDesignTokens.swift */; };
+		826FE4B2FB042374208EC85E /* RMAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708BAEEBD57B04F638E669D9 /* RMAudio.swift */; };
+		828C36E4B5E2010EE893C06A /* PersonalModelUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AECCF74515BE98107008ADB /* PersonalModelUITests.swift */; };
+		848E6629CC13AC5A61BA0217 /* PersonReviewViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F5A4A49CF1593865C3B0408 /* PersonReviewViews.swift */; };
+		84F99926215E4035D72EBB5E /* GuestAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DCC8AE3A1F02AC4E7AFB05 /* GuestAccessTests.swift */; };
+		85B5116F22DA28DC6C8A8003 /* RealXBase.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B517B2B889A52E5CD3034331 /* RealXBase.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		862A3CB19A7DE20DD41B361B /* GardenNarrative.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C4B09C9C7473BBE3BD81B0B /* GardenNarrative.swift */; };
+		930AD7AA925E3B39D82F1354 /* ForgetMeNotFlower.swift in Sources */ = {isa = PBXBuildFile; fileRef = A827124CDF0BEF3AF5DDC0E3 /* ForgetMeNotFlower.swift */; };
 		963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */; };
+		99DA641E5A8AA4B37009E32D /* SpeakerRecordingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB4115A94BECEA7892C7238 /* SpeakerRecordingUITests.swift */; };
+		A263DA9D7A6E7E1A4E3318F6 /* PersonReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDD54693B76330DBC9EFD737 /* PersonReviewTests.swift */; };
+		A8553F1DEFAD12BF8CABF7D2 /* RMCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0824540F7FEC9676EB341AA9 /* RMCards.swift */; };
+		B010DA0EE0F2FAFE2058B7A3 /* DeviceConnectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D26E6B431B4F07B8A40ECEF /* DeviceConnectionsView.swift */; };
 		B0466C9C2E4FF25292D0B360 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F6922872B50B2440845465FA /* Assets.xcassets */; };
+		B12FBA696A93CEF642B6811D /* RecordingActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117AF6043CDE692B2F906B67 /* RecordingActivityAttributes.swift */; };
 		B15C8BCFF693494EA18C1CA2 /* OnDeviceSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31032462668E369C05586202 /* OnDeviceSpeech.swift */; };
+		B1BBB6E5DC210917F4F1A2D4 /* RMButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A7C994E44AA611F171DC0B4 /* RMButtons.swift */; };
+		B32BF538053E3B86ED02E3B0 /* RecordingActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 356651E61A901F810182CEB9 /* RecordingActivityController.swift */; };
+		B5C35F3A3BC24F4BB7A25414 /* VolcEngineRTC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 902977DE0EB9B60EDC8E5459 /* VolcEngineRTC.xcframework */; };
+		B8B90D7B9BAED3CEB5907628 /* RecordingActivityStylePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34DF9769AE3A499FCF79F92C /* RecordingActivityStylePreview.swift */; };
+		BC758B4239C2BB094B3BB731 /* RememberRecordingActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7309B6AAA32EBCD7F06D0724 /* RememberRecordingActivity.swift */; };
 		BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */; };
+		BE8158EC0FDCE65F9F122924 /* DomesticMicrophoneBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3EFB2A4BDB2A191467EED2 /* DomesticMicrophoneBuffer.swift */; };
+		C006A8275B3446C475517AF6 /* RMNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08E7DD7A794473BF27D1A16 /* RMNavigation.swift */; };
+		C474EA1206DB87889C1C1474 /* MemoryGarden.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A66BD64BD78AF2DED131FCD /* MemoryGarden.swift */; };
+		CAC3F54959BC858158D3E91E /* SoundcoreSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79A7F3F0C4DE03E42583C99F /* SoundcoreSessionTests.swift */; };
+		CACE406CE5B51C7EE65390AE /* PersonalVoicePCMPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BB49D15374F004F7F86073 /* PersonalVoicePCMPlayback.swift */; };
+		CD24479D79C6ACECCA8C5FFB /* DeviceConnections.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF5ED209A052A06AEC358928 /* DeviceConnections.swift */; };
+		CF0AAB4BE0D64CF5D81CDB40 /* SoundcoreLiveCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FFF02EE66B2D638CDEDD56 /* SoundcoreLiveCapture.swift */; };
+		D40E0CF4808F81D01B3F30BC /* VolcEngineRTC.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 902977DE0EB9B60EDC8E5459 /* VolcEngineRTC.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D838B906878CFF328741948B /* ECSConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66ABD7767F1AC0138D9AFFDA /* ECSConnectionTests.swift */; };
+		DABE77531908101B3E505490 /* VoicePreparationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ACB95E9F0E09AEF2C264215 /* VoicePreparationTests.swift */; };
+		DB5EDCCCB4C719FD68AAFBF1 /* GardenExperience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A2609D54DC069CE84427B9C /* GardenExperience.swift */; };
 		DE409B589F1CA246B89C7726 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC9EAE511EDB13B710E96D0 /* Views.swift */; };
+		E2EB95EE914A44EED40E62A2 /* RecordingActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B57A1704F8C629F786852640 /* RecordingActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E31BECBF697B6CC6DAF6D90D /* SpeakerRecordings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A86AE9B1F32C76D1FCF241 /* SpeakerRecordings.swift */; };
+		E5417CD639C87C9FE1923CFB /* DecodedSoundcoreAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22C13B3E3E73183EF6A48383 /* DecodedSoundcoreAudio.swift */; };
+		E812F9BE15DB5BDABDE27D2E /* RecordingActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA655557FD1FB498C09415AA /* RecordingActivityPresentation.swift */; };
+		EC807A4CED1914A64CCDAF92 /* RecordingActivityPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA655557FD1FB498C09415AA /* RecordingActivityPresentation.swift */; };
 		ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44F936F9AAC5B970D20CEF2 /* Network.swift */; };
+		EEB07C9A0EA12378D95F1782 /* PersonalModelCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD834A0B5D1BC4C9762D78B0 /* PersonalModelCoverageTests.swift */; };
+		EEF0938D14B406A072F7B1E0 /* DevicePacketCoverage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED0B4E50B6A8B156B565DD8 /* DevicePacketCoverage.swift */; };
+		EFCC1C86FE096EDF72B816D5 /* TwinVoiceCallTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A8FC47BDD8C7F51838A8E64 /* TwinVoiceCallTests.swift */; };
 		F22620764FC29679C08394F9 /* LocalRecordings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */; };
+		F2ED7A5DDDF71A5D52D2338B /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 832E96C606BE3CFFD543F15D /* LiveKit */; };
+		F37EA54B0363F7F54CB9C45B /* RMDesignSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFFE7CF15602B118570E6940 /* RMDesignSystemTests.swift */; };
 		F7F95DA0E16FC563E16C9471 /* LocalRecordingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */; };
+		F8141BC9FC31428DC8E23813 /* RMDesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773335D4F041D56941FE23A0 /* RMDesignTokens.swift */; };
+		FB1D58D55D7EA13D89C68CFA /* EntrustmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841445E908D03EA7AB965191 /* EntrustmentView.swift */; };
+		FC2C3C8E5EF4A276F798F3E9 /* TwinVoiceCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FE1B9144BABB3C1C8866B0 /* TwinVoiceCallView.swift */; };
+		FD871E78DADDCDC41ED67976 /* GardenRecordManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A988C0F6C501E37DA4F9EDD /* GardenRecordManagement.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		90552F1D3E824705BED32386 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 770BDE8ACE2459E9CA3BE8BD;
+			remoteInfo = RecordingActivity;
+		};
 		E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E01A912F2B938C337F626F2F /* Project object */;
@@ -39,33 +133,166 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		1FBA85D3B3062248C7432E39 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				D40E0CF4808F81D01B3F30BC /* VolcEngineRTC.xcframework in Embed Frameworks */,
+				85B5116F22DA28DC6C8A8003 /* RealXBase.xcframework in Embed Frameworks */,
+				60A1319993A7E5E7055784D5 /* RTCFFmpeg.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D15F42FACAD23ED412910A42 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E2EB95EE914A44EED40E62A2 /* RecordingActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0490B78818158D03765FAB97 /* GuestAccessUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestAccessUITests.swift; sourceTree = "<group>"; };
+		0824540F7FEC9676EB341AA9 /* RMCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMCards.swift; sourceTree = "<group>"; };
+		0A67CEE464F5E8FA3D658563 /* VoiceReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceReviewTests.swift; sourceTree = "<group>"; };
 		0DD6ABD0F11397F657B95172 /* RememberMe.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RememberMe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		10F05CAE85880461C71809FD /* RecordingLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingLifecycleTests.swift; sourceTree = "<group>"; };
+		117AF6043CDE692B2F906B67 /* RecordingActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingActivityAttributes.swift; sourceTree = "<group>"; };
+		12383B844086A37E0F735086 /* EntrustmentDraftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntrustmentDraftTests.swift; sourceTree = "<group>"; };
 		15E87C6A763B9D344F407898 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		19BB49D15374F004F7F86073 /* PersonalVoicePCMPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalVoicePCMPlayback.swift; sourceTree = "<group>"; };
+		1A7C994E44AA611F171DC0B4 /* RMButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMButtons.swift; sourceTree = "<group>"; };
+		1FAD0EC1470BC01341ABE5F7 /* CaptureWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureWorkflow.swift; sourceTree = "<group>"; };
+		20B281092BFBA50538406772 /* WearablePriorityTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearablePriorityTimeline.swift; sourceTree = "<group>"; };
+		22C13B3E3E73183EF6A48383 /* DecodedSoundcoreAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodedSoundcoreAudio.swift; sourceTree = "<group>"; };
+		23E931995D7F7BEE2E74219E /* TwinAtmosphere.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinAtmosphere.swift; sourceTree = "<group>"; };
 		267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordingTests.swift; sourceTree = "<group>"; };
+		2690F285835734CB44DDB852 /* CaptureWorkflowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureWorkflowUITests.swift; sourceTree = "<group>"; };
+		27BB3B5C5BAA969CC31F4466 /* RMFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMFeedback.swift; sourceTree = "<group>"; };
+		2EB4115A94BECEA7892C7238 /* SpeakerRecordingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRecordingUITests.swift; sourceTree = "<group>"; };
+		2EF45B3D1744AA9A9076EC63 /* PersonalLearningUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLearningUITests.swift; sourceTree = "<group>"; };
+		2F5A4A49CF1593865C3B0408 /* PersonReviewViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonReviewViews.swift; sourceTree = "<group>"; };
 		31032462668E369C05586202 /* OnDeviceSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceSpeech.swift; sourceTree = "<group>"; };
+		31C976A5225ADDE9E888B0C6 /* RMDesignSystemUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMDesignSystemUITests.swift; sourceTree = "<group>"; };
+		32DCC8AE3A1F02AC4E7AFB05 /* GuestAccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestAccessTests.swift; sourceTree = "<group>"; };
+		33579CA34B5903A53ED99B3D /* DesignSystemShowcase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystemShowcase.swift; sourceTree = "<group>"; };
+		34DF9769AE3A499FCF79F92C /* RecordingActivityStylePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingActivityStylePreview.swift; sourceTree = "<group>"; };
+		356651E61A901F810182CEB9 /* RecordingActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingActivityController.swift; sourceTree = "<group>"; };
+		3781BCC2E1268E8B9304DDA4 /* EntrustmentUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntrustmentUITests.swift; sourceTree = "<group>"; };
+		3A2609D54DC069CE84427B9C /* GardenExperience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenExperience.swift; sourceTree = "<group>"; };
+		478DEADBC36AC526F376DF00 /* PersonalLearningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLearningTests.swift; sourceTree = "<group>"; };
+		47BB0F7ACB7E78B2232D3530 /* PersonalVoicePCMPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalVoicePCMPlaybackTests.swift; sourceTree = "<group>"; };
 		4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParity.swift; sourceTree = "<group>"; };
+		565C7AE02F7B3DD30BBEA082 /* SpeakerRecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRecordingView.swift; sourceTree = "<group>"; };
+		570EA20D7C2E1FE23A133578 /* TwinVoiceCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinVoiceCall.swift; sourceTree = "<group>"; };
+		575A486B78E8457CFB8B4213 /* MemoryGardenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGardenTests.swift; sourceTree = "<group>"; };
+		5A66BD64BD78AF2DED131FCD /* MemoryGarden.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryGarden.swift; sourceTree = "<group>"; };
+		5AECCF74515BE98107008ADB /* PersonalModelUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalModelUITests.swift; sourceTree = "<group>"; };
 		5BC9EAE511EDB13B710E96D0 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		5DE68E2FCED7BA63AB32090F /* GardenNarrativeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenNarrativeViews.swift; sourceTree = "<group>"; };
+		65A86AE9B1F32C76D1FCF241 /* SpeakerRecordings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRecordings.swift; sourceTree = "<group>"; };
 		66ABD7767F1AC0138D9AFFDA /* ECSConnectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECSConnectionTests.swift; sourceTree = "<group>"; };
+		67BA8BB01EFC97F89848A06A /* GardenParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenParityUITests.swift; sourceTree = "<group>"; };
+		68FC442AAD65FE4B69CC8510 /* SoundcoreCallbackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundcoreCallbackTests.swift; sourceTree = "<group>"; };
+		69F592347DF1B76845763AA1 /* AutomaticCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutomaticCaptureTests.swift; sourceTree = "<group>"; };
+		6ACB95E9F0E09AEF2C264215 /* VoicePreparationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoicePreparationTests.swift; sourceTree = "<group>"; };
+		6D26E6B431B4F07B8A40ECEF /* DeviceConnectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceConnectionsView.swift; sourceTree = "<group>"; };
+		6FD9EB87B8310B484DB40018 /* RMInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMInputs.swift; sourceTree = "<group>"; };
+		708BAEEBD57B04F638E669D9 /* RMAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMAudio.swift; sourceTree = "<group>"; };
+		7309B6AAA32EBCD7F06D0724 /* RememberRecordingActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberRecordingActivity.swift; sourceTree = "<group>"; };
+		773335D4F041D56941FE23A0 /* RMDesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMDesignTokens.swift; sourceTree = "<group>"; };
+		79A7F3F0C4DE03E42583C99F /* SoundcoreSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundcoreSessionTests.swift; sourceTree = "<group>"; };
+		7E0927E9A0353A6978C36638 /* GuestAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestAccess.swift; sourceTree = "<group>"; };
 		8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		83FE1B9144BABB3C1C8866B0 /* TwinVoiceCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinVoiceCallView.swift; sourceTree = "<group>"; };
+		841445E908D03EA7AB965191 /* EntrustmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntrustmentView.swift; sourceTree = "<group>"; };
+		85C43CBD5AF91CBFE4A4E996 /* PersonalLearningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalLearningView.swift; sourceTree = "<group>"; };
+		8A8FC47BDD8C7F51838A8E64 /* TwinVoiceCallTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinVoiceCallTests.swift; sourceTree = "<group>"; };
+		8A988C0F6C501E37DA4F9EDD /* GardenRecordManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenRecordManagement.swift; sourceTree = "<group>"; };
+		8C4B09C9C7473BBE3BD81B0B /* GardenNarrative.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GardenNarrative.swift; sourceTree = "<group>"; };
+		8ED0B4E50B6A8B156B565DD8 /* DevicePacketCoverage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePacketCoverage.swift; sourceTree = "<group>"; };
 		8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AndroidParityUITests.swift; sourceTree = "<group>"; };
+		902977DE0EB9B60EDC8E5459 /* VolcEngineRTC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = VolcEngineRTC.xcframework; path = Vendor/VolcEngineRTC/VolcEngineRTC.xcframework; sourceTree = "<group>"; };
+		93FFF02EE66B2D638CDEDD56 /* SoundcoreLiveCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundcoreLiveCapture.swift; sourceTree = "<group>"; };
+		A05041FE5E0F261AA6338A18 /* SpeakerRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerRecordingTests.swift; sourceTree = "<group>"; };
 		A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RememberMeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A39C767023BEC2A4EDA57C79 /* PersonReviewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonReviewUITests.swift; sourceTree = "<group>"; };
+		A827124CDF0BEF3AF5DDC0E3 /* ForgetMeNotFlower.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgetMeNotFlower.swift; sourceTree = "<group>"; };
+		AB3EFB2A4BDB2A191467EED2 /* DomesticMicrophoneBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomesticMicrophoneBuffer.swift; sourceTree = "<group>"; };
+		AE03E8B783B4B369C87CDB30 /* PersonalModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalModelView.swift; sourceTree = "<group>"; };
+		B114505FD0E6A212FEB2D24B /* RTCFFmpeg.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = RTCFFmpeg.xcframework; path = Vendor/VolcEngineRTC/RTCFFmpeg.xcframework; sourceTree = "<group>"; };
 		B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberMeApp.swift; sourceTree = "<group>"; };
+		B517B2B889A52E5CD3034331 /* RealXBase.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = RealXBase.xcframework; path = Vendor/VolcEngineRTC/RealXBase.xcframework; sourceTree = "<group>"; };
+		B57A1704F8C629F786852640 /* RecordingActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RecordingActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BD834A0B5D1BC4C9762D78B0 /* PersonalModelCoverageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalModelCoverageTests.swift; sourceTree = "<group>"; };
+		BFFE7CF15602B118570E6940 /* RMDesignSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMDesignSystemTests.swift; sourceTree = "<group>"; };
+		C08E7DD7A794473BF27D1A16 /* RMNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMNavigation.swift; sourceTree = "<group>"; };
 		C5713FE1328EFBDF9CA2DD08 /* CloudConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudConnection.swift; sourceTree = "<group>"; };
+		C59B58B97E64A1ED73D64B11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C6613EB9A474CD3CFF4FEA2D /* SoundcoreAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundcoreAudioTests.swift; sourceTree = "<group>"; };
+		C8D7E1179DE3C66DD458E1C5 /* VolcengineVoiceTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolcengineVoiceTransport.swift; sourceTree = "<group>"; };
 		CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordingViews.swift; sourceTree = "<group>"; };
+		CDD54693B76330DBC9EFD737 /* PersonReviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonReviewTests.swift; sourceTree = "<group>"; };
 		CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalRecordings.swift; sourceTree = "<group>"; };
 		D44F936F9AAC5B970D20CEF2 /* Network.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Network.swift; sourceTree = "<group>"; };
+		D7B4D53A0867E7CAE817B752 /* RecordingAudioEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingAudioEvents.swift; sourceTree = "<group>"; };
+		DA655557FD1FB498C09415AA /* RecordingActivityPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingActivityPresentation.swift; sourceTree = "<group>"; };
 		DA939DD4DAD788A194194175 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		DF5ED209A052A06AEC358928 /* DeviceConnections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceConnections.swift; sourceTree = "<group>"; };
+		E1D94219DDD548911563725C /* DeviceRecordingImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceRecordingImporter.swift; sourceTree = "<group>"; };
+		E4998AB3A5D4C8B5A432739D /* WearablePriorityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WearablePriorityTests.swift; sourceTree = "<group>"; };
+		E5B93A30507C30BF888F290E /* VolcengineVoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolcengineVoiceTests.swift; sourceTree = "<group>"; };
+		EA9FB5191C012005FDA47954 /* DialogueMaterials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogueMaterials.swift; sourceTree = "<group>"; };
+		EFC08C8BE4D1C54A799E781F /* person-review-contract.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "person-review-contract.json"; sourceTree = "<group>"; };
+		F2739B560176F8CE7BBAF161 /* TwinVoiceAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinVoiceAPI.swift; sourceTree = "<group>"; };
+		F36C475A714164DCB7DA67FB /* SoundcoreWorkAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundcoreWorkAdapter.swift; sourceTree = "<group>"; };
 		F6922872B50B2440845465FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FAFB312D3BA23199A049F6EB /* PersonReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonReview.swift; sourceTree = "<group>"; };
+		FEE7DD81FB6CA1FD52233219 /* DeviceRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceRecordingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		06376AB8DF4EE1B51914426D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2ED7A5DDDF71A5D52D2338B /* LiveKit in Frameworks */,
+				B5C35F3A3BC24F4BB7A25414 /* VolcEngineRTC.xcframework in Frameworks */,
+				2EECEDCBA0FF35B03F487049 /* RealXBase.xcframework in Frameworks */,
+				7A413E421B90B28F1AEE1B3B /* RTCFFmpeg.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
+		056193F2C57B12D0EEBBBBA1 /* Visuals */ = {
+			isa = PBXGroup;
+			children = (
+				A827124CDF0BEF3AF5DDC0E3 /* ForgetMeNotFlower.swift */,
+				23E931995D7F7BEE2E74219E /* TwinAtmosphere.swift */,
+			);
+			path = Visuals;
+			sourceTree = "<group>";
+		};
 		23BED3C70407CFCC97E28A46 = {
 			isa = PBXGroup;
 			children = (
+				3C71DC51E0AD1E10B17148F9 /* RecordingActivity */,
 				A527F2A08B55BADD6D04283C /* RememberMe */,
 				63860F068E60E5AEF543369A /* RememberMeTests */,
 				B7213A10661065465C8E56A1 /* RememberMeUITests */,
+				82B49D684FD2074F38472505 /* Shared */,
+				98F9BECE083B8C26E046AB06 /* Frameworks */,
 				2C9F65D43AB78B97FE4FD98C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -73,6 +300,7 @@
 		2C9F65D43AB78B97FE4FD98C /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				B57A1704F8C629F786852640 /* RecordingActivity.appex */,
 				0DD6ABD0F11397F657B95172 /* RememberMe.app */,
 				A1B0BA43CD1C752A45661854 /* RememberMeTests.xctest */,
 				8198D7D45ECBBAB004171714 /* RememberMeUITests.xctest */,
@@ -80,13 +308,94 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		32FD37B1DF8E21EBE80C5281 /* Previews */ = {
+			isa = PBXGroup;
+			children = (
+				33579CA34B5903A53ED99B3D /* DesignSystemShowcase.swift */,
+			);
+			path = Previews;
+			sourceTree = "<group>";
+		};
+		3C71DC51E0AD1E10B17148F9 /* RecordingActivity */ = {
+			isa = PBXGroup;
+			children = (
+				C59B58B97E64A1ED73D64B11 /* Info.plist */,
+				7309B6AAA32EBCD7F06D0724 /* RememberRecordingActivity.swift */,
+			);
+			path = RecordingActivity;
+			sourceTree = "<group>";
+		};
+		5241F893F310BDDB5583FF95 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				708BAEEBD57B04F638E669D9 /* RMAudio.swift */,
+				1A7C994E44AA611F171DC0B4 /* RMButtons.swift */,
+				0824540F7FEC9676EB341AA9 /* RMCards.swift */,
+				27BB3B5C5BAA969CC31F4466 /* RMFeedback.swift */,
+				6FD9EB87B8310B484DB40018 /* RMInputs.swift */,
+				C08E7DD7A794473BF27D1A16 /* RMNavigation.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		5BEAD1509F4D7E30A27BA912 /* RememberMeDesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				5241F893F310BDDB5583FF95 /* Components */,
+				32FD37B1DF8E21EBE80C5281 /* Previews */,
+				B34926DA62072FCC57F1580A /* Tokens */,
+				056193F2C57B12D0EEBBBBA1 /* Visuals */,
+			);
+			path = RememberMeDesignSystem;
+			sourceTree = "<group>";
+		};
 		63860F068E60E5AEF543369A /* RememberMeTests */ = {
 			isa = PBXGroup;
 			children = (
+				69F592347DF1B76845763AA1 /* AutomaticCaptureTests.swift */,
+				FEE7DD81FB6CA1FD52233219 /* DeviceRecordingTests.swift */,
 				66ABD7767F1AC0138D9AFFDA /* ECSConnectionTests.swift */,
+				12383B844086A37E0F735086 /* EntrustmentDraftTests.swift */,
+				32DCC8AE3A1F02AC4E7AFB05 /* GuestAccessTests.swift */,
 				267B59F20EE85A34D9E7BFD4 /* LocalRecordingTests.swift */,
+				575A486B78E8457CFB8B4213 /* MemoryGardenTests.swift */,
+				478DEADBC36AC526F376DF00 /* PersonalLearningTests.swift */,
+				BD834A0B5D1BC4C9762D78B0 /* PersonalModelCoverageTests.swift */,
+				47BB0F7ACB7E78B2232D3530 /* PersonalVoicePCMPlaybackTests.swift */,
+				CDD54693B76330DBC9EFD737 /* PersonReviewTests.swift */,
+				10F05CAE85880461C71809FD /* RecordingLifecycleTests.swift */,
+				BFFE7CF15602B118570E6940 /* RMDesignSystemTests.swift */,
+				C6613EB9A474CD3CFF4FEA2D /* SoundcoreAudioTests.swift */,
+				68FC442AAD65FE4B69CC8510 /* SoundcoreCallbackTests.swift */,
+				79A7F3F0C4DE03E42583C99F /* SoundcoreSessionTests.swift */,
+				A05041FE5E0F261AA6338A18 /* SpeakerRecordingTests.swift */,
+				8A8FC47BDD8C7F51838A8E64 /* TwinVoiceCallTests.swift */,
+				6ACB95E9F0E09AEF2C264215 /* VoicePreparationTests.swift */,
+				0A67CEE464F5E8FA3D658563 /* VoiceReviewTests.swift */,
+				E5B93A30507C30BF888F290E /* VolcengineVoiceTests.swift */,
+				E4998AB3A5D4C8B5A432739D /* WearablePriorityTests.swift */,
+				AF140380CC924414F3E11716 /* Fixtures */,
 			);
 			path = RememberMeTests;
+			sourceTree = "<group>";
+		};
+		82B49D684FD2074F38472505 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				117AF6043CDE692B2F906B67 /* RecordingActivityAttributes.swift */,
+				DA655557FD1FB498C09415AA /* RecordingActivityPresentation.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		98F9BECE083B8C26E046AB06 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B517B2B889A52E5CD3034331 /* RealXBase.xcframework */,
+				B114505FD0E6A212FEB2D24B /* RTCFFmpeg.xcframework */,
+				902977DE0EB9B60EDC8E5459 /* VolcEngineRTC.xcframework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		A527F2A08B55BADD6D04283C /* RememberMe */ = {
@@ -95,22 +404,80 @@
 				4919AFEC35CDAFAC981ADB32 /* AndroidParity.swift */,
 				DA939DD4DAD788A194194175 /* AppModel.swift */,
 				F6922872B50B2440845465FA /* Assets.xcassets */,
+				1FAD0EC1470BC01341ABE5F7 /* CaptureWorkflow.swift */,
 				C5713FE1328EFBDF9CA2DD08 /* CloudConnection.swift */,
+				22C13B3E3E73183EF6A48383 /* DecodedSoundcoreAudio.swift */,
+				DF5ED209A052A06AEC358928 /* DeviceConnections.swift */,
+				6D26E6B431B4F07B8A40ECEF /* DeviceConnectionsView.swift */,
+				8ED0B4E50B6A8B156B565DD8 /* DevicePacketCoverage.swift */,
+				E1D94219DDD548911563725C /* DeviceRecordingImporter.swift */,
+				EA9FB5191C012005FDA47954 /* DialogueMaterials.swift */,
+				AB3EFB2A4BDB2A191467EED2 /* DomesticMicrophoneBuffer.swift */,
+				841445E908D03EA7AB965191 /* EntrustmentView.swift */,
+				3A2609D54DC069CE84427B9C /* GardenExperience.swift */,
+				8C4B09C9C7473BBE3BD81B0B /* GardenNarrative.swift */,
+				5DE68E2FCED7BA63AB32090F /* GardenNarrativeViews.swift */,
+				8A988C0F6C501E37DA4F9EDD /* GardenRecordManagement.swift */,
+				7E0927E9A0353A6978C36638 /* GuestAccess.swift */,
 				15E87C6A763B9D344F407898 /* Info.plist */,
 				CFB19380B07CE65C4BB89DFC /* LocalRecordings.swift */,
 				CB2DF462B8975525B7A71019 /* LocalRecordingViews.swift */,
+				5A66BD64BD78AF2DED131FCD /* MemoryGarden.swift */,
 				D44F936F9AAC5B970D20CEF2 /* Network.swift */,
 				31032462668E369C05586202 /* OnDeviceSpeech.swift */,
+				85C43CBD5AF91CBFE4A4E996 /* PersonalLearningView.swift */,
+				AE03E8B783B4B369C87CDB30 /* PersonalModelView.swift */,
+				19BB49D15374F004F7F86073 /* PersonalVoicePCMPlayback.swift */,
+				FAFB312D3BA23199A049F6EB /* PersonReview.swift */,
+				2F5A4A49CF1593865C3B0408 /* PersonReviewViews.swift */,
+				356651E61A901F810182CEB9 /* RecordingActivityController.swift */,
+				34DF9769AE3A499FCF79F92C /* RecordingActivityStylePreview.swift */,
+				D7B4D53A0867E7CAE817B752 /* RecordingAudioEvents.swift */,
 				B1A4CC4BC338E129F65947D2 /* RememberMeApp.swift */,
+				93FFF02EE66B2D638CDEDD56 /* SoundcoreLiveCapture.swift */,
+				F36C475A714164DCB7DA67FB /* SoundcoreWorkAdapter.swift */,
+				65A86AE9B1F32C76D1FCF241 /* SpeakerRecordings.swift */,
+				565C7AE02F7B3DD30BBEA082 /* SpeakerRecordingView.swift */,
+				F2739B560176F8CE7BBAF161 /* TwinVoiceAPI.swift */,
+				570EA20D7C2E1FE23A133578 /* TwinVoiceCall.swift */,
+				83FE1B9144BABB3C1C8866B0 /* TwinVoiceCallView.swift */,
 				5BC9EAE511EDB13B710E96D0 /* Views.swift */,
+				C8D7E1179DE3C66DD458E1C5 /* VolcengineVoiceTransport.swift */,
+				20B281092BFBA50538406772 /* WearablePriorityTimeline.swift */,
+				5BEAD1509F4D7E30A27BA912 /* RememberMeDesignSystem */,
 			);
 			path = RememberMe;
+			sourceTree = "<group>";
+		};
+		AF140380CC924414F3E11716 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				EFC08C8BE4D1C54A799E781F /* person-review-contract.json */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
+		B34926DA62072FCC57F1580A /* Tokens */ = {
+			isa = PBXGroup;
+			children = (
+				773335D4F041D56941FE23A0 /* RMDesignTokens.swift */,
+			);
+			path = Tokens;
 			sourceTree = "<group>";
 		};
 		B7213A10661065465C8E56A1 /* RememberMeUITests */ = {
 			isa = PBXGroup;
 			children = (
 				8F514E44AD6E17EBA96FAA09 /* AndroidParityUITests.swift */,
+				2690F285835734CB44DDB852 /* CaptureWorkflowUITests.swift */,
+				3781BCC2E1268E8B9304DDA4 /* EntrustmentUITests.swift */,
+				67BA8BB01EFC97F89848A06A /* GardenParityUITests.swift */,
+				0490B78818158D03765FAB97 /* GuestAccessUITests.swift */,
+				2EF45B3D1744AA9A9076EC63 /* PersonalLearningUITests.swift */,
+				5AECCF74515BE98107008ADB /* PersonalModelUITests.swift */,
+				A39C767023BEC2A4EDA57C79 /* PersonReviewUITests.swift */,
+				31C976A5225ADDE9E888B0C6 /* RMDesignSystemUITests.swift */,
+				2EB4115A94BECEA7892C7238 /* SpeakerRecordingUITests.swift */,
 			);
 			path = RememberMeUITests;
 			sourceTree = "<group>";
@@ -123,6 +490,7 @@
 			buildConfigurationList = CB1EEB672EBA55FCC69AF3CC /* Build configuration list for PBXNativeTarget "RememberMeTests" */;
 			buildPhases = (
 				63404A3556A1E61717F6893F /* Sources */,
+				1D301E51A7D2159491C1DB90 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -142,17 +510,39 @@
 			buildPhases = (
 				937261673F94C977419AD8EE /* Sources */,
 				A73DB904E3BD8C903F1CF6CE /* Resources */,
+				06376AB8DF4EE1B51914426D /* Frameworks */,
+				D15F42FACAD23ED412910A42 /* Embed Foundation Extensions */,
+				1FBA85D3B3062248C7432E39 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ADD8219E9F887E22B39472EF /* PBXTargetDependency */,
+			);
+			name = RememberMe;
+			packageProductDependencies = (
+				832E96C606BE3CFFD543F15D /* LiveKit */,
+			);
+			productName = RememberMe;
+			productReference = 0DD6ABD0F11397F657B95172 /* RememberMe.app */;
+			productType = "com.apple.product-type.application";
+		};
+		770BDE8ACE2459E9CA3BE8BD /* RecordingActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE2A4B44687E192487106AA6 /* Build configuration list for PBXNativeTarget "RecordingActivity" */;
+			buildPhases = (
+				24451F737A73C091DDDDA636 /* Sources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = RememberMe;
+			name = RecordingActivity;
 			packageProductDependencies = (
 			);
-			productName = RememberMe;
-			productReference = 0DD6ABD0F11397F657B95172 /* RememberMe.app */;
-			productType = "com.apple.product-type.application";
+			productName = RecordingActivity;
+			productReference = B57A1704F8C629F786852640 /* RecordingActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		E1EB39F04BC1AE96A01D14BE /* RememberMeUITests */ = {
 			isa = PBXNativeTarget;
@@ -189,6 +579,10 @@
 						DevelopmentTeam = BZ5FA6MS43;
 						ProvisioningStyle = Automatic;
 					};
+					770BDE8ACE2459E9CA3BE8BD = {
+						DevelopmentTeam = BZ5FA6MS43;
+						ProvisioningStyle = Automatic;
+					};
 					E1EB39F04BC1AE96A01D14BE = {
 						DevelopmentTeam = BZ5FA6MS43;
 						ProvisioningStyle = Automatic;
@@ -197,20 +591,24 @@
 				};
 			};
 			buildConfigurationList = D3726B9BEA464E2A2355E925 /* Build configuration list for PBXProject "RememberMe" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				en,
+				"zh-Hans",
 			);
 			mainGroup = 23BED3C70407CFCC97E28A46;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6389299110E8FBF00C9A71C8 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2C9F65D43AB78B97FE4FD98C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				58D23FBA1AD54488281E12E5 /* RememberMe */,
+				770BDE8ACE2459E9CA3BE8BD /* RecordingActivity */,
 				1678C54CD3A15EE6A8588244 /* RememberMeTests */,
 				E1EB39F04BC1AE96A01D14BE /* RememberMeUITests */,
 			);
@@ -218,6 +616,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1D301E51A7D2159491C1DB90 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				06185570CF756F1671731564 /* person-review-contract.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A73DB904E3BD8C903F1CF6CE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -229,12 +635,44 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		24451F737A73C091DDDDA636 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				930AD7AA925E3B39D82F1354 /* ForgetMeNotFlower.swift in Sources */,
+				F8141BC9FC31428DC8E23813 /* RMDesignTokens.swift in Sources */,
+				B12FBA696A93CEF642B6811D /* RecordingActivityAttributes.swift in Sources */,
+				E812F9BE15DB5BDABDE27D2E /* RecordingActivityPresentation.swift in Sources */,
+				BC758B4239C2BB094B3BB731 /* RememberRecordingActivity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		63404A3556A1E61717F6893F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F65907CDB104658505B699B /* AutomaticCaptureTests.swift in Sources */,
+				365F191EA413F440F85F30BA /* DeviceRecordingTests.swift in Sources */,
 				D838B906878CFF328741948B /* ECSConnectionTests.swift in Sources */,
+				60AB60CBD565CDCF41D3AB5B /* EntrustmentDraftTests.swift in Sources */,
+				84F99926215E4035D72EBB5E /* GuestAccessTests.swift in Sources */,
 				3E23EE228E0C8583AC86D91A /* LocalRecordingTests.swift in Sources */,
+				78A2F385437FD56BD99049B2 /* MemoryGardenTests.swift in Sources */,
+				A263DA9D7A6E7E1A4E3318F6 /* PersonReviewTests.swift in Sources */,
+				53F22C20FCAEF3C11F591067 /* PersonalLearningTests.swift in Sources */,
+				EEB07C9A0EA12378D95F1782 /* PersonalModelCoverageTests.swift in Sources */,
+				7B181E76B98761657CB2EA99 /* PersonalVoicePCMPlaybackTests.swift in Sources */,
+				F37EA54B0363F7F54CB9C45B /* RMDesignSystemTests.swift in Sources */,
+				75199AEDCDCD0C77E5E70449 /* RecordingLifecycleTests.swift in Sources */,
+				3507C98FDF77DED11628DB02 /* SoundcoreAudioTests.swift in Sources */,
+				452B6EEDF6DF1F12F0D8617F /* SoundcoreCallbackTests.swift in Sources */,
+				CAC3F54959BC858158D3E91E /* SoundcoreSessionTests.swift in Sources */,
+				737CE5560D69190BF1F1A66A /* SpeakerRecordingTests.swift in Sources */,
+				EFCC1C86FE096EDF72B816D5 /* TwinVoiceCallTests.swift in Sources */,
+				DABE77531908101B3E505490 /* VoicePreparationTests.swift in Sources */,
+				24348C299A99A7A7270DC576 /* VoiceReviewTests.swift in Sources */,
+				5302D5443DC5D0098E8940AC /* VolcengineVoiceTests.swift in Sources */,
+				35589562E45BDAC4B19E6290 /* WearablePriorityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,13 +682,57 @@
 			files = (
 				BC88081CDF680A51F2DABC0D /* AndroidParity.swift in Sources */,
 				25B26534EE7E39C838628BF5 /* AppModel.swift in Sources */,
+				7648B16130C9D02AFC59EE1E /* CaptureWorkflow.swift in Sources */,
 				069F3E1C3FFB679D5381D396 /* CloudConnection.swift in Sources */,
+				E5417CD639C87C9FE1923CFB /* DecodedSoundcoreAudio.swift in Sources */,
+				1AC43DE9254D78479D7E574C /* DesignSystemShowcase.swift in Sources */,
+				CD24479D79C6ACECCA8C5FFB /* DeviceConnections.swift in Sources */,
+				B010DA0EE0F2FAFE2058B7A3 /* DeviceConnectionsView.swift in Sources */,
+				EEF0938D14B406A072F7B1E0 /* DevicePacketCoverage.swift in Sources */,
+				68742F0C868316DFBFDA92D5 /* DeviceRecordingImporter.swift in Sources */,
+				45F9936E975EF8D47D009DA6 /* DialogueMaterials.swift in Sources */,
+				BE8158EC0FDCE65F9F122924 /* DomesticMicrophoneBuffer.swift in Sources */,
+				FB1D58D55D7EA13D89C68CFA /* EntrustmentView.swift in Sources */,
+				2FE98F3A1ECDEDDF7AA7B5F0 /* ForgetMeNotFlower.swift in Sources */,
+				DB5EDCCCB4C719FD68AAFBF1 /* GardenExperience.swift in Sources */,
+				862A3CB19A7DE20DD41B361B /* GardenNarrative.swift in Sources */,
+				234DA9AB9AF779981D28DF9C /* GardenNarrativeViews.swift in Sources */,
+				FD871E78DADDCDC41ED67976 /* GardenRecordManagement.swift in Sources */,
+				522FE3BE3CFA08B1174916BB /* GuestAccess.swift in Sources */,
 				F7F95DA0E16FC563E16C9471 /* LocalRecordingViews.swift in Sources */,
 				F22620764FC29679C08394F9 /* LocalRecordings.swift in Sources */,
+				C474EA1206DB87889C1C1474 /* MemoryGarden.swift in Sources */,
 				ECCFE4F19F05A09B2D098F85 /* Network.swift in Sources */,
 				B15C8BCFF693494EA18C1CA2 /* OnDeviceSpeech.swift in Sources */,
+				0EE244FEF6254EEE7D27EAC3 /* PersonReview.swift in Sources */,
+				848E6629CC13AC5A61BA0217 /* PersonReviewViews.swift in Sources */,
+				48224075E2CE41EC7C507ED7 /* PersonalLearningView.swift in Sources */,
+				515C54861BF73DAEE089FF88 /* PersonalModelView.swift in Sources */,
+				CACE406CE5B51C7EE65390AE /* PersonalVoicePCMPlayback.swift in Sources */,
+				826FE4B2FB042374208EC85E /* RMAudio.swift in Sources */,
+				B1BBB6E5DC210917F4F1A2D4 /* RMButtons.swift in Sources */,
+				A8553F1DEFAD12BF8CABF7D2 /* RMCards.swift in Sources */,
+				7D3FDEE85855DCC71B059B18 /* RMDesignTokens.swift in Sources */,
+				2AD70BE8A1734D50DEC7C04C /* RMFeedback.swift in Sources */,
+				169B184C1D0B0A75D909F786 /* RMInputs.swift in Sources */,
+				C006A8275B3446C475517AF6 /* RMNavigation.swift in Sources */,
+				2A4FFBC7D1190F65D0F04B07 /* RecordingActivityAttributes.swift in Sources */,
+				B32BF538053E3B86ED02E3B0 /* RecordingActivityController.swift in Sources */,
+				EC807A4CED1914A64CCDAF92 /* RecordingActivityPresentation.swift in Sources */,
+				B8B90D7B9BAED3CEB5907628 /* RecordingActivityStylePreview.swift in Sources */,
+				3ABB794A1500399B5116BB37 /* RecordingAudioEvents.swift in Sources */,
 				2B93695456157458D3D8434E /* RememberMeApp.swift in Sources */,
+				CF0AAB4BE0D64CF5D81CDB40 /* SoundcoreLiveCapture.swift in Sources */,
+				0CBDE6AE806A9CFFAC7F8F75 /* SoundcoreWorkAdapter.swift in Sources */,
+				16BDA9ED8CAD28AD7B2EC314 /* SpeakerRecordingView.swift in Sources */,
+				E31BECBF697B6CC6DAF6D90D /* SpeakerRecordings.swift in Sources */,
+				1BFB1EE4B57E485FF690A53E /* TwinAtmosphere.swift in Sources */,
+				2BF7FF25CF519BCFC86ECAD4 /* TwinVoiceAPI.swift in Sources */,
+				0F761C7CD75A91E985FE72D7 /* TwinVoiceCall.swift in Sources */,
+				FC2C3C8E5EF4A276F798F3E9 /* TwinVoiceCallView.swift in Sources */,
 				DE409B589F1CA246B89C7726 /* Views.swift in Sources */,
+				201AAFD31E8272BA7EF056C9 /* VolcengineVoiceTransport.swift in Sources */,
+				2C43E55570BA18C2EE60B466 /* WearablePriorityTimeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,6 +741,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				963B3699CC48C7750A3E52A2 /* AndroidParityUITests.swift in Sources */,
+				4CE1B9EE7178088D61BB52F7 /* CaptureWorkflowUITests.swift in Sources */,
+				6BC2479BB1A5CFC3E152FAC5 /* EntrustmentUITests.swift in Sources */,
+				3D35BF88AC382843EB031C13 /* GardenParityUITests.swift in Sources */,
+				670419A18FBFC188D5616276 /* GuestAccessUITests.swift in Sources */,
+				4F634D78B2FC72038F233D74 /* PersonReviewUITests.swift in Sources */,
+				5B2E4EEEF586F1B735934D94 /* PersonalLearningUITests.swift in Sources */,
+				828C36E4B5E2010EE893C06A /* PersonalModelUITests.swift in Sources */,
+				38A2FC0D68D8AC69CBC12BB8 /* RMDesignSystemUITests.swift in Sources */,
+				99DA641E5A8AA4B37009E32D /* SpeakerRecordingUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -269,6 +760,11 @@
 			isa = PBXTargetDependency;
 			target = 58D23FBA1AD54488281E12E5 /* RememberMe */;
 			targetProxy = E92F4086C74EA1D1FD6E51BF /* PBXContainerItemProxy */;
+		};
+		ADD8219E9F887E22B39472EF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 770BDE8ACE2459E9CA3BE8BD /* RecordingActivity */;
+			targetProxy = 90552F1D3E824705BED32386 /* PBXContainerItemProxy */;
 		};
 		E5C7B2C99FCA72177EA0EA37 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -336,11 +832,35 @@
 			};
 			name = Release;
 		};
+		32C0FD6ACC9F83009D154776 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 2026101614;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RecordingActivity/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "me.remember.personal.ios.recording-activity";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		3567B7D97D3BD9E4B16CB7FA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 2026101614;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Vendor/VolcEngineRTC\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RememberMe/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。";
@@ -352,6 +872,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -389,6 +910,25 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RememberMe.app/RememberMe";
+			};
+			name = Debug;
+		};
+		4EA0ED37DCE76130C04C4303 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 2026101614;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = RecordingActivity/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "me.remember.personal.ios.recording-activity";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -431,6 +971,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 2026101614;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"Vendor/VolcEngineRTC\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = RememberMe/Info.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。";
@@ -442,6 +987,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = me.remember.personal.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -552,7 +1098,35 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		EE2A4B44687E192487106AA6 /* Build configuration list for PBXNativeTarget "RecordingActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4EA0ED37DCE76130C04C4303 /* Debug */,
+				32C0FD6ACC9F83009D154776 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6389299110E8FBF00C9A71C8 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.17.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		832E96C606BE3CFFD543F15D /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6389299110E8FBF00C9A71C8 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E01A912F2B938C337F626F2F /* Project object */;
 }

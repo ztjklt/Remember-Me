@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-15",
+  "generator": "built-in image_gen",
+  "assets": [
+    {
+      "key": "01-paper-sprig",
+      "catalog": "GardenPaperSprig",
+      "prompt": "Use case: logo-brand. Asset type: a botanical UI accent, single entire graceful upright sprig for Remember Me memory-garden native UI. NOT a logo, NOT a UI screenshot. True Myosotis forget-me-not flowers: 5 small flowers, each EXACTLY FIVE rounded soft sky-blue petals and a tiny pale yellow circular eye with cream collar; slender muted sage-green branching stem, two slim leaves and one small unopened bud. Style variant: sophisticated FLAT CUT-PAPER botanical collage, sharp simple curved silhouettes with restrained flat overlapping blue planes; absolutely no realistic texture and no 3D depth. Sparse airy composition fitting within transparent margins, inspectable at 80-120px. Soft blue #7B9CE8, #AFC5F5, muted sage, little #F3D88C. Transparent alpha background with no shadow, no glow, no ground, no pot. No text, no decorative particles, no gradients outside the plant, no eyes/mouth/arms, no anthropomorphism, no watermark.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenPaperSprig.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-d3cfad96-410c-4212-815c-7cda7286d847.png"
+    },
+    {
+      "key": "02-wreath",
+      "catalog": "GardenWreath",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A full circular floral wreath of many TINY true five-petal blue Myosotis forget-me-not flowers with pale yellow centers, airy intertwined sage stems and a few small leaves. The ring has a large completely empty transparent center. Elegant flat botanical gouache/cut-paper illustration, asymmetrical natural bloom clusters, whole ring fully visible. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenWreath.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-b7d0fce7-f34c-4148-8590-4442fa340f20.png"
+    },
+    {
+      "key": "03-basket",
+      "catalog": "GardenBasket",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A low elegant woven wicker flower basket overflowing with abundant small blue five-petal yellow-eyed Myosotis forget-me-nots and delicate sage stems. Slim curved handle, pale natural basket with restrained woven detail, a small white cotton bow. Soft refined 2D botanical watercolor, no photorealistic lighting, whole basket visible. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenBasket.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-8a437a5b-78f5-4809-af29-02693e29c398.png"
+    },
+    {
+      "key": "04-grand-bouquet",
+      "catalog": "GardenGrandBouquet",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A generous large rounded hand-tied bouquet made from MANY tiny blue five-petal Myosotis forget-me-not flowers with small yellow centers, visible slim green stems tied by a flowing ivory silk ribbon. Abundant delicate small blooms, no single huge flower. Luxurious editorial 2D gouache illustration, generous bouquet silhouette, no hands, no wrapping text. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenGrandBouquet.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-b0f48163-8b93-4ed8-aaf9-64bd09f73f8d.png"
+    },
+    {
+      "key": "05-glass-vase",
+      "catalog": "GardenGlassVase",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A tiny clear pale-aqua glass bud vase holding an airy spray of delicate blue five-petal Myosotis forget-me-nots with yellow eyes and sage stems. A few flowers lean naturally outside the vase. Sophisticated 2D flat illustration, restrained translucent glass planes, no realistic reflections, no table or floor. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenGlassVase.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-35ff7934-d07f-48cc-8250-3fb96064b83f.png"
+    },
+    {
+      "key": "06-pressed-flowers",
+      "catalog": "GardenPressedFlowers",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. An elegant botanical arrangement of three pressed sprigs of small blue five-petal yellow-eyed Myosotis forget-me-nots and two narrow sage leaves, naturally arranged in a gentle loose diagonal. Quiet vintage herbarium feel but clean modern 2D illustration, no paper, no labels, no tape, no frames. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenPressedFlowers.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-96cf0f59-073c-4b21-bc9e-db00647ab3ef.png"
+    },
+    {
+      "key": "07-ribbon-posy",
+      "catalog": "GardenRibbonPosy",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A compact round posy of numerous tiny blue five-petal yellow-eyed forget-me-nots in translucent pale blue tissue wrapping with a soft lemon-yellow fabric ribbon tied below. Elegant modern flat cut-paper illustration, simple clean shapes and subtle pastel layers. No writing, no hands, whole small bouquet visible. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenRibbonPosy.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-80a63e06-b099-4fed-97ea-6dfd28e672f1.png"
+    },
+    {
+      "key": "08-petals",
+      "catalog": "GardenPetals",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A refined small botanical composition of a softly curved green stem bearing two tiny true five-petal blue forget-me-nots, with several distinct loose BLUE PETALS gently drifting beside it. Each flower has a tiny yellow center, petal shapes are rounded and organic. Elegant minimal translucent 2D paper illustration, no confetti, no stars or glowing dots. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenPetals.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-5f81dade-77ed-4474-add9-54c7ff7ed25a.png"
+    },
+    {
+      "key": "09-linework",
+      "catalog": "GardenLinework",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A graceful tall branch of tiny five-petal blue Myosotis forget-me-nots with pale yellow centers and sage leaves, in a sophisticated fine botanical LINE ART style with delicate pale periwinkle ink outlines and very light translucent blue color washes. Airy and restrained, entire sprig visible, not a white-only outline, legible against both white and charcoal. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenLinework.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-a1a4af34-2aca-4eb8-8571-0001624fcaf1.png"
+    },
+    {
+      "key": "10-floral-arch",
+      "catalog": "GardenFloralArch",
+      "prompt": "Use case: logo-brand. Asset type: independent botanical artwork for Remember Me iOS memory garden, not a UI screen, not a sprite sheet. Preserve correct forget-me-not botanical identity: tiny rounded FIVE blue petals, small pale yellow/white centers, light natural clusters; never lotus, lily or rose. Palette low-saturation #7B9CE8 #AFC5F5 #F3D88C and muted sage. A gently curved floral arch made from thin intertwined sage stems and MANY tiny blue five-petal yellow-eyed Myosotis forget-me-nots. Open at bottom, abundant small clusters near the two upper sides, transparent negative space through center. Sophisticated botanical 2D paper-cut collage with subtle pale blue planes, entire arch fully within frame. Actual transparent alpha background outside exact object silhouette; no black or colored background, no surrounding glow, no shadow, no haze, no ground, no border, no watermark, no text, no letters, no people or faces. Full object centered with generous transparent padding. Refined calm artistic native UI asset, avoid heavy 3D and photorealism.",
+      "path": "apps/ios/RememberMe/Assets.xcassets/GardenFloralArch.imageset/artwork.png",
+      "source": "/Users/jitian/.codex/generated_images/01a13530-cf96-7463-8da7-abdc3bd67bbf/exec-bf27660b-49ea-4775-b3be-f7724eab18e1.png"
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.dev/contracts/guest-access-v1.schema.json",
+  "title": "Same-device guest access to explicitly published whole sources",
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "episodeIds": {"type": "array", "maxItems": 30, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "overview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject_id", "subject_label", "enabled", "revision", "episode_ids", "personal_voice_enabled"],
+      "properties": {
+        "subject_id": {"$ref": "#/$defs/id"}, "subject_label": {"type": "string"},
+        "enabled": {"type": "boolean"}, "revision": {"type": "integer", "minimum": 0},
+        "episode_ids": {"$ref": "#/$defs/episodeIds"}, "personal_voice_enabled": {"type": "boolean"}
+      }
+    },
+    "previewRequest": {
+      "type": "object", "additionalProperties": false, "required": ["episode_ids"],
+      "properties": {"episode_ids": {"$ref": "#/$defs/episodeIds"}}
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["episode_id", "recorded_at", "duration_ms", "transcript", "supplement", "memories", "has_audio"],
+      "properties": {
+        "episode_id": {"$ref": "#/$defs/id"}, "recorded_at": {"type": "string", "format": "date-time"},
+        "duration_ms": {"type": ["integer", "null"], "minimum": 0},
+        "transcript": {"type": "string"}, "supplement": {"type": ["string", "null"]},
+        "memories": {"type": "array", "items": {"type": "string"}}, "has_audio": {"type": "boolean"}
+      }
+    },
+    "preview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_version", "episode_ids", "includes_full_audio", "notice", "items"],
+      "properties": {
+        "source_version": {"$ref": "#/$defs/id"}, "episode_ids": {"$ref": "#/$defs/episodeIds"},
+        "includes_full_audio": {"const": true}, "notice": {"type": "string", "minLength": 1},
+        "items": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/source"}}
+      }
+    },
+    "publicationRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["episode_ids", "source_version", "enabled", "personal_voice_enabled"],
+      "properties": {
+        "episode_ids": {"$ref": "#/$defs/episodeIds"}, "source_version": {"$ref": "#/$defs/id"},
+        "enabled": {"type": "boolean"}, "personal_voice_enabled": {"type": "boolean"}
+      }
+    },
+    "deviceEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entry_token", "subject_id", "subject_label"],
+      "properties": {
+        "entry_token": {"type": "string", "minLength": 32},
+        "subject_id": {"$ref": "#/$defs/id"}, "subject_label": {"type": "string"}
+      }
+    },
+    "sessionRequest": {
+      "type": "object", "additionalProperties": false, "required": ["entry_token"],
+      "properties": {"entry_token": {"type": "string", "minLength": 32, "maxLength": 256}}
+    },
+    "session": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session_id", "subject_id", "subject_label", "expires_at", "revision", "personal_voice_available", "cloud_asr_policy", "speech_notice", "default_voice_available", "spoken_question_available"],
+      "properties": {
+        "session_token": {"type": "string", "minLength": 32}, "session_id": {"$ref": "#/$defs/id"},
+        "subject_id": {"$ref": "#/$defs/id"}, "subject_label": {"type": "string"},
+        "expires_at": {"type": "string", "format": "date-time"},
+        "revision": {"type": "integer", "minimum": 0}, "personal_voice_available": {"type": "boolean"},
+        "cloud_asr_policy": {"type": ["string", "null"]}, "speech_notice": {"type": "string"},
+        "default_voice_available": {"type": "boolean"}, "spoken_question_available": {"type": "boolean"},
+        "scope_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "entrustment": {
+          "type": ["object", "null"], "additionalProperties": false,
+          "required": ["recipient_label", "expires_at"],
+          "properties": {
+            "recipient_label": {"type": "string", "minLength": 1, "maxLength": 80},
+            "expires_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+    "createdSession": {"allOf": [{"$ref": "#/$defs/session"}, {"required": ["session_token"]}]},
+    "garden": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject_id", "subject_label", "revision", "items"],
+      "properties": {
+        "subject_id": {"$ref": "#/$defs/id"}, "subject_label": {"type": "string"},
+        "revision": {"type": "integer", "minimum": 0},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/source"}},
+        "scope_version": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "question": {
+      "type": "object", "additionalProperties": false, "required": ["question"],
+      "properties": {
+        "question": {"type": "string", "minLength": 1, "maxLength": 1000, "pattern": "\\S"},
+        "request_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 64},
+        "previous_answer_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 64},
+        "entrustment_attempt": {"type": "boolean", "default": false}
+      }
+    },
+    "ended": {
+      "type": "object", "additionalProperties": false, "required": ["ended"],
+      "properties": {"ended": {"const": true}}
+    },
+    "reauthRequest": {
+      "type": "object", "additionalProperties": false, "required": ["password"],
+      "properties": {"password": {"type": "string", "minLength": 8, "maxLength": 128}}
+    }
+  },
+  "anyOf": [
+    {"$ref": "#/$defs/overview"}, {"$ref": "#/$defs/previewRequest"}, {"$ref": "#/$defs/preview"},
+    {"$ref": "#/$defs/publicationRequest"}, {"$ref": "#/$defs/deviceEntry"}, {"$ref": "#/$defs/sessionRequest"},
+    {"$ref": "#/$defs/session"}, {"$ref": "#/$defs/garden"}, {"$ref": "#/$defs/question"},
+    {"$ref": "#/$defs/ended"}, {"$ref": "#/$defs/reauthRequest"}
+  ]
+}

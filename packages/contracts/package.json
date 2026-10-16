@@ -1,6 +1,6 @@
 {
   "name": "@remember-me/contracts",
-  "version": "0.4.0",
+  "version": "0.12.0",
   "private": true,
   "description": "Versioned cross-module JSON Schemas for Remember Me",
   "scripts": {
@@ -10,5 +10,7 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1"
   },
-  "files": ["schemas"]
+  "files": [
+    "schemas"
+  ]
 }

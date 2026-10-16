@@ -1,26 +1,19 @@
 import SwiftUI
 
 struct LocalRecordingRow: View {
+    @EnvironmentObject private var model: AppModel
     let record: LocalRecording
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "mic").foregroundStyle(Ink.coral)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(String((record.reviewedTranscript ?? record.machineTranscript ?? "一段本机录音").prefix(48)))
-                    .foregroundStyle(Ink.text)
-                Text(record.draft.recordedAt, style: .date).font(.caption).foregroundStyle(Ink.muted)
-                Text("\(record.draft.durationMS / 1000) 秒 · \(record.episodeID == nil ? "仅保存在手机" : "本机原音已保留 · " + statusLabel(record.status))")
-                    .font(.caption).foregroundStyle(Ink.muted)
-            }
-            Spacer()
-            Image(systemName: "chevron.right").font(.caption).foregroundStyle(Ink.muted)
-        }.padding(.vertical, 14).frame(minHeight: 48)
+        RMRecordingCard(title: String((record.reviewedTranscript ?? record.machineTranscript ?? model.episodes.first(where: { $0.id == record.episodeID })?.transcript ?? (record.draft.captureSource == "WORK_3200" ? "一段录音豆录音" : "一段本机录音")).prefix(48)),
+                        date: record.draft.recordedAt.formatted(date: .abbreviated, time: .omitted),
+                        status: "\(record.draft.durationMS / 1000) 秒 · \(record.episodeID == nil ? "仅保存在手机" : statusLabel(record.status))")
     }
 }
 
 struct LocalRecordingDetailView: View {
     @EnvironmentObject private var model: AppModel
     let recordingID: String
+    var simplified = false
     @State private var text = ""
     @State private var showRecorder = false
     private var record: LocalRecording? { model.visibleLocalRecordings.first { $0.id == recordingID } }
@@ -29,20 +22,20 @@ struct LocalRecordingDetailView: View {
         ScrollView {
             if let record {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("原音留在手机").font(.title2.weight(.semibold))
+                    Text(simplified ? "这段录音" : "原音留在手机").font(.title2.weight(.semibold))
+                    if simplified {
+                        Text(record.episodeID == nil ? "原音已保存，还没有转写" : statusLabel(record.status))
+                            .foregroundStyle(Ink.coral)
+                    }
                     Text(record.draft.recordedAt.formatted(date: .abbreviated, time: .shortened))
                         .font(.subheadline).foregroundStyle(Ink.muted)
-                    Button {
-                        model.playLocalRecording(recordingID)
-                    } label: {
-                        Label(model.playbackID == recordingID && model.isPlaying ? "暂停原音" : "播放原音",
-                              systemImage: model.playbackID == recordingID && model.isPlaying ? "pause.fill" : "play.fill")
-                            .frame(minHeight: 48)
-                    }.buttonStyle(.bordered).disabled(model.isRecording)
-                    if model.playbackID == recordingID && model.playbackDuration > 0 {
-                        Slider(value: Binding(get: { model.playbackPosition }, set: model.seekPlayback),
-                               in: 0...max(1, model.playbackDuration)).accessibilityLabel("原音播放位置")
-                    }
+                    RMAudioPlayer(playing: model.playbackID == recordingID && model.isPlaying,
+                                  loading: model.playbackLoading, position: model.playbackPosition,
+                                  duration: model.playbackID == recordingID ? model.playbackDuration : 0,
+                                  showsProgress: model.playbackID == recordingID,
+                                  play: { model.playLocalRecording(recordingID) }, seek: model.seekPlayback)
+                        .disabled(model.isRecording)
+                    if !simplified {
                     Text("中文本机转写只在设备支持且你允许语音识别时进行；不可用时原音仍保留。上传到记忆服务转写是另一个由你选择的操作。")
                         .font(.subheadline).foregroundStyle(Ink.muted)
                     if record.machineTranscript == nil {
@@ -72,12 +65,15 @@ struct LocalRecordingDetailView: View {
                         Text("这一步只保存在手机，不会生成记忆或发送给 AI。")
                             .font(.caption).foregroundStyle(Ink.muted)
                     }
+                    }
                     Divider()
                     if record.status == "ready" {
-                        Text("这一段已在配对服务中完成整理。原音仍可在这里离线回听。")
-                        NavigationLink("查看记忆档案") { ArchiveView() }
+                        Text("这段录音已整理好，原音仍可离线回听。")
+                        if let id = record.episodeID {
+                            NavigationLink("查看这段录音的记忆") { EpisodeMemoriesView(episodeID: id) }
+                        }
                     } else {
-                        ActionButton(title: record.episodeID == nil ? "继续转写与整理" : "继续查看处理结果", icon: "arrow.right") {
+                        ActionButton(title: record.episodeID == nil ? "转成文字" : record.status == "reviewing" ? "核对文字" : "查看进度", icon: "arrow.right") {
                             if model.selectLocalRecording(recordingID) { showRecorder = true }
                         }.disabled(blocked).accessibilityIdentifier("local.continue")
                     }
@@ -87,9 +83,12 @@ struct LocalRecordingDetailView: View {
                                        description: Text("请确认当前使用者与录音所属空间一致。"))
             }
         }
-        .background(Ink.paper.ignoresSafeArea()).navigationTitle("本机录音")
-        .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: nil, calibration: nil) }
+        .rmDismissibleKeyboard()
+        .background(Ink.paper.ignoresSafeArea()).navigationTitle(simplified ? "录音详情" : "本机录音")
+        .fullScreenCover(isPresented: $showRecorder) { RecorderView(question: nil, calibration: nil, simplified: simplified) }
         .onAppear { text = record?.reviewDraft ?? record?.reviewedTranscript ?? record?.machineTranscript ?? "" }
+        .task { await model.refresh() }
+        .refreshable { await model.refresh() }
         .onChange(of: record?.machineTranscript) { _, value in
             if text.isEmpty { text = value ?? "" }
         }

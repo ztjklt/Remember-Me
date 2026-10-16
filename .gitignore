@@ -27,3 +27,15 @@ apps/android/app/src/main/assets/paraformer/model.int8.onnx
 
 # Expanded brand sources are tracked; keep the duplicate portable archive local.
 /assets/brand/forget-me-not/remember-me-brand-v1.zip
+# Generated loopback-only UI fixture credentials/certificate pairing.
+apps/ios/RememberMeUITests/Runtime/
+
+# Licensed SDK supplied locally; never commit SDK credentials.
+apps/ios/Vendor/Soundcore/
+
+# Official downloaded RTC SDK; pinned preparation script is tracked.
+apps/ios/Vendor/VolcEngineRTC/
+
+**/xcuserdata/
+
+*.xcuserstate

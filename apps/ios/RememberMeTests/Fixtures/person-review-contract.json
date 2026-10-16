@@ -1,0 +1,216 @@
+{
+  "overview": {
+    "subject_id": "subject",
+    "role": "owner",
+    "records": [
+      {
+        "id": "record_style",
+        "kind": "style",
+        "title": "散步时的原话",
+        "text": "下班后我喜欢散步，先安静一会儿再做决定。",
+        "evidence_ids": [
+          "evidence_a"
+        ],
+        "facets": [
+          "EXPRESSION"
+        ],
+        "time_text": "",
+        "place_text": "",
+        "aliases": [],
+        "same_event": false,
+        "recipient_label": "",
+        "status": "pending",
+        "revision": 1,
+        "model_version": "owner",
+        "prompt_version": "owner",
+        "created_at": "2026-10-11T19:47:35.976335+00:00",
+        "updated_at": "2026-10-11T19:47:35.976337+00:00",
+        "evidence": [
+          {
+            "evidence_id": "evidence_a",
+            "excerpt": "下班后我喜欢散步，先安静一会儿再做决定。",
+            "source_type": "SUBJECT",
+            "episode_id": "episode_a",
+            "temporal_context": ""
+          }
+        ],
+        "label": "待核对的整理建议",
+        "historical": false,
+        "source_valid": true
+      }
+    ],
+    "understandings": [
+      {
+        "candidate_id": "ios_fixture_candidate",
+        "domain": "DECISION_PATTERNS",
+        "kind": "trait",
+        "statement": "下班后倾向先安静下来再决定。",
+        "context": "限定在下班后的情境；赶时间时存在不同做法。",
+        "evidence_ids": [
+          "evidence_a"
+        ],
+        "counter_evidence_ids": [
+          "evidence_b"
+        ],
+        "independent_episodes": 1,
+        "model_version": "fixture-only",
+        "prompt_version": "fixture-only",
+        "status": "pending",
+        "stored_status": "pending",
+        "source_version": "source-fixture",
+        "scope": "owner",
+        "label": "待本人核对的观察",
+        "created_at": "2026-10-11T19:47:35.955174",
+        "evidence": [
+          {
+            "evidence_id": "evidence_a",
+            "excerpt": "下班后我喜欢散步，先安静一会儿再做决定。",
+            "source_type": "SUBJECT",
+            "episode_id": "episode_a",
+            "temporal_context": ""
+          }
+        ],
+        "counter_evidence": [
+          {
+            "evidence_id": "evidence_b",
+            "excerpt": "赶时间时我会先行动，不会总等到想清楚。",
+            "source_type": "SUBJECT",
+            "episode_id": "episode_b",
+            "temporal_context": ""
+          }
+        ],
+        "independent_events": 0
+      }
+    ],
+    "views": [
+      {
+        "title": "人生足迹",
+        "records": []
+      },
+      {
+        "title": "重要的人",
+        "records": []
+      },
+      {
+        "title": "在意与选择",
+        "records": []
+      },
+      {
+        "title": "声音与表达",
+        "records": []
+      }
+    ],
+    "facets": [
+      {
+        "id": "EXPERIENCE",
+        "title": "经历与转折",
+        "count": 0
+      },
+      {
+        "id": "RELATIONSHIPS",
+        "title": "人物与关系",
+        "count": 0
+      },
+      {
+        "id": "IDENTITY",
+        "title": "身份与角色",
+        "count": 0
+      },
+      {
+        "id": "PRACTICES",
+        "title": "偏好、习惯与做事方法",
+        "count": 0
+      },
+      {
+        "id": "VALUES",
+        "title": "价值、信念与选择理由",
+        "count": 0
+      },
+      {
+        "id": "FEELINGS",
+        "title": "感受与当时状态",
+        "count": 0
+      },
+      {
+        "id": "WISHES",
+        "title": "愿望、计划与牵挂",
+        "count": 0
+      },
+      {
+        "id": "EXPRESSION",
+        "title": "原话、表达与寄语",
+        "count": 0
+      }
+    ],
+    "source_evidence": [
+      {
+        "evidence_id": "evidence_b",
+        "excerpt": "赶时间时我会先行动，不会总等到想清楚。",
+        "source_type": "SUBJECT",
+        "episode_id": "episode_b",
+        "temporal_context": ""
+      },
+      {
+        "evidence_id": "evidence_a",
+        "excerpt": "下班后我喜欢散步，先安静一会儿再做决定。",
+        "source_type": "SUBJECT",
+        "episode_id": "episode_a",
+        "temporal_context": ""
+      }
+    ],
+    "style": {
+      "enabled": false,
+      "revision": 0
+    },
+    "next_question": null,
+    "notice": "空白表示尚无已审核材料；分类数量不代表人格完整度。"
+  },
+  "candidates": {
+    "items": [
+      {
+        "candidate_id": "ios_fixture_candidate",
+        "domain": "DECISION_PATTERNS",
+        "kind": "trait",
+        "statement": "下班后倾向先安静下来再决定。",
+        "context": "限定在下班后的情境；赶时间时存在不同做法。",
+        "evidence_ids": [
+          "evidence_a"
+        ],
+        "counter_evidence_ids": [
+          "evidence_b"
+        ],
+        "independent_episodes": 1,
+        "model_version": "fixture-only",
+        "prompt_version": "fixture-only",
+        "status": "pending",
+        "stored_status": "pending",
+        "source_version": "source-fixture",
+        "scope": "owner",
+        "label": "情境化观察",
+        "created_at": "2026-10-11T19:47:35.955174",
+        "evidence": [
+          {
+            "evidence_id": "evidence_a",
+            "episode_id": "episode_a",
+            "excerpt": "下班后我喜欢散步，先安静一会儿再做决定。",
+            "source_type": "SUBJECT"
+          },
+          {
+            "evidence_id": "evidence_b",
+            "episode_id": "episode_b",
+            "excerpt": "赶时间时我会先行动，不会总等到想清楚。",
+            "source_type": "SUBJECT"
+          }
+        ]
+      }
+    ],
+    "source_version": "source-fixture",
+    "jobs": []
+  },
+  "updates": {
+    "items": []
+  },
+  "jobs": {
+    "items": []
+  }
+}

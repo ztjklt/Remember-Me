@@ -3,59 +3,19 @@ import AVFoundation
 import UIKit
 
 enum Ink {
-    static let paper = Color("RmBackground")
-    static let cream = Color("RmSurface")
-    static let text = Color("RmText")
-    static let muted = Color("RmMuted")
-    static let coral = Color("RmPrimary")
-    static let peach = Color("RmSoft")
-    static let olive = Color("RmPrimary")
-    static let onPrimary = Color("RmOnPrimary")
-}
-
-private struct PressFeedbackStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.isEnabled) private var enabled
-    let fill: Color
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(Ink.onPrimary)
-            .background(fill, in: RoundedRectangle(cornerRadius: 16))
-            .background {
-                RoundedRectangle(cornerRadius: 16)
-                    .shadow(color: Ink.coral.opacity(enabled ? 0.20 : 0), radius: configuration.isPressed ? 2 : 5, y: configuration.isPressed ? 1 : 3)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(LinearGradient(colors: [Color.white.opacity(configuration.isPressed ? 0 : 0.10), Color.black.opacity(configuration.isPressed ? 0.12 : 0.03)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .allowsHitTesting(false)
-            }
-            .opacity(enabled ? 1 : 0.5)
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.985 : 1)
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.10), value: configuration.isPressed)
-    }
+    static let paper = RMColors.background
+    static let cream = RMColors.surface
+    static let text = RMColors.text
+    static let muted = RMColors.secondaryText
+    static let coral = RMColors.action
+    static let peach = RMColors.floralSurface
+    static let olive = RMColors.success
+    static let onPrimary = RMColors.onAction
 }
 
 private struct AtmosphereBackground: View {
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.colorSchemeContrast) private var contrast
-    private var dark: Bool { scheme == .dark }
-    private func color(_ light: UInt32, _ night: UInt32) -> Color {
-        let value = dark ? night : light
-        return Color(red: Double((value >> 16) & 255)/255, green: Double((value >> 8) & 255)/255, blue: Double(value & 255)/255)
-    }
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Ink.paper
-                if !reduceTransparency && contrast != .increased {
-                    LinearGradient(colors: [color(0xD7E3F3,0x22324B), color(0xEEE5DE,0x202C34)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    RadialGradient(colors: [color(0xE6DFF0,0x302B43),color(0xE6DFF0,0x302B43).opacity(0)], center: UnitPoint(x: 1,y: 0.15), startRadius: 0, endRadius: max(geometry.size.width,geometry.size.height)*0.5)
-                    LinearGradient(stops: [.init(color: Ink.paper.opacity(0),location: 0),.init(color: Ink.paper.opacity(0.3),location: 0.28),.init(color: Ink.paper,location: 0.68),.init(color: Ink.paper,location: 1)], startPoint: .top, endPoint: .bottom)
-                }
-            }
-        }.allowsHitTesting(false).accessibilityHidden(true)
+        RMColors.background.allowsHitTesting(false).accessibilityHidden(true)
     }
 }
 
@@ -71,7 +31,7 @@ func statusLabel(_ state: String) -> String {
     }
 }
 
-private func sourceLabel(_ source: String) -> String {
+func sourceLabel(_ source: String) -> String {
     switch source {
     case "SUBJECT": return "本人叙述"
     case "THIRD_PARTY": return "他人提供"
@@ -82,9 +42,7 @@ private func sourceLabel(_ source: String) -> String {
 
 private extension View {
     func journalCard() -> some View {
-        self.padding(20)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+        rmCardSurface()
     }
 }
 
@@ -106,8 +64,6 @@ enum BrandTreatment { case automatic, material, flat, monochrome }
 struct RememberMeBrand: View {
     var size: CGFloat = 48
     var treatment: BrandTreatment = .automatic
-    @Environment(\.colorScheme) private var colorScheme
-    private var darkBackground: Bool { colorScheme == .dark }
     var materialAsset: String? = nil
     var bundle: Bundle? = nil
     var monochromeColor: Color = .primary
@@ -124,7 +80,7 @@ struct RememberMeBrand: View {
             } else {
                 Canvas { context, canvas in
                     let mono = treatment == .monochrome
-                    let blue = darkBackground ? Color(red: 174/255, green: 196/255, blue: 1) : Color(red: 50/255, green: 92/255, blue: 203/255)
+                    let blue = RMColors.flowerMark
                     var petal = Path()
                     petal.move(to: CGPoint(x: 128, y: 125))
                     petal.addCurve(to: CGPoint(x: 88, y: 71), control1: CGPoint(x: 111, y: 119), control2: CGPoint(x: 91, y: 96))
@@ -142,7 +98,7 @@ struct RememberMeBrand: View {
                     }
                     let r: CGFloat = mono ? 9 : 12
                     let heart = Path(ellipseIn: CGRect(x: 128-r, y: 128-r, width: 2*r, height: 2*r))
-                    context.fill(heart, with: .color(mono ? monochromeColor : Color(red: 233/255, green: 184/255, blue: 91/255)))
+                    context.fill(heart, with: .color(mono ? monochromeColor : RMColors.flowerMarkCenter))
                 }
             }
         }
@@ -156,16 +112,10 @@ struct ActionButton: View {
     let title: String
     let icon: String
     var fill: Color = Ink.coral
+    var isLoading = false
     let action: () -> Void
     var body: some View {
-        Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.system(.body, design: .default).weight(.medium))
-                .frame(maxWidth: .infinity)
-                .padding(16)
-                .frame(minHeight: 56)
-        }
-        .buttonStyle(PressFeedbackStyle(fill: fill))
+        RMButton(title: title, icon: icon, isLoading: isLoading, fill: fill, action: action)
     }
 }
 
@@ -173,7 +123,8 @@ struct RootView: View {
     @EnvironmentObject private var model: AppModel
     var body: some View {
         Group {
-            AndroidParityTabs()
+            if model.isGuestMode { GuestAccessTabs(guest: model.guestAccess) }
+            else { SimpleFlowTabs() }
         }
         .tint(Ink.coral)
         .sheet(isPresented: $model.showConnection) {
@@ -186,8 +137,8 @@ struct RootView: View {
             }
         }
         .alert("需要留意", isPresented: Binding(
-            get: { model.errorMessage != nil },
-            set: { if !$0 { model.errorMessage = nil } }
+            get: { model.errorMessage != nil && !model.isRecorderPresented },
+            set: { if !$0 && !model.isRecorderPresented { model.errorMessage = nil } }
         )) {
             Button("知道了") { model.errorMessage = nil }
             if model.errorMessage?.contains("麦克风权限") == true {
@@ -198,6 +149,382 @@ struct RootView: View {
                 }
             }
         } message: { Text(model.errorMessage ?? "") }
+    }
+}
+
+/// The everyday iOS route: capture, review, read memories, ask the Twin.
+/// Existing review/voice implementations stay in source without unfinished
+/// product entries in this route.
+struct SimpleFlowTabs: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var selection = 0
+    var body: some View {
+        RMTabBar(selection: $selection) {
+            NavigationStack { SimpleRecordingHome(selection: $selection) }
+                .tabItem { Label("录音", systemImage: "mic") }.tag(0)
+            NavigationStack { MemoryGardenHome() }
+                .tabItem { Label("记忆", systemImage: "books.vertical") }.tag(1)
+            NavigationStack { TwinView() }
+                .tabItem { Label("孪生", systemImage: "bubble.left.and.bubble.right") }.tag(2)
+            NavigationStack { SimpleSettingsHome() }
+                .tabItem { Label("我的", systemImage: "person.crop.circle") }.tag(3)
+        }
+        .onChange(of: selection) { _, _ in RMKeyboard.dismiss() }
+        .fullScreenCover(isPresented: $model.showActiveRecording) {
+            RecorderView(question: nil, calibration: nil, simplified: true)
+        }
+    }
+}
+
+private struct SimpleRecordingHome: View {
+    @EnvironmentObject private var model: AppModel
+    @Binding var selection: Int
+    private enum RecordingPresentation: String, Identifiable {
+        case new
+        var id: String { rawValue }
+    }
+    @State private var recordingPresentation: RecordingPresentation?
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: RMSpacing.lg) {
+                VStack(spacing: RMSpacing.sm) {
+                    ForgetMeNotSprig().frame(width: RMMetrics.heroFlower, height: RMMetrics.heroFlower)
+                    Text("勿忘我").font(RMTypography.title).foregroundStyle(RMColors.text)
+                }.frame(maxWidth: .infinity).padding(.vertical, RMSpacing.sm)
+                ActionButton(title: model.isRecording ? "返回正在录音" : "开始录音", icon: "mic.fill") {
+                    if model.isRecording { recordingPresentation = .new; return }
+                    guard model.prepareNewRecording() else { return }
+                    model.isRecorderPresented = true
+                    recordingPresentation = .new
+                }.disabled(model.recordingStartBlocked && !model.isRecording)
+                    .accessibilityIdentifier("flow.record")
+                HStack(alignment: .top, spacing: RMSpacing.sm) {
+                    NavigationLink { MyRecordingsView() } label: {
+                        recordingShortcut("我的录音", icon: "waveform", detail: "录音与对话")
+                    }.accessibilityIdentifier("flow.myRecordings")
+                        .accessibilityLabel("我的录音").accessibilityHint("查看录音与对话")
+                    NavigationLink { DeviceConnectionsView(devices: model.devices) } label: {
+                        recordingShortcut("蓝牙连接", icon: "dot.radiowaves.left.and.right", detail: "录音豆与耳机")
+                    }.accessibilityIdentifier("flow.devices")
+                        .accessibilityLabel("蓝牙连接").accessibilityHint("连接录音豆与耳机，查看当前状态")
+                }.buttonStyle(.plain)
+                if let record = model.latestCaptureDraft { CaptureDraftCard(record: record) }
+                CaptureQueueSummary()
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("--uitest-live-activity") {
+                    Text(model.liveActivityPreviewStatus).accessibilityIdentifier("activity.preview.status")
+                    Button("结束界面预览") { model.endLiveActivityPreview() }.accessibilityIdentifier("activity.preview.end")
+                }
+                #endif
+            }.padding(RMSpacing.page).frame(maxWidth: RMMetrics.maximumReadingWidth)
+        }
+        .background(Ink.paper.ignoresSafeArea()).navigationTitle("录音").navigationBarTitleDisplayMode(.inline)
+        .rmDismissibleKeyboard()
+        .refreshable { await model.refresh() }
+        .task(id: model.pairing.map(RecordingOwner.init)) {
+            while !Task.isCancelled {
+                model.processDeviceRecordingQueue()
+                await model.refreshCaptureDrafts()
+                do { try await Task.sleep(for: .seconds(4)) } catch { return }
+            }
+        }
+        .fullScreenCover(item: $recordingPresentation) { presentation in
+            RecorderView(question: nil, calibration: nil, simplified: true, startImmediately: presentation == .new,
+                         onShowMemories: { selection = 1 })
+        }
+    }
+    private func recordingShortcut(_ title: String, icon: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: RMSpacing.sm) {
+            Image(systemName: icon).font(.title3).foregroundStyle(RMColors.action)
+            Text(title).font(RMTypography.heading).foregroundStyle(RMColors.text)
+            Text(detail).font(RMTypography.caption).foregroundStyle(RMColors.secondaryText)
+        }
+        .frame(maxWidth: .infinity, minHeight: 94, alignment: .leading)
+        .padding(RMSpacing.md).rmCardSurface()
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private enum RecordingDeletionTarget {
+    case local(LocalRecording), remote(EpisodeRecord), dialogue(DialogueMaterial), group(LocalSpeakerRecording), conversation(HistoricalChatTurn)
+    var title: String {
+        if case .conversation = self { return "删除这段对话？" }
+        return "删除这段录音？"
+    }
+    var message: String {
+        switch self {
+        case .local(let record) where record.episodeID == nil:
+            return "将删除手机中的这段原音和转写，无法恢复。"
+        case .local, .remote:
+            return "将删除这段原音、转写和由它生成的记忆，并更新记忆花园与人物模型，无法恢复。"
+        case .dialogue:
+            return "将删除这段对话资料及由它生成的记忆；独立的聊天记录会保留。"
+        case .group:
+            return "将删除这段多人录音及其识别结果，无法恢复。"
+        case .conversation:
+            return "将删除这次问答、生成的声音及相关聊天检索资料，无法恢复。已单独保存的录音和原话资料仍保留，可在本页分别删除。"
+        }
+    }
+}
+
+private extension View {
+    func recordingDeleteAction(disabled: Bool, action: @escaping () -> Void) -> some View {
+        self.swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button("删除", systemImage: "trash", role: .destructive, action: action).disabled(disabled)
+        }
+        .contextMenu { Button("删除", systemImage: "trash", role: .destructive, action: action).disabled(disabled) }
+        .accessibilityAction(named: "删除") { if !disabled { action() } }
+    }
+}
+
+private struct MyRecordingsView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var resumeRecording = false
+    @State private var pendingDeletion: RecordingDeletionTarget?
+    @State private var deletionOwner: RecordingOwner?
+    @StateObject private var groupArchive = SpeakerLocalArchive()
+    @State private var groupRecording: LocalSpeakerRecording?
+    @State private var showGroupRecording = false
+    private var unmatchedEpisodes: [EpisodeRecord] {
+        let localIDs = Set(model.visibleLocalRecordings.compactMap(\.episodeID))
+        return model.episodes.filter { $0.capture_origin != "natural_dialogue" && !localIDs.contains($0.id) }
+    }
+    var body: some View {
+        List {
+            if model.draft != nil {
+                Button("继续查看上一段") { model.isRecorderPresented = true; resumeRecording = true }
+                    .disabled(model.connectionChangeBlocked)
+            }
+            if model.visibleLocalRecordings.isEmpty && unmatchedEpisodes.isEmpty && model.visibleDialogueMaterials.isEmpty && model.visibleTwinArchive.isEmpty && groupArchive.visible(to: model.pairing).isEmpty {
+                Text("还没有录音或保存的对话原话").font(RMTypography.detail).foregroundStyle(RMColors.secondaryText)
+            }
+            ForEach(model.visibleLocalRecordings) { record in
+                NavigationLink { LocalRecordingDetailView(recordingID: record.id, simplified: true) } label: {
+                    LocalRecordingRow(record: record)
+                }
+                .accessibilityIdentifier("recordings.local." + record.id)
+                .recordingDeleteAction(disabled: model.connectionChangeBlocked || model.deviceUploadingRecordingID == record.id) { requestDeletion(.local(record)) }
+            }
+            ForEach(unmatchedEpisodes) { episode in
+                NavigationLink { EpisodeDetailView(initial: episode) } label: { EpisodeRow(episode: episode) }
+                    .accessibilityIdentifier("recordings.remote." + episode.id)
+                    .recordingDeleteAction(disabled: model.connectionChangeBlocked) { requestDeletion(.remote(episode)) }
+            }
+            if let pairing = model.pairing, !model.visibleDialogueMaterials.isEmpty {
+                Section {
+                    ForEach(model.visibleDialogueMaterials) { material in
+                        NavigationLink { DialogueMaterialView(material: material, owner: RecordingOwner(pairing)) } label: {
+                            VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                                Text(material.text).font(RMTypography.detail).lineLimit(2)
+                                Text(material.recorded_at.prefix(10)).font(RMTypography.caption).foregroundStyle(Ink.muted)
+                                Text(material.status == "pending" ? "可以稍后核对" : "已保存").font(RMTypography.caption).foregroundStyle(Ink.muted)
+                            }
+                        }
+                        .accessibilityIdentifier("recordings.dialogue." + material.id)
+                        .recordingDeleteAction(disabled: model.connectionChangeBlocked) { requestDeletion(.dialogue(material)) }
+                    }
+                } header: { Text("与 TwinAgent 对话时记下的原话") }
+                  footer: { Text("保留你的原话与可用原音。左滑可以删除这段资料。") }
+            }
+            if model.cloudConsentID != nil || !model.visibleTwinArchive.isEmpty {
+                Section {
+                    ForEach(model.visibleTwinArchive) { turn in
+                        NavigationLink { TwinArchiveTurnView(turnID: turn.id, owner: model.pairing.map(RecordingOwner.init)) } label: {
+                            VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                                Label(turn.question, systemImage: "bubble.left.and.bubble.right")
+                                    .font(RMTypography.detail).lineLimit(2)
+                                Text(turn.created_at.prefix(10)).font(RMTypography.caption).foregroundStyle(Ink.muted)
+                                if turn.deletion_pending == true {
+                                    Text("左滑重试清理").font(RMTypography.caption).foregroundStyle(RMColors.danger)
+                                } else if let answer = turn.answer {
+                                    Text("TwinAgent：" + answer).font(RMTypography.caption).foregroundStyle(Ink.muted).lineLimit(2)
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("recordings.conversation." + turn.id)
+                        .recordingDeleteAction(disabled: model.connectionChangeBlocked) { requestDeletion(.conversation(turn)) }
+                    }
+                    if model.isLoadingTwinArchive { ProgressView("正在载入对话…") }
+                    if let error = model.twinArchiveError {
+                        Text(error).font(RMTypography.caption).foregroundStyle(Ink.muted)
+                        Button("重试载入对话") { Task { await model.loadTwinArchive() } }
+                    }
+                    if model.twinArchiveCursor != nil {
+                        Button("查看更早的对话") { Task { await model.loadTwinArchive(nextPage: true) } }
+                            .disabled(model.isLoadingTwinArchive)
+                    }
+                    if model.visibleTwinArchive.isEmpty && !model.isLoadingTwinArchive && model.twinArchiveError == nil {
+                        Text("还没有与 TwinAgent 的对话").font(RMTypography.detail).foregroundStyle(Ink.muted)
+                    }
+                } header: { Text("与 TwinAgent 的对话") }
+                  footer: { Text("主用户的文字和语音问答保存在这里，可左滑删除。游客对话不做记录。") }
+            }
+            if let error = groupArchive.error { Text(error).foregroundStyle(Ink.muted) }
+            ForEach(groupArchive.visible(to: model.pairing)) { local in
+                Button { groupRecording = local; showGroupRecording = true } label: {
+                    VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                        Label("多人录音", systemImage: "person.2.wave.2")
+                        Text(local.recordedAt.formatted(date: .abbreviated, time: .shortened)).font(RMTypography.caption)
+                    }
+                }
+                .recordingDeleteAction(disabled: model.connectionChangeBlocked) { requestDeletion(.group(local)) }
+            }
+            if model.isBusy { ProgressView("正在处理…") }
+            if let error = model.errorMessage {
+                Text(error).font(RMTypography.detail).foregroundStyle(Ink.muted).accessibilityIdentifier("recordings.deleteError")
+            }
+        }
+        .scrollContentBackground(.hidden).background(Ink.paper)
+        .navigationTitle("我的录音").navigationBarTitleDisplayMode(.inline)
+        .toolbar { ToolbarItem(placement: .topBarTrailing) {
+            Button("多人录音", systemImage: "person.2.wave.2") { groupRecording = nil; showGroupRecording = true }
+                .disabled(model.connectionChangeBlocked).accessibilityIdentifier("speaker.open")
+        } }
+        .alert(pendingDeletion?.title ?? "删除这段录音？", isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })) {
+            if let target = pendingDeletion {
+                Button("删除", role: .destructive) {
+                    let owner = deletionOwner
+                    Task { await delete(target, owner: owner) }
+                }
+            }
+            Button("取消", role: .cancel) { pendingDeletion = nil }
+        } message: { Text(pendingDeletion?.message ?? "") }
+        .task { await loadArchive() }
+        .refreshable { groupArchive.reload(); await loadArchive() }
+        .fullScreenCover(isPresented: $showGroupRecording) {
+            SpeakerRecordingView(archive: groupArchive, local: groupRecording)
+        }
+        .fullScreenCover(isPresented: $resumeRecording) {
+            RecorderView(question: nil, calibration: nil, simplified: true)
+        }
+    }
+    private func requestDeletion(_ target: RecordingDeletionTarget) {
+        model.errorMessage = nil
+        deletionOwner = model.pairing.map(RecordingOwner.init)
+        pendingDeletion = target
+    }
+    private func loadArchive() async {
+        await model.refresh()
+        await model.loadDialogueMaterials()
+        await model.loadTwinArchive()
+    }
+    private func delete(_ target: RecordingDeletionTarget, owner: RecordingOwner?) async {
+        guard model.pairing.map(RecordingOwner.init) == owner else { return }
+        switch target {
+        case .local(let record): _ = await model.deleteRecording(localID: record.id, owner: owner)
+        case .remote(let episode): _ = await model.deleteRecording(remoteID: episode.id, owner: owner)
+        case .dialogue(let material):
+            if let owner { _ = await model.saveDialogue(material, text: nil, owner: owner) }
+        case .group(let record): _ = await model.deleteGroupRecording(record, archive: groupArchive)
+        case .conversation(let turn):
+            if let owner, await model.deleteArchivedTwinTurn(turn, owner: owner) { await model.loadTwinArchive() }
+        }
+    }
+}
+
+private struct TwinArchiveTurnView: View {
+    @EnvironmentObject private var model: AppModel
+    let turnID: String
+    let owner: RecordingOwner?
+    private var turn: HistoricalChatTurn? {
+        guard !model.isGuestMode, model.pairing.map(RecordingOwner.init) == owner else { return nil }
+        return model.visibleTwinArchive.first { $0.id == turnID }
+    }
+    var body: some View {
+        ScrollView {
+            if let turn {
+            VStack(alignment: .leading, spacing: RMSpacing.lg) {
+                Text(turn.created_at.prefix(10)).font(RMTypography.caption).foregroundStyle(Ink.muted)
+                VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                    Text("你").font(RMTypography.heading)
+                    Text(turn.question).textSelection(.enabled)
+                }
+                Divider()
+                VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                    Text("TwinAgent").font(RMTypography.heading)
+                    if let answer = turn.answer { Text(answer).textSelection(.enabled) }
+                    else { Text(turn.deletion_pending == true ? "对话内容已删除，声音清理待重试。" : "当时的回复已失效，不再参与记忆。").foregroundStyle(Ink.muted) }
+                }
+            }.padding(RMSpacing.page).frame(maxWidth: RMMetrics.maximumReadingWidth, alignment: .leading)
+            } else {
+                ContentUnavailableView("对话暂不可见", systemImage: "bubble.left.and.exclamationmark.bubble.right",
+                    description: Text("请确认当前主用户空间与对话所属空间一致。"))
+            }
+        }.background(Ink.paper).navigationTitle("TwinAgent 对话").navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct EpisodeMemoriesView: View {
+    @EnvironmentObject private var model: AppModel
+    let episodeID: String
+    var body: some View {
+        List {
+            ForEach(model.memories.filter { $0.episode_id == episodeID }) { memory in
+                NavigationLink { MemoryDetailView(memory: memory) } label: { Text(memory.content) }
+            }
+            if !model.memories.contains(where: { $0.episode_id == episodeID }) {
+                Text("这段录音已保留，暂没有提取出可用的记忆。")
+            }
+        }.navigationTitle("这段录音的记忆")
+            .task { await model.refresh() }.refreshable { await model.refresh() }
+    }
+}
+
+private struct SimpleSettingsHome: View {
+    @EnvironmentObject private var model: AppModel
+    var body: some View {
+        List {
+            Section("我的记忆空间") {
+                if let pairing = model.pairing {
+                    Text(pairing.displayName ?? "已连接")
+                    Text(pairing.spaceName ?? "本人空间").foregroundStyle(Ink.muted)
+                } else { Text("尚未登录，录音仍可先保存在手机。") }
+                Button(model.pairing == nil ? "登录记忆服务" : "管理账号与连接") { model.showConnection = true }
+                    .accessibilityIdentifier("flow.connection")
+            }
+            Section("访问模式") {
+                NavigationLink("亲友开放范围") { GuestSharingView() }
+                    .disabled(model.pairing == nil || model.connectionChangeBlocked)
+                Button("进入亲友／游客模式") { Task { await model.enterGuestMode() } }
+                    .disabled(model.pairing == nil || model.connectionChangeBlocked)
+                    .accessibilityIdentifier("guest.enter")
+                Text("亲友免密码访问已开放的记忆花园和 TwinAgent，返回主用户需验证账号密码。")
+                    .font(.footnote).foregroundStyle(Ink.muted)
+            }
+            Section("数据与授权") {
+                NavigationLink {
+                    if model.pairing?.isCloud == true {
+                        TwinVoiceCallView(call: model.realtimeVoice)
+                    } else {
+                        ScrollView { VoiceSetupView().padding(20) }.navigationTitle("个人声音")
+                    }
+                } label: { Text("个人声音与语音通话") }
+                    .accessibilityIdentifier("settings.voiceCall")
+                    .disabled(model.pairing == nil)
+                Toggle("录音结束后自动转成文字", isOn: Binding(get: { model.automaticTranscriptionEnabled }, set: { model.automaticTranscriptionEnabled = $0 }))
+                    .disabled(model.connectionChangeBlocked).accessibilityIdentifier("recording.autoTranscribe")
+                Text("原音先保存在手机。云端转写用途随开始录音确认，结束后自动转写。核对文字后才整理记忆。")
+                    .font(.subheadline).foregroundStyle(Ink.muted)
+                if model.cloudConsentID != nil {
+                    Button("撤销 Twin 对话授权", role: .destructive) { Task { await model.revokeCloudTwin() } }
+                }
+                Button("管理麦克风权限") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                }
+            }
+            Section {
+                #if DEBUG
+                NavigationLink { DesignSystemShowcase() } label: { Label("组件预览", systemImage: "square.grid.2x2") }
+                    .accessibilityIdentifier("design.open")
+                #endif
+                DisclosureGroup("更多：核对人物理解") {
+                    NavigationLink { PersonReviewView(review: model.personReview) } label: { Text("核对我的理解") }
+                        .accessibilityIdentifier("portrait.review")
+                }
+                Text("颜色与字号跟随系统设置。")
+                    .font(.caption).foregroundStyle(Ink.muted)
+            }
+        }.scrollContentBackground(.hidden).background(Ink.paper).navigationTitle("我的")
     }
 }
 
@@ -256,7 +583,7 @@ private struct MainTabs: View {
         TabView {
             NavigationStack { HomeView() }.tabItem { Label("今天", systemImage: "sun.max") }
             NavigationStack { ArchiveView() }.tabItem { Label("档案", systemImage: "books.vertical") }
-            NavigationStack { TwinView() }.tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right") }
+            NavigationStack { TwinView() }.tabItem { Label("孪生", systemImage: "bubble.left.and.bubble.right") }
             NavigationStack { ProfileView() }.tabItem { Label("我的", systemImage: "person.crop.circle") }
         }
     }
@@ -289,7 +616,13 @@ struct ProfileView: View {
             }
             Section("数据与授权") {
                 NavigationLink("系统如何理解我") { ModelView() }
-                NavigationLink("个人声音与独立授权") { ScrollView { VoiceSetupView().padding(20) }.navigationTitle("个人声音") }
+                NavigationLink("个人声音与独立授权") {
+                    if model.pairing?.isCloud == true {
+                        TwinVoiceCallView(call: model.realtimeVoice)
+                    } else {
+                        ScrollView { VoiceSetupView().padding(20) }.navigationTitle("个人声音")
+                    }
+                }
                 if model.cloudConsentID != nil {
                     Button("撤销云端对话授权", role: .destructive) { Task { await model.revokeCloudTwin() } }
                 }
@@ -321,7 +654,7 @@ private struct EpisodeRow: View {
                     .font(.body.weight(.medium)).foregroundStyle(Ink.text).lineLimit(2)
                 Text(String(episode.recorded_at.prefix(10))).font(.subheadline).foregroundStyle(Ink.muted)
                 if episode.status != "ready" {
-                    Text(statusLabel(episode.status)).font(.subheadline)
+                    Text(episode.error_code == "SOURCE_DELETE_PENDING" ? "删除未完成，左滑可重试" : statusLabel(episode.status)).font(.subheadline)
                         .foregroundStyle(episode.status == "reviewing" || episode.status == "failed" ? Ink.coral : Ink.muted)
                 }
             }.frame(maxWidth: .infinity,alignment: .leading)
@@ -390,23 +723,32 @@ private struct EpisodeDetailView: View {
     @EnvironmentObject private var model: AppModel
     let initial: EpisodeRecord
     private var episode: EpisodeRecord { model.episodes.first(where: { $0.id == initial.id }) ?? initial }
+    private var isText: Bool { episode.source == "IOS_TEXT" }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Eyebrow(text: "原始录音 · \(statusLabel(episode.status))")
+                Eyebrow(text: "\(isText ? "保存的原话" : "原始录音") · \(statusLabel(episode.status))")
                 Text("这一段，\n完整地留着。")
                     .font(.system(.title, design: .default).weight(.semibold))
                     .foregroundStyle(Ink.text)
                 VStack(alignment: .leading, spacing: 12) {
-                    Eyebrow(text: "原音")
-                    OriginalPlayer(episodeID: episode.id)
+                    if !isText {
+                        Eyebrow(text: "原音")
+                        OriginalPlayer(episodeID: episode.id)
+                    }
                     Text("录入时间：\(episode.recorded_at)")
                         .font(.subheadline).foregroundStyle(Ink.muted)
                 }
                 .journalCard()
                 VStack(alignment: .leading, spacing: 12) {
-                    Eyebrow(text: "原始转写")
-                    Text(episode.transcript ?? "还没有转写。原音已保存，可以稍后再看。")
+                    Eyebrow(text: isText ? "保存的原话" : "原始转写")
+                    if let report = episode.speaker_report {
+                        ForEach(report.speakers) { speaker in
+                            Label(speaker.is_subject == true ? "匹配本人声音" : speaker.name.map { "说话人：\($0)" } ?? "说话人暂未匹配", systemImage: "waveform")
+                                .font(.caption).foregroundStyle(Ink.muted)
+                        }
+                    }
+                    Text(episode.transcript ?? (isText ? "暂时没有文字。" : "还没有转写。原音已保存，可以稍后再看。"))
                         .font(.system(.body, design: .default).weight(.regular))
                         .foregroundStyle(Ink.text)
                     DisclosureGroup("处理详情") {
@@ -424,7 +766,7 @@ private struct EpisodeDetailView: View {
             .padding(20)
         }
         .background(AtmosphereBackground().ignoresSafeArea())
-        .navigationTitle("录音详情")
+        .navigationTitle(isText ? "原话详情" : "录音详情")
         .refreshable { await model.refresh() }
     }
 }
@@ -531,86 +873,154 @@ struct RecorderView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let question: QuestionRecord?
     let calibration: CalibrationRecord?
-    @State private var showConsent = false
+    var simplified = false
+    var startImmediately = false
+    var onShowMemories: (() -> Void)? = nil
     @State private var showClose = false
     @State private var showOrganizeConsent = false
     @State private var showPairing = false
+    @State private var showUploadConsent = false
+    @State private var uploadPolicy: String?
+    @State private var uploadScope: ReviewScope?
+    @State private var uploadRecordingID: String?
+    private func autoTranscribe(force: Bool = false) async {
+        let scope = model.pairing.map(ReviewScope.init)
+        let id = model.draft?.id
+        if let policy = await model.transcribeFinishedRecordingAutomatically(force: force),
+           model.pairing.map(ReviewScope.init) == scope, model.draft?.id == id {
+            uploadPolicy = policy; uploadScope = scope; uploadRecordingID = id; showUploadConsent = true
+        }
+    }
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Eyebrow(text: calibration != nil ? "本人校准回答" : question == nil ? "自由录音" : "回答这个问题")
-                    Text(calibration?.question ?? question?.text ?? "把此刻，留在这里。")
-                        .font(.title2.weight(.medium)).foregroundStyle(Ink.text)
+                VStack(alignment: .leading, spacing: RMSpacing.lg) {
+                    Text(model.isTranscriptReviewReady && simplified ? "核对这段文字" : simplified && model.processingStatus == "ready" ? "这段录音已整理完成" : calibration?.question ?? question?.text ?? "讲讲今天想留下的事。")
+                        .font(RMTypography.title).foregroundStyle(Ink.text)
                     Text(model.isRecording ? (model.isPaused ? "已暂停" : "正在录音") : model.draft != nil ? "录音已保存在手机" : "由你决定什么时候开始")
                         .foregroundStyle(Ink.muted).accessibilityAddTraits(.updatesFrequently)
+                    if !simplified || !model.isTranscriptReviewReady && model.processingStatus != "ready" {
+                    HStack {
+                        Spacer()
+                        VoiceReactiveFlower(state: model.isPaused ? .paused : model.isRecording ? .listening : .idle,
+                                            audioLevel: model.isRecording && !model.isPaused ? Double(model.meterLevels.last ?? 0) : nil,
+                                            size: RMMetrics.recordingFlower)
+                        Spacer()
+                    }.padding(.vertical, RMSpacing.sm)
                     Text(String(format: "%02d:%02d", model.recordedSeconds / 60, model.recordedSeconds % 60))
-                        .font(.system(.largeTitle, design: .monospaced)).monospacedDigit()
+                        .font(RMTypography.timer).monospacedDigit()
                         .frame(maxWidth: .infinity)
-                    GeometryReader { geometry in
-                        HStack(spacing: 4) {
-                            ForEach(Array(model.meterLevels.enumerated()), id: \.offset) { _, level in
-                                Capsule().fill(Ink.coral)
-                                    .frame(width: max(1, (geometry.size.width - CGFloat(max(0, model.meterLevels.count - 1)) * 4) / CGFloat(max(1, model.meterLevels.count))), height: 8 + 72 * level)
-                            }
-                        }.frame(height: 100)
+                    RMRecordingWaveform(levels: model.isRecording ? model.meterLevels : [], paused: model.isPaused || !model.isRecording)
                     }
-                    .padding(.horizontal, 12)
-                    .frame(height: 130)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityHidden(true)
-                    .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: model.meterLevels)
-                    if model.draft != nil && !model.isRecording { OriginalPlayer(episodeID: nil) }
-                    if let draft = model.draft, !model.isRecording, model.episodeID == nil {
+                    if !model.isRecording {
+                        if model.draft != nil { OriginalPlayer(episodeID: nil) }
+                        else if let id = model.episodeID ?? calibration?.human_episode_id { OriginalPlayer(episodeID: id) }
+                    }
+                    if !simplified, let draft = model.draft, !model.isRecording, model.episodeID == nil {
                         NavigationLink("查看本机录音与离线转写") { LocalRecordingDetailView(recordingID: draft.id) }
                             .accessibilityIdentifier("recorder.localDetail")
                     }
                     if model.isTranscriptReviewReady {
                         Text("先核对，再整理记忆").font(.title3.weight(.semibold))
-                        Text("修改识别不准确的地方。确认后才会把文字发送给 DeepSeek 提取记忆。").foregroundStyle(Ink.muted)
-                        TextEditor(text: $model.transcriptDraft)
+                        Text(model.episodeID == nil ? "修改识别不准确的地方。核对文字保存在手机，连接服务后可以整理记忆。" : "修改识别不准确的地方。确认后才会把文字发送给 DeepSeek 提取记忆。").foregroundStyle(Ink.muted)
+                        CaptureTextEditor(title: "核对并修改转写文字", text: $model.transcriptDraft)
+                            .rmInputSurface()
                             .onChange(of: model.transcriptDraft) { _, _ in model.saveTranscriptDraft() }
-                            .frame(minHeight: 220).padding(12)
-                            .background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
-                            .accessibilityLabel("核对并修改转写文字")
+                        TranscriptCorrectionReview(original: model.currentTranscriptReview?.machine_transcript,
+                            correction: model.currentTranscriptReview?.automatic_correction, text: $model.transcriptDraft,
+                            disabled: model.isBusy)
+                        Text("补充信息（可选）").font(.subheadline.weight(.semibold))
+                        CaptureTextEditor(title: "补充信息（可选）", text: $model.transcriptSupplement, minimumHeight: 100)
+                            .rmInputSurface()
+                            .onChange(of: model.transcriptSupplement) { _, value in
+                                if value.count > 3000 { model.transcriptSupplement = String(value.prefix(3000)) }
+                                model.saveTranscriptDraft()
+                            }
+                        if simplified {
+                            Text(model.organizeNotice).font(.caption).foregroundStyle(Ink.muted)
+                        }
                     }
                     if !model.processingStatus.isEmpty {
                         Text(statusLabel(model.processingStatus)).foregroundStyle(Ink.coral)
+                    }
+                    if model.isBusy || model.isPollingEpisode || model.isPreparingAutomaticTranscription || model.isLocalTranscribing {
+                        RMProgressIndicator(title: "正在转写或读取结果…").accessibilityIdentifier("recorder.processing")
                     }
                     if let error = model.errorMessage {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("操作未完成", systemImage: "exclamationmark.circle").font(.headline)
                             Text(error).font(.body)
+                                .accessibilityIdentifier("recorder.error")
+                            if error.contains("麦克风权限") {
+                                Button("打开麦克风设置") {
+                                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                                }
+                            }
                         }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
                     }
-                    Text(model.recordingTransferNotice)
-                        .font(.subheadline).foregroundStyle(Ink.muted)
-                }.padding(20)
+                    if simplified && model.processingStatus == "ready" {
+                        Text("文字已整理成记忆。你可以查看原话、回听录音，再向 Twin 提问。")
+                            .foregroundStyle(Ink.muted)
+                    }
+                    DisclosureGroup("数据去向") {
+                        Text(model.recordingTransferNotice).font(RMTypography.detail).foregroundStyle(Ink.muted)
+                    }.font(RMTypography.caption)
+                }.padding(RMSpacing.page).frame(maxWidth: RMMetrics.maximumReadingWidth)
             }
             .background(AtmosphereBackground().ignoresSafeArea())
-            .navigationTitle("留下一段声音").navigationBarTitleDisplayMode(.inline)
+            .rmDismissibleKeyboard()
+            .navigationTitle(simplified ? "录音与核对" : "留下一段声音").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
                 Button("关闭") { if model.isRecording { showClose = true } else { dismiss() } }
+                    .disabled(model.isStartingRecording)
             } }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 10) {
                     if model.isRecording {
-                        Button(model.isPaused ? "继续录音" : "暂停录音") { model.pauseOrResume() }
-                            .frame(minHeight: 44).buttonStyle(.bordered)
-                        ActionButton(title: "完成并保存", icon: "stop.fill") { model.finishRecording() }
+                        RMButton(title: model.isPaused ? "继续录音" : "暂停录音",
+                                 icon: model.isPaused ? "play.fill" : "pause.fill", kind: .secondary) { model.pauseOrResume() }
+                        ActionButton(title: simplified && model.automaticTranscriptionEnabled ? "结束录音" : "完成并保存", icon: "stop.fill") {
+                            model.finishRecording()
+                            if simplified, calibration == nil, model.automaticTranscriptionEnabled,
+                               model.pendingAutomaticCaptures.contains(where: { $0.id == model.draft?.id }) {
+                                // The home owns the durable upload/review queue. The
+                                // next microphone session need not wait for a model.
+                                dismiss()
+                            } else if simplified { Task { await autoTranscribe() } }
+                        }.accessibilityIdentifier("recorder.finish")
                     } else if model.isTranscriptReviewReady {
-                        ActionButton(title: model.isBusy ? "正在提交…" : "确认文字并整理记忆", icon: "checkmark.circle") {
-                            showOrganizeConsent = true
+                        ActionButton(title: model.isBusy ? "正在提交…" : model.episodeID == nil ? "保存核对文字" : "保存到记忆", icon: "checkmark.circle", isLoading: model.isBusy) {
+                            if simplified { Task { await model.submitTranscript() } }
+                            else { showOrganizeConsent = true }
                         }.disabled(model.isBusy || model.transcriptDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    } else if simplified && model.processingStatus == "文字已保存在手机" {
+                        ActionButton(title: "完成", icon: "checkmark") { dismiss() }
+                    } else if model.processingStatus == "已保存，正在后台整理" {
+                        ActionButton(title: "完成，后台继续整理", icon: "checkmark") { dismiss() }
+                    } else if simplified && model.processingStatus == "ready" {
+                        ActionButton(title: calibration == nil ? "查看记忆" : "返回回答比较", icon: calibration == nil ? "book.closed" : "arrow.left.arrow.right") {
+                            if calibration == nil { onShowMemories?() }; dismiss()
+                        }.accessibilityIdentifier("recorder.memories")
+                    } else if let id = model.episodeID, model.draft == nil {
+                        ActionButton(title: model.isBusy || model.isPollingEpisode ? "正在查看处理进度…" : model.processingStatus == "failed" ? "重新处理并查看文字" : "查看处理进度", icon: "arrow.clockwise") {
+                            Task {
+                                if model.processingStatus == "failed" { await model.retryEpisode(id) }
+                                else { await model.pollEpisode() }
+                            }
+                        }.disabled(model.isBusy || model.isPollingEpisode)
                     } else if model.draft != nil {
-                        RecordingUploadButton()
+                        if model.pairing == nil && simplified {
+                            ActionButton(title: model.isLocalTranscribing ? "正在本机转写…" : "重试转成文字", icon: "text.bubble") { Task { await autoTranscribe(force: true) } }
+                                .disabled(model.connectionChangeBlocked)
+                        } else { RecordingUploadButton() }
                         Button("保留这段，再录一段") {
-                            if model.prepareNewRecording() { showConsent = true }
+                            if model.prepareNewRecording() { Task { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) } }
                         }.buttonStyle(.bordered).disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
                     } else {
-                        ActionButton(title: "开始录音", icon: "mic.fill") { showConsent = true }
+                        ActionButton(title: model.isStartingRecording ? "正在打开麦克风…" : "开始录音", icon: "mic.fill") { Task { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) } }
+                            .disabled(model.connectionChangeBlocked)
                     }
-                }.padding(16).background(Ink.cream)
+                }.padding(RMSpacing.md).background(RMColors.background)
             }
             .sheet(isPresented: $showPairing) {
                 NavigationStack {
@@ -624,18 +1034,29 @@ struct RecorderView: View {
                     }
                 }
             }
-            .interactiveDismissDisabled(model.isRecording)
+            .interactiveDismissDisabled(model.isRecording || model.isStartingRecording)
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background { model.finishRecording(); model.pausePlayback() }
+                if phase == .background { model.pausePlayback() }
             }
-            .task { if model.episodeID != nil { await model.pollEpisode() } }
-            .confirmationDialog("开始录下这段声音？", isPresented: $showConsent, titleVisibility: .visible) {
-                Button("同意并开始录音") { Task { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) } }
-                Button("取消", role: .cancel) { }
-            } message: {
-                Text(model.recordingTransferNotice)
+            .task {
+                model.isRecorderPresented = true
+                if model.episodeID != nil { await model.pollEpisode() }
+                else if startImmediately && model.draft == nil { await model.startRecording(questionID: question?.id, calibrationID: calibration?.id) }
             }
+            .onDisappear {
+                model.isRecorderPresented = false; model.errorMessage = nil
+                model.processDeviceRecordingQueue()
+            }
+            .confirmationDialog("启用录完自动转成文字？", isPresented: $showUploadConsent, titleVisibility: .visible) {
+                Button("同意自动转写") {
+                    if let policy = uploadPolicy, let scope = uploadScope, let id = uploadRecordingID {
+                        Task { await model.approveAutomaticTranscription(policy, recordingID: id, scope: scope) }
+                    }
+                }
+                Button("仅保存这段录音", role: .cancel) { model.processingStatus = "原音已保存，待转写" }
+            } message: { Text((model.cloudCapabilities?.uploadNotice ?? model.recordingTransferNotice) + "\n同意后，同一账号与空间、相同转写用途下，后续录音结束自动转写。可在「我的」关闭。") }
             .confirmationDialog("要结束这段录音吗？", isPresented: $showClose, titleVisibility: .visible) {
+                Button("收起，继续后台录音") { dismiss() }
                 Button("完成并保存") { model.finishRecording(); dismiss() }
                 Button("继续录音", role: .cancel) { }
             }
@@ -649,42 +1070,21 @@ struct RecorderView: View {
     }
 }
 
-private struct OriginalPlayer: View {
+struct OriginalPlayer: View {
     @EnvironmentObject private var model: AppModel
     let episodeID: String?
     private var identity: String { episodeID ?? model.draft?.id ?? "" }
     private var selected: Bool { model.playbackID == identity }
-    private func clock(_ seconds: Double) -> String { String(format: "%02d:%02d",Int(seconds)/60,Int(seconds)%60) }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("原始录音").font(.body.weight(.medium))
-                    Text(model.playbackLoading ? "正在打开原音…" : selected && model.isPlaying ? "正在播放" : selected && model.playbackDuration > 0 && model.playbackPosition >= model.playbackDuration ? "播放完毕" : selected && model.playbackPosition > 0 ? "已暂停" : "准备好回听")
-                        .font(.subheadline).foregroundStyle(Ink.muted)
-                }.frame(maxWidth: .infinity,alignment: .leading)
-
-                Button {
-                    if selected { model.toggleCurrentPlayback() }
-                    else if let episodeID { Task { await model.playOriginal(episodeID: episodeID) } }
-                    else { model.togglePlayback() }
-                } label: {
-                    Group {
-                        if model.playbackLoading { ProgressView().tint(Ink.paper) }
-                        else { Image(systemName: selected && model.isPlaying ? "pause.fill" : "play.fill") }
-                    }.frame(width: 48, height: 48)
-                }
-                .buttonStyle(.borderedProminent).tint(Ink.text).foregroundStyle(Ink.paper).clipShape(Circle())
-                .disabled(model.playbackLoading)
-                .accessibilityLabel(selected && model.isPlaying ? "暂停原音" : "播放原音")
-
-            }
-            if selected {
-                Slider(value: Binding(get: { model.playbackPosition }, set: { model.seekPlayback($0) }), in: 0...max(1, model.playbackDuration))
-                    .frame(minHeight: 44).accessibilityLabel("原音播放进度")
-                HStack { Text(clock(model.playbackPosition)); Spacer(); Text(clock(model.playbackDuration)) }.font(.subheadline).foregroundStyle(Ink.muted).monospacedDigit()
-            }
-        }.padding(16).background(Ink.cream, in: RoundedRectangle(cornerRadius: 16))
+        RMAudioPlayer(status: model.playbackLoading ? "正在打开原音…" : selected && model.isPlaying ? "正在播放" : nil,
+                      playing: selected && model.isPlaying, loading: model.playbackLoading,
+                      position: selected ? model.playbackPosition : 0, duration: selected ? model.playbackDuration : 0,
+                      showsProgress: selected,
+                      play: {
+                          if selected { model.toggleCurrentPlayback() }
+                          else if let episodeID { Task { await model.playOriginal(episodeID: episodeID) } }
+                          else { model.togglePlayback() }
+                      }, seek: model.seekPlayback)
     }
 }
 
@@ -753,9 +1153,542 @@ private struct MemoriesView: View {
 
 struct TwinView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var showCalibrationRecorder = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.rmAnimationsDisabled) private var animationsDisabled
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    var simplified = true
+    @State private var panel: TwinPanel?
     @State private var showQueryConsent = false
     @State private var queryPolicy: String?
+    @State private var showNewChat = false
+    @State private var replacementQuestion: String?
+    @State private var showReplaceDraft = false
+    @State private var loadingOriginalID: String?
+    @FocusState private var inputFocused: Bool
+    private enum TwinPanel: Identifiable {
+        case tools, evidence(String), feedback, review, voiceCall, historyMemory, learning, personalModel, entrustment, remember(UUID), rememberPicker
+        var id: String {
+            switch self {
+            case .tools: "tools"
+            case .evidence(let id): "evidence-" + id
+            case .feedback: "feedback"
+            case .review: "review"
+            case .voiceCall: "voiceCall"
+            case .remember(let id): "remember-" + id.uuidString
+            case .rememberPicker: "rememberPicker"
+            case .historyMemory: "historyMemory"
+            case .learning: "learning"
+            case .personalModel: "personalModel"
+            case .entrustment: "entrustment"
+            }
+        }
+    }
+    private var canSend: Bool {
+        model.pairing != nil && model.cloudConsentID != nil && !model.isBusy && !model.isRestoringChat &&
+        !model.personReview.isMutating && !model.isQueryRecording && !model.isRecording &&
+        !model.queryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    private var presenceName: String {
+        let name = model.pairing?.spaceName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return name.isEmpty ? "另一个我" : name
+    }
+    private var presenceState: RMFlowerState {
+        if playingTwinOriginal { return .speaking }
+        return model.isAskingTwin || model.isRestoringChat ? .thinking : .idle
+    }
+    private var playingTwinOriginal: Bool {
+        guard model.isPlaying, let playbackID = model.playbackID else { return false }
+        return model.twinChat.turns.contains { turn in
+            guard !turn.invalidated, let answer = turn.answer, !answer.stale else { return false }
+            return answer.evidence.contains { $0.episode_id == playbackID && $0.source_type == "SUBJECT" && $0.has_audio == true }
+        }
+    }
+    private var chatAnimation: Animation? {
+        reduceMotion || animationsDisabled ? nil : .easeInOut(duration: 0.25)
+    }
+    private var latestUsable: Bool {
+        guard let answer = model.twinAnswer else { return false }
+        return !answer.stale && !model.twinChat.turns.contains { $0.answer?.id == answer.id && $0.invalidated }
+    }
+    private func openEvidence(_ answerID: String) {
+        inputFocused = false; panel = .evidence(answerID)
+        Task { await model.refreshChatAnswer(answerID) }
+    }
+    private func correctAnswer(_ answer: TwinAnswerRecord) {
+        inputFocused = false
+        Task {
+            if model.calibrationRun?.twin_answer_id != answer.id { await model.startCalibration(answerID: answer.id) }
+            if model.calibrationRun?.twin_answer_id == answer.id { panel = .feedback }
+        }
+    }
+    private func editQuestion(_ question: String) {
+        if model.queryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.queryDraft == question {
+            model.queryDraft = question; inputFocused = true
+        } else {
+            replacementQuestion = question; inputFocused = false; showReplaceDraft = true
+        }
+    }
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: RMSpacing.lg) {
+                    presence
+                    if model.twinChat.turns.isEmpty { welcome }
+                    if model.isRestoringChat {
+                        Label("正在恢复聊天…", systemImage: "arrow.clockwise").font(.caption).foregroundStyle(RMTwinColors.secondaryText)
+                    }
+                    ForEach(model.twinChat.turns) { turn in
+                        chatTurn(turn)
+                    }
+                    Color.clear.frame(height: 1).id("chat.bottom")
+                }
+                .padding(.horizontal, RMSpacing.page).padding(.vertical, RMSpacing.md)
+                .frame(maxWidth: RMMetrics.maximumReadingWidth)
+                .frame(maxWidth: .infinity)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .contentShape(Rectangle())
+            .simultaneousGesture(TapGesture().onEnded { inputFocused = false })
+            .onChange(of: model.twinChat.turns.count) { _, _ in
+                withAnimation(chatAnimation) { proxy.scrollTo("chat.bottom", anchor: .bottom) }
+            }
+            .onChange(of: model.isAskingTwin) { _, _ in
+                withAnimation(chatAnimation) { proxy.scrollTo("chat.bottom", anchor: .bottom) }
+            }
+            .onChange(of: model.isRestoringChat) { _, restoring in
+                if !restoring { proxy.scrollTo("chat.bottom", anchor: .bottom) }
+            }
+            .onChange(of: inputFocused) { _, focused in
+                if focused { proxy.scrollTo("chat.bottom", anchor: .bottom) }
+            }
+        }
+        .background { TwinAtmosphere().ignoresSafeArea() }
+        .foregroundStyle(RMTwinColors.text)
+        .tint(RMTwinColors.accent)
+        .safeAreaInset(edge: .top, spacing: 0) { memoryShortcut }
+        .safeAreaInset(edge: .bottom, spacing: 0) { composer }
+        .navigationTitle("孪生")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(RMTwinColors.background, for: .navigationBar, .tabBar)
+        .toolbarBackground(.visible, for: .navigationBar, .tabBar)
+        .toolbarColorScheme(.dark, for: .navigationBar, .tabBar)
+        .onDisappear { inputFocused = false; RMKeyboard.dismiss() }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { inputFocused = false; panel = .learning } label: {
+                    Image(systemName: "chart.bar.doc.horizontal")
+                }.accessibilityLabel("个人模型训练与复刻验证").accessibilityIdentifier("twin.learning")
+            }
+            ToolbarItem(placement: .topBarLeading) {
+                Button { inputFocused = false; panel = .entrustment } label: { Image(systemName: "gift") }
+                    .accessibilityLabel("留下数字托付").accessibilityIdentifier("twin.entrustment")
+                    .disabled(model.pairing == nil || model.isBusy || model.entrustmentCaptureState.blocked)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { inputFocused = false; panel = .voiceCall } label: { Image(systemName: "phone.fill") }
+                    .accessibilityLabel("和孪生语音通话").accessibilityIdentifier("twin.voiceCall")
+                    .disabled(model.pairing == nil || model.isBusy || model.isRecording || model.isQueryRecording)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { inputFocused = false; panel = .personalModel } label: { Image(systemName: "person.crop.circle") }
+                    .accessibilityLabel("人物模型 Personal Model").accessibilityIdentifier("twin.personalModel")
+            }
+        }
+        .sheet(item: $panel) { selection in
+            NavigationStack {
+                Group {
+                    switch selection {
+                    case .tools: tools
+                    case .evidence(let id): evidence(answerID: id)
+                    case .feedback: TwinFeedbackContent()
+                    case .review: PersonReviewView(review: model.personReview)
+                    case .voiceCall: TwinVoiceCallView(call: model.realtimeVoice)
+                    case .remember(let id): RememberChatMessageView(turnID: id)
+                    case .rememberPicker: rememberPicker
+                    case .historyMemory: ChatHistoryMemoryView()
+                    case .learning: PersonalLearningView()
+                    case .personalModel: PersonalModelView()
+                    case .entrustment: EntrustmentSetupView()
+                    }
+                }
+                .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("关闭") { panel = nil }.disabled(model.realtimeVoice.isActive || model.isVoiceRecording) } }
+            }
+        }
+        .confirmationDialog("使用云端转写提问？", isPresented: $showQueryConsent, titleVisibility: .visible) {
+            Button("同意并录下问题") { Task { await model.startQueryRecording(cloudASRPolicy: queryPolicy) } }
+            Button("取消", role: .cancel) { }
+        } message: { Text(model.cloudCapabilities?.uploadNotice ?? "") }
+        .alert("替换当前草稿？", isPresented: $showReplaceDraft) {
+            Button("替换为这条问题") {
+                if let replacementQuestion { model.queryDraft = replacementQuestion }
+                replacementQuestion = nil; inputFocused = true
+            }
+            Button("保留当前草稿", role: .cancel) { replacementQuestion = nil; inputFocused = true }
+        } message: { Text("输入栏里还有未发送的文字。你可以先保留，再编辑之前的问题。") }
+        .environment(\.colorScheme, .dark)
+        .tint(RMTwinColors.accent)
+    }
+    private var memoryShortcut: some View {
+        HStack(spacing: RMSpacing.md) {
+            if model.cloudCapabilities?.chat_history_memory == true {
+                Button {
+                    inputFocused = false; panel = .historyMemory
+                } label: {
+                    HStack {
+                        Image(systemName: "clock.arrow.circlepath")
+                        if !dynamicTypeSize.isAccessibilitySize { Text("旧聊天") }
+                    }.frame(minWidth: RMMetrics.touchTarget, minHeight: RMMetrics.touchTarget)
+                }
+                    .accessibilityLabel("旧聊天记忆").accessibilityIdentifier("twin.historyMemoryShortcut")
+                    .disabled(model.cloudConsentID == nil || model.isBusy)
+            }
+            Button {
+                inputFocused = false; panel = .review
+            } label: {
+                HStack {
+                    Image(systemName: "person.text.rectangle")
+                    if !dynamicTypeSize.isAccessibilitySize { Text("理解与表达") }
+                }.frame(minWidth: RMMetrics.touchTarget, minHeight: RMMetrics.touchTarget)
+            }
+                .accessibilityLabel("我的理解与表达").accessibilityIdentifier("twin.reviewShortcut")
+            Spacer(minLength: 0)
+            Image(systemName: "sparkle").foregroundStyle(RMTwinColors.accent).accessibilityHidden(true)
+        }
+        .font(.caption).buttonStyle(RMQuietPressStyle())
+        .frame(minHeight: RMMetrics.touchTarget)
+        .padding(.horizontal, RMSpacing.page)
+        .background(RMTwinColors.background.opacity(0.94))
+    }
+    private var presence: some View {
+        VStack(spacing: RMSpacing.xs) {
+            TwinPresence(state: presenceState, size: model.twinChat.turns.isEmpty ? 124 : 92,
+                         original: playingTwinOriginal, audioLevel: playingTwinOriginal ? model.playbackAudioLevel : nil)
+                .environment(\.rmAnimationsDisabled, animationsDisabled || panel != nil)
+            Text(presenceName)
+                .font(.system(.title2, design: .serif)).tracking(2)
+                .foregroundStyle(RMTwinColors.text)
+            Text("数字孪生 · 依据你留下的讲述")
+                .font(RMTypography.caption).foregroundStyle(RMTwinColors.secondaryText)
+            if model.isAskingTwin {
+                Text("正在查找记忆，整理回应…")
+                    .font(RMTypography.caption).foregroundStyle(RMTwinColors.accent)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, RMSpacing.xs).padding(.bottom, RMSpacing.md)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("twin.presence")
+    }
+    private var welcome: some View {
+        VStack(alignment: .leading, spacing: RMSpacing.lg) {
+            VStack(spacing: RMSpacing.xs) {
+                Text("和另一个自己聊聊").font(.system(.title3, design: .serif))
+                Text("从一段回忆，或今天的心事开始。")
+                    .font(RMTypography.detail).foregroundStyle(RMTwinColors.secondaryText)
+            }.frame(maxWidth: .infinity).padding(.bottom, RMSpacing.xs)
+            if model.pairing == nil { ConnectionNotice() }
+            else if model.cloudConsentID == nil {
+                VStack(alignment: .leading, spacing: RMSpacing.md) {
+                    Label("先确认聊天用途", systemImage: "checkmark.shield").font(.headline)
+                    Text("问题、相关旧聊天、会话摘要和记忆文字会发送给云端模型。你可以查看、关闭或清除聊天记忆；纠正回答时也会使用核对后的文字。可在「我的」撤销授权。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                    ActionButton(title: "同意使用云端孪生", icon: "checkmark.shield") {
+                        Task { await model.enableCloudTwin() }
+                    }.disabled(model.isBusy)
+                }.padding(RMSpacing.md).twinGlass()
+            } else {
+                DisclosureGroup("选择一个问题") {
+                    ForEach(["你记得我喜欢什么吗？", "时间很紧时，我通常会怎么选择？"], id: \.self) { question in
+                        Button { editQuestion(question) } label: {
+                            HStack(alignment: .top, spacing: 12) {
+                                Text(question).font(.subheadline).multilineTextAlignment(.leading)
+                                Spacer(minLength: 8)
+                                Image(systemName: "arrow.up.left").font(.caption).padding(.top, 3)
+                            }.padding(RMSpacing.md).frame(maxWidth: .infinity, minHeight: RMMetrics.buttonHeight, alignment: .leading)
+                                .twinGlass(cornerRadius: 14)
+                        }.buttonStyle(.plain).accessibilityIdentifier("twin.suggestedQuestion.\(question)")
+                    }
+                }
+                Button {
+                    inputFocused = false; panel = .voiceCall
+                } label: {
+                    Label("直接语音通话", systemImage: "phone.fill")
+                        .font(RMTypography.heading).frame(maxWidth: .infinity, minHeight: RMMetrics.buttonHeight)
+                        .twinGlass(cornerRadius: 26)
+                }.buttonStyle(RMQuietPressStyle())
+                    .disabled(model.isBusy || model.isRecording || model.isQueryRecording)
+                    .accessibilityIdentifier("twin.voiceCallPrimary")
+            }
+        }.foregroundStyle(RMTwinColors.text)
+    }
+    private func chatTurn(_ turn: TwinChatTurn) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Spacer(minLength: 48)
+                Text(turn.question).textSelection(.enabled)
+                    .padding(.horizontal, RMSpacing.md).padding(.vertical, RMSpacing.sm)
+                    .foregroundStyle(RMTwinColors.text)
+                    .twinGlass(cornerRadius: 18)
+                    .accessibilityIdentifier("twin.userMessage")
+                    .contextMenu {
+                        Button("复制我的消息", systemImage: "doc.on.doc") { UIPasteboard.general.string = turn.question }
+                        Button("记住这句话", systemImage: "bookmark") { inputFocused = false; panel = .remember(turn.id) }
+                            .disabled(model.cloudCapabilities?.chat_memory != true || model.pairing == nil || model.isBusy || (turn.answer?.id ?? turn.savedAnswerID) == nil)
+                    }
+            }
+            HStack(alignment: .top, spacing: 8) {
+                ForgetMeNotFlower(size: RMSpacing.lg).padding(.top, 3).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 8) {
+                    if let answer = turn.answer {
+                        Text("另一个我 · \(answer.response_type == "ORIGINAL" ? "本人原话" : answer.response_type == "SIMULATION" ? "根据记忆推测" : answer.response_type == "CONVERSATION" ? "对话回应" : "目前无法确定")")
+                            .font(.caption).foregroundStyle(answer.response_type == "ORIGINAL" ? RMTwinColors.gold : RMTwinColors.secondaryText)
+                        Text(turn.invalidated ? "相关记忆已有变化，请重新提问。" : answer.displayText)
+                            .textSelection(.enabled)
+                            .padding(.horizontal, RMSpacing.md).padding(.vertical, RMSpacing.sm)
+                            .foregroundStyle(RMTwinColors.text)
+                            .twinGlass(cornerRadius: 18, original: answer.response_type == "ORIGINAL" && !turn.invalidated && !answer.stale)
+                            .accessibilityIdentifier("twin.answerMessage")
+                        if answer.response_type == "ORIGINAL", !answer.stale, !turn.invalidated,
+                           let source = answer.evidence.first(where: { $0.source_type == "SUBJECT" && $0.has_audio == true }) {
+                            originalRecording(source)
+                        }
+                        if !turn.invalidated, answer.checkedExpression != nil {
+                            Text("参考已确认的表达范例 · 仍是推测")
+                                .font(.caption).foregroundStyle(RMTwinColors.secondaryText).accessibilityIdentifier("twin.expression")
+                        }
+                        if !turn.invalidated {
+                            HStack(spacing: 18) {
+                                Button("查看回答依据") { openEvidence(answer.id) }
+                                    .font(.caption).frame(minHeight: RMMetrics.touchTarget)
+                                    .accessibilityIdentifier("twin.evidence.\(answer.id)")
+                                    .disabled(model.isBusy || model.isRestoringChat)
+                                Menu {
+                                    Button("复制回答", systemImage: "doc.on.doc") { UIPasteboard.general.string = answer.displayText }
+                                    if ["ORIGINAL", "SIMULATION"].contains(answer.response_type) {
+                                        Button("纠正这条回答", systemImage: "square.and.pencil") { correctAnswer(answer) }
+                                            .disabled(model.pairing == nil || model.cloudConsentID == nil || model.isBusy || model.isRestoringChat)
+                                    }
+                                } label: {
+                                    Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                                }.accessibilityLabel("这条回答的更多操作").accessibilityIdentifier("twin.answerActions.\(answer.id)")
+                            }
+                        }
+                    } else if let failure = turn.failure {
+                        Text(failure).font(.subheadline).foregroundStyle(RMTwinColors.secondaryText)
+                        Button(turn.savedAnswerID == nil ? "重试" : "重新加载回答") {
+                            Task { await model.retryTwin(turn.id) }
+                        }.disabled(model.pairing == nil || model.cloudConsentID == nil || model.isBusy || model.isRestoringChat)
+                            .accessibilityIdentifier("twin.retry.\(turn.id)")
+                        Button("重新编辑问题") { editQuestion(turn.question) }
+                            .font(.subheadline)
+                    } else {
+                        HStack(spacing: 8) { ProgressView(); Text(model.isRestoringChat ? "正在恢复回答…" : "正在查找记忆…").font(.subheadline).foregroundStyle(RMTwinColors.secondaryText) }
+                    }
+                }
+                Spacer(minLength: 30)
+            }
+        }
+    }
+    private func originalRecording(_ source: TwinEvidenceRecord) -> some View {
+        let playing = model.playbackID == source.episode_id && model.isPlaying
+        let loading = loadingOriginalID == source.episode_id && model.playbackLoading
+        return Button {
+            loadingOriginalID = source.episode_id
+            Task {
+                await model.playOriginal(episodeID: source.episode_id)
+                loadingOriginalID = nil
+            }
+        } label: {
+            HStack(alignment: .top, spacing: RMSpacing.sm) {
+                Group {
+                    if loading { ProgressView().tint(RMTwinColors.gold) }
+                    else { Image(systemName: playing ? "pause.circle.fill" : "play.circle.fill").font(.title2) }
+                }.foregroundStyle(RMTwinColors.gold).frame(width: 28, height: 28)
+                VStack(alignment: .leading, spacing: RMSpacing.xs) {
+                    Text(loading ? "正在载入本人原声…" : playing ? "正在播放本人原声" : "回听本人原始录音")
+                        .font(RMTypography.detail).foregroundStyle(RMTwinColors.gold)
+                    if let excerpt = source.excerpt, !excerpt.isEmpty {
+                        Text("“\(excerpt)”").font(.system(.subheadline, design: .serif))
+                            .foregroundStyle(RMTwinColors.text).lineLimit(3)
+                    }
+                    Text("来自这条回答的录音依据")
+                        .font(RMTypography.caption).foregroundStyle(RMTwinColors.secondaryText)
+                }
+                Spacer(minLength: 0)
+            }.padding(RMSpacing.md).frame(maxWidth: .infinity, alignment: .leading)
+                .twinGlass(cornerRadius: 16, original: true)
+        }
+        .buttonStyle(RMQuietPressStyle())
+        .disabled(model.pairing == nil || model.isBusy || model.playbackLoading || model.isRecording || model.isQueryRecording || model.isVoiceRecording)
+        .accessibilityIdentifier("twin.originalRecording.\(source.id)")
+    }
+    private var composer: some View {
+        VStack(spacing: RMSpacing.xs) {
+            if let notice = model.chatNotice { Text(notice).font(.caption).foregroundStyle(RMTwinColors.secondaryText) }
+            if model.isQueryRecording {
+                HStack {
+                    Label("正在录下问题 · \(model.auxiliarySeconds) 秒", systemImage: "waveform").font(.subheadline)
+                    Spacer()
+                    Button("结束并转写") { Task { await model.finishAuxiliaryRecording() } }.disabled(model.isBusy)
+                }.foregroundStyle(Ink.coral)
+            }
+            if inputFocused {
+                HStack {
+                    Spacer()
+                    Button("收起键盘", systemImage: "keyboard.chevron.compact.down") {
+                        inputFocused = false; RMKeyboard.dismiss()
+                    }.font(RMTypography.caption).frame(minHeight: RMMetrics.touchTarget)
+                        .accessibilityIdentifier("keyboard.dismiss")
+                }
+            }
+            HStack(alignment: .bottom, spacing: RMSpacing.xs) {
+                RMIconButton(title: "更多孪生功能", icon: "plus") { inputFocused = false; panel = .tools }
+                    .accessibilityIdentifier("twin.plus")
+                TextField("输入消息", text: $model.queryDraft, axis: .vertical)
+                    .lineLimit(1...5).font(RMTypography.body).foregroundStyle(RMTwinColors.text)
+                    .padding(RMSpacing.sm).twinGlass(cornerRadius: 22).focused($inputFocused)
+                    .accessibilityLabel("核对或修改孪生问题").accessibilityIdentifier("twin.input")
+                    .disabled(model.isQueryRecording)
+                RMIconButton(title: "发送消息", icon: "arrow.up", isLoading: model.isAskingTwin, selected: canSend) {
+                    inputFocused = false
+                    Task { await model.askTwin() }
+                }.disabled(!canSend).accessibilityIdentifier("twin.send")
+            }
+        }
+        .padding(.horizontal, RMSpacing.md).padding(.vertical, RMSpacing.sm)
+        .background(RMTwinColors.background)
+    }
+    private var tools: some View {
+        List {
+            Section {
+                Button {
+                    panel = nil
+                    Task {
+                        if model.isQueryRecording { await model.finishAuxiliaryRecording() }
+                        else if model.pairing?.isCloud == true {
+                            if let policy = await model.prepareCloudASR() { await model.startQueryRecording(cloudASRPolicy: policy) }
+                        } else { await model.startQueryRecording() }
+                    }
+                } label: { Label(model.isQueryRecording ? "结束并识别问题" : "语音提问", systemImage: "mic") }
+                    .disabled(model.pairing == nil || model.cloudConsentID == nil || model.isBusy || model.isRecording)
+                if model.cloudCapabilities?.chat_history_memory == true {
+                    Button { panel = .historyMemory } label: { Label("旧聊天与长期记忆", systemImage: "clock.arrow.circlepath") }
+                        .accessibilityIdentifier("twin.historyMemory").disabled(model.cloudConsentID == nil || model.isBusy)
+                }
+                Button { panel = .learning } label: { Label("个人模型训练与复刻验证", systemImage: "chart.bar.doc.horizontal") }
+                    .accessibilityIdentifier("twin.learningTools")
+                Button { panel = .review } label: { Label("我的理解与表达", systemImage: "person.text.rectangle") }
+                    .accessibilityIdentifier("twin.review")
+            } footer: { Text("语音转成文字后会填入输入栏，由你核对后发送。") }
+            if let answer = model.twinAnswer {
+                Section("最近一条回答") {
+                    Button { openEvidence(answer.id) } label: { Label("查看回答依据", systemImage: "quote.bubble") }
+                        .disabled(!latestUsable || model.isRestoringChat)
+                    if ["ORIGINAL", "SIMULATION"].contains(answer.response_type) {
+                        Button {
+                            correctAnswer(answer)
+                        } label: { Label("纠正这条回答", systemImage: "square.and.pencil") }
+                            .accessibilityIdentifier("twin.feedback")
+                            .disabled(!latestUsable || model.pairing == nil || model.cloudConsentID == nil || model.isBusy || model.isRestoringChat)
+                    }
+                }
+            }
+            if model.calibrationRun != nil {
+                Button { panel = .feedback } label: { Label("我的回答与比较结果", systemImage: "arrow.left.arrow.right") }
+                    .accessibilityIdentifier("twin.comparison")
+            }
+            if model.cloudCapabilities?.chat_memory == true, model.twinChat.turns.contains(where: { ($0.answer?.id ?? $0.savedAnswerID) != nil }) {
+                Button { panel = .rememberPicker } label: { Label("从聊天留下记忆", systemImage: "bookmark") }
+                    .accessibilityIdentifier("twin.remember").disabled(model.isBusy || model.isRestoringChat)
+            }
+            Section {
+                Button { showNewChat = true } label: { Label("开始新的聊天", systemImage: "square.and.pencil") }
+                    .disabled(model.isBusy || model.isRestoringChat || model.isQueryRecording || model.twinChat.turns.isEmpty && model.queryDraft.isEmpty)
+                    .accessibilityIdentifier("twin.newChat")
+            } footer: { Text(model.cloudCapabilities?.chat_history_memory == true ? "手机恢复最近 20 组消息；已开启的旧聊天记忆还能检索更早及其他会话的内容。" : "手机恢复最近 20 组消息；录音和已确认的记忆单独保留。") }
+        }
+        .foregroundStyle(Ink.text).navigationTitle("孪生功能").navigationBarTitleDisplayMode(.inline)
+        .presentationDetents([.medium, .large])
+        .alert("开始新的聊天？", isPresented: $showNewChat) {
+            Button("清空当前聊天并开始", role: .destructive) { model.newTwinChat(); panel = nil }
+            Button("取消", role: .cancel) { }
+        } message: { Text("手机上的当前聊天索引和未发送文字会清空，原始录音、记忆及已保存的比较结果仍保留。") }
+    }
+    private var rememberPicker: some View {
+        List {
+            Section {
+                ForEach(model.twinChat.turns.filter { ($0.answer?.id ?? $0.savedAnswerID) != nil }) { turn in
+                    Button(turn.question) { panel = .remember(turn.id) }
+                }
+            } header: { Text("选择你自己的真实描述") }
+              footer: { Text("只保存你确认的本人原话。孪生的回答不会成为你的经历。") }
+        }.navigationTitle("选择本人描述").navigationBarTitleDisplayMode(.inline)
+    }
+    private func evidence(answerID: String) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                if model.isBusy { ProgressView("正在检查回答来源…") }
+                if !model.isBusy, let turn = model.twinChat.turns.first(where: { $0.answer?.id == answerID }),
+                   let answer = turn.answer, !turn.invalidated {
+                    Text(answer.question).font(.headline)
+                    if answer.response_type == "CONVERSATION" { Text("这是当前会话的回应，不是对你人格的预测。已承接 \(answer.context_turn_count ?? 0) 轮近期前文，并找回 \(answer.recalled_turn_count ?? 0) 段旧聊天。聊天记录可帮助回顾；人物理解仍需本人核对。") .font(.subheadline).foregroundStyle(Ink.muted) }
+                    if let ids = answer.recalled_answer_ids, !ids.isEmpty {
+                        HistoricalChatSources(answerIDs: ids)
+                    }
+                    if answer.evidence.isEmpty && answer.response_type != "CONVERSATION" { Text("这次没有可展示的原文依据。可以先录下相关经历。") }
+                    ForEach(answer.evidence) { source in
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("“\(source.excerpt ?? "原文摘录暂不可用")”")
+                            Text(sourceLabel(source.source_type)).font(.caption).foregroundStyle(Ink.muted)
+                            if source.has_audio != false {
+                                Button("听当时的原始录音") { Task { await model.playOriginal(episodeID: source.episode_id) } }
+                                    .buttonStyle(.bordered).disabled(model.pairing == nil || model.isBusy)
+                            } else { Text("本人确认的文字记忆，没有原音。") .font(.caption).foregroundStyle(Ink.muted) }
+                        }.journalCard()
+                    }
+                    if answer.checkedExpression != nil {
+                        DisclosureGroup("查看措辞调整前的回答") { Text(answer.answer) }
+                            .accessibilityIdentifier("twin.baseAnswer")
+                    }
+                    DisclosureGroup("回答来源详情") {
+                        Text("理解版本 \(answer.person_model_version) · \(answer.model_version)").font(.footnote)
+                    }
+                } else if !model.isBusy { Text("这条回答暂时不可用，请回到聊天重新加载或提问。") }
+            }.foregroundStyle(Ink.text).padding(20)
+        }.background(Ink.paper).navigationTitle("回答依据").navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct RememberChatMessageView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    let turnID: UUID
+    @State private var ownStatement = false
+    private var turn: TwinChatTurn? { model.twinChat.turns.first { $0.id == turnID } }
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if let turn {
+                    Text("保留你真正说过的话").font(.title2.weight(.semibold))
+                    Text(turn.question).textSelection(.enabled).journalCard().accessibilityIdentifier("twin.rememberText")
+                    Text("这句话会保存为本人文字记忆，今后可以检索、纠正或删除。它会交给已配置的云端模型整理人物理解候选，新的理解仍由你核对。孪生自己的回答不会保存成你的经历。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                    Toggle("这是我自己的真实描述", isOn: $ownStatement)
+                        .accessibilityIdentifier("twin.rememberOwnWords")
+                    ActionButton(title: model.isBusy ? "正在保存…" : "确认并记住", icon: "bookmark") {
+                        Task { if await model.rememberChatTurn(turnID) { dismiss() } }
+                    }.disabled(!ownStatement || model.isBusy || model.cloudCapabilities?.chat_memory != true || model.pairing == nil || model.cloudConsentID == nil)
+                        .accessibilityIdentifier("twin.confirmRemember")
+                } else { Text("这条消息暂时不可见，请回到当前本人会话。") }
+            }.padding(20).foregroundStyle(Ink.text)
+        }.background(Ink.paper).navigationTitle("记住这句话").navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct TwinFeedbackContent: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var showCalibrationRecorder = false
+    @Environment(\.dismiss) private var dismiss
     private let dimensionNames = ["DECISION": "做决定", "REASONING": "考虑理由",
                                   "VALUE_PRIORITY": "价值优先", "EMOTIONAL_REACTION": "情绪反应",
                                   "EXPRESSION": "表达方式"]
@@ -764,108 +1697,11 @@ struct TwinView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Eyebrow(text: "EVIDENCE TWIN")
-                Text("问一个关于自己的问题。")
-                    .font(.system(.title, design: .default).weight(.semibold))
-                    .foregroundStyle(Ink.text)
-                Text("RM 会先找你真正说过的话；需要推测时会明确标出来，不知道时会说不知道。")
+                Text("先保留孪生的回答，再录下你真正会怎么回答。核对后的本人文字会与锁定的回答一起发送到云端比较。")
                     .font(.subheadline).foregroundStyle(Ink.muted)
-                if model.pairing == nil { ConnectionNotice() }
-                else if model.cloudConsentID == nil {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Eyebrow(text: "先决定资料如何使用")
-                        Text("提问时，问题和相关记忆文字会发送给服务配置的语言模型；校准时也会发送核对后的本人回答文字和锁定的 Twin 回答。语音提问的原音转写会另行询问，声音样本不会发送给语言模型。")
-                            .font(.subheadline).foregroundStyle(Ink.text)
-                        ActionButton(title: "同意使用云端 Twin", icon: "checkmark.shield") {
-                            Task { await model.enableCloudTwin() }
-                        }
-                    }
-                    .journalCard()
-                } else {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Eyebrow(text: "你的问题")
-                        TextEditor(text: $model.queryDraft)
-                            .frame(minHeight: 100)
-                            .padding(8)
-                            .background(Ink.paper, in: RoundedRectangle(cornerRadius: 14))
-                            .accessibilityLabel("核对或修改 Twin 问题")
-                        Button {
-                            Task {
-                                if model.isQueryRecording { await model.finishAuxiliaryRecording() }
-                                else if model.pairing?.isCloud == true {
-                                    if let policy = await model.prepareCloudASR() { queryPolicy = policy; showQueryConsent = true }
-                                } else { await model.startQueryRecording() }
-                            }
-                        } label: {
-                            Label(model.isQueryRecording ? "结束并识别问题" : "说出问题",
-                                  systemImage: model.isQueryRecording ? "stop.circle" : "mic")
-                        }
-                        .buttonStyle(.bordered).disabled(model.isBusy)
-                        .confirmationDialog("使用云端转写提问？", isPresented: $showQueryConsent, titleVisibility: .visible) {
-                            Button("同意并录下问题") { Task { await model.startQueryRecording(cloudASRPolicy: queryPolicy) } }
-                            Button("取消", role: .cancel) { }
-                        } message: { Text(model.cloudCapabilities?.uploadNotice ?? "") }
-                        ActionButton(title: model.isBusy ? "正在查找证据…" : "提问", icon: "sparkle.magnifyingglass") {
-                            Task { await model.askTwin() }
-                        }
-                        .disabled(model.isBusy || model.queryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                    .journalCard()
-                    Button("撤销云端 Twin 授权", role: .destructive) {
-                        Task { await model.revokeCloudTwin() }
-                    }
-                    .font(.subheadline)
-                }
-                if let answer = model.twinAnswer {
-                    VStack(alignment: .leading, spacing: 13) {
-                        Eyebrow(text: answer.response_type == "ORIGINAL" ? "原话" :
-                                answer.response_type == "SIMULATION" ? "根据记忆推测" : "目前无法确定")
-                        Text(answer.answer)
-                            .font(.system(.title3, design: .default).weight(.semibold))
-                            .foregroundStyle(Ink.text)
-                        if answer.stale {
-                            Label("相关记忆已有变化，请重新提问。", systemImage: "arrow.clockwise")
-                                .font(.subheadline).foregroundStyle(Ink.coral)
-                        }
-                        ForEach(answer.evidence) { source in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("证据：“\(source.excerpt ?? "")”")
-                                    .font(.subheadline).foregroundStyle(Ink.muted)
-                                Button("听当时的原始录音") {
-                                    Task { await model.playOriginal(episodeID: source.episode_id) }
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-                        if answer.response_type != "UNKNOWN" && !answer.stale {
-                            if model.voiceProfileReady {
-                                ActionButton(title: model.isBusy ? "正在生成声音…" : "用我的声音朗读",
-                                             icon: "speaker.wave.2", fill: Ink.olive) {
-                                    Task { await model.playTwinVoice() }
-                                }
-                                .disabled(model.isBusy)
-                            } else {
-                                Text("下方单独授权并录制声音样本后，可以点播个人声音。")
-                                    .font(.subheadline).foregroundStyle(Ink.muted)
-                            }
-                        }
-                        Text("Person Model v\(answer.person_model_version) · \(answer.model_version)")
-                            .font(.subheadline).foregroundStyle(Ink.muted)
-                    }
-                    .journalCard()
-                    if answer.response_type != "UNKNOWN" && !answer.stale &&
-                        model.calibrationRun?.twin_answer_id != answer.id {
-                        Text("校准会先锁定这条回答，再录下你的真实回答并核对文字；比较只使用确认后的文字。")
-                            .font(.subheadline).foregroundStyle(Ink.muted)
-                        Button("用这条回答做一次校准") {
-                            Task { await model.startCalibration() }
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
                 if let run = model.calibrationRun {
                     VStack(alignment: .leading, spacing: 12) {
-                        Eyebrow(text: "TWIN 校准 · \(run.status)")
+                        Eyebrow(text: run.status == "complete" ? "这次回答的差异" : run.status == "stale" ? "需要重新比较" : "我的真实回答")
                         Text(run.question)
                             .font(.system(.title3, design: .default).weight(.semibold)).foregroundStyle(Ink.text)
                         if run.status == "stale" {
@@ -877,8 +1713,8 @@ struct TwinView: View {
                             if run.status == "awaiting_human" {
                                 if run.human_episode_id == nil {
                                     ActionButton(title: "录下我真正的回答", icon: "mic") {
-                                        showCalibrationRecorder = true
-                                    }
+                                        if model.prepareNewRecording() { showCalibrationRecorder = true }
+                                    }.disabled(model.isBusy || model.isPollingEpisode || model.isRecording || model.isQueryRecording || model.isLocalTranscribing)
                                 } else if model.episodes.first(where: { $0.id == run.human_episode_id })?.status == "ready" {
                                     ActionButton(title: model.isBusy ? "正在比较…" : "比较 Twin 和我的回答",
                                                  icon: "arrow.left.arrow.right") {
@@ -888,6 +1724,11 @@ struct TwinView: View {
                                 } else {
                                     Text("回答已保存。请核对转写并等待记忆处理完成；之后可重试比较。")
                                         .font(.subheadline).foregroundStyle(Ink.muted)
+                                    Button(model.episodes.first(where: { $0.id == run.human_episode_id })?.status == "reviewing" ? "核对我的回答文字" : "查看回答录音进度") {
+                                        if model.resumeCalibrationTranscript(run) { showCalibrationRecorder = true }
+                                    }.buttonStyle(.bordered)
+                                        .disabled(model.isBusy || model.isPollingEpisode || model.isRecording || model.isQueryRecording)
+                                        .accessibilityIdentifier("twin.resumeReview")
                                 }
                             } else if run.status == "complete" {
                                 Text(run.summary ?? "校准完成")
@@ -905,9 +1746,14 @@ struct TwinView: View {
                                     }
                                 }
                                 if let next = run.suggested_question {
-                                    Button("继续追问：\(next)") { model.queryDraft = next }
+                                    Button("继续追问：\(next)") { model.queryDraft = next; dismiss() }
                                         .font(.subheadline)
                                 }
+                                Text("这是一次回答的比较，不能代表整体人格还原率。新的理解仍需要你核对确认。")
+                                    .font(.subheadline).foregroundStyle(Ink.muted)
+                                NavigationLink("整理并核对我的新理解") {
+                                    PersonReviewView(review: model.personReview)
+                                }.accessibilityIdentifier("twin.reviewFeedback")
                                 Text("比较模型：\(run.comparison_model_version ?? "未知")")
                                     .font(.subheadline).foregroundStyle(Ink.muted)
                             }
@@ -915,17 +1761,12 @@ struct TwinView: View {
                     }
                     .journalCard()
                 }
-                VoiceSetupView()
-            }
-            .padding(20)
+
+            }.padding(20)
         }
-        .background(AtmosphereBackground().ignoresSafeArea())
-        .navigationTitle("对话")
-        .refreshable { await model.refresh() }
+        .background(Ink.paper).navigationTitle("纠正与比较").navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showCalibrationRecorder) {
-            if let run = model.calibrationRun {
-                RecorderView(question: nil, calibration: run)
-            }
+            if let run = model.calibrationRun { RecorderView(question: nil, calibration: run, simplified: true) }
         }
     }
 }
@@ -1005,7 +1846,27 @@ struct MemoryDetailView: View {
     let memory: MemoryRecord
     @State private var correction = ""
     @State private var showDelete = false
+    @State private var showDetails = false
     var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: RMSpacing.lg) {
+                HStack { Spacer(); ForgetMeNotSprig().frame(width: RMMetrics.heroFlower, height: RMMetrics.heroFlower); Spacer() }
+                Text(memory.content).font(RMTypography.title).foregroundStyle(RMColors.text)
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                if memory.capture_source != "IOS_TEXT" { OriginalPlayer(episodeID: memory.episode_id) }
+                else { Text("本人确认的聊天文字").font(RMTypography.caption).foregroundStyle(RMColors.secondaryText) }
+                RMButton(title: "查看记忆详情", icon: "text.alignleft", kind: .text) { showDetails = true }
+                    .accessibilityIdentifier("memory.details")
+            }.padding(RMSpacing.page).frame(maxWidth: RMMetrics.maximumReadingWidth)
+        }.background(RMColors.background.ignoresSafeArea())
+            .navigationTitle("记忆").navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showDetails) {
+                NavigationStack {
+                    details.toolbar { ToolbarItem(placement: .topBarTrailing) { Button("关闭") { showDetails = false } } }
+                }
+            }
+    }
+    private var details: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 14) {
@@ -1024,8 +1885,9 @@ struct MemoryDetailView: View {
                             .font(.body).lineSpacing(8).foregroundStyle(Ink.text)
                     }
                     Divider()
-                    OriginalPlayer(episodeID: memory.episode_id)
-                    Text("原始转写：\(memory.transcript ?? "暂无")")
+                    if memory.capture_source != "IOS_TEXT" { OriginalPlayer(episodeID: memory.episode_id) }
+                    else { Text("本人确认的聊天文字，没有原音。") .font(.subheadline).foregroundStyle(Ink.muted) }
+                    Text("\(memory.capture_source == "IOS_TEXT" ? "本人文字" : "原始转写")：\(memory.transcript ?? "暂无")")
                         .font(.subheadline)
                         .foregroundStyle(Ink.muted)
                     DisclosureGroup("来源与处理详情") {
@@ -1036,11 +1898,9 @@ struct MemoryDetailView: View {
                 .padding(.vertical, 12)
                 VStack(alignment: .leading, spacing: 12) {
                     Eyebrow(text: "如果我理解错了")
-                    TextField("写下正确的说法", text: $correction, axis: .vertical)
-                        .lineLimit(3...6)
-                        .textFieldStyle(.roundedBorder)
+                    RMMultilineInput(title: "写下正确的说法", text: $correction, minimumHeight: RMMetrics.sampleEditorHeight)
                     ActionButton(title: "保存纠正", icon: "checkmark") {
-                        Task { if await model.correct(memory, to: correction) { dismiss() } }
+                        Task { if await model.correct(memory, to: correction) { showDetails = false; dismiss() } }
                     }
                     .disabled(correction.trimmingCharacters(in: .whitespaces).isEmpty)
                     Button("删除这条记忆", role: .destructive) { showDelete = true }
@@ -1048,13 +1908,14 @@ struct MemoryDetailView: View {
                 }
                 .journalCard()
             }
-            .padding(20)
+            .padding(RMSpacing.page)
         }
         .background(AtmosphereBackground().ignoresSafeArea())
+        .rmDismissibleKeyboard()
         .navigationTitle("记忆详情")
         .confirmationDialog("删除这条记忆？原始录音和纠错记录仍会保留。", isPresented: $showDelete) {
             Button("删除记忆", role: .destructive) {
-                Task { if await model.delete(memory) { dismiss() } }
+                Task { if await model.delete(memory) { showDetails = false; dismiss() } }
             }
         }
     }
@@ -1125,13 +1986,8 @@ private struct MemoryGlyph: View {
     let kind: MemoryGlyphKind
     var size: CGFloat = 96
     var label: String? = nil
-    @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorSchemeContrast) private var contrast
-    private func color(_ day: UInt32,_ night: UInt32) -> Color {
-        let v=scheme == .dark ? night : day
-        return Color(red:Double((v>>16)&255)/255,green:Double((v>>8)&255)/255,blue:Double(v&255)/255)
-    }
     private var shapes: [(String,Path)] {
         switch kind {
         case .voice: return [
@@ -1180,22 +2036,124 @@ private struct MemoryGlyph: View {
         let material=dimension>=64 && !flat
         Canvas { context,canvas in
             context.scaleBy(x:canvas.width/96,y:canvas.height/96)
-            let ink=color(0x385590,0xD0DFFA),paper=color(0xEDF2FB,0x536C99),end=color(0xCBD7EE,0x334565)
+            let ink = RMColors.action, paper = RMColors.surface, end = RMColors.subtle
+            let blue = kind == .memory ? RMColors.flowerGlyph : RMColors.action
+            let accent = kind == .memory ? RMColors.flowerMarkCenter : RMColors.brand
             for (role,path) in shapes where !(flat && role == "back") {
                 if flat || role == "line" || role == "lightline" {
-                    context.stroke(path,with:.color(flat || role == "line" ? ink : color(0xF6F8FC,0x253956)),style:StrokeStyle(lineWidth:flat ? 6 : 3,lineCap:.round,lineJoin:.round))
+                    context.stroke(path,with:.color(flat || role == "line" ? ink : RMColors.onAction),style:StrokeStyle(lineWidth:flat ? 6 : 3,lineCap:.round,lineJoin:.round))
                 } else {
                     var layer=context
-                    if material && (role == "paper" || role == "blue") { layer.addFilter(.shadow(color:color(0x28426E,0x071326).opacity(0.2),radius:2.2,x:0,y:2.5)) }
+                    if material && (role == "paper" || role == "blue") { layer.addFilter(.shadow(color:RMColors.shadow,radius:2.2,x:0,y:2.5)) }
                     if role == "paper" && material {
                         layer.fill(path,with:.linearGradient(Gradient(colors:[paper,end]),startPoint:.zero,endPoint:CGPoint(x:77,y:96)))
                     } else {
-                        layer.fill(path,with:.color(role == "back" ? color(0xA4B9DF,0x354866).opacity(0.8) : role == "blue" ? color(0x567AC3,0xA3BCEB) : role == "gold" ? color(0xC39A4B,0xD4B06F) : paper))
+                        layer.fill(path,with:.color(role == "back" ? RMColors.brand.opacity(0.4) : role == "blue" ? blue : role == "gold" ? accent : paper))
                     }
-                    if material && role == "paper" { var rim=context;rim.clip(to:path);rim.stroke(path,with:.color(color(0xF6F8FC,0x253956).opacity(0.55)),lineWidth:1.5) }
+                    if material && role == "paper" { var rim=context;rim.clip(to:path);rim.stroke(path,with:.color(RMColors.surface.opacity(0.55)),lineWidth:1.5) }
                 }
             }
         }.frame(width:dimension,height:dimension).accessibilityLabel(Text(label ?? "")).accessibilityHidden(label == nil)
     }
 }
 // END GENERATED MEMORY GLYPHS
+
+private struct ChatHistoryMemoryView: View {
+    @EnvironmentObject private var model: AppModel
+    var showsArchiveTitle = false
+    @State private var query = ""
+    @State private var confirmClear = false
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(showsArchiveTitle ? "与 TwinAgent 聊过的事" : "聊过的事，还能找回来", systemImage: "clock.arrow.circlepath")
+                        .font(.title3.weight(.semibold)).foregroundStyle(Ink.text)
+                    Text("按问题找回以前的聊天，摘要保留原消息来源。不限于当前聊天的最近 20 轮；人物理解仍由你核对。")
+                        .font(.subheadline).foregroundStyle(Ink.muted)
+                }.padding(.vertical, 8)
+                if let memory = model.chatHistoryMemory {
+                    Toggle("参考旧聊天", isOn: Binding(get: { memory.enabled }, set: { enabled in Task { await model.setChatHistoryMemory(enabled: enabled) } }))
+                        .disabled(model.isBusy || model.isLoadingChatMemory)
+                    Label("可检索 \(memory.available_turn_count) 段聊天", systemImage: "text.bubble")
+                        .font(.caption).foregroundStyle(Ink.muted)
+                    if !memory.enabled {
+                        Label("检索已关闭，开启后才能在新回答中参考旧聊天。", systemImage: "pause.circle")
+                            .font(.caption).foregroundStyle(Ink.muted)
+                    }
+                }
+                HStack {
+                    TextField("找以前聊过的事", text: $query).submitLabel(.search)
+                        .accessibilityIdentifier("chatMemory.searchInput")
+                        .onSubmit { Task { await model.loadChatHistoryMemory(query: query) } }
+                    Button("搜索") { Task { await model.loadChatHistoryMemory(query: query) } }
+                        .frame(minWidth: 44, minHeight: 44).disabled(model.isLoadingChatMemory)
+                }
+                if model.isLoadingChatMemory { ProgressView("正在查找旧聊天…") }
+            }
+            if let memory = model.chatHistoryMemory {
+                if !memory.summaries.isEmpty {
+                    Section("聊天摘要") {
+                        ForEach(memory.summaries) { summary in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(summary.summary).textSelection(.enabled).lineSpacing(4)
+                                Text("根据原消息整理，可在下方核对；不是已确认的人物理解。")
+                                    .font(.caption).foregroundStyle(Ink.muted)
+                            }
+                        }
+                    }
+                }
+                Section("原始消息") {
+                    ForEach(memory.items) { turn in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(turn.created_at.prefix(10)).font(.caption).foregroundStyle(Ink.muted)
+                            Text("你：" + turn.question).textSelection(.enabled).lineSpacing(4)
+                            if let answer = turn.answer { Text("孪生当时回复：" + answer).font(.subheadline).foregroundStyle(Ink.muted) }
+                            else if turn.assistant_stale { Text("当时的孪生回复已失效，不再参与记忆。") .font(.caption).foregroundStyle(Ink.muted) }
+                        }
+                    }
+                    if memory.items.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label(!memory.enabled ? "旧聊天检索已关闭" : query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "这里还没有旧聊天" : "没有找到匹配的聊天", systemImage: "text.magnifyingglass")
+                                .font(.subheadline.weight(.medium))
+                            Text(!memory.enabled ? "开启上面的「参考旧聊天」即可继续使用。" : query.isEmpty ? "之后的聊天会逐渐积累在这里。" : "试试更短的关键词，或换一种说法。")
+                                .font(.caption).foregroundStyle(Ink.muted)
+                        }.padding(.vertical, 8)
+                    }
+                }
+                Section {
+                    Button("清除以前的聊天记忆", role: .destructive) { confirmClear = true }
+                        .disabled(model.isBusy || model.isLoadingChatMemory)
+                } footer: { Text("清除后，旧聊天不再被总结或检索。已经单独保存的本人文字记忆，可在记忆页删除。") }
+            }
+        }.scrollContentBackground(.hidden).background(Ink.paper)
+            .rmDismissibleKeyboard()
+            .navigationTitle(showsArchiveTitle ? "TwinAgent 对话" : "旧聊天记忆").navigationBarTitleDisplayMode(.inline)
+            .task { await model.loadChatHistoryMemory() }
+            .alert("清除以前的聊天记忆？", isPresented: $confirmClear) {
+                Button("清除聊天记忆", role: .destructive) { Task { await model.clearChatHistoryMemory() } }
+                Button("取消", role: .cancel) { }
+            } message: { Text("旧聊天记录仍保留在历史中，但不会重新进入聊天记忆。之后的新聊天可以继续积累。") }
+    }
+}
+
+private struct HistoricalChatSources: View {
+    @EnvironmentObject private var model: AppModel
+    let answerIDs: [String]
+    @State private var show = false
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(show ? "收起旧聊天来源" : "核对本次找回的旧聊天") {
+                show.toggle()
+                if show { Task { await model.loadChatHistoryMemory(answerIDs: answerIDs) } }
+            }.buttonStyle(.bordered)
+            if show {
+                if model.isLoadingChatMemory { ProgressView() }
+                ForEach((model.chatHistoryMemory?.items ?? []).filter { answerIDs.contains($0.answer_id) }) { turn in
+                    Text("\(turn.created_at.prefix(10)) · 你：\(turn.question)")
+                    if let answer = turn.answer { Text("孪生当时回复：" + answer).font(.caption).foregroundStyle(Ink.muted) }
+                }
+            }
+        }
+    }
+}

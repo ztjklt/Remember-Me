@@ -2,9 +2,10 @@ import Foundation
 import SwiftUI
 
 enum ECSConfiguration {
-    // Same IP certificate shipped by Android 0.9.2; never accept a fetched pin.
-    static let baseURL = "https://39.108.183.47"
-    static let fingerprint = "b55251a4d7ceb4c0934c0b65ea7eab172de760a13b953cc72e43a60423aff00c"
+    // The independent iOS service uses the system HTTPS trust store.
+    // Previously saved ECS and Mac pairings retain their own certificate pins.
+    static let baseURL = "https://remember-ios-api-327435-12-1411199312.sh.run.tcloudbase.com"
+    static let fingerprint = ""
 }
 
 struct CloudServiceInfo: Decodable {
@@ -30,14 +31,21 @@ struct CloudSpacesReply: Decodable {
 struct BackendCapabilities: Decodable {
     let stt: String
     let stt_processing: String
+    var voiceprint_available: Bool? = nil
     let stt_configured: Bool
     let cloud_asr_policy: String?
     let stt_model: String?
     let stt_host: String?
     let ai_available: Bool
+    let twin_conversation: Bool?
+    let chat_memory: Bool?
+    let chat_history_memory: Bool?
+    var automatic_capture_version: Int? = nil
+    var automatic_profile_analysis: Bool? = nil
+    var transcript_correction_policy: String? = nil
     var uploadNotice: String {
         if stt_processing == "cloud" {
-            return "本段完整原音将上传记忆服务，并发送至 \(stt_host ?? "服务指定的转写供应商")，使用 \(stt_model ?? stt) 转写。供应商可能临时保存音频副本。原音和机器稿保留，文字由你核对后才整理记忆。"
+            return "本段完整原音将上传记忆服务，并发送至 \(stt_host ?? "服务指定的转写供应商")，使用 \(stt_model ?? stt) 转写。供应商可能临时保存音频副本。" + (transcript_correction_policy == nil ? "" : "机器文字会由模型辅助校对。") + "原音和机器稿保留，文字由你核对后才整理记忆。"
         }
         return "本段原音将上传记忆服务转写。文字由你核对后才整理记忆。"
     }
@@ -49,11 +57,12 @@ struct ServiceConnectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("连接方式", selection: $route) {
-                Text("云端服务").tag("ecs")
-                Text("Mac 配对").tag("mac")
+                Text("云端账号").tag("ecs")
+                Text("本机连接").tag("mac")
             }.pickerStyle(.segmented).padding()
             if route == "ecs" { ECSLoginView() } else { PairingView() }
         }
+        .rmDismissibleKeyboard()
         .navigationTitle("连接记忆服务")
         .onChange(of: model.pairingServer) { _, value in
             if !value.isEmpty { route = "mac" }
@@ -70,9 +79,9 @@ private struct ECSLoginView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 Text("REMEMBER ME · 云端记忆").font(.caption.weight(.semibold)).foregroundStyle(Ink.coral)
-                Text("和 Android 使用同一个记忆服务。")
+                Text("连接你的云端记忆空间。")
                     .font(.title2.weight(.semibold))
-                Text("录音先留在 iPhone。你同意上传转写、核对文字并确认整理后，才生成记忆。个人声音另行授权。")
+                Text("录音先留在手机。你同意上传转写、核对文字并确认整理后，才生成记忆。")
                     .foregroundStyle(Ink.muted)
                 Label(model.connectionStatus, systemImage: "network")
                     .font(.subheadline).accessibilityIdentifier("ecs.status")
@@ -98,14 +107,14 @@ private struct ECSLoginView: View {
                     Task { await model.loginECS(username: username, password: entered) }
                 }.disabled(model.connectionChangeBlocked || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
                     .accessibilityIdentifier("ecs.login")
-                ForEach(model.cloudSpaces) { space in
+                ForEach(model.cloudSpaces.filter { $0.role == "owner" }) { space in
                     Button {
                         Task { await model.selectCloudSpace(space.id) }
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(space.display_name)
-                                Text(space.role == "owner" ? "本人空间" : "亲友空间 · 此版接入稍后提供")
+                                Text("本人空间")
                                     .font(.caption).foregroundStyle(Ink.muted)
                             }
                             Spacer()
@@ -144,7 +153,7 @@ struct RecordingUploadButton: View {
                     }
                 }
             } else { Task { await model.sendRecording() } }
-        }.disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing)
+        }.disabled(model.isBusy || model.isPollingEpisode || model.isLocalTranscribing || model.isPreparingAutomaticTranscription || model.isStartingRecording)
         .confirmationDialog("上传本段原音并转写？", isPresented: $showConsent, titleVisibility: .visible) {
             Button("同意本段上传与转写") { Task { await model.sendRecording(cloudASRPolicy: policy) } }
             Button("只保留在手机", role: .cancel) { }

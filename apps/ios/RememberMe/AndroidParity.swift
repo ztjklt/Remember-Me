@@ -122,6 +122,13 @@ private struct PortraitDashboard: View {
                     selectedQuestion = nil; showRecorder = true
                 }.accessibilityIdentifier("portrait.record")
                 if model.pairing == nil { ConnectionNotice() }
+                NavigationLink {
+                    PersonReviewView(review: model.personReview)
+                } label: {
+                    Label("核对我的理解", systemImage: "checkmark.bubble")
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(14)
+                        .background(Ink.cream, in: RoundedRectangle(cornerRadius: 14))
+                }.accessibilityIdentifier("portrait.review")
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                     ForEach(categories) { category in
                         NavigationLink { PortraitCategoryView(category: category) } label: {
@@ -173,16 +180,13 @@ struct ConnectionNotice: View {
     @EnvironmentObject private var model: AppModel
     var body: some View {
         Button { model.showConnection = true } label: {
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .center, spacing: RMSpacing.sm) {
                 Image(systemName: "link")
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("连接你的记忆服务").font(.subheadline.weight(.medium))
-                    Text("录音可以先留在手机。连接后再转写、核对并生成理解。")
-                        .font(.caption).foregroundStyle(Ink.muted)
-                }
+                Text("连接记忆服务").font(RMTypography.detail)
                 Spacer(); Image(systemName: "chevron.right").font(.caption)
-            }.padding(14).background(Ink.peach, in: RoundedRectangle(cornerRadius: 14))
-        }.buttonStyle(.plain).accessibilityIdentifier("service.connect")
+            }.frame(minHeight: RMMetrics.touchTarget).foregroundStyle(RMColors.action)
+        }.buttonStyle(RMQuietPressStyle()).accessibilityIdentifier("service.connect")
+            .accessibilityHint("录音先保存在手机，连接后可转写与整理。")
     }
 }
 
@@ -282,7 +286,9 @@ private struct GraphDashboard: View {
                     .font(.subheadline).foregroundStyle(Ink.muted)
                 Label("设计示意 · 不是你的真实关系数据", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(Ink.muted)
-                Image("AndroidRelationshipGraph").resizable().scaledToFit().clipShape(RoundedRectangle(cornerRadius: 14))
+                Image("AndroidRelationshipGraph").resizable().scaledToFit()
+                    .saturation(0).colorMultiply(RMColors.artworkTint)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                     .accessibilityLabel("Android 原型关系图设计示意")
                 NavigationLink { ModelView() } label: {
                     Label("查看真实的七领域理解与证据", systemImage: "point.3.connected.trianglepath.dotted")
@@ -379,7 +385,7 @@ private struct AgentsDashboard: View {
                 Text("每一步各司其职。原文、理解与校正分别保留。").font(.subheadline).foregroundStyle(Ink.muted)
                 Text("Agents list").font(.title3.weight(.medium))
                 if search.isEmpty || "Memory keeper 记忆录音".localizedCaseInsensitiveContains(search) {
-                    agent("Memory keeper", symbol: "book.closed", detail: "保留原音、转写和本人核对文字。", status: model.processingStatus.isEmpty ? "\(model.episodes.count) 段录音" : "有处理任务")
+                    agent("Memory keeper", symbol: "book.closed", detail: "保留原音、转写和本人核对文字。", status: model.recordingActivitySummary)
                 }
                 if search.isEmpty || "Portrait reader 画像理解".localizedCaseInsensitiveContains(search) {
                     agent("Portrait reader", symbol: "chart.xyaxis.line", detail: "七个领域的理解，每一项都关联证据。", status: "\(model.domains.reduce(0) { $0 + $1.traits.count }) 项理解")
@@ -392,7 +398,7 @@ private struct AgentsDashboard: View {
                 if let calibration = model.calibrationRun {
                     Text(calibration.summary ?? "\(calibration.question) · \(calibration.status)").foregroundStyle(Ink.muted)
                 } else if let episode = model.episodes.first {
-                    Text("最近录音：\(episode.recorded_at.prefix(10)) · \(episode.status)").foregroundStyle(Ink.muted)
+                    Text("最近录音：\(episode.recorded_at.prefix(10)) · \(statusLabel(episode.status))").foregroundStyle(Ink.muted)
                 } else { Text("暂无真实运行记录。录下一段经历后再来看看。").foregroundStyle(Ink.muted) }
                 VStack(alignment: .leading, spacing: 12) {
                     Text("You are the master controller").font(.title3.weight(.medium))

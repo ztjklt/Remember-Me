@@ -17,6 +17,7 @@ You are working in the Remember Me monorepo. Before changing code, read `README.
 
 ## Boundaries
 
+- Prioritize the stability of active recording, realtime voice calls, and recording Live Activities in every affected change. Keep optional refresh, recognition, learning, and device-sync work bounded and off the realtime path; verify relevant interruption, cancellation, reconnect, and resource-cleanup behavior proportionally, and record unverified device behavior.
 - Each client lead drives their route. A delegated contributor works only within an assigned Issue; coordinate concrete shared-interface changes so implementations do not compete.
 - Do not change a cross-module contract without an Issue or proposal and Product and Integration Owner approval.
 - Do not tear down the working Android Compose prototype to pursue architectural tidiness. Replace Mock implementations incrementally.

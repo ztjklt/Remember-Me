@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner Twin answer archive page v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items", "next_cursor"],
+  "properties": {
+    "items": {
+      "type": "array", "maxItems": 100,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["answer_id", "question", "answer", "assistant_stale", "created_at"],
+        "properties": {
+          "answer_id": {"type": "string", "minLength": 1},
+          "question": {"type": "string"},
+          "answer": {"type": ["string", "null"]},
+          "assistant_stale": {"type": "boolean"},
+          "created_at": {"type": "string", "format": "date-time"},
+          "deletion_pending": {"type": "boolean"}
+        }
+      }
+    },
+    "next_cursor": {"type": ["string", "null"], "minLength": 1}
+  }
+}

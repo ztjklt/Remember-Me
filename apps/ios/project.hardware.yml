@@ -1,0 +1,9 @@
+include: project.yml
+targets:
+  RememberMe:
+    dependencies:
+      - framework: Vendor/Soundcore/module_spplinkKit.xcframework
+        embed: true
+      - framework: Vendor/Soundcore/SoundcoreWorkAppleSDK.xcframework
+        embed: false
+      - sdk: libc++.tbd

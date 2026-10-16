@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.dev/contracts/realtime-speaker-v1.schema.json",
+  "title": "Realtime per-turn matched speaker event",
+  "type": "object",
+  "required": [
+    "type",
+    "turn_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "speaker"
+    },
+    "turn_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "speaker_names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      }
+    }
+  }
+}

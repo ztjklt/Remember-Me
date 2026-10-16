@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wearable-priority-v1.schema.json",
+  "title": "Continuous wearable capture priority v1",
+  "$defs": {
+    "ranges": {
+      "type": "array", "maxItems": 10000,
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 2,
+        "items": {"type": "integer", "minimum": 0, "maximum": 86400000}
+      },
+      "description": "Half-open millisecond ranges local to the uploaded audio. The server additionally requires start < end <= actual duration and ordered, disjoint intervals."
+    },
+    "metadata": {
+      "type": "object", "additionalProperties": true,
+      "required": ["wearable_policy_version", "priority_ranges_ms", "priority_timeline_complete", "transcript_retention", "source_start_ms", "source_end_ms"],
+      "properties": {
+        "wearable_policy_version": {"const": "wearable-priority-v1"},
+        "priority_ranges_ms": {"type": "string", "minLength": 2, "maxLength": 200000, "description": "JSON-encoded ranges; separately validated with ranges and actual audio duration."},
+        "priority_timeline_complete": {"enum": ["true", "false"]},
+        "transcript_retention": {"const": "derived_only"},
+        "source_start_ms": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,8})$"},
+        "source_end_ms": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,8})$"}
+      }
+    },
+    "aiContext": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy_version", "protected_spans", "priority_timeline_complete"],
+      "properties": {
+        "policy_version": {"const": "wearable-priority-v1"},
+        "priority_timeline_complete": {"type": "boolean"},
+        "protected_spans": {
+          "type": "array", "maxItems": 10000,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["start", "end"],
+            "properties": {"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}}
+          },
+          "description": "Unicode character offsets in the canonical transcript, mapped by Backend. Invalid or unreliable mapping protects the whole transcript."
+        }
+      }
+    }
+  }
+}

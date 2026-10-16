@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.dev/contracts/guest-entrustment-v1.schema.json",
+  "title": "Owner-confirmed private-detail entrustment for account-free guests",
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "episodeIds": {"type": "array", "minItems": 1, "maxItems": 30, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "create": {
+      "type": "object", "additionalProperties": false,
+      "required": ["recipient_label", "secret", "private_detail_confirmed", "episode_ids", "source_version", "handover_consent_id"],
+      "properties": {
+        "recipient_label": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "\\S"},
+        "secret": {"type": "string", "minLength": 12, "maxLength": 200, "writeOnly": true, "pattern": "\\S"},
+        "private_detail_confirmed": {"const": true},
+        "episode_ids": {"$ref": "#/$defs/episodeIds"},
+        "source_version": {"$ref": "#/$defs/id"},
+        "handover_consent_id": {"$ref": "#/$defs/id"},
+        "voice_consent_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+        "condition": {"enum": ["immediate", "after_verified_transition"], "default": "immediate"}
+      },
+      "description": "Server also checks canonical length, diversity, common phrases, duplicates, consent and preview freshness. Length alone does not prove secrecy."
+    },
+    "plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["plan_id", "subject_id", "recipient_label", "condition", "status", "episode_count", "voice_allowed", "revision"],
+      "properties": {
+        "plan_id": {"$ref": "#/$defs/id"}, "subject_id": {"$ref": "#/$defs/id"},
+        "recipient_label": {"type": "string", "minLength": 1, "maxLength": 80},
+        "condition": {"enum": ["immediate", "after_verified_transition"]},
+        "status": {"enum": ["confirmed", "revoked"]},
+        "episode_count": {"type": "integer", "minimum": 1, "maximum": 30},
+        "voice_allowed": {"type": "boolean"}, "revision": {"type": "integer", "minimum": 1},
+        "secret_confirmation_required": {"type": "boolean", "description": "Owner must privately re-confirm the existing secret after legacy migration or index-key rotation. No scope, consent or expiry changes."}
+      }
+    },
+    "plans": {
+      "type": "object", "additionalProperties": false, "required": ["items"],
+      "properties": {"items": {"type": "array", "items": {"$ref": "#/$defs/plan"}}}
+    },
+    "locked": {
+      "type": "object", "additionalProperties": false, "required": ["locked"],
+      "properties": {"locked": {"const": true}}
+    },
+    "secretIndex": {
+      "type": "object", "additionalProperties": false, "required": ["secret"],
+      "properties": {"secret": {"type": "string", "minLength": 12, "maxLength": 200, "writeOnly": true, "pattern": "\\S"}},
+      "description": "Owner-only re-confirmation of the existing slow hash to rebuild its keyed detection index. Never replaces the secret or changes authorization."
+    }
+  },
+  "anyOf": [{"$ref": "#/$defs/create"}, {"$ref": "#/$defs/plan"}, {"$ref": "#/$defs/plans"}, {"$ref": "#/$defs/locked"}, {"$ref": "#/$defs/secretIndex"}]
+}

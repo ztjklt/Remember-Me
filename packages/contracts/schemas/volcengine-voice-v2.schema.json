@@ -1,0 +1,331 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.dev/contracts/volcengine-voice-v2.schema.json",
+  "title": "Owner-authorized domestic RTC voice with shared personal voice and capture v2",
+  "$defs": {
+    "callRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cloud_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_consent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "voice_mode": {
+          "enum": [
+            "default",
+            "personal"
+          ]
+        },
+        "recording_consent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "speaker_consent_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "enroll_owner_voice": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "cloud_consent_id",
+        "voice_consent_id",
+        "policy"
+      ]
+    },
+    "ticket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transport": {
+          "const": "volcengine"
+        },
+        "call_id": {
+          "type": "string",
+          "pattern": "^vc_[a-f0-9]{32}$"
+        },
+        "room": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participant_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bot_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "app_id": {
+          "type": "string",
+          "minLength": 24,
+          "maxLength": 24
+        },
+        "token": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "voice_mode": {
+          "enum": [
+            "default",
+            "personal"
+          ]
+        },
+        "capture_enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "transport",
+        "call_id",
+        "room",
+        "participant_identity",
+        "bot_identity",
+        "app_id",
+        "token",
+        "expires_at",
+        "voice_mode"
+      ]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "transport": {
+          "const": "volcengine"
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "default_voice_available": {
+          "type": "boolean"
+        },
+        "personal_voice_available": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ready",
+            "status",
+            "profile_id",
+            "model_version",
+            "voice_consent_id"
+          ],
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            },
+            "status": {
+              "enum": [
+                "missing",
+                "enrolling",
+                "ready",
+                "failed",
+                "enrollment_unknown",
+                "delete_pending",
+                "deleted"
+              ]
+            },
+            "profile_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "model_version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "voice_consent_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "dialogue_capture_available": {
+          "type": "boolean"
+        },
+        "natural_voice_preparation": {
+          "type": "boolean"
+        },
+        "voiceprint_available": {
+          "type": "boolean"
+        },
+        "owner_voice_registered": {
+          "type": "boolean"
+        },
+        "feature_version": {
+          "const": 2
+        }
+      },
+      "required": [
+        "transport",
+        "available",
+        "default_voice_available",
+        "personal_voice_available",
+        "policy",
+        "notice",
+        "profile",
+        "dialogue_capture_available",
+        "natural_voice_preparation",
+        "voiceprint_available",
+        "owner_voice_registered",
+        "feature_version"
+      ]
+    },
+    "heartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "question": {
+          "type": "string"
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "integration-contract-v0.12.schema.json#/$defs/twinAnswerV3"
+            }
+          ]
+        },
+        "failed": {
+          "type": "boolean"
+        },
+        "speaker_names": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "speaker_message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retired_turn_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "call_id",
+        "turn_id",
+        "question",
+        "answer",
+        "failed"
+      ]
+    },
+    "interrupt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "turn_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "turn_id"
+      ]
+    },
+    "lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "call_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "call_id"
+      ]
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/callRequest"
+    },
+    {
+      "$ref": "#/$defs/ticket"
+    },
+    {
+      "$ref": "#/$defs/capabilities"
+    },
+    {
+      "$ref": "#/$defs/heartbeat"
+    },
+    {
+      "$ref": "#/$defs/interrupt"
+    },
+    {
+      "$ref": "#/$defs/lease"
+    }
+  ]
+}

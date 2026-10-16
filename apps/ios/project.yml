@@ -1,5 +1,6 @@
 name: RememberMe
 options:
+  developmentLanguage: zh-Hans
   deploymentTarget:
     iOS: "17.0"
 settings:
@@ -7,15 +8,34 @@ settings:
     SWIFT_VERSION: "6.0"
     DEVELOPMENT_TEAM: BZ5FA6MS43
     CODE_SIGN_STYLE: Automatic
+packages:
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift.git
+    exactVersion: 2.17.0
 targets:
   RememberMe:
     type: application
     platform: iOS
     sources:
+      - path: Shared
       - path: RememberMe
+        excludes:
+          - "**/*.md"
+    dependencies:
+      - package: LiveKit
+      - framework: Vendor/VolcEngineRTC/VolcEngineRTC.xcframework
+        embed: true
+      - framework: Vendor/VolcEngineRTC/RealXBase.xcframework
+        embed: true
+      - framework: Vendor/VolcEngineRTC/RTCFFmpeg.xcframework
+        embed: true
+      - target: RecordingActivity
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios
+        MARKETING_VERSION: "1.17.0"
+        CURRENT_PROJECT_VERSION: "2026101614"
         TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "录下你的原话，保存为你自己的记忆。"
         INFOPLIST_KEY_NSLocalNetworkUsageDescription: "连接你的 Mac 保存和转写录音；确认文字后由 DeepSeek 提取记忆。"
@@ -27,9 +47,14 @@ targets:
     info:
       path: RememberMe/Info.plist
       properties:
-        CFBundleDisplayName: Remember Me ECS
-        CFBundleShortVersionString: "1.1.0"
-        CFBundleVersion: "2026101101"
+        UIBackgroundModes: [audio, bluetooth-central, external-accessory]
+        NSSupportsLiveActivities: true
+        NSBluetoothAlwaysUsageDescription: 连接你的录音豆，查看录音状态并同步录音。
+        UISupportedExternalAccessoryProtocols: [com.lark.soundcore]
+        CFBundleLocalizations: [zh-Hans]
+        CFBundleDisplayName: Remember Me iOS
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UIRequiresFullScreen: true
         NSMicrophoneUsageDescription: 录下你的原话，保存为你自己的记忆。
         NSSpeechRecognitionUsageDescription: 在设备支持时，仅在这台 iPhone 上把已保存录音转成文字；不支持时保留原音，不使用云端识别。
@@ -37,6 +62,29 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: rememberme-pairing
             CFBundleURLSchemes: [rememberme]
+  RecordingActivity:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Shared
+      - path: RecordingActivity
+      - path: RememberMe/RememberMeDesignSystem/Tokens/RMDesignTokens.swift
+      - path: RememberMe/RememberMeDesignSystem/Visuals/ForgetMeNotFlower.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.remember.personal.ios.recording-activity
+        GENERATE_INFOPLIST_FILE: YES
+        MARKETING_VERSION: "1.17.0"
+        CURRENT_PROJECT_VERSION: "2026101614"
+        SKIP_INSTALL: YES
+    info:
+      path: RecordingActivity/Info.plist
+      properties:
+        CFBundleDisplayName: 勿忘我录音
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
   RememberMeTests:
     type: bundle.unit-test
     platform: iOS

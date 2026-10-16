@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.dev/contracts/capture-review-v1.schema.json",
+  "title": "Remember Me additive capture review and cumulative analysis v1",
+  "$comment": "Authorized by docs/architecture/ios-android-capture-garden-parity-2026-10-16.md. Validate the endpoint-specific $defs; existing integration schemas remain unchanged.",
+  "$defs": {
+    "correctionPolicy": {
+      "type": "string",
+      "pattern": "^asr-proofread-v1:[0-9a-f]{24}$"
+    },
+    "correctionEdit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "after", "start", "end", "category", "action", "reason"],
+      "properties": {
+        "before": {"type": "string", "minLength": 1, "maxLength": 120},
+        "after": {"type": "string", "maxLength": 120},
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 1},
+        "category": {"enum": ["word", "punctuation", "name", "number", "meaning"]},
+        "action": {"enum": ["auto", "review"]},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 180}
+      },
+      "if": {"properties": {"action": {"const": "auto"}}, "required": ["action"]},
+      "then": {"properties": {"category": {"enum": ["word", "punctuation"]}}}
+    },
+    "correctionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draft", "input_sha256", "model_version", "prompt_version", "edits"],
+      "properties": {
+        "draft": {"type": "string", "minLength": 1, "maxLength": 20000},
+        "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "model_version": {"type": "string", "minLength": 1, "maxLength": 200},
+        "prompt_version": {"const": "asr-proofread-v1"},
+        "edits": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/correctionEdit"}}
+      }
+    },
+    "automaticCorrection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["completed", "failed", "unavailable", "too_long"]},
+        "draft": {"type": "string", "minLength": 1, "maxLength": 20000},
+        "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "model_version": {"type": "string", "minLength": 1, "maxLength": 200},
+        "prompt_version": {"const": "asr-proofread-v1"},
+        "edits": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/correctionEdit"}},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "elapsed_ms": {"type": "integer", "minimum": 0}
+      },
+      "if": {"properties": {"status": {"const": "completed"}}, "required": ["status"]},
+      "then": {"required": ["draft", "input_sha256", "model_version", "prompt_version", "edits"]},
+      "else": {
+        "not": {
+          "anyOf": [
+            {"required": ["draft"]}, {"required": ["input_sha256"]}, {"required": ["model_version"]},
+            {"required": ["prompt_version"]}, {"required": ["edits"]}
+          ]
+        }
+      }
+    },
+    "transcriptReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": {"enum": ["transcribing", "reviewing", "submitted", "not_required"]},
+        "transcript": {"type": ["string", "null"]},
+        "stt_model_version": {"type": ["string", "null"]},
+        "supplement": {"type": "string", "default": ""},
+        "machine_transcript": {"type": ["string", "null"]},
+        "automatic_correction": {"anyOf": [{"$ref": "#/$defs/automaticCorrection"}, {"type": "null"}]}
+      }
+    },
+    "confirmTranscript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transcript"],
+      "properties": {
+        "transcript": {"type": "string", "minLength": 1, "maxLength": 100000, "pattern": "\\S"},
+        "supplement": {"type": "string", "maxLength": 3000, "default": ""},
+        "cloud_analysis_consent_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 64}
+      }
+    },
+    "cumulativeAnalysis": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["waiting_for_memories", "authorization_required", "queued", "running", "complete", "failed"]},
+        "error": {"type": ["string", "null"]}
+      }
+    },
+    "episodeCaptureFields": {
+      "description": "Additive fields on items from GET /api/v1/subjects/{subject_id}/episodes; validate alongside the existing episode shape.",
+      "type": "object",
+      "properties": {
+        "cumulative_analysis": {"$ref": "#/$defs/cumulativeAnalysis"},
+        "waiting_for_review": {"type": "boolean"}
+      }
+    },
+    "storyCaptureFields": {
+      "description": "Additive fields on workbench story items. Readers receive no machine transcript and no cumulative analysis.",
+      "type": "object",
+      "properties": {
+        "machine_transcript": {"type": ["string", "null"]},
+        "cumulative_analysis": {"$ref": "#/$defs/cumulativeAnalysis"}
+      }
+    },
+    "capabilities": {
+      "description": "Current additive capture capability projection. Other existing workbench capability fields are intentionally allowed.",
+      "type": "object",
+      "required": ["automatic_capture_version", "automatic_profile_analysis", "transcript_correction_policy"],
+      "properties": {
+        "automatic_capture_version": {"const": 1},
+        "automatic_profile_analysis": {"const": true},
+        "transcript_correction_policy": {"anyOf": [{"$ref": "#/$defs/correctionPolicy"}, {"type": "null"}]}
+      }
+    },
+    "uploadMetadataFields": {
+      "description": "Optional opt-in field inside existing capture metadata. Server correction/analysis receipts are never client authority.",
+      "type": "object",
+      "properties": {"transcript_correction_policy": {"$ref": "#/$defs/correctionPolicy"}},
+      "not": {
+        "anyOf": [
+          {"required": ["transcript_correction_receipt"]},
+          {"required": ["automatic_correction"]},
+          {"required": ["automatic_profile"]}
+        ]
+      }
+    }
+  }
+}
