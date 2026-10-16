@@ -134,8 +134,20 @@ class VoiceExperienceTest {
         ui.onNodeWithText("分身声音与亲友许可").performScrollTo().assertIsDisplayed()
         audio.release()
     }
+}
+
+/** Runs against the signed APK without a debug-only Compose host Activity. */
+class VoiceEngineInstrumentedTest {
+    private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
+    private fun waitUntil(timeout: Long, condition: () -> Boolean) {
+        val deadline = android.os.SystemClock.elapsedRealtime() + timeout
+        while (!condition()) {
+            check(android.os.SystemClock.elapsedRealtime() < deadline) { "Playback condition timed out" }
+            Thread.sleep(10)
+        }
+    }
     @Test fun engineRejectsOldRoundAndDoesNotReportSpeechForTextAlone() {
-        val engine = VoiceCallEngine(ui.activity, { true }, { true })
+        val engine = VoiceCallEngine(context, { true }, { true })
         val type = engine.javaClass
         type.getDeclaredField("sessionId").apply { isAccessible = true }.set(engine, "fixture-session")
         @Suppress("UNCHECKED_CAST") val flow = type.getDeclaredField("mutable").apply { isAccessible = true }.get(engine) as MutableStateFlow<CallUi>
@@ -165,7 +177,7 @@ class VoiceExperienceTest {
         } finally { engine.close() }
     }
     @Test fun realPlaybackProgressDoesNotResetTheNextQuestion() {
-        val engine = VoiceCallEngine(ui.activity, { true }, { true })
+        val engine = VoiceCallEngine(context, { true }, { true })
         val type = engine.javaClass
         fun field(name: String) = type.getDeclaredField(name).apply { isAccessible = true }
         @Suppress("UNCHECKED_CAST") val flow = field("mutable").get(engine) as MutableStateFlow<CallUi>
@@ -185,8 +197,8 @@ class VoiceExperienceTest {
         try {
             assertEquals(48000, track.write(ByteArray(48000), 0, 48000))
             track.play()
-            ui.waitUntil(5000) { acknowledge.invoke(engine); engine.ui.value.phase == CallPhase.SPEAKING }
-            ui.waitUntil(5000) { acknowledge.invoke(engine); engine.ui.value.phase == CallPhase.LISTENING }
+            waitUntil(5000) { acknowledge.invoke(engine); engine.ui.value.phase == CallPhase.SPEAKING }
+            waitUntil(5000) { acknowledge.invoke(engine); engine.ui.value.phase == CallPhase.LISTENING }
             assertNull(field("expectedSamples").get(engine))
             flow.value = flow.value.copy(phase = CallPhase.THINKING, status = "正在想", transcript = "下一句")
             repeat(3) { acknowledge.invoke(engine) }
