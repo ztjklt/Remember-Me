@@ -36,6 +36,30 @@ class Work3200ImportJournal(directory: File) {
     }
     fun markers(scope: HardwareScope, deviceKey: String, fileId: Int): List<RecorderMark> = locked { readMarkers(identityId(scope, deviceKey, fileId)) }
     fun markers(id: String, scope: HardwareScope): List<RecorderMark> = locked { requireScope(load(id), scope); readMarkers(id) }
+    private fun packetFile(id: String) = File(annotations,"$id.device-packets.json")
+    private fun packetMarks(id: String): JSONObject = packetFile(id).takeIf {it.exists()}?.let {JSONObject(it.readText())} ?: JSONObject()
+    fun recordDeviceSignal(scope: HardwareScope, deviceKey: String, fileId: Int, fingerprint: String? = null) = locked {
+        val id=identityId(scope,deviceKey,fileId)
+        val row=packetMarks(id)
+        val old=row.optJSONArray("hashes") ?: org.json.JSONArray()
+        val hashes=(0 until old.length()).map {old.getString(it)}.toMutableSet()
+        if(fingerprint!=null && fingerprint.matches(Regex("[0-9a-f]{64}")) && hashes.size<500) hashes.add(fingerprint)
+        row.put("signal",true).put("hashes",org.json.JSONArray(hashes.toList()))
+        val pending=File(annotations,"${UUID.randomUUID()}.pending")
+        try {pending.outputStream().use {it.write(row.toString().toByteArray());it.fd.sync()}
+            Files.move(pending.toPath(),packetFile(id).toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE)
+        } finally {pending.delete()}
+    }
+    fun resolveDevicePackets(id: String, scope: HardwareScope, durationMs: Long): List<RecorderMark> = locked {
+        requireScope(load(id),scope)
+        val row=packetMarks(id);val hashes=row.optJSONArray("hashes") ?: org.json.JSONArray()
+        DeviceMarkerPackets.locate(receipt(load(id),scope).rawFile,(0 until hashes.length()).map {hashes.getString(it)}.toSet(),durationMs)
+            .map {RecorderMark(it,"device")}
+    }
+    fun deviceMarkerPending(id: String, scope: HardwareScope): Boolean = locked {
+        requireScope(load(id),scope)
+        packetMarks(id).optBoolean("signal") && readMarkers(id).none {it.origin=="device"}
+    }
     fun saveMarkers(scope: HardwareScope, deviceKey: String, fileId: Int, marks: List<RecorderMark>) = locked {
         val id = identityId(scope, deviceKey, fileId)
         val merged = (readMarkers(id) + marks).distinct().sortedBy { it.offsetMs }

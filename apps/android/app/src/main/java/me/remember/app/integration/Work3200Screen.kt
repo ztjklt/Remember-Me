@@ -13,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -83,13 +85,12 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (state.recordPhase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) {
             Text("连接期间持续计时，结束后按设备文件校准时长。", style = MaterialTheme.typography.bodySmall)
             Text("按录音豆按钮结束后，本段会自动同步到手机。")
-            OutlinedButton(onClick = controller::addMark) { Text("标记重点 · ${state.recordMarks.size}") }
+            DeviceMarkerStatus(state)
             OutlinedButton(onClick = { controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME) }, enabled=state.busy.isEmpty()) {
                 Text(if(state.recordPhase==DeviceRecordPhase.RECORDING) "暂停录音豆" else "恢复录音豆录音")
             }
-            Text("手机添加的重点保存在本 App；设备重点在回传后显示。", style = MaterialTheme.typography.bodySmall)
         }
-        if (state.realtimeMarked) Text("已收到设备重点标记，准确时间将在文件同步后显示。")
+        if (state.realtimeMarked && state.recordPhase==DeviceRecordPhase.ENDED) DeviceMarkerStatus(state)
     }
     if (!BuildConfig.SOUNDCORE_ENABLED) Text("当前安装包未包含录音豆 SDK，请安装设备联调版。", color = MaterialTheme.colorScheme.error)
     Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
@@ -114,8 +115,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         }
     }
     if (state.connected) {
-        Text("已连接：${state.device?.name}", style = MaterialTheme.typography.titleMedium)
-        Text(state.deviceInfo.ifBlank { "正在等待设备返回电量和固件信息…" })
+        RecorderDeviceStatusRow(state)
         if (!state.bound) OutlinedButton(onClick = controller::bind, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("首次使用：绑定这颗录音豆") }
         if (compact) TextButton(onClick = { manage = !manage }) { Text(if (manage) "收起设备录音" else "设备录音与连接管理") }
         if (manage) Button(onClick = controller::listFiles, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("读取 / 刷新设备录音") }
@@ -190,24 +190,23 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
                 state.recordPhase==DeviceRecordPhase.RECORDING -> "正在记录这一刻"
                 state.recordPhase==DeviceRecordPhase.PAUSED -> "录音已暂停"
                 state.busy=="download" -> "收到录音，正在同步"
-                state.busy=="verify" -> "正在准备录音"
+                state.busy in setOf("verify","decode") -> "已收到，正在准备转文字"
                 state.recordPhase==DeviceRecordPhase.UNKNOWN -> "连接恢复后确认录音状态"
                 !state.connected || !state.bound -> "连接后，就可以开始了"
                 else -> "按录音豆，留下一段声音"
             },style=MaterialTheme.typography.headlineSmall)
             if(active) Text(clock(state.elapsedMs),style=MaterialTheme.typography.displayMedium)
-            if(state.busy in setOf("download","verify","list")) {
+            if(state.busy in setOf("download","verify","decode","list")) {
                 state.percent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
                     ?: LinearProgressIndicator(Modifier.fillMaxWidth())
                 if(state.progress.isNotBlank()) Text(state.progress,style=MaterialTheme.typography.bodyMedium)
             } else if(!active && state.connected && state.bound) Text("录完自动转文字",style=MaterialTheme.typography.bodyLarge)
             if(active) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick=controller::addMark) { Text("标记重点${if(state.recordMarks.isNotEmpty()) " · ${state.recordMarks.size}" else ""}") }
+                DeviceMarkerStatus(state)
                 TextButton(onClick={controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME)},enabled=state.busy.isEmpty()) {
                     Text(if(state.recordPhase==DeviceRecordPhase.RECORDING) "暂停" else "继续")
                 }
             }
-            if(active && state.realtimeMarked) Text("已收到重点标记",color=MaterialTheme.colorScheme.primary)
             if(!state.connected || !state.bound) Button(onClick=manage,modifier=Modifier.fillMaxWidth()) { Text(if(state.connected) "完成绑定" else "连接录音豆") }
             if(syncFailed) {
                 Text("本段同步未完成，原音仍在录音豆。",color=MaterialTheme.colorScheme.error)
@@ -215,6 +214,23 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
             }
         }
     }
+}
+
+@Composable internal fun RecorderDeviceStatusRow(state: RecorderUi) {
+    Row(Modifier.fillMaxWidth().testTag("recorder-status-row"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+        Text(if(state.connected) "已连接" else "未连接",style=MaterialTheme.typography.labelLarge)
+        Text("电量 ${state.batteryPercent?.let {"$it%"} ?: "—"}",style=MaterialTheme.typography.labelLarge)
+        val free=state.storageFreeFraction
+        if(free!=null) {
+            LinearProgressIndicator(progress={free},modifier=Modifier.weight(1f).height(6.dp))
+            Text("余 ${String.format(java.util.Locale.ROOT,"%.1f",free*100)}%",style=MaterialTheme.typography.labelLarge)
+        } else Text("空间 —",style=MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable private fun DeviceMarkerStatus(state: RecorderUi) {
+    val count=state.recordMarks.count {it.origin=="device"}
+    Text(when {count>0 -> "设备重点 $count 处";state.realtimeMarked -> "收到设备重点 · 正在定位";else -> "按录音豆标记重点"},style=MaterialTheme.typography.bodyMedium)
 }
 
 private fun recordingTime(id: Int): String = runCatching {

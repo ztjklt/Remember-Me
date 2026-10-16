@@ -83,6 +83,8 @@ class RecorderSessionTest {
             await("physical button reflected") { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING && controller.ui.value.elapsedMs >= 1200 }
             main { controller.addMark(); fake.events.markers(1700000000, intArrayOf(500)) }
             await("both marker sources") { controller.ui.value.recordMarks.size == 2 }
+            val markedAudio=instrumentation.context.assets.open("synthetic-device.raw").use {it.readBytes()}.copyOfRange(800,960)
+            main {fake.events.audioFragment(1700000000,markedAudio,false,999,true)}
             main { fake.events.recording(2, -1, -1) }
             await("pause with absent file ID") { controller.ui.value.recordPhase == DeviceRecordPhase.PAUSED }
             main { fake.events.recording(1, -1, -1) }
@@ -102,7 +104,8 @@ class RecorderSessionTest {
             assertEquals("WORK_3200", prepared!!.source)
             assertEquals(1, fake.transfers)
             assertEquals(1, controller.ui.value.downloads.size)
-            assertEquals(2, controller.ui.value.savedMarks.values.single().size)
+            await("device packet mapped to original audio, not guessed from sequence 999") {controller.ui.value.savedMarks.values.singleOrNull()?.contains(RecorderMark(100,"device"))==true}
+            assertEquals(3, controller.ui.value.savedMarks.values.single().size)
             main { fake.events.error("file_list", 2) }
             await("recoverable error") { controller.ui.value.message.contains("列表") }
             assertTrue(controller.ui.value.connected)

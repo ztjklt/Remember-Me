@@ -75,14 +75,20 @@ class RecorderHomeVisualTest {
             click("今天")
             ui.runOnIdle { events.recording(1, -1, fileId); events.recordingDuration(18000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
-            click("标记重点")
+            ui.onAllNodes(hasText("标记重点", substring=true) and hasClickAction()).assertCountEquals(0)
             ui.runOnIdle { events.realtimeMarker(fileId, 200); events.markers(fileId, intArrayOf(1200)) }
             ui.onNodeWithText("正在记录这一刻").performScrollTo(); shot("01-recording-simulated-events")
             click("我的"); click("今天")
             ui.runOnIdle { assertSame(controller, model.recorder()); assertTrue(controller.ui.value.connected) }
+            click("设备")
+            ui.onNodeWithText("关闭").assertExists()
+            ui.onNodeWithTag("recorder-status-row").performScrollTo().assertIsDisplayed()
+            ui.onNodeWithText("数据来自录音豆",substring=true).assertDoesNotExist()
+            shot("01b-device-status-simulated-events")
             ui.runOnIdle { events.recording(0, 88340, -1) }
             ui.waitUntil(15000) { controller.ui.value.percent == 40 && controller.ui.value.busy == "download" }
-            ui.onNodeWithText("收到录音，正在同步").performScrollTo(); shot("02-download-simulated-events")
+            ui.onNodeWithText("关闭").assertDoesNotExist()
+            ui.onNodeWithText("收到录音，正在同步").assertIsDisplayed(); shot("02-download-simulated-events")
             ui.runOnIdle { events.progress(fileId, bytes.size, bytes.size, 1, false); events.receivedSdkFile(fileId, received) }
             ui.waitUntil(30000) { controller.ui.value.busy.isEmpty() && controller.ui.value.downloads.any { it.fileId==fileId } }
             shot("03-saved-synthetic-audio")

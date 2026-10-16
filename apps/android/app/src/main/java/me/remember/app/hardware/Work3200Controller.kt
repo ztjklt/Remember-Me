@@ -22,6 +22,7 @@ data class RecorderUi(
     val authorized: Boolean = false, val nearby: List<NearbyRecorder> = emptyList(),
     val device: NearbyRecorder? = null, val connected: Boolean = false,
     val deviceInfo: String = "", val files: List<DeviceRecording> = emptyList(), val listComplete: Boolean = false,
+    val batteryPercent: Int? = null, val storageFreeFraction: Float? = null,
     val progress: String = "", val downloads: List<HardwareDownloadReceipt> = emptyList(), val playing: Boolean = false,
     val needsGrant: Boolean = false, val bound: Boolean = false,
     val recordPhase: DeviceRecordPhase = DeviceRecordPhase.IDLE, val recordingFileId: Int? = null,
@@ -57,6 +58,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     private var lastDevice: NearbyRecorder? = null
     private var nextFile: Job? = null
     private val listAttempts = mutableMapOf<Int, Int>()
+    private val markerWrites = mutableMapOf<Int, Job>()
     private var realtimeFile: Int? = null
     private var deviceTransferBusy = false
     private var drainDeadline: Job? = null
@@ -192,7 +194,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         override fun deviceDetails(details: RecorderDetails) = post { mutable.value = mutable.value.copy(maintenance = mutable.value.maintenance.copy(details = details)) }
         override fun batteryChanged(device: Int, box: Int) = post {
             val percent = device.takeIf { it in 0..10 }?.times(10)?.let { "$it%" } ?: "未知"
-            mutable.value = mutable.value.copy(deviceInfo = mutable.value.deviceInfo.replace(Regex("电量 [^ ]+"),"电量 $percent"),
+            mutable.value = mutable.value.copy(batteryPercent=device.takeIf {it in 0..10}?.times(10), deviceInfo = mutable.value.deviceInfo.replace(Regex("电量 [^ ]+"),"电量 $percent"),
                 maintenance = mutable.value.maintenance.copy(details = mutable.value.maintenance.details.copy(boxBattery=box)))
         }
         override fun chargingChanged(device: Boolean, box: Boolean) = post { mutable.value = mutable.value.copy(maintenance = mutable.value.maintenance.copy(
@@ -216,6 +218,13 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             if (timeline.fileId != fileId) return@post
             val m=mutable.value.maintenance
             mutable.value=mutable.value.copy(maintenance=m.copy(liveBytes=m.liveBytes+audio.size,livePackets=m.livePackets+1))
+            if(marked) {
+                mutable.value=mutable.value.copy(realtimeMarked=true)
+                val device=mutable.value.device ?: return@post
+                val fingerprint=if(audio.size==160 && runCatching {opusPacketDurationUs(audio)}.getOrNull()==20000L) DeviceMarkerPackets.fingerprint(audio) else null
+                enqueueMarkerWrite(fileId) { journal.recordDeviceSignal(identity,device.key,fileId,fingerprint) }
+                record("device marked packet file=$fileId sequence=$sequence fingerprint=${fingerprint?.take(12)}")
+            }
         }
         override fun supplement(fileId: Int, current: Int, total: Int) = post {
             if (downloading?.recording?.fileId == fileId) mutable.value=mutable.value.copy(
@@ -291,6 +300,8 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             if (timeline.fileId == fileId) {
                 // Precise offsets come from the final marker callback. Don't infer packet indexing.
                 mutable.value = mutable.value.copy(realtimeMarked = true)
+                val device=mutable.value.device
+                if(device!=null) enqueueMarkerWrite(fileId) {journal.recordDeviceSignal(identity,device.key,fileId)}
                 record("live marker file=$fileId sequence=$sequence")
             }
         }
@@ -314,7 +325,9 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         override fun disconnected(systemCode: Int?) = post { disconnect("连接已断开（${systemCode ?: 0}）。已保存的录音仍在手机上，可重新连接。") }
         override fun info(battery: Int?, firmware: String?, freeKb: Int?, totalKb: Int?) = post {
             val percent = battery?.takeIf { it in 0..10 }?.times(10)?.let { "$it%" } ?: "未知"
-            mutable.value = mutable.value.copy(deviceInfo = "电量 $percent · 固件 ${firmware?.takeIf { it.isNotBlank() } ?: "未知"}\n剩余 ${recorderKilobytesAsMb(freeKb)} / ${recorderKilobytesAsMb(totalKb)}\n数据来自录音豆，电量按设备档位显示")
+            mutable.value = mutable.value.copy(batteryPercent=battery?.takeIf {it in 0..10}?.times(10),
+                storageFreeFraction=if(freeKb!=null && totalKb!=null && totalKb>0 && freeKb in 0..totalKb) freeKb.toFloat()/totalKb else null,
+                deviceInfo = "固件 ${firmware?.takeIf { it.isNotBlank() } ?: "未知"}")
             record("device-info battery=$battery firmware=${firmware?.take(30)} freeKB=$freeKb totalKB=$totalKb")
         }
         override fun binding(confirmed: Boolean) = post {
@@ -368,6 +381,11 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         }
         override fun progress(fileId: Int, receivedBytes: Int, totalBytes: Int, sequenceNumber: Int, marked: Boolean) = post {
             if (downloading?.recording?.fileId != fileId || mutable.value.busy != "download") return@post
+            if(marked) {
+                val device=downloading!!.device
+                enqueueMarkerWrite(fileId) {journal.recordDeviceSignal(identity,device.key,fileId)}
+                if(timeline.fileId==fileId) mutable.value=mutable.value.copy(realtimeMarked=true)
+            }
             val percent = transferPercent(receivedBytes.toLong(), totalBytes.toLong())
             mutable.value = mutable.value.copy(percent = percent, progress = "接收数据 ${percent?.let { "$it% · " }.orEmpty()}${recorderMegabytes(receivedBytes.toLong())} / ${recorderMegabytes(totalBytes.toLong())}")
             if (percent == 100) notice("数据接收达到 100%，正在等待文件校验与音频转换；尚未上传。")
@@ -440,7 +458,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         stopScan()
         if (lastDevice?.key != device.key) { timeline = RecorderTimeline(); listAttempts.clear() }
         lastDevice = device
-        mutable.value = mutable.value.copy(busy = "connect", device = device, bound = false, deviceInfo = "", realtimeMarked = false,
+        mutable.value = mutable.value.copy(busy = "connect", device = device, bound = false, deviceInfo = "", batteryPercent=null,storageFreeFraction=null,realtimeMarked = false,
             maintenance=RecorderMaintenance(sdk=mutable.value.maintenance.sdk), message = "正在连接 ${device.name}…")
         timeout(45_000, "连接超时。请检查录音豆是否正被其他 App 占用，再重新连接。")
         runCatching { transport!!.connect(device.mac, device.uuid) }.onFailure { disconnect("无法建立设备连接，请重新准备连接。") }
@@ -525,9 +543,14 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         val device = mutable.value.device ?: return
         if (fileId <= 0 || marks.isEmpty()) return
         if (timeline.fileId == fileId) { marks.forEach { timeline.mark(it.offsetMs, it.origin) }; publishTimeline() }
-        jobs.launch {
-            try { withContext(Dispatchers.IO) { journal.saveMarkers(identity, device.key, fileId, marks) }; refreshDownloads() }
-            catch (e: Exception) { if (e is CancellationException) throw e; notice("重点未能保存，请重试；原始录音不受影响。") }
+        record("device marker offsets file=$fileId count=${marks.count {it.origin=="device"}}")
+        enqueueMarkerWrite(fileId) {journal.saveMarkers(identity, device.key, fileId, marks)}
+    }
+    private fun enqueueMarkerWrite(fileId: Int, write: () -> Unit) {
+        val before=markerWrites[fileId]
+        markerWrites[fileId]=jobs.launch {
+            try {before?.join();withContext(Dispatchers.IO) {write()};refreshDownloads()}
+            catch(e:Exception) {if(e is CancellationException)throw e;notice("重点未能保存，原音保留。")}
         }
     }
     fun addMark() {
@@ -589,6 +612,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         val current = epoch
         jobs.launch {
             try {
+                markerWrites[receipt.fileId]?.join()
                 val candidate = withContext(Dispatchers.IO) {
                     val checked = journal.rawReceipt(receipt.importId, identity)
                     val output = File(journal.preparedDirectory, "${receipt.importId}.wav")
@@ -597,11 +621,17 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                             mutable.value = mutable.value.copy(percent = transferPercent(received, total), progress = "转换录音 ${transferPercent(received, total) ?: 0}%") }
                     }
                     journal.prepare(receipt.importId, identity, decoded, "android-mediacodec-fixed160-v1")
-                    journal.uploadCandidate(receipt.importId, identity)
+                    journal.uploadCandidate(receipt.importId, identity).also { ready ->
+                        val located=journal.resolveDevicePackets(receipt.importId,identity,ready.audio.durationMs)
+                        if(located.isNotEmpty()) journal.saveMarkers(identity,receipt.deviceKey,receipt.fileId,located)
+                    }
                 }
                 if (current != epoch) return@launch
                 timeline.reconcileDuration(receipt.fileId, candidate.audio.durationMs)
                 publishTimeline()
+                val marks=withContext(Dispatchers.IO) {journal.markers(receipt.importId,identity)}
+                if(timeline.fileId==receipt.fileId) {marks.forEach {timeline.mark(it.offsetMs,it.origin)};publishTimeline()}
+                refreshDownloads()
                 onPrepared(receipt, candidate)
                 if (playAfter) player = MediaPlayer().apply {
                     setDataSource(candidate.file.path)
@@ -610,7 +640,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                     prepare(); seekTo(seekMs.coerceIn(0, candidate.audio.durationMs).toInt()); start()
                 }
                 mutable.value = mutable.value.copy(busy = "", percent = null, progress = "", preparingId = null, playing = playAfter,
-                    message = if (playAfter) "正在试听录音豆的声音。" else "录音已保存在手机，可试听或确认上传转写。")
+                    message = if (playAfter) "正在播放原音。" else "已保存，正在转文字。")
                 record("audio ready file=${receipt.fileId} durationMs=${candidate.audio.durationMs} play=$playAfter")
                 scheduleNextFile()
             } catch (e: Exception) {

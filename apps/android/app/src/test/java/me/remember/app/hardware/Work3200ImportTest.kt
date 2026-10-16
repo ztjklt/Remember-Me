@@ -13,6 +13,22 @@ class Work3200ImportTest {
     private val scope = HardwareScope("https://example.invalid", "actor-a", "subject-a")
     private val recording = DeviceRecording(1700000000, 0, 160, 20, 0)
 
+    @Test fun devicePacketEvidenceSurvivesRestartAndResolvesOnlyWithinItsAccount() {
+        val root=temp.newFolder();val journal=Work3200ImportJournal(root)
+        val first=ByteArray(160) {if(it==0) 0xf8.toByte() else 1}
+        val second=ByteArray(160) {if(it==0) 0xf8.toByte() else 2}
+        journal.recordDeviceSignal(scope,"device-a",recording.fileId,DeviceMarkerPackets.fingerprint(second))
+        val raw=File(journal.rawDirectory,"packet.raw").apply {writeBytes(first+second)}
+        val saved=journal.recordDownloaded(scope,"device-a",recording.copy(sizeBytes=320,durationMs=40),raw)
+        val reopened=Work3200ImportJournal(root)
+        assertTrue(reopened.deviceMarkerPending(saved.importId,scope))
+        val marks=reopened.resolveDevicePackets(saved.importId,scope,40)
+        assertEquals(listOf(RecorderMark(20,"device")),marks)
+        reopened.saveMarkers(scope,"device-a",recording.fileId,marks)
+        assertFalse(reopened.deviceMarkerPending(saved.importId,scope))
+        reject {reopened.resolveDevicePackets(saved.importId,scope.copy(actorId="another"),40)}
+    }
+
     @Test fun markersBeforeAndAfterDownloadSurviveRestartAndStayScoped() {
         val root = temp.newFolder()
         val journal = Work3200ImportJournal(root)

@@ -51,6 +51,7 @@ data class NativeState(
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
+    val captureFocusRequest: String = "",
     val elapsed: Long = 0, val player: SourcePlayback = SourcePlayback(), val dailyReminder: Boolean = false
     ,val uploadKey: String = "", val uploadPercent: Int? = null
 ) {
@@ -111,6 +112,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             try {
                 saveCapture(s, existing ?: LocalCapture(recording, candidate.idempotencyKey, episode = candidate.episodeId.orEmpty(),
                     linked = candidate.episodeId != null, source = "WORK_3200", hardwareImportId = receipt.importId, autoProcess = true))
+                if(existing==null && gate.accepts(s)) state.value=state.value.copy(captureFocusRequest="received:${candidate.idempotencyKey}")
                 pumpCaptures()
             } catch(e: Exception) { if(e is CancellationException) throw e; if(gate.accepts(s)) report("录音已在设备导入记录中保存，加入转写队列失败，请重新打开 App。") }
         }
@@ -239,7 +241,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             gate.requireCurrent(s)
             if(result.text("state") == "reviewing") {
                 val draft = CaptureDraft.fromReview(id,result)
-                state.value = state.value.copy(drafts = state.value.drafts + (id to draft))
+                val newest=state.value.local.any {it.episode==id && state.value.captureFocusRequest=="received:${it.key}"}
+                state.value = state.value.copy(drafts = state.value.drafts + (id to draft),draftFocus=if(newest)id else state.value.draftFocus)
                 persistDrafts(s)
             }
         }
@@ -639,6 +642,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 require(candidate.idempotencyKey == capture.key && candidate.file.canonicalPath == File(capture.recording.audioPath).canonicalPath)
                 val receipt = hardwareJournal.rawReceipt(capture.hardwareImportId, hardwareIdentity)
                 JSONObject().put("import_id", capture.hardwareImportId).put("raw_sha256", receipt.sha256)
+                    .put("device_marker_pending",hardwareJournal.deviceMarkerPending(capture.hardwareImportId,hardwareIdentity))
                     .put("file_id", receipt.fileId).put("markers", JSONArray().apply {
                         hardwareJournal.markers(capture.hardwareImportId, hardwareIdentity).forEach { put(JSONObject().put("offset_ms", it.offsetMs).put("origin", it.origin)) }
                     })

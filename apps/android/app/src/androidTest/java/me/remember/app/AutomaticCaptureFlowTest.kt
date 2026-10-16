@@ -76,7 +76,8 @@ class AutomaticCaptureFlowTest {
             assertTrue(server.savedBody!!.has("cloud_analysis_consent_id"))
             assertEquals("今天去图书馆借了一本书。",server.savedBody!!.getString("transcript"))
             assertEquals("和老朋友一起去的。",server.savedBody!!.getString("supplement"))
-            ui.onNodeWithText("已加入记忆").performScrollTo()
+            ui.waitUntil(10000) {ui.onAllNodesWithText("已加入记忆").fetchSemanticsNodes().isNotEmpty()}
+            ui.onNodeWithText("已加入记忆").assertIsDisplayed()
             shot("02-memory-simulated-backend")
             val calls=server.spaceRequests.get()
             Thread.sleep(10000)

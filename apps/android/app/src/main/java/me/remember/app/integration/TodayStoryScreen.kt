@@ -22,11 +22,23 @@ import me.remember.app.core.designsystem.LocalSimpleMode
 import androidx.compose.ui.platform.testTag
 
 @Composable internal fun TodayStoryScreen(state: NativeState, model: NativeWorkbenchModel,
-    record: () -> Unit, library: () -> Unit, openStory: (String) -> Unit) {
+    record: () -> Unit, library: () -> Unit, openStory: (String) -> Unit, onStageChanged: () -> Unit = {}) {
     var source by rememberSaveable(state.actor, state.subject) { mutableStateOf(model.preferredCaptureSource()) }
     var manage by remember { mutableStateOf(false) }
     val recorder by model.recorder().ui.collectAsState()
     val deviceRecording = recorder.recordPhase in setOf(me.remember.app.hardware.DeviceRecordPhase.RECORDING, me.remember.app.hardware.DeviceRecordPhase.PAUSED)
+    val stage = when {
+        deviceRecording -> "recording:${recorder.recordingFileId}"
+        recorder.busy in setOf("download","verify","decode") -> "sync:${recorder.recordingFileId}"
+        state.local.any {it.needsAutomaticUpload()} -> "upload:${state.local.first {it.needsAutomaticUpload()}.key}"
+        state.drafts.isNotEmpty() -> "draft:${state.draftFocus.ifBlank {state.drafts.keys.first()}}"
+        state.stories.any {it.text("status") !in setOf("ready","failed")} -> "processing:${state.draftFocus}"
+        else -> "ready:${state.draftFocus}"
+    }
+    var previousStage by remember {mutableStateOf(stage)}
+    LaunchedEffect(stage) {
+        if(stage!=previousStage) {previousStage=stage;manage=false;onStageChanged()}
+    }
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         listOf("recorder" to "录音豆", "phone" to "手机").forEach { (value, label) ->
             FilterChip(selected = source == value, onClick = { source = value; model.selectCaptureSource(value) },
@@ -69,7 +81,7 @@ import androidx.compose.ui.platform.testTag
         state.local.any { capture -> capture.episode==it.text("episode_id") } }
     if(processing!=null) Panel {
         val failed=processing.text("status")=="failed"
-        Text(if(failed) "处理暂未完成" else if(processing.optBoolean("reviewed")) "已保存，正在整理记忆" else "正在转成文字…",style=MaterialTheme.typography.titleMedium)
+        Text(if(failed) "处理暂未完成" else if(processing.optBoolean("reviewed")) "已保存，正在整理记忆" else "已保存，正在转文字",style=MaterialTheme.typography.titleMedium)
         if(failed) TextButton(onClick={model.retry(processing.text("episode_id"))},enabled=!state.busy) { Text("重试处理") }
         else LinearProgressIndicator(Modifier.fillMaxWidth())
     }
@@ -111,7 +123,7 @@ import androidx.compose.ui.platform.testTag
                 if(!supplement) TextButton(onClick={supplement=true}) { Text("补充信息") }
                 val local=state.local.firstOrNull { it.episode==draft.episode }
                 TextButton(onClick={if(local!=null) model.playLocal(local) else model.playSource(draft.episode)},enabled=!state.recording) { Text("听原音") }
-                if((draft.highlights?.optInt("marker_count") ?: 0)>0) TextButton(onClick={highlights=!highlights}) { Text("重点 ${draft.highlights?.optInt("marker_count")}") }
+                if(hasRecordingHighlights(draft.highlights)) TextButton(onClick={highlights=!highlights}) { Text(recordingHighlightLabel(draft.highlights)) }
             }
             if(highlights) RecordingHighlights(draft.highlights,draft.text!=draft.initial)
             state.draftSaveError?.let { Text(it,color=MaterialTheme.colorScheme.error) }

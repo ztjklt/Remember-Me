@@ -41,6 +41,7 @@ import me.remember.app.hardware.*
     if(state.maintenance.livePackets>0) Text("已收到实时音频 ${recorderMegabytes(state.maintenance.liveBytes)}；完整原音在结束后校验保存。",style=MaterialTheme.typography.bodySmall)
     TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "收起设备维护" else "设备信息与维护") }
     if(expanded) {
+        Text(state.deviceInfo.ifBlank {"固件未返回"})
         val d=state.maintenance.details
         Text("SDK：${state.maintenance.sdk.ifBlank { "尚未返回" }}",style=MaterialTheme.typography.bodySmall)
         Text("序列号：${d.serial.ifBlank { "未返回" }}\nWi-Fi 固件：${d.wifiFirmware.ifBlank { "未返回" }}\n充电盒固件：${d.boxFirmware.ifBlank { "未返回" }}")

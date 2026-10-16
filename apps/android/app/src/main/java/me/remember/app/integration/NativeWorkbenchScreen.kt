@@ -114,6 +114,12 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         else if(appearance.simpleMode) Modifier.background(MaterialTheme.colorScheme.background) else Modifier.atmosphere(scene = scene)
     val ready = !state.busy && !state.recording
     val scrollPositions = List(4) { rememberScrollState() }
+    LaunchedEffect(state.captureFocusRequest) {
+        if(state.captureFocusRequest.isNotBlank() && state.owner) {
+            focus.clearFocus();keyboard?.hide();tab=0;detail=null
+            scrollPositions[0].scrollTo(0)
+        }
+    }
     // Register before child handlers so flower/petal and settings Back keep priority.
     BackHandler(appearance.simpleMode && tab != 0) {
         if(tab == 1 && archiveMode != 3) { archiveMode = 3; scope.launch { scrollPositions[1].scrollTo(0) } }
@@ -207,7 +213,9 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 if(appearance.simpleMode && !state.owner) SimpleHome(state, {revision=null;recordingPage=true},
                                     {tab=1;archiveMode=3}, {tab=1;archiveMode=0}, {tab=2})
                                 else if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
-                                    {tab=1;archiveMode=0},{detail=it})
+                                    {tab=1;archiveMode=0},{detail=it}, onStageChanged={
+                                        focus.clearFocus();keyboard?.hide();scope.launch {scrollPositions[0].animateScrollTo(0)}
+                                    })
                                 else {
                                     Text("从真实故事和声音，了解这个人。")
                                     if(state.stories.isEmpty()) Text("这里暂时没有可见故事。")
