@@ -46,6 +46,16 @@ class Settings(BaseSettings):
         default=0, ge=0, le=10, allow_inf_nan=False,
         validation_alias='AI_VOICE_RETRY_AFTER_SECONDS',
     )
+    voice_json_retry_after_seconds: float | None = Field(
+        default=None, ge=0, le=10, allow_inf_nan=False,
+        validation_alias='AI_VOICE_JSON_RETRY_AFTER_SECONDS',
+    )
+
+    @property
+    def effective_voice_json_retry_after_seconds(self) -> float:
+        return (self.voice_retry_after_seconds if self.voice_json_retry_after_seconds is None
+                else self.voice_json_retry_after_seconds)
+
     profile_verify_candidates: bool = Field(default=False, validation_alias="AI_PROFILE_VERIFY_CANDIDATES")
     persona_total_timeout_seconds: float = Field(
         default=90.0, gt=0, le=90, allow_inf_nan=False,

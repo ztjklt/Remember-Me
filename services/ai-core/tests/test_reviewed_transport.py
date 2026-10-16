@@ -92,19 +92,23 @@ def test_malformed_fast_backup_does_not_discard_valid_primary(monkeypatch):
     finally:chat.close()
 
 
-def test_persona_http_voice_uses_backup_policy_and_keeps_review(monkeypatch):
+@pytest.mark.parametrize('json_delay',[None,1.5])
+def test_persona_http_voice_uses_backup_policy_and_keeps_review(monkeypatch,json_delay):
     from contextlib import contextmanager
     from app.providers.weixin import WeixinChat
     from test_persona import payload, point, review, ScriptedChat, post
     scopes=[]
+    monkeypatch.setenv('AI_VOICE_RETRY_AFTER_SECONDS','3')
+    monkeypatch.delenv('AI_VOICE_JSON_RETRY_AFTER_SECONDS',raising=False)
+    if json_delay is not None:
+        monkeypatch.setenv('AI_VOICE_JSON_RETRY_AFTER_SECONDS',str(json_delay))
     @contextmanager
     def scope(self,**options):
         scopes.append(options);yield
     monkeypatch.setattr(WeixinChat,'transport_scope',scope)
-    # The helper builds default settings. Check the knob is wired even when
-    # disabled locally; production config supplies the observed 3 seconds.
+    # Reviewed JSON racing can be tuned without shortening streamed requests.
     chat=ScriptedChat({'points':[point()]},review())
     response=post(monkeypatch,dict(payload(),voice_response=True),chat,provider='weixin')
     assert response.status_code==200,response.text
-    assert scopes==[{'timeout_seconds':8.0,'json_retry_after_seconds':0.0}]
+    assert scopes==[{'timeout_seconds':8.0,'json_retry_after_seconds':3.0 if json_delay is None else json_delay}]
     assert len(chat.requests)==2 and 'review_scope' in chat.requests[1][1]

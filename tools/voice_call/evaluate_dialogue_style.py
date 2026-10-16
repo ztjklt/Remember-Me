@@ -50,7 +50,7 @@ def main():
             start = monotonic()
             try:
                 with (chat.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,
-                        json_retry_after_seconds=settings.voice_retry_after_seconds)
+                        json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds)
                       if args.transport=='voice' else nullcontext()):
                     result = PersonaProvider(chat).answer(PersonaInput.model_validate(
                         dict(basis, question=question, dialogue_context=history)))
