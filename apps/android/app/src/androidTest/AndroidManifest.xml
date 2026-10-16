@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Isolated Compose fixture host lives in the test APK, never the delivered app. -->
+    <application>
+        <activity android:name="androidx.activity.ComponentActivity"
+            android:exported="true" android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+    </application>
+</manifest>

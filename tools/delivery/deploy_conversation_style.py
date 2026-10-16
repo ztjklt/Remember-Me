@@ -19,7 +19,7 @@ def validate(payload):
     for service, tests in suites.items():
         folder = candidate / 'services' / service
         with (payload / (service + '-tests.log')).open('w') as out:
-            subprocess.run([str(folder / '.venv/bin/python'), '-m', 'pytest', *tests, '-q',
+            subprocess.run([str(candidate / '.test-venv/bin/python'), '-m', 'pytest', *tests, '-q',
                 '--junitxml=' + str(payload / (service + '-tests.xml'))], cwd=folder,
                 stdout=out, stderr=out, check=True)
     record['validated'] = True
