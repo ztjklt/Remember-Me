@@ -344,7 +344,7 @@ class CompactExtraction(BaseModel):
 
 
 class WeixinProvider(WeixinChat):
-    prompt_version = 'weixin-memory-highlights-v6.1'
+    prompt_version = 'weixin-memory-highlights-v6.2'
 
     def generate(self, request):
         from ..memory_units import ground_units
@@ -399,10 +399,11 @@ class WeixinProvider(WeixinChat):
                     remaining=45-(perf_counter()-started)
                     if remaining<=0: raise
                     logger.warning(json.dumps({'event':'extraction_anchor_repair','attempt':2}))
-                    repair=('上次结果未通过原文校验：anchors中出现了所选原文没有的改写。'
-                        '重新生成完整JSON，每个anchor必须逐字复制所选source_ids对应text中的连续短语；'
-                        '一个字也不能添加、替换或改人称。无法逐字引用时anchors用空对象{}。'
-                        'statement仍须有原文依据，保留全部重点和普通来源的审阅。')
+                    repair=('上次结果未通过逐字原文校验：可选anchors中出现了改写。'
+                        '本次重新生成完整JSON，省略可选anchors字段，不要再生成或复制anchors。'
+                        '每条只输出source_ids、statement、domain、memory_type、confidence五个字段。'
+                        'source_ids仍必须准确支持statement，程序将按编号保留完整原文与否定条件，'
+                        '不会因为省略anchors丢弃这些证据。保留全部重点和普通来源的审阅。')
                     raw,version=self.complete(instruction+repair,material,timeout_seconds=remaining)
                     return ground_units(raw,matches,request,version)
             if isinstance(items,list) and any(isinstance(item,dict) and 'source_id' in item for item in items):
@@ -413,6 +414,10 @@ class WeixinProvider(WeixinChat):
             # Retain strict validation of the former compact quote protocol.
             # There is no guessed/fuzzy source-ID mapping or dropped bad row.
             validated=CompactExtraction.model_validate(raw)
+        except AIOutputInvalid as exc:
+            # All ground_units reasons are local constants, not user text.
+            logger.warning(json.dumps({'event':'extraction_grounding_invalid','reason':exc.message}))
+            raise
         except ValidationError as exc:
             known = {'memories','statement','domain','memory_type','confidence','quote','source_id','source_ids','anchors'}
             issues = [{'type': issue['type'], 'loc': [part if isinstance(part, int) or part in known else '?'

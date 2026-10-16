@@ -53,15 +53,16 @@ def test_nonverbatim_anchor_gets_one_bounded_repair_with_same_sources():
     calls=[]
     def complete(instruction,data,**kw):
         calls.append((instruction,data,kw))
-        anchor='我不会去借钱投资' if len(calls)==1 else '不会借钱投资'
+        anchors={'negation':['我不会去借钱投资']} if len(calls)==1 else {}
         return {'memories':[dict(source_ids=['s2'], statement='不会借钱投资',domain='DECISION_PATTERNS',
-            memory_type='VALUE',confidence=0.7,anchors={'negation':[anchor]})]},'test'
+            memory_type='VALUE',confidence=0.7,anchors=anchors)]},'test'
     provider.complete=complete
     result=provider.generate(request())
     assert len(calls)==2 and calls[0][1]==calls[1][1]
     assert '逐字' in calls[1][0] and 0<calls[1][2]['timeout_seconds']<=45
     assert result['memory_items'][0]['confidence']==0.7
-    assert result['memory_items'][0]['metadata']['semantic_anchors']['negation']==['不会借钱投资']
+    assert result['memory_items'][0]['metadata']['semantic_anchors']['negation']==[]
+    assert result['evidence'][0]['excerpt']=='我不会借钱投资。'
     provider.close()
 
 
