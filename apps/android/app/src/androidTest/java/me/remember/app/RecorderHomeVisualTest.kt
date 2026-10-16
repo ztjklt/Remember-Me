@@ -48,7 +48,9 @@ class RecorderHomeVisualTest {
             ui.runOnIdle {
                 model.recorder().close()
                 controller = Work3200Controller(ui.activity, model.hardwareScope(), model::hardwareGrant,
-                    onPrepared = model::acceptRecorderAudio, transportFactory = { sink ->
+                    // Visual-only run: do not send another synthetic recording
+                    // to cloud; automatic submission has separate acceptance.
+                    onPrepared = { _, _ -> }, transportFactory = { sink ->
                         events = sink
                         object : HardwareTransport {
                             override fun initialize(application: Any, credentials: Work3200Credentials) { sink.auth(HardwareAuthResult(true, true, true, Long.MAX_VALUE, false, null)) }
@@ -73,17 +75,17 @@ class RecorderHomeVisualTest {
             click("今天")
             ui.runOnIdle { events.recording(1, -1, fileId); events.recordingDuration(18000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
-            click("标记重点 · 0")
+            click("标记重点")
             ui.runOnIdle { events.realtimeMarker(fileId, 200); events.markers(fileId, intArrayOf(1200)) }
-            ui.onNodeWithText("录音豆正在录音").performScrollTo(); shot("01-recording-simulated-events")
+            ui.onNodeWithText("正在记录这一刻").performScrollTo(); shot("01-recording-simulated-events")
             click("我的"); click("今天")
             ui.runOnIdle { assertSame(controller, model.recorder()); assertTrue(controller.ui.value.connected) }
             ui.runOnIdle { events.recording(0, 88340, -1) }
             ui.waitUntil(15000) { controller.ui.value.percent == 40 && controller.ui.value.busy == "download" }
-            ui.onNodeWithText("录音已结束").performScrollTo(); shot("02-download-simulated-events")
+            ui.onNodeWithText("收到录音，正在同步").performScrollTo(); shot("02-download-simulated-events")
             ui.runOnIdle { events.progress(fileId, bytes.size, bytes.size, 1, false); events.receivedSdkFile(fileId, received) }
-            ui.waitUntil(30000) { controller.ui.value.busy.isEmpty() && model.ui.value.local.any { it.source == "WORK_3200" && it.recording.createdAt == java.time.Instant.ofEpochSecond(fileId.toLong()).toString() } }
-            ui.onNode(hasText("手机已保存：", substring = true)).performScrollTo(); shot("03-saved-synthetic-audio")
+            ui.waitUntil(30000) { controller.ui.value.busy.isEmpty() && controller.ui.value.downloads.any { it.fileId==fileId } }
+            shot("03-saved-synthetic-audio")
             File(folder, "evidence.json").writeText(JSONObject().put("version", BuildConfig.VERSION_NAME).put("physical_device", false)
                 .put("sdk_events", "simulated").put("ui", "production NativeWorkbenchScreen").put("decoder", "real Android MediaCodec")
                 .put("tab_switch_retains_session", true).toString(2))

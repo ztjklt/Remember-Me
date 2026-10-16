@@ -5,7 +5,8 @@ import me.remember.app.data.repository.AudioRecording
 data class RevisionTarget(val memory: String, val kind: String, val time: String)
 data class LocalCapture(val recording: AudioRecording, val key: String, val episode: String = "", val revision: RevisionTarget? = null, val linked: Boolean = false,
     val transcript: ClientTranscript? = null, val uploadAttempted: Boolean = false,
-    val uploadWithTranscript: Boolean? = null, val calibrationId: String = "", val source: String = "ANDROID_MIC", val hardwareImportId: String = "") {
+    val uploadWithTranscript: Boolean? = null, val calibrationId: String = "", val source: String = "ANDROID_MIC", val hardwareImportId: String = "",
+    val autoProcess: Boolean = false) {
     val blocksReview get() = revision != null && !linked
     fun usesClientTranscript(serverRequires: Boolean): Boolean = uploadWithTranscript ?: if(uploadAttempted) transcript != null else serverRequires
     fun beginUpload(clientAsr: Boolean): LocalCapture = copy(uploadAttempted = true, uploadWithTranscript = usesClientTranscript(clientAsr))

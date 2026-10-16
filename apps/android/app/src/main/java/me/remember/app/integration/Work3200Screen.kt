@@ -24,10 +24,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun Work3200Screen(model: NativeWorkbenchModel, compact: Boolean = false) = Work3200Panel(model.recorder(), compact)
+fun Work3200Screen(model: NativeWorkbenchModel, compact: Boolean = false, onManage: () -> Unit = {}, condensed: Boolean = false) = Work3200Panel(model.recorder(), compact, onManage, condensed)
 
 @Composable
-internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = false) {
+internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = false, onManage: () -> Unit = {}, condensed: Boolean = false) {
     val context = LocalContext.current
     val state by controller.ui.collectAsState()
     val view = LocalView.current
@@ -63,6 +63,10 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (uri != null && receipt != null) controller.export(uri, receipt)
     }
     val idle = state.busy.isEmpty()
+    if(compact) {
+        RecorderCaptureSummary(state, controller, onManage, condensed)
+        return
+    }
     Text(if (compact) "录音豆录音" else "连接录音豆", style = MaterialTheme.typography.headlineMedium)
     if (!state.connected) Text("连接后按录音豆上的按钮开始和结束，声音由录音豆采集。")
     if (state.connected || state.recordPhase != DeviceRecordPhase.IDLE) {
@@ -116,7 +120,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (compact) TextButton(onClick = { manage = !manage }) { Text(if (manage) "收起设备录音" else "设备录音与连接管理") }
         if (manage) Button(onClick = controller::listFiles, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("读取 / 刷新设备录音") }
         if (manage) RecorderMaintenancePanel(controller,state)
-        if (state.recordPhase == DeviceRecordPhase.ENDED && idle) OutlinedButton(onClick = controller::retrySync) { Text("重试同步") }
+        if (state.recordPhase == DeviceRecordPhase.ENDED && idle && state.downloads.none { it.fileId==state.recordingFileId }) OutlinedButton(onClick = controller::retrySync) { Text("重试同步") }
     }
     if ((manage || !state.connected) && (state.connected || !idle || state.authorized)) TextButton(onClick = { controller.disconnect() },enabled=state.maintenanceAction!=RecorderCommand.OTA) { Text("断开 / 取消当前操作") }
     if (state.needsGrant) {
@@ -158,8 +162,59 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         }
     }
     if (state.playing) OutlinedButton(onClick = controller::stopPlayback) { Text("停止播放") }
-    Text("同步保存到手机。上传转写由你确认，设备原文件保留。", style = MaterialTheme.typography.bodySmall)
+    Text("新录音同步后自动转文字，设备原文件保留。", style = MaterialTheme.typography.bodySmall)
     TextButton(onClick = { reportFile.launch("remember-device-diagnostics.json") }, enabled = idle) { Text("导出连接与下载记录") }
+}
+
+@Composable private fun RecorderCaptureSummary(state: RecorderUi, controller: Work3200Controller, manage: () -> Unit, condensed: Boolean) {
+    val active=state.recordPhase in setOf(DeviceRecordPhase.RECORDING,DeviceRecordPhase.PAUSED)
+    val saved=state.downloads.any { it.fileId==state.recordingFileId }
+    val syncFailed=state.recordPhase==DeviceRecordPhase.ENDED && !saved && state.busy.isEmpty() &&
+        listOf("未完成","失败","无法","重试","未收到","超时").any { state.message.contains(it) }
+    if(condensed && !active && !syncFailed && state.busy.isEmpty()) {
+        Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal=20.dp,vertical=4.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                Text(if(state.connected && state.bound) "录音豆 · 已连接" else "录音豆",style=MaterialTheme.typography.titleMedium)
+                TextButton(onClick=manage) { Text(if(state.connected) "设备" else "连接") }
+            }
+        }
+        return
+    }
+    Surface(shape=MaterialTheme.shapes.extraLarge,color=MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
+        Column(Modifier.fillMaxWidth().padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                Text(if(state.connected && state.bound) "录音豆 · 已连接" else if(state.reconnecting) "正在重连" else "录音豆",style=MaterialTheme.typography.titleMedium)
+                TextButton(onClick=manage) { Text("设备") }
+            }
+            Text(when {
+                state.recordPhase==DeviceRecordPhase.RECORDING -> "正在记录这一刻"
+                state.recordPhase==DeviceRecordPhase.PAUSED -> "录音已暂停"
+                state.busy=="download" -> "收到录音，正在同步"
+                state.busy=="verify" -> "正在准备录音"
+                state.recordPhase==DeviceRecordPhase.UNKNOWN -> "连接恢复后确认录音状态"
+                !state.connected || !state.bound -> "连接后，就可以开始了"
+                else -> "按录音豆，留下一段声音"
+            },style=MaterialTheme.typography.headlineSmall)
+            if(active) Text(clock(state.elapsedMs),style=MaterialTheme.typography.displayMedium)
+            if(state.busy in setOf("download","verify","list")) {
+                state.percent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
+                    ?: LinearProgressIndicator(Modifier.fillMaxWidth())
+                if(state.progress.isNotBlank()) Text(state.progress,style=MaterialTheme.typography.bodyMedium)
+            } else if(!active && state.connected && state.bound) Text("录完自动转文字",style=MaterialTheme.typography.bodyLarge)
+            if(active) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick=controller::addMark) { Text("标记重点${if(state.recordMarks.isNotEmpty()) " · ${state.recordMarks.size}" else ""}") }
+                TextButton(onClick={controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME)},enabled=state.busy.isEmpty()) {
+                    Text(if(state.recordPhase==DeviceRecordPhase.RECORDING) "暂停" else "继续")
+                }
+            }
+            if(active && state.realtimeMarked) Text("已收到重点标记",color=MaterialTheme.colorScheme.primary)
+            if(!state.connected || !state.bound) Button(onClick=manage,modifier=Modifier.fillMaxWidth()) { Text(if(state.connected) "完成绑定" else "连接录音豆") }
+            if(syncFailed) {
+                Text("本段同步未完成，原音仍在录音豆。",color=MaterialTheme.colorScheme.error)
+                OutlinedButton(onClick=controller::retrySync,enabled=state.connected) { Text("重试同步") }
+            }
+        }
+    }
 }
 
 private fun recordingTime(id: Int): String = runCatching {

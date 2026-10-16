@@ -19,10 +19,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import me.remember.app.core.designsystem.LocalSimpleMode
+import androidx.compose.ui.platform.testTag
 
 @Composable internal fun TodayStoryScreen(state: NativeState, model: NativeWorkbenchModel,
     record: () -> Unit, library: () -> Unit, review: (String) -> Unit) {
     var source by rememberSaveable(state.actor, state.subject) { mutableStateOf(model.preferredCaptureSource()) }
+    var manage by remember { mutableStateOf(false) }
     val recorder by model.recorder().ui.collectAsState()
     val deviceRecording = recorder.recordPhase in setOf(me.remember.app.hardware.DeviceRecordPhase.RECORDING, me.remember.app.hardware.DeviceRecordPhase.PAUSED)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -32,9 +34,8 @@ import me.remember.app.core.designsystem.LocalSimpleMode
         }
     }
     if (source == "recorder") {
-        Work3200Screen(model, compact = true)
-        val hardware = state.local.filter { it.source == "WORK_3200" }.take(3)
-        if (hardware.isNotEmpty()) CaptureTab(state.copy(local = hardware), model, null, {})
+        Work3200Screen(model, compact = true, onManage = { manage=true }, condensed=state.drafts.isNotEmpty() ||
+            state.local.any { it.needsAutomaticUpload() } || state.stories.any { it.text("status") !in setOf("ready","failed") })
     } else {
     Surface(shape=RoundedCornerShape(32.dp),color=MaterialTheme.colorScheme.secondaryContainer.copy(alpha=.92f)) {
         Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(
@@ -47,35 +48,76 @@ import me.remember.app.core.designsystem.LocalSimpleMode
         }
     }
     }
-    state.stories.filter { story -> state.local.any { it.source == "WORK_3200" && it.episode == story.text("episode_id") } }.take(3).forEach { story ->
-        Text(if (story.optBoolean("waiting_for_review")) "录音豆录音 · 等待核对文字" else "录音豆录音 · ${processingLabel(story.text("status"))}")
-        RecordingHighlights(story.optJSONObject("recording_highlights"))
-        if (story.text("status") == "ready") story.rows("memories").take(3).forEach { memory ->
-            if(memory.optJSONObject("recording_priority")!=null) Text("来自你标记的重点",style=MaterialTheme.typography.labelMedium)
-            Text(memory.text("content"), style = MaterialTheme.typography.bodyLarge)
+    val pendingCapture=state.local.firstOrNull { it.autoProcess && !it.linked && it.recording.durationMillis>0 }
+    if(pendingCapture!=null) Surface(shape=MaterialTheme.shapes.large,color=MaterialTheme.colorScheme.surface.copy(alpha=.94f)) {
+        Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+            val error=state.captureErrors[pendingCapture.key]
+            Text(error ?: if(state.uploadKey==pendingCapture.key) "收到录音，正在上传转写" else "录音已保存，等待转写",style=MaterialTheme.typography.titleMedium)
+            if(error!=null) TextButton(onClick={model.upload(pendingCapture,true)}) { Text("重试转写") }
+            else if(state.uploadKey==pendingCapture.key) state.uploadPercent?.let { LinearProgressIndicator(progress={it/100f},modifier=Modifier.fillMaxWidth()) }
         }
-        if (story.optBoolean("waiting_for_review")) TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) { Text("核对本段文字") }
-        else if (story.text("status") == "ready") {
-            var expanded by rememberSaveable(story.text("episode_id")) { mutableStateOf(false) }
-            TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起本段文字与全部记忆" else "查看本段文字与全部记忆") }
-            if (expanded) {
-                Text("已核对的文字", style = MaterialTheme.typography.titleMedium)
-                Text(story.text("transcript"), style = MaterialTheme.typography.bodyLarge)
-                story.rows("memories").drop(3).forEach { Text(it.text("content"), style = MaterialTheme.typography.bodyLarge) }
-            }
-        } else if (story.text("status") == "failed") TextButton(onClick = { model.retry(story.text("episode_id")) }, enabled = !state.busy) { Text("重试本段处理") }
     }
-    val pending=state.stories.filter{it.optBoolean("waiting_for_review") || it.text("status")!="ready"}
-    val unuploaded=state.local.count{it.episode.isBlank()}
-    val waiting=pending.firstOrNull{it.optBoolean("waiting_for_review")}
-    if(pending.isNotEmpty() || unuploaded>0) OutlinedButton(onClick={if(waiting!=null) review(waiting.text("episode_id")) else library()},modifier=Modifier.fillMaxWidth()) {
-        Icon(Icons.Outlined.AutoStories,null);Spacer(Modifier.width(8.dp));Text("继续整理 · ${pending.size+unuploaded} 段")
+    val drafts=state.stories.mapNotNull { state.drafts[it.text("episode_id")] }
+    val draft=drafts.firstOrNull { it.episode==state.draftFocus } ?: drafts.firstOrNull()
+    if(draft!=null) {
+        if(drafts.size>1) Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            drafts.take(4).forEachIndexed { i,d -> FilterChip(selected=d.episode==draft.episode,onClick={model.focusDraft(d.episode)},label={Text("文字 ${i+1}")}) }
+        }
+        TranscriptDraftCard(draft,state,model)
     }
-    TextButton(onClick=library) { Icon(Icons.Outlined.LibraryMusic,null);Spacer(Modifier.width(8.dp));Text("我的录音") }
+    val processing=state.stories.firstOrNull { !it.optBoolean("waiting_for_review") && it.text("status")!="ready" &&
+        state.local.any { capture -> capture.episode==it.text("episode_id") } }
+    if(processing!=null) Panel {
+        val failed=processing.text("status")=="failed"
+        Text(if(failed) "处理暂未完成" else if(processing.optBoolean("reviewed")) "已保存，正在整理记忆" else "正在转成文字…",style=MaterialTheme.typography.titleMedium)
+        if(failed) TextButton(onClick={model.retry(processing.text("episode_id"))},enabled=!state.busy) { Text("重试处理") }
+        else LinearProgressIndicator(Modifier.fillMaxWidth())
+    }
+    val recent=state.stories.firstOrNull { it.text("status")=="ready" }
+    if(recent!=null && draft==null && processing==null && pendingCapture==null) Panel {
+        Text("已加入记忆",style=MaterialTheme.typography.titleMedium)
+        recent.rows("memories").take(2).forEach { Text(it.text("content"),maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+        val analysis=recent.optJSONObject("cumulative_analysis")?.text("status")
+        if(analysis in setOf("queued","running")) Text("正在结合过往记录更新理解",style=MaterialTheme.typography.bodyMedium)
+        if(analysis=="complete") Text("已结合过往记录更新理解",style=MaterialTheme.typography.bodyMedium)
+        if(analysis in setOf("failed","authorization_required")) Text("累计分析暂未完成，已保存的记忆不受影响。",style=MaterialTheme.typography.bodyMedium)
+    }
+    TextButton(onClick=library,modifier=Modifier.fillMaxWidth()) { Icon(Icons.Outlined.AutoStories,null);Spacer(Modifier.width(8.dp));Text("查看全部录音与记忆") }
+    if(manage) NativeDialog("录音豆",{manage=false}) { Work3200Screen(model) }
     if(state.narrative.optJSONObject("next_question")!=null) {
         var expanded by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
         TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "收起话题" else "不知道从哪讲？") }
         if(expanded) NarrativeQuestion(state,model)
+    }
+}
+
+@Composable internal fun TranscriptDraftCard(draft: CaptureDraft, state: NativeState, model: NativeWorkbenchModel) {
+    var supplement by rememberSaveable(draft.episode) { mutableStateOf(draft.supplement.isNotBlank()) }
+    var highlights by remember(draft.episode) { mutableStateOf(false) }
+    val saving=state.savingEpisode==draft.episode
+    Surface(shape=MaterialTheme.shapes.extraLarge,color=MaterialTheme.colorScheme.surface.copy(alpha=.97f)) {
+        Column(Modifier.fillMaxWidth().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                Text("刚刚的文字",style=MaterialTheme.typography.titleLarge)
+                Text("草稿",style=MaterialTheme.typography.labelLarge,color=MaterialTheme.colorScheme.primary)
+            }
+            OutlinedTextField(draft.text,{model.editDraft(draft.episode,it)},modifier=Modifier.fillMaxWidth().testTag("capture-draft-text"),
+                minLines=3,maxLines=8,enabled=!saving,label={Text("可以直接修改")})
+            if(supplement) OutlinedTextField(draft.supplement,{model.editDraft(draft.episode,draft.text,it)},
+                modifier=Modifier.fillMaxWidth().testTag("capture-draft-supplement"),minLines=2,maxLines=4,enabled=!saving,label={Text("补充信息（选填）")})
+            Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                if(!supplement) TextButton(onClick={supplement=true}) { Text("补充信息") }
+                val local=state.local.firstOrNull { it.episode==draft.episode }
+                TextButton(onClick={if(local!=null) model.playLocal(local) else model.playSource(draft.episode)},enabled=!state.recording) { Text("听原音") }
+                if((draft.highlights?.optInt("marker_count") ?: 0)>0) TextButton(onClick={highlights=!highlights}) { Text("重点 ${draft.highlights?.optInt("marker_count")}") }
+            }
+            if(highlights) RecordingHighlights(draft.highlights,draft.text!=draft.initial)
+            state.draftSaveError?.let { Text(it,color=MaterialTheme.colorScheme.error) }
+            Button(onClick={model.saveDraft(draft.episode)},enabled=!state.busy && !saving && draft.text.isNotBlank(),
+                modifier=Modifier.fillMaxWidth().heightIn(min=52.dp).testTag("capture-save-memory")) {
+                Text(if(saving) "正在保存…" else "保存到记忆")
+            }
+        }
     }
 }
 

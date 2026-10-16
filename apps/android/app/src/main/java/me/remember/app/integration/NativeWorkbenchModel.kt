@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import me.remember.app.data.repository.AndroidAudioCaptureService
 import me.remember.app.data.repository.AudioRecording
 import me.remember.app.data.repository.RecordingMetadata
@@ -43,6 +45,9 @@ data class NativeState(
     val reviewInitialText: String = "", val reviewWarnings: List<String> = emptyList(), val reviewParagraphPreview: String? = null,
     val reviewMachineText: String = "", val reviewCorrection: JSONObject? = null,
     val reviewHighlights: JSONObject? = null,
+    val drafts: Map<String, CaptureDraft> = emptyMap(), val draftFocus: String = "",
+    val captureErrors: Map<String, String> = emptyMap(), val savingEpisode: String = "",
+    val draftSaveError: String? = null,
     val busy: Boolean = false, val error: String? = null, val notice: String = "", val recording: Boolean = false, val paused: Boolean = false,
     val operation: OperationFeedback = OperationFeedback(),
     val savedCaptureId: String = "",
@@ -102,8 +107,13 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val recording = AudioRecording(audioPath = candidate.file.path, durationMillis = candidate.audio.durationMs,
             mimeType = candidate.audio.mimeType, byteSize = candidate.audio.byteSize, sampleRate = candidate.audio.sampleRate,
             channelCount = candidate.audio.channels, createdAt = java.time.Instant.ofEpochSecond(receipt.fileId.toLong()).toString(), title = "录音豆录音")
-        saveCapture(s, existing ?: LocalCapture(recording, candidate.idempotencyKey, episode = candidate.episodeId.orEmpty(),
-            linked = candidate.episodeId != null, source = "WORK_3200", hardwareImportId = receipt.importId))
+        viewModelScope.launch {
+            try {
+                saveCapture(s, existing ?: LocalCapture(recording, candidate.idempotencyKey, episode = candidate.episodeId.orEmpty(),
+                    linked = candidate.episodeId != null, source = "WORK_3200", hardwareImportId = receipt.importId, autoProcess = true))
+                pumpCaptures()
+            } catch(e: Exception) { if(e is CancellationException) throw e; if(gate.accepts(s)) report("录音已在设备导入记录中保存，加入转写队列失败，请重新打开 App。") }
+        }
     }
     fun hardwareScope(): me.remember.app.hardware.HardwareScope {
         val current = checkNotNull(session) { "请先登录。" }
@@ -134,6 +144,154 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var polling: Job? = null
     private var serviceInfoJob: Job? = null
     private var operationSequence = 0L
+    private val captureLedgerLock = Mutex()
+    private val draftLock = Mutex()
+    private val draftStore = CaptureDraftStore(File(context.filesDir, "capture-drafts"))
+    private var captureJob: Job? = null
+    private var feedJob: Job? = null
+    private val captureAttempts = mutableMapOf<String, Int>()
+    private val captureRetryAt = mutableMapOf<String, Long>()
+    private var loadedDraftScope = ""
+    private fun hasPendingCaptureWork() = state.value.local.any { it.needsAutomaticUpload() } ||
+        state.value.stories.any { (!it.optBoolean("waiting_for_review") && it.text("status") !in setOf("ready", "failed")) ||
+            it.optJSONObject("cumulative_analysis")?.text("status") in setOf("queued","running") }
+
+    /** Durable intent is in LocalCapture. A single uploader prevents duplicate
+     * requests; its HTTP idempotency key also survives a lost response/restart. */
+    private fun pumpCaptures() {
+        val s = session ?: return
+        if(captureJob?.isActive == true || !state.value.owner || state.value.recording || state.value.asrCapabilities == null) return
+        captureJob = viewModelScope.launch {
+            while(gate.accepts(s) && state.value.owner && !state.value.recording) {
+                val next = state.value.local.asReversed().firstOrNull { it.needsAutomaticUpload() &&
+                    (captureAttempts[it.key] ?: 0) < 3 && (captureRetryAt[it.key] ?: 0) <= android.os.SystemClock.elapsedRealtime() } ?: break
+                try {
+                    state.value = state.value.copy(captureErrors = state.value.captureErrors - next.key)
+                    uploadCapture(s, next)
+                    captureAttempts.remove(next.key); captureRetryAt.remove(next.key)
+                } catch(e: Exception) {
+                    if(e is CancellationException) throw e
+                    if(!gate.accepts(s)) break
+                    val attempt = (captureAttempts[next.key] ?: 0) + 1
+                    val permanent = if(e is BackendHttpException) e.status in 400..499 && e.status != 429 else e !is java.io.IOException
+                    captureAttempts[next.key] = if(permanent) 3 else attempt
+                    captureRetryAt[next.key] = android.os.SystemClock.elapsedRealtime() + attempt * 15_000L
+                    state.value = state.value.copy(captureErrors = state.value.captureErrors +
+                        (next.key to (if(attempt < 3 && !permanent) "连接暂时中断，稍后自动重试。" else "原音已保存。${e.message?.take(180) ?: "转写暂未完成，请重试。"}")))
+                    if(e is BackendHttpException && e.status == 401) { report("登录已失效，请重新登录。录音和文字草稿已保留。"); break }
+                }
+            }
+        }
+    }
+    private fun refreshCaptureFeed() {
+        val s = session ?: return
+        if(feedJob?.isActive == true || state.value.busy || state.value.subject.isBlank()) return
+        val path = root()
+        feedJob = viewModelScope.launch {
+            try {
+                val result = io { client.json(s, "$path/stories") }
+                gate.requireCurrent(s)
+                val wasReady = state.value.stories.filter { it.text("status")=="ready" }.map { it.text("episode_id") }.toSet()
+                val analyzed = state.value.stories.filter { it.optJSONObject("cumulative_analysis")?.text("status")=="complete" }.map { it.text("episode_id") }.toSet()
+                val remainsOwner=result.text("role")=="owner"
+                val resolvedSpace=state.value.space?.let { JSONObject(it.toString()).put("role",result.text("role")) }
+                if(state.value.owner && !remainsOwner) {
+                    closeRecorder(); captureJob?.cancel(); endVoice(); stopSource(); audio.stopPlayback()
+                    state.value=state.value.forSpaceFallback(state.value.spaces,resolvedSpace).copy(stories=result.rows())
+                } else state.value=state.value.copy(stories=result.rows(),space=resolvedSpace)
+                if(state.value.owner) syncDrafts(s)
+                // The expensive person view refreshes when memories change,
+                // rather than blocking every screen every eight seconds.
+                if(result.rows().any { (it.text("status")=="ready" && it.text("episode_id") !in wasReady) ||
+                        (it.optJSONObject("cumulative_analysis")?.text("status")=="complete" && it.text("episode_id") !in analyzed) }) {
+                    refreshNow(s)
+                }
+            } catch(e: Exception) {
+                if(e is CancellationException) throw e
+                if(gate.accepts(s) && e is BackendHttpException && e.status in setOf(401,403,404)) {
+                    closeRecorder(); captureJob?.cancel(); stopSource(); audio.stopPlayback()
+                    state.value = state.value.copy(stories=emptyList(), drafts=emptyMap(), local=emptyList(),reviewEpisode=null)
+                    report("访问状态已变化，请重新登录或刷新空间。")
+                }
+                // A transient network error retains the displayed draft/audio.
+            }
+        }
+    }
+    private suspend fun syncDrafts(s: BackendSession) {
+        gate.requireCurrent(s)
+        val key = scopeKey(s)
+        if(loadedDraftScope != key) {
+            val saved = draftLock.withLock { io { draftStore.read(key) } }
+            gate.requireCurrent(s)
+            state.value = state.value.copy(drafts = saved + state.value.drafts)
+            loadedDraftScope = key
+        }
+        val reviewed = state.value.stories.filter { it.optBoolean("reviewed") }.map { it.text("episode_id") }.toSet()
+        if(state.value.drafts.keys.any { it in reviewed }) {
+            state.value = state.value.copy(drafts=state.value.drafts.filterKeys { it !in reviewed })
+            persistDrafts(s)
+        }
+        for(story in state.value.stories.filter { it.optBoolean("waiting_for_review") }) {
+            val id = story.text("episode_id")
+            if(reviewLinkPending(id)) continue
+            if(id in state.value.drafts) continue
+            val result = io { client.json(s, "/api/v1/episodes/${segment(id)}/transcript-review") }
+            gate.requireCurrent(s)
+            if(result.text("state") == "reviewing") {
+                val draft = CaptureDraft.fromReview(id,result)
+                state.value = state.value.copy(drafts = state.value.drafts + (id to draft))
+                persistDrafts(s)
+            }
+        }
+    }
+    private suspend fun persistDrafts(s: BackendSession) {
+        gate.requireCurrent(s)
+        val key=scopeKey(s); val snapshot=state.value.drafts
+        draftLock.withLock { io { draftStore.write(key,snapshot) } }
+        if(gate.accepts(s)) state.value=state.value.copy(draftSaveError=null)
+    }
+    private fun saveDraftEdits() {
+        val s=session ?: return
+        // Capture the identity and snapshot before switching dispatchers. A
+        // late write from a previous space can never enter the new space file.
+        val key=scopeKey(s); val snapshot=state.value.drafts
+        viewModelScope.launch {
+            try {
+                draftLock.withLock { io { draftStore.write(key,snapshot) } }
+                if(gate.accepts(s)) state.value=state.value.copy(draftSaveError=null)
+            } catch(e: Exception) { if(e is CancellationException) throw e
+                if(gate.accepts(s)) state.value=state.value.copy(draftSaveError="草稿暂未保存到手机，请保留页面后重试。") }
+        }
+    }
+    fun focusDraft(id: String) { state.value=state.value.copy(draftFocus=id) }
+    private fun reviewLinkPending(id: String): Boolean = state.value.local.any { it.blocksReview &&
+        (it.episode==id || (it.episode.isBlank() && it.autoProcess && state.value.local.none { row -> row.episode==id })) }
+    fun editDraft(id: String, text: String, supplement: String? = null) {
+        if(text.length > 100_000 || (supplement?.length ?: 0)>3000 || state.value.savingEpisode==id) return
+        val draft=state.value.drafts[id] ?: return
+        state.value=state.value.copy(drafts=state.value.drafts + (id to draft.copy(text=text, supplement=supplement ?: draft.supplement)))
+        saveDraftEdits()
+    }
+    fun saveDraft(id: String) {
+        val s=session ?: return; val draft=state.value.drafts[id] ?: return
+        if(reviewLinkPending(id)) { report("正在完成这段录音与原记忆的关联，请稍后保存。"); return }
+        if(state.value.savingEpisode.isNotBlank() || state.value.busy) return
+        if(draft.text.isBlank()) { report("请先填写要保存的文字。"); return }
+        state.value=state.value.copy(savingEpisode=id)
+        operation(s) {
+            try {
+                val consent=io { client.consent(s,state.value.subject,"CLOUD_TWIN") }
+                io { client.json(s,"/api/v1/episodes/${segment(id)}/transcript-review","PATCH",
+                    JSONObject().put("transcript",draft.text.trim()).put("supplement",draft.supplement.trim())
+                        .put("cloud_analysis_consent_id",consent)) }
+                gate.requireCurrent(s)
+                state.value=state.value.copy(drafts=state.value.drafts-id, notice="已保存，正在整理记忆。")
+                persistDrafts(s)
+                if(state.value.reviewEpisode==id) closeReview()
+                refreshNow(s)
+            } finally { if(gate.accepts(s)) state.value=state.value.copy(savingEpisode="") }
+        }
+    }
     private fun beginOperation(): Long {
         val id = ++operationSequence
         state.value = state.value.copy(busy = true, error = null, operation = OperationFeedback(id, ActionPhase.RUNNING))
@@ -221,8 +379,9 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             polling?.cancel()
             polling = viewModelScope.launch {
                 while(isActive && gate.accepts(next)) {
-                    delay(8_000)
-                    if(foreground && pendingTransfer == null && !state.value.busy && !state.value.recording && state.value.subject.isNotBlank()) refresh()
+                    delay(if(hasPendingCaptureWork()) 5_000 else 30_000)
+                    if(foreground && pendingTransfer == null && !state.value.recording && state.value.subject.isNotBlank()) refreshCaptureFeed()
+                    pumpCaptures()
                 }
             }
         }
@@ -231,13 +390,16 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(state.value.busy || state.value.recording) return
         if(state.value.spaces.none { it.text("subject_id") == space.text("subject_id") }) return
         session?.let { spacePreferences.edit().putString("${it.server}:${state.value.actor}", space.text("subject_id")).apply() }
-        closeRecorder(); endVoice();stopSource(); audio.stopPlayback(); polling?.cancel(); reminders.disable(); pendingTransfer = null
+        closeRecorder(); endVoice();stopSource(); audio.stopPlayback(); polling?.cancel(); captureJob?.cancel(); feedJob?.cancel()
+        captureAttempts.clear(); captureRetryAt.clear(); reminders.disable(); pendingTransfer = null
         session = gate.advance()
         state.value = NativeState(actor = state.value.actor, actorName = state.value.actorName, spaces = state.value.spaces, space = space)
         refresh()
         val next = session ?: return
         polling = viewModelScope.launch { while(isActive && gate.accepts(next)) {
-            delay(8_000); if(foreground && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()
+            delay(if(hasPendingCaptureWork()) 5_000 else 30_000)
+            if(foreground && pendingTransfer == null && !state.value.recording) refreshCaptureFeed()
+            pumpCaptures()
         } }
     }
     fun logout() {
@@ -256,6 +418,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         endVoice()
         reminders.disable(); creationKeys.clear()
         gate.clear(); session = null; polling?.cancel(); ticker?.cancel(); recordTarget = null; activeCapture = null; pendingTransfer = null
+        captureJob?.cancel(); feedJob?.cancel(); captureAttempts.clear(); captureRetryAt.clear(); loadedDraftScope=""
         stopSource(); audio.stopPlayback(); state.value = NativeState()
     }
     private fun root() = "${BackendClient.WORKBENCH}/${segment(state.value.subject)}"
@@ -288,8 +451,8 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         try { stream.write(data.toString().toByteArray()); ledger.finishWrite(stream) }
         catch(error: Exception) { ledger.failWrite(stream); throw error }
     }
-    private fun localCaptures(s: BackendSession): List<LocalCapture> {
-        val links = records().optJSONArray(scopeKey(s)) ?: JSONArray()
+    private fun localCaptures(key: String): List<LocalCapture> {
+        val links = records().optJSONArray(key) ?: JSONArray()
         val available = audio.recordings().associateBy { it.audioPath }
         return (0 until links.length()).mapNotNull { i ->
             val row = links.getJSONObject(i)
@@ -300,15 +463,18 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                 row.optJSONObject("revision")?.let { RevisionTarget(it.text("memory"), it.text("kind"), it.text("time")) }, row.optBoolean("linked"),
                 row.optJSONObject("client_transcript")?.let { runCatching { ClientTranscript.parse(it.toString()) }.getOrNull() }, row.optBoolean("upload_attempted"),
                 if(row.has("upload_with_transcript")) row.getBoolean("upload_with_transcript") else null,
-                row.text("calibration_id"), row.text("source").ifBlank { "ANDROID_MIC" }, row.text("hardware_import_id")) }
+                row.text("calibration_id"), row.text("source").ifBlank { "ANDROID_MIC" }, row.text("hardware_import_id"), row.optBoolean("auto_process")) }
         }.reversed()
     }
-    private fun saveCapture(s: BackendSession, capture: LocalCapture) {
+    private suspend fun saveCapture(s: BackendSession, capture: LocalCapture) {
         gate.requireCurrent(s)
-        val all = records(); val key = scopeKey(s); val values = all.optJSONArray(key) ?: JSONArray()
+        val key = scopeKey(s)
+        val captures = captureLedgerLock.withLock { io {
+        val all = records(); val values = all.optJSONArray(key) ?: JSONArray()
         val row = JSONObject().put("path", capture.recording.audioPath).put("key", capture.key).put("episode", capture.episode).put("linked", capture.linked)
             .put("upload_attempted", capture.uploadAttempted)
             .put("calibration_id",capture.calibrationId).put("source",capture.source)
+            .put("auto_process",capture.autoProcess)
         if(capture.source in setOf("IMPORT", "WORK_3200")) row.put("imported_recording",RecordingMetadata.encode(capture.recording))
         if(capture.hardwareImportId.isNotBlank()) row.put("hardware_import_id",capture.hardwareImportId)
         capture.transcript?.let { row.put("client_transcript", it.toJson()) }
@@ -317,7 +483,10 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val index = (0 until values.length()).firstOrNull { values.getJSONObject(it).text("path") == capture.recording.audioPath }
         if(index == null) values.put(row) else values.put(index, row)
         all.put(key, values); writeRecords(all)
-        state.value = state.value.copy(local = localCaptures(s))
+        localCaptures(key)
+        } }
+        gate.requireCurrent(s)
+        state.value = state.value.copy(local = captures)
     }
     fun refresh() { val s = session ?: return; operation(s) {
         try { refreshNow(s) } catch(error: Exception) {
@@ -371,19 +540,25 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val changed = state.value.stories.map { it.toString() } != stories.rows().map { it.toString() } ||
             state.value.grants.map { it.toString() } != grants.rows().map { it.toString() } ||
             state.value.candidates.map { it.toString() } != candidates.rows().map { it.toString() } || state.value.narrative.toString() != narrative.toString() || state.value.companion.toString() != companion.toString() || state.value.voiceProfile.toString() != voiceProfile.toString()
-        if(changed) { stopSource(); audio.stopPlayback() }
+        // New recordings and processing updates must not stop an unrelated
+        // original currently playing. Losing access still clears the player.
+        if(state.value.playerAccessLost(stories.rows())) { stopSource(); audio.stopPlayback() }
         val savedAnswer=if(changed) null else state.value.answer?.let { answer ->
             try { io {client.json(s,"${subjectRoot()}/twin/answers/${segment(answer.text("answer_id"))}")} }
             catch(e: BackendHttpException) { if(e.status in setOf(403,404,409)) {stopSource();null} else throw e }
         }
+        val restoredCompanion = state.value.companionAudio ?: io { companionDrafts().optJSONObject(companionDraftKey(s))?.let(::restoredCompanionAudio) }
+        val localRows = if(owner) captureLedgerLock.withLock { val key=scopeKey(s); io {localCaptures(key)} } else emptyList()
+        gate.requireCurrent(s)
         state.value = state.value.copy(space = state.value.space?.put("role", stories.text("role").ifBlank { selected?.text("role") ?: "companion" }), stories = stories.rows(),
             grants = grants.rows(), requests = requests.rows(), revisions = revisions, candidates = candidates.rows(), asrCapabilities = capabilities,
             serviceInfo = info, invitations = invitations, recipients = recipients, companion = companion, voiceProfile = voiceProfile, voiceGrants = voiceGrants,
             contributionOriginal = retainedContributionOriginal(state.value.contributionOriginal, companion.rows("contributions")),
             calibrations = calibrations,
-            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, narrative = narrative, narrativeJobs = narrativeJobs, local = if(owner) localCaptures(s) else emptyList(),
+            candidateJobs = candidates.rows("jobs"), profileUpdates = updates, vocabulary = vocabulary, portrait = portrait, narrative = narrative, narrativeJobs = narrativeJobs, local = localRows,
             answer = savedAnswer, search = if(changed) emptyList() else state.value.search,
-            companionAudio = state.value.companionAudio ?: companionDrafts().optJSONObject(companionDraftKey(s))?.let(::restoredCompanionAudio))
+            companionAudio = restoredCompanion)
+        if(owner) { syncDrafts(s); pumpCaptures() }
     }
     fun start(revision: RevisionTarget?, calibrationId: String = "") {
         val s = session ?: return
@@ -393,7 +568,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             stopSource()
             val started = audio.start()
             recordTarget = revision
-            val capture = LocalCapture(started, "android-${File(started.audioPath).nameWithoutExtension}", revision = revision, calibrationId = calibrationId)
+            val capture = LocalCapture(started, "android-${File(started.audioPath).nameWithoutExtension}", revision = revision, calibrationId = calibrationId, autoProcess = calibrationId.isBlank())
             activeCapture = capture
             try { saveCapture(s, capture) } catch(error: Exception) {
                 runCatching { audio.stop() }; activeCapture = null; throw error
@@ -426,27 +601,35 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             activeCapture = null
             recordTarget = null
             // Publish only after both the audio and the scoped capture ledger are saved.
-            state.value = state.value.copy(savedCaptureId = recording.audioPath, notice = "原音已保存到本机。请明确同意录音上传后继续。")
+            state.value = state.value.copy(savedCaptureId = recording.audioPath, notice = "收到录音，正在转成文字。")
+            pumpCaptures()
             after?.invoke()
         }
     }
     fun upload(capture: LocalCapture, recordingConsent: Boolean) {
         val s = session ?: return
         if(!recordingConsent) { report("请先确认本段完整原音的上传与转写方式；原音仍保留本机。"); return }
-        val caps = state.value.asrCapabilities ?: run { report("请先刷新转写配置。"); return }
+        viewModelScope.launch {
+            try { saveCapture(s, capture.copy(autoProcess=true)); captureAttempts.remove(capture.key); captureRetryAt.remove(capture.key); pumpCaptures() }
+            catch(e: Exception) { if(e is CancellationException) throw e; if(gate.accepts(s)) report(e.message ?: "未能加入转写队列。") }
+        }
+    }
+    private suspend fun uploadCapture(s: BackendSession, capture: LocalCapture) {
+        gate.requireCurrent(s)
+        val caps = checkNotNull(state.value.asrCapabilities) { "正在获取转写配置，请稍后重试。" }
         val clientAsr = capture.usesClientTranscript(caps.text("stt") == "client")
         if(!clientAsr && caps.text("stt_processing") == "cloud" && !caps.optBoolean("stt_configured")) {
-            report("云端转写配置尚未完成，原音保留本机，请配置后再上传。"); return
+            error("转写服务暂不可用，原音已保存。")
         }
         val asrPolicy = if(!clientAsr && caps.text("stt_processing") == "cloud") caps.text("cloud_asr_policy") else null
         val correctionPolicy = if(!clientAsr) caps.text("transcript_correction_policy").takeIf { it.isNotBlank() } else null
         if(clientAsr && capture.episode.isBlank() && capture.transcript == null) {
-            report("请先取回这段原音对应的机器转写，再上传并核对；原音已保存。"); return
+            error("当前服务需要外部机器稿，请在我的录音中继续。")
         }
         if(!state.value.owner) return
         val subject = state.value.subject; val path = root()
-        operation(s) {
-            if(clientAsr) capture.transcript?.requireMatches(File(capture.recording.audioPath))
+        run {
+            if(clientAsr) io { capture.transcript?.requireMatches(File(capture.recording.audioPath)) }
             val sending = capture.beginUpload(clientAsr).also { saveCapture(s, it) }
             val consent = io { client.consent(s, subject, "RECORDING") }
             val hardwareIdentity = if(capture.source == "WORK_3200") hardwareScope() else null
@@ -464,7 +647,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             try { submitCapture(sending,
                 upload = { io { client.upload(s, subject, consent, capture.recording, capture.key, asrPolicy, if(clientAsr) sending.transcript else null, capture.calibrationId, capture.source, correctionPolicy, metadata) { sent, total ->
                     viewModelScope.launch { if(gate.accepts(s) && state.value.uploadKey == capture.key)
-                        state.value = state.value.copy(uploadPercent = transferPercent(sent, total)) }
+                        if(state.value.uploadPercent != transferPercent(sent,total)) state.value = state.value.copy(uploadPercent = transferPercent(sent, total)) }
                 } } },
                 persist = { saved ->
                     saveCapture(s, saved)
@@ -476,8 +659,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                     .put("target_memory_id", revision.memory).put("kind", revision.kind)
                     .put("time_text", revision.time.ifBlank { null })) }
             }) } finally { if(gate.accepts(s)) state.value = state.value.copy(uploadKey = "", uploadPercent = null) }
-            state.value = state.value.copy(notice = if(clientAsr) "原音与机器稿已保存到服务器，请到档案核对文字后再整理。" else "上传已接收，原音留在本机。等待转写后核对文字。")
-            refreshNow(s)
+            refreshCaptureFeed()
         }
     }
     fun beginCaptureTransfer(capture: LocalCapture, importing: Boolean): String? {
@@ -525,11 +707,13 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             val result = io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review") }
             check(result.text("state") == "reviewing") { "转写尚未完成或已经提交，请刷新后查看。" }
             val warnings = result.optJSONArray("review_warnings") ?: JSONArray()
-            state.value = state.value.copy(reviewEpisode = episode, reviewText = result.text("transcript"), reviewSupplement = result.text("supplement"),
+            val draft=state.value.drafts[episode] ?: CaptureDraft.fromReview(episode,result)
+            state.value = state.value.copy(drafts=state.value.drafts+(episode to draft), reviewEpisode = episode, reviewText = draft.text, reviewSupplement = draft.supplement,
                 reviewMachineText = result.text("machine_transcript"), reviewCorrection = result.optJSONObject("automatic_correction"),
                 reviewHighlights = result.optJSONObject("recording_highlights"),
                 reviewInitialText = result.text("transcript"), reviewWarnings = (0 until warnings.length()).map { warnings.optString(it) },
                 reviewParagraphPreview = result.optString("paragraph_preview").takeIf { it.isNotBlank() && it != "null" })
+            persistDrafts(s)
         }
     }
     fun closeReview() { state.value = state.value.copy(reviewEpisode = null, reviewText = "", reviewSupplement = "", reviewInitialText = "", reviewWarnings = emptyList(), reviewParagraphPreview = null, reviewMachineText = "", reviewCorrection = null) }
@@ -538,20 +722,20 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(current.reviewEpisode != null && current.reviewText == current.reviewInitialText && current.reviewParagraphPreview != null)
             state.value = current.copy(reviewText = current.reviewParagraphPreview)
     }
-    fun editSupplement(text: String) { if(text.length <= 3000) state.value = state.value.copy(reviewSupplement = text) }
+    fun editSupplement(text: String) { if(text.length <= 3000) {
+        state.value = state.value.copy(reviewSupplement = text)
+        state.value.reviewEpisode?.let { editDraft(it,state.value.reviewText,text) }
+    } }
     fun saveVocabulary(text: String) { mutation("/vocabulary", "PUT", JSONObject().put("text", text)) }
     fun editReview(episode: String, text: String) {
-        if(state.value.reviewEpisode == episode) state.value = state.value.copy(reviewText = text)
+        if(state.value.reviewEpisode == episode) { state.value = state.value.copy(reviewText = text); editDraft(episode,text) }
     }
     fun confirmReview(text: String, cloudConfirmed: Boolean) {
-        val s = session ?: return; val episode = state.value.reviewEpisode ?: return
+        val episode = state.value.reviewEpisode ?: return
         if(!cloudConfirmed) { report("请确认将核对后的文字交由服务器整理；其配置的云端模型会收到文字。"); return }
         if(text.isBlank()) { report("核对文字不能为空。"); return }
-        operation(s) {
-            io { client.json(s, "/api/v1/episodes/${segment(episode)}/transcript-review", "PATCH", JSONObject().put("transcript", text.trim()).put("supplement", state.value.reviewSupplement.trim())) }
-            closeReview(); state.value = state.value.copy(notice = "文字已核对提交，原音与机器转写保留。")
-            refreshNow(s)
-        }
+        editDraft(episode,text,state.value.reviewSupplement)
+        saveDraft(episode)
     }
     fun mutation(suffix: String, method: String, body: JSONObject? = null, subjectApi: Boolean = false, onSuccess: (() -> Unit)? = null) {
         val s = session ?: return; val path = if(subjectApi) subjectRoot() else root()
@@ -907,7 +1091,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         if(!value)callState.value?.pause("已暂停聆听")
         playbackGate.setForeground(value)
         if(!value) { stopSource(); audio.stopPlayback(); if(state.value.companionRecording.isNotBlank()) finishCompanionRecording() else if(state.value.recording) finish() }
-        else if(session != null && pendingTransfer == null && !state.value.busy && !state.value.recording) refresh()
+        else if(session != null && pendingTransfer == null && !state.value.busy && !state.value.recording) { refreshCaptureFeed(); pumpCaptures() }
     }
     private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
     private fun operation(s: BackendSession, block: suspend () -> Unit) {
@@ -939,3 +1123,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
     override fun onCleared() { closeRecorder(); endVoice();gate.clear(); stopSource(); audio.release(); super.onCleared() }
 }
+
+internal fun NativeState.playerAccessLost(stories: List<JSONObject>): Boolean =
+    player.episode.isNotBlank() && !player.episode.contains(':') &&
+        stories.none { it.text("episode_id")==player.episode && !it.optBoolean("unavailable") }

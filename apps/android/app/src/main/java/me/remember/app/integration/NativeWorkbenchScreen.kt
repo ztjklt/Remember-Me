@@ -123,7 +123,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     BackHandler(state.recording && state.calibrationId.isNotBlank() && state.companionRecording.isBlank()) { model.finish() }
     if(recordingPage && state.owner) {
         StoryRecordingFlow(state,model,revision,{revision=it},
-            {revision=null;recordingPage=false},{recordingPage=false;tab=1;archiveMode=0})
+            {revision=null;recordingPage=false},{recordingPage=false;tab=0})
         return
     }
     Scaffold(modifier = backdrop, containerColor = androidx.compose.ui.graphics.Color.Transparent, bottomBar = {
@@ -187,16 +187,18 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     TextButton(onClick = model::logout, enabled = !state.busy) { Text("退出身份") }
                 }
                 if(tab == 0 && !appearance.simpleMode) Text(if(state.owner) "把这一刻留下来" else "听听${state.space?.text("display_name").orEmpty()}留下的故事。", style = MaterialTheme.typography.headlineMedium)
-                if(state.notice.isNotBlank() && (tab!=1 || archiveMode==0)) Text(state.notice, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
+                if(state.notice.isNotBlank() && tab!=0 && (tab!=1 || archiveMode==0)) Text(state.notice, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.padding(vertical = 8.dp))
                 if(appearance.simpleMode) SimpleSourcePlayer(state, model)
                 else if(state.player.episode.isNotBlank()) GardenMiniPlayer(state.player,
                     {if(state.player.playing) model.pauseSource() else model.resumeSource()},model::seekSource,model::stopSource)
                 if(localPlayer.audioPath != null) Panel {
-                    Text("本机原音 ${clock(localPlayer.positionMillis)} / ${clock(localPlayer.durationMillis)}")
+                    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+                        Text("原音 ${clock(localPlayer.positionMillis)} / ${clock(localPlayer.durationMillis)}",modifier=Modifier.weight(1f),style=MaterialTheme.typography.bodyMedium)
+                        IconButton(onClick={if(localPlayer.playing) model.audio.pausePlayback() else model.audio.resumePlayback()}) { Icon(if(localPlayer.playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,if(localPlayer.playing) "暂停原音" else "播放原音") }
+                        IconButton(onClick=model.audio::stopPlayback) { Icon(Icons.Outlined.Close,"关闭原音") }
+                    }
                     RememberAudioScrubber("$identity:${localPlayer.audioPath}",localPlayer.positionMillis,localPlayer.durationMillis,
                         enabled=!localPlayer.preparing,seek=model.audio::seekPlayback)
-                    Row { TextButton(onClick = { if(localPlayer.playing) model.audio.pausePlayback() else model.audio.resumePlayback() }) { Text(if(localPlayer.playing) "暂停" else "继续播放") }
-                        TextButton(onClick = model.audio::stopPlayback) { Text("停止本机播放") } }
                 }
                 if(state.subject.isNotBlank()) {
                     Column(Modifier.weight(1f).clipToBounds().rememberPageEntrance("$identity:$tab").then(if(tab==1 && archiveMode==2) Modifier else Modifier.verticalScroll(scrollPositions[tab])).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -300,12 +302,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         }
     }
     state.reviewEpisode?.let { id ->
-        var cloud by remember(id) { mutableStateOf(false) }
-        val leaveReview: () -> Unit = {
-            if(appearance.simpleMode && (state.reviewText != state.reviewInitialText || state.reviewSupplement.isNotBlank()))
-                confirm = ActionConfirmation("这次修改还没有提交。退出会放弃刚改的文字，原音与机器稿仍然保留。", false, model::closeReview)
-            else model.closeReview()
-        }
+        val leaveReview: () -> Unit = model::closeReview
         NativeDialog("看看这段文字", leaveReview) {
             state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             val correction = state.reviewCorrection
@@ -351,9 +348,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             OutlinedTextField(state.reviewText, { model.editReview(id, it) }, label = { Text("核对后的文字") }, modifier = Modifier.fillMaxWidth(), minLines = 6)
             OutlinedTextField(state.reviewSupplement, model::editSupplement, label = { Text("本次补充说明（选填）") }, placeholder = { Text("例如：这里的老隗是同事隗师傅；方言‘落屋’指回家。") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
             if(state.vocabulary.isNotBlank()) Action("带入我的用词") { model.editSupplement(listOf(state.reviewSupplement, state.vocabulary).filter { it.isNotBlank() }.joinToString("\n")) }
-            Check("我确认文字与补充说明，并同意交由云端模型整理和用于之后的问答。", cloud, { cloud = it })
-            RememberActionButton("确认文字并整理", ready && cloud && state.reviewText.isNotBlank(), filled=true,
-                pendingLabel="正在提交核对稿…", successLabel="已提交整理") { model.confirmReview(state.reviewText, cloud) }
+            RememberActionButton("保存到记忆", ready && state.reviewText.isNotBlank(), filled=true,
+                pendingLabel="正在保存…", successLabel="已保存") { model.confirmReview(state.reviewText, true) }
             if(appearance.simpleMode) TextButton(onClick=leaveReview,modifier=Modifier.heightIn(min=60.dp)) {Text("稍后再核对")}
         }
     }
@@ -374,11 +370,11 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         importTicket?.let { id -> if(uri == null) model.cancelCaptureTransfer(id) else model.importTranscript(id) { resolver.openInputStream(uri) } }
         importTicket = null
     }
-    if(state.local.isNotEmpty()) Text("本机原音",style=MaterialTheme.typography.titleMedium)
-    state.local.forEach { capture -> Panel {
+    val pending=state.local.filter { !it.linked }
+    if(pending.isNotEmpty()) Text("待处理录音",style=MaterialTheme.typography.titleMedium)
+    pending.forEach { capture -> Panel {
         val caps = state.asrCapabilities
         val clientAsr = capture.usesClientTranscript(caps?.text("stt") == "client")
-        var uploadConsent by remember(capture.key, caps?.text("cloud_asr_policy"), caps?.text("transcript_correction_policy"), clientAsr, capture.transcript) { mutableStateOf(false) }
         Text(recordingDate(capture.recording.createdAt) + " · " + clock(capture.recording.durationMillis))
         Text(if(capture.source == "WORK_3200") "来源：录音豆" else if(capture.source == "IMPORT") "来源：导入" else "来源：手机录音", style = MaterialTheme.typography.labelMedium)
         if(state.uploadKey == capture.key) {
@@ -406,15 +402,11 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         if(!capture.linked) {
             val configured = caps != null && (clientAsr || caps.text("stt_processing") != "cloud" || caps.optBoolean("stt_configured")) &&
                 (!clientAsr || capture.transcript != null || capture.episode.isNotBlank())
-            val destination = if(caps?.text("stt_processing") == "cloud")
-                "云端 ${caps.text("stt_host").ifBlank { "地址待配置" }}（${caps.text("stt_model")}）" else "配置的转写服务"
-
-            Check(if(clientAsr) "同意将本段完整原音及机器稿保存到服务器；本机文件保留，核对后才整理记忆。"
-                else if(!caps?.text("transcript_correction_policy").isNullOrBlank()) "同意云端转文字，并用文字模型修正错词"
-                else "同意上传完整原音，交由云端转文字", uploadConsent, { uploadConsent = it }, configured)
             if(!configured) Text(if(clientAsr) "取回机器转写后即可上传，原音仍保留本机。" else "转写连接配置未完成，原音仍保留本机。")
-            RememberActionButton(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording && uploadConsent,
-                filled=true, pendingLabel="正在上传原音…", successLabel="已提交识别") { model.upload(capture, uploadConsent) }
+            val error=state.captureErrors[capture.key]
+            if(capture.autoProcess && error==null) Text("自动转写中…")
+            else RememberActionButton(if(capture.episode.isBlank()) "转成文字" else "重试上传与关联", configured && !state.busy && !state.recording,
+                filled=true, pendingLabel="正在上传原音…", successLabel="已提交识别") { model.upload(capture, true) }
         }
     } }
 }

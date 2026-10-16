@@ -78,7 +78,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     }
     private fun publishTimeline() {
         mutable.value = mutable.value.copy(recordPhase = timeline.phase, recordingFileId = timeline.fileId,
-            elapsedMs = timeline.elapsedMs(), recordMarks = timeline.marks)
+            elapsedMs = timeline.elapsedMs() / 1000 * 1000, recordMarks = timeline.marks)
     }
 
     fun notice(message: String) { mutable.value = mutable.value.copy(message = message) }

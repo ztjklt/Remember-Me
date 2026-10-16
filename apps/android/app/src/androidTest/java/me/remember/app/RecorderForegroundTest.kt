@@ -70,13 +70,13 @@ class RecorderForegroundTest {
             ui.waitUntil(10000) { controller.ui.value.connected }
             ui.runOnIdle { events.recording(1, 2000, 1700000000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
-            ui.onNodeWithText("录音豆正在录音").assertExists()
+            ui.onNodeWithText("正在记录这一刻").assertExists()
             ui.runOnIdle { visible.value = false }
             ui.onNodeWithText("另一页面").assertExists()
             assertFalse("disposing the device panel must not close SDK", closed)
             assertTrue(foreground()); assertTrue(controller.ui.value.connected)
             ui.runOnIdle { visible.value = true }
-            ui.onNodeWithText("录音豆正在录音").assertExists()
+            ui.onNodeWithText("正在记录这一刻").assertExists()
         } finally { ui.runOnIdle { controller.close() }; ui.waitUntil(10000) { !foreground() } }
     }
 }
