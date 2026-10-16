@@ -78,8 +78,8 @@ def validate_proposals(result, materials, episode_texts):
 def run_profile_once(database, client):
     """Claim/commit, perform network work unlocked, then source-CAS publication.
 
-    Explicit retries create a new queued job; interrupted jobs are failed on
-    worker startup, never silently resubmitted to the cloud.
+    Manual jobs require explicit retry. The automatic capture workflow opts in
+    to at most two retries for interruption, transport or changed sources.
     """
     with database.session() as session:
         queued=select(ProfileRefresh).where(ProfileRefresh.status=='queued').order_by(ProfileRefresh.created_at)
@@ -152,5 +152,7 @@ def run_profile_once(database, client):
             job=session.get(ProfileRefresh,id); job.status,job.updated_at='failed',utcnow()
             # No provider body or credentials in durable user-visible errors.
             job.error = str(exc) if isinstance(exc,ValueError) else '人物归纳未完成；已保存资料保留，请检查服务后重试。'
+            from .automatic_profiles import automatic_retry
+            automatic_retry(job, exc)
             session.commit()
     return id

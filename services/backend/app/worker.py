@@ -301,6 +301,9 @@ class ProcessingWorker:
                 # reading it would issue another query, whose failure would turn
                 # a stage that committed fine into a crash the operator sees.
                 fields = self._stage_fields(stage, episode, started, job_id)
+                if stage is JobStage.MODEL:
+                    from .automatic_profiles import enqueue_automatic_profile
+                    enqueue_automatic_profile(session, episode)
                 session.commit()
                 logger.info(
                     "stage.completed",

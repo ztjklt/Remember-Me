@@ -91,6 +91,7 @@ class TranscriptReview(BaseModel):
 class ConfirmTranscript(BaseModel):
     transcript: str = Field(min_length=1, max_length=100_000)
     supplement: str = Field(default='', max_length=3000)
+    cloud_analysis_consent_id: str | None = Field(default=None, max_length=64)
 
 # Read the upload in bounded pieces so a body larger than the limit is refused
 # while it is being read rather than after it is all in memory.
@@ -577,6 +578,10 @@ def confirm_transcript(
         raise RequestInvalid("The confirmed transcript cannot be blank")
     if episode.source not in {str(CaptureSource.IOS_MIC), str(CaptureSource.IMPORT), str(CaptureSource.ANDROID_MIC), str(CaptureSource.WORK_3200)}:
         raise RequestInvalid("Transcript review requires a supported recording source")
+    if payload.cloud_analysis_consent_id:
+        from ..access import require_owner, require_cloud
+        require_owner(session, episode.subject_id, actor.actor_id)
+        require_cloud(session, episode.subject_id, actor.actor_id, payload.cloud_analysis_consent_id)
     if episode.transcript_reviewed_at is not None:
         if episode.transcript == text and (episode.capture_metadata or {}).get('review_supplement','') == payload.supplement.strip():
             return ProcessingStatus(episode_id=episode_id, status=EpisodeStatus(episode.status),
@@ -598,6 +603,9 @@ def confirm_transcript(
         raise RequestInvalid("The transcript was already confirmed")
     episode.transcript = text
     episode.capture_metadata = {**(episode.capture_metadata or {}), 'review_supplement':payload.supplement.strip()}
+    if payload.cloud_analysis_consent_id:
+        episode.capture_metadata = {**episode.capture_metadata, 'automatic_profile': {
+            'consent_id': payload.cloud_analysis_consent_id, 'status': 'waiting_for_memories'}}
     episode.transcript_reviewed_at = now
     episode.transcript_reviewed_by = actor.actor_id
     episode.status = str(EpisodeStatus.EXTRACTING)

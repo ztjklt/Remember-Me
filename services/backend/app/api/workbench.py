@@ -160,7 +160,12 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                 'evidence': [{'evidence_id': e.evidence_id, 'excerpt': e.excerpt,
                     'source_type': e.source_type, 'episode_id': e.episode_id} for e in sources
                     if e is not None and e.episode_id == episode.episode_id]})
+        analysis = (episode.capture_metadata or {}).get('automatic_profile', {})
+        from ..models import ProfileRefresh
+        analysis_job = session.get(ProfileRefresh, analysis['job_id']) if owner and analysis.get('job_id') else None
         items.append({'episode_id': episode.episode_id, 'status': episode.status,
+            'cumulative_analysis': ({'status': analysis_job.status if analysis_job else analysis.get('status'),
+                'error': analysis_job.error if analysis_job else None} if owner and analysis else None),
             'recorded_at': as_utc(episode.recorded_at).isoformat(), 'duration_ms': episode.duration_ms,
             'transcript': None if unavailable else (simplified_transcript(episode.transcript)
                 if episode.transcript is not None and episode.transcript_reviewed_at is None else episode.transcript),
