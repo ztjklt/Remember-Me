@@ -27,6 +27,21 @@ class Settings(BaseSettings):
     work3200_app_key: SecretStr = SecretStr('')
     work3200_environment: Literal['DEVELOPMENT', 'PRODUCTION'] = 'DEVELOPMENT'
 
+    # Account-free contact entrustment. Disabled until key, URL and delivery are configured.
+    contact_entrustment_key: SecretStr = SecretStr('')
+    contact_entrustment_public_url: str = ''
+    contact_smtp_host: str = ''
+    contact_smtp_port: int = Field(default=465, ge=1, le=65535)
+    contact_smtp_tls: Literal['ssl', 'starttls'] = 'ssl'
+    contact_smtp_username: str = ''
+    contact_smtp_password: SecretStr = SecretStr('')
+    contact_smtp_from: str = ''
+    contact_sms_access_key_id: str = ''
+    contact_sms_access_key_secret: SecretStr = SecretStr('')
+    contact_sms_sign_name: str = ''
+    contact_sms_code_template: str = ''
+    contact_sms_notice_template: str = ''
+
     # SQLite is the local development and test default. Deployment supplies a
     # PostgreSQL DSN and adds the driver (see ADR-0001 D3).
     database_url: str = "sqlite:///./var/remember-me.db"

@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remember-me.local/contracts/contact-entrustment-v1.schema.json",
+  "title": "Contact Entrustment v1",
+  "$defs": {
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "episode",
+            "dedicated"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "Selection": {
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/Source"
+          },
+          "maxItems": 30,
+          "title": "Sources",
+          "type": "array"
+        }
+      },
+      "title": "Selection",
+      "type": "object"
+    },
+    "Create": {
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/Source"
+          },
+          "maxItems": 30,
+          "title": "Sources",
+          "type": "array"
+        },
+        "recipient_label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Recipient Label",
+          "type": "string"
+        },
+        "channel": {
+          "enum": [
+            "email",
+            "sms"
+          ],
+          "title": "Channel",
+          "type": "string"
+        },
+        "contact": {
+          "maxLength": 254,
+          "minLength": 3,
+          "title": "Contact",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "message": {
+          "default": "",
+          "maxLength": 10000,
+          "title": "Message",
+          "type": "string"
+        },
+        "source_version": {
+          "maxLength": 64,
+          "minLength": 64,
+          "title": "Source Version",
+          "type": "string"
+        },
+        "days": {
+          "default": 30,
+          "maximum": 90,
+          "minimum": 1,
+          "title": "Days",
+          "type": "integer"
+        },
+        "confirmed": {
+          "const": true,
+          "title": "Confirmed",
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Idempotency Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "recipient_label",
+        "channel",
+        "contact",
+        "title",
+        "source_version",
+        "confirmed",
+        "idempotency_key"
+      ],
+      "title": "Create",
+      "type": "object"
+    },
+    "Revision": {
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "minimum": 1,
+          "title": "Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "revision"
+      ],
+      "title": "Revision",
+      "type": "object"
+    },
+    "ChallengeInput": {
+      "additionalProperties": false,
+      "properties": {
+        "invite_token": {
+          "maxLength": 100,
+          "minLength": 40,
+          "title": "Invite Token",
+          "type": "string"
+        },
+        "contact": {
+          "maxLength": 254,
+          "minLength": 3,
+          "title": "Contact",
+          "type": "string"
+        }
+      },
+      "required": [
+        "invite_token",
+        "contact"
+      ],
+      "title": "ChallengeInput",
+      "type": "object"
+    },
+    "Verify": {
+      "additionalProperties": false,
+      "properties": {
+        "invite_token": {
+          "maxLength": 100,
+          "minLength": 40,
+          "title": "Invite Token",
+          "type": "string"
+        },
+        "challenge_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Challenge Id",
+          "type": "string"
+        },
+        "code": {
+          "pattern": "^[0-9]{6}$",
+          "title": "Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "invite_token",
+        "challenge_id",
+        "code"
+      ],
+      "title": "Verify",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/Selection"
+    },
+    {
+      "$ref": "#/$defs/Create"
+    },
+    {
+      "$ref": "#/$defs/Revision"
+    },
+    {
+      "$ref": "#/$defs/ChallengeInput"
+    },
+    {
+      "$ref": "#/$defs/Verify"
+    }
+  ]
+}

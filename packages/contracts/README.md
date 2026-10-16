@@ -54,6 +54,10 @@ Issue #16 approved one minimum additive change: Processing Status may include an
 
 Issue #36 corrected the boundary before module implementations existed. It adds the missing objective evidence type, typed Memory items, optional Capture actor/consent/idempotency fields, AI trace propagation, and an Android-readable Episode Result. The new envelope fields are additive; the Memory item definition deliberately becomes strict so Backend and AI Core cannot freeze incompatible private shapes.
 
+## Contact entrustment v1 (2026-10-17)
+
+`schemas/contact-entrustment-v1.schema.json` adds independent owner-confirmed contact delivery and recipient OTP requests. Approval and endpoint behavior are recorded in `docs/architecture/contact-entrustment-20261017.md`; deployment/verification in `docs/team/CONTACT_ENTRUSTMENT_HANDOFF_20261017.md`. These tokens authorize only the selected package, never an Actor session, entire subject, or Twin. Existing integration and iOS guest contracts remain unchanged.
+
 ## Known open contract gaps
 
 These are recorded rather than silently resolved. None may be changed without an Issue and Product and Integration Owner approval, because the schema sets `additionalProperties: false` and every one of these is a breaking change.

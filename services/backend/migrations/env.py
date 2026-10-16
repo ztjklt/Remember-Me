@@ -14,6 +14,7 @@ from app.models import Base
 from app import companion_models  # Register additive tables for autogeneration.
 from app import persona_models
 from app import voice_models
+from app import contact_entrustment_models
 
 config = context.config
 target_metadata = Base.metadata

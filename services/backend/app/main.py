@@ -52,6 +52,12 @@ class RequestContextMiddleware:
             if message["type"] == "http.response.start":
                 status_code = message["status"]
                 MutableHeaders(scope=message)["X-Request-ID"] = trace_id
+                if '/contact-entrustments' in scope.get('path', '') or scope.get('path', '').startswith('/api/v1/entrustment-receipts'):
+                    headers = MutableHeaders(scope=message)
+                    headers['Cache-Control'] = 'no-store'
+                    headers['Referrer-Policy'] = 'no-referrer'
+                    headers['X-Content-Type-Options'] = 'nosniff'
+
             await send(message)
 
         try:
@@ -167,6 +173,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     app.state.voice_sessions = {}
+    from .contact_delivery import ContactDelivery
+    app.state.contact_delivery = ContactDelivery(settings)
     app.state.database = database
     app.state.object_store = object_store
     app.state.stt_provider = stt_provider
@@ -217,6 +225,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(companion.spaces_router)
     from .api import companion_audio
     app.include_router(companion_audio.router)
+    from .api import contact_entrustments
+    app.include_router(contact_entrustments.router)
+    app.include_router(contact_entrustments.receipts)
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+    receive_dir = Path(__file__).parent / 'receive'
+    @app.get('/receive/')
+    def receive_page():
+        return FileResponse(receive_dir / 'index.html', media_type='text/html', headers={
+            'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
+            'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src blob:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+            'X-Content-Type-Options': 'nosniff'})
+    @app.get('/receive/receipt.js')
+    def receive_script():
+        return FileResponse(receive_dir / 'receipt.js', media_type='text/javascript', headers={'Cache-Control':'no-store'})
+    @app.get('/receive/receipt.css')
+    def receive_style():
+        return FileResponse(receive_dir / 'receipt.css', media_type='text/css', headers={'Cache-Control':'no-store'})
     if settings.enable_workbench:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles

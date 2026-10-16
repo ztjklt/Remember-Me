@@ -22,6 +22,7 @@ dependencies = [
     "opencc-python-reimplemented==0.1.7",
     # The S3-compatible object store backend used in deployment.
     "boto3>=1.34",
+    "cryptography>=46,<51",
 ]
 
 [project.optional-dependencies]

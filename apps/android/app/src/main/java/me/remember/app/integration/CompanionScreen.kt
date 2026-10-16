@@ -23,7 +23,16 @@ import org.json.JSONObject
     Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.spacedBy(8.dp)) {
         listOf("亲友补记","留给你").forEachIndexed { i,title -> FilterChip(section==i,{section=i},label={Text(title)},enabled=!state.recording&&!state.busy) }
     }
-    if(section==0) Contributions(state,model) else Letters(state,model)
+    if(section==0) Contributions(state,model) else {
+        if(state.owner) {
+            ContactEntrustmentScreen(state,model)
+            var accounts by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
+            TextButton(onClick={accounts=!accounts},enabled=!state.busy&&!state.recording) {
+                Text(if(accounts) "收起账号专属信" else "已有账号的专属信")
+            }
+            if(accounts) Letters(state,model)
+        } else Letters(state,model)
+    }
     state.contributionOriginal?.let { original ->
         NativeDialog("亲友原文",model::closeContributionOriginal) {
             Text(original.text("author_display_name").ifBlank{"亲友"}+"的补记",style=MaterialTheme.typography.titleLarge)
@@ -45,7 +54,7 @@ import org.json.JSONObject
     Row { Checkbox(checked,changed,enabled=enabled,modifier=if(tag.isBlank()) Modifier else Modifier.testTag(tag));Text(text,Modifier.padding(top=12.dp)) }
 }
 
-@Composable private fun AudioDraft(purpose: String, state: NativeState, model: NativeWorkbenchModel, useText: (String) -> Unit) {
+@Composable internal fun AudioDraft(purpose: String, state: NativeState, model: NativeWorkbenchModel, audioOnly: Boolean = false, useText: (String) -> Unit) {
     val context=LocalContext.current
     val ready=!state.busy&&!state.recording
     val microphone=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -62,7 +71,7 @@ import org.json.JSONObject
     }
     val draft=state.companionAudio?.takeIf { it.purpose==purpose }
     val other=state.companionAudio!=null&&draft==null
-    Text(if(purpose=="letter") "为这封信留一段声音" else "也可以讲出来",style=MaterialTheme.typography.titleMedium)
+    Text(if(audioOnly) "单独留一段声音" else if(purpose=="letter") "为这封信留一段声音" else "也可以讲出来",style=MaterialTheme.typography.titleMedium)
     if(state.companionRecording==purpose) {
         Text("正在录音 ${state.elapsed/1000} 秒")
         RememberActionButton("结束录音",!state.busy,filled=true,pendingLabel="正在保存原音…",successLabel="原音已保存") {model.finishCompanionRecording()}
@@ -76,7 +85,8 @@ import org.json.JSONObject
         else {
             val remote=draft.remote
             RememberActionButton("听已保存的声音",ready,pendingLabel="正在取回声音…",successLabel="声音已取回") {model.playCompanionAudio(remote.text("audio_id"))}
-            if(remote.text("transcript_text").isBlank()) {
+            if(audioOnly) Text("声音已保存，可在下面选入托付。")
+            else if(remote.text("transcript_text").isBlank()) {
                 var cloud by remember(remote.text("audio_id")) { mutableStateOf(false) }
                 CompanionCheck("同意将这段声音交给云端转写",cloud,ready,"$purpose-cloud-asr") { cloud=it }
                 RememberActionButton(if(remote.text("status")=="failed") "重试转写" else "转为文字",ready&&cloud,filled=true,

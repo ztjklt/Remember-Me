@@ -921,7 +921,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val s = session ?: return; val draft = state.value.companionAudio ?: return; val subject = state.value.subject
         operation(s) {
             val result = io { client.uploadCompanionAudio(s,subject,draft.purpose,draft.file,draft.mime,draft.key) }
-            persistCompanionDraft(s,draft.copy(remote = result));state.value = state.value.copy(notice = "声音已保存，可以开始转写。")
+            persistCompanionDraft(s,draft.copy(remote = result));state.value = state.value.copy(notice = "声音已保存。")
         }
     }
     fun transcribeCompanionAudio(confirmed: Boolean) {
@@ -954,6 +954,38 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             creationKeys.remove(signature)
             if(state.value.companionAudio?.purpose == if(kind=="letters") "letter" else "contribution") persistCompanionDraft(s,null)
             refreshNow(s); saved()
+        }
+    }
+    /** This feature owns no Agent state. Publish only into the initiating identity and space. */
+    fun loadContactEntrustments(done: (JSONObject) -> Unit) {
+        val s=session?:return; val subject=state.value.subject
+        val path=root()+"/contact-entrustments"
+        operation(s) {
+            val result=io {
+                try {client.json(s,path).put("sources",client.json(s,"$path/sources").optJSONArray("items"))}
+                catch(error: BackendHttpException) {
+                    if(error.status==404) throw IllegalStateException("当前服务器尚未开通联系方式托付，原有账号专属信仍可使用。")
+                    throw error
+                }
+            }
+            gate.requireCurrent(s)
+            if(state.value.subject==subject) done(result)
+        }
+    }
+    fun contactEntrustmentAction(suffix: String, body: JSONObject=JSONObject(), done: (JSONObject) -> Unit) {
+        val s=session?:return;val subject=state.value.subject
+        val path=root()+"/contact-entrustments"+suffix
+        // Repeated confirmation after a lost HTTP response must not issue a second link.
+        val signature="$path\n$body"
+        val payload=JSONObject(body.toString())
+        if(suffix.isEmpty()) payload.put("idempotency_key",creationKeys.getOrPut(signature){java.util.UUID.randomUUID().toString()})
+        operation(s) {
+            val result=io {client.json(s,path,"POST",payload)}
+            gate.requireCurrent(s)
+            if(state.value.subject==subject) {
+                done(result)
+                if(suffix.isEmpty()) creationKeys.remove(signature)
+            }
         }
     }
     fun openContributionOriginal(id: String) {
