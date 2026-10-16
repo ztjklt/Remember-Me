@@ -20,6 +20,7 @@ VOICE_SYSTEM='''twin-voice-quotes-v1。你在进行连续语音事实问答。�
 优先完整source；仅父段太长时选窗口。窗口必须回看parent，不能截去后半句的否定、反转、条件。问谁须明确名字和关系；不能把转述、同名人物、亲属或假设当本人的经历。日期是讲述时间，不推造发生时间。本人确认的纠正优先，变化前后分别成立。
 问原因须有明确原因，先后顺序不能证明因果。怀疑、指责不证明事件发生。具体事实未交代或仍记不清则known=false，source_ids=[]；明确没做、未决定是已知。部分已知不可全部拒答。题外资料与原文过去的分享意愿不改变当前授权。输出严格符合response_schema的JSON，编号只用输入的sources。'''
 logger=logging.getLogger('remember_me.ai_core')
+VOICE_REFERENCE_POLICY='''语音指代核对 v1：conversation_only_not_evidence 仅用于理解问题指代，不能作为事实证据。先确定用户当前问的具体对象；“这种活动/那件事/他”只能由当前问题或已听到的对话明确定位。不能反过来用检索到的某段经历猜测用户所指，也不能把相似词、年份或“第一次”当成同一事件。指代仍不明确时 known=false；不能因此把有明确前指的正常追问也拒答。生成与审阅均先核对对象是否一致；引用真实但对象未确定或不一致仍属 irrelevant。'''
 
 class Quote(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)
@@ -210,6 +211,13 @@ class QuotedTwin:
             return TwinOutput(answer='现有记录还不足以确定。',response_type='UNKNOWN',evidence_ids=[],confidence=0,model_version='no-evidence')
         start=monotonic();packet,_=quote_packet(payload)
         packet={**packet,'response_schema':SourceSelection.model_json_schema()}
+        if payload.voice_response:
+            packet['question_context_policy']={
+                'history_field':'conversation_only_not_evidence',
+                'unresolved_referent_is_unknown':True,
+                'retrieved_source_must_not_define_question_referent':True,
+                'explicit_history_reference_may_resolve_question':True}
+            record['voice_reference_policy']='voice-reference-v1'
         review_packet=packet
         calls=0
         from .voice_stream import generation_streamed,prepare_draft
@@ -222,6 +230,7 @@ class QuotedTwin:
         if payload.voice_response:
             from .conversation_style import VERSION as STYLE_VERSION, generation_style
             selection_system += '\n' + generation_style(voice=True)
+            selection_system += '\n' + VOICE_REFERENCE_POLICY
             record['conversation_style_version'] = STYLE_VERSION
         prepared=False
         def first_point(point,model):
@@ -287,7 +296,7 @@ class QuotedTwin:
                 'rendered_answer':output.model_dump(exclude={'model_version','confidence'})}
             review_prompt=REVIEW
             if payload.voice_response:
-                review_prompt+='\n语音审阅输出 v1：reasoning 用不超过90字概括问题要点、关键来源编号和有无不足，不抄写原文；核查项目、失败类型和修正要求保持不变。'
+                review_prompt+='\n'+VOICE_REFERENCE_POLICY+'\n语音审阅输出 v1：reasoning 用不超过90字概括问题要点、关键来源编号和有无不足，不抄写原文；核查项目、失败类型和修正要求保持不变。'
             checked,_=complete(review_prompt,request)
             record['stage']='review_validation'
             try:verdict=Verdict.model_validate(checked)
