@@ -79,9 +79,10 @@ class RecorderHomeUploadLiveTest {
                 story = model.ui.value.stories.single { it.text("episode_id") == episode }
             }
             assertEquals("ready", story.text("status")); assertTrue(story.rows("memories").isNotEmpty())
-            if (!File(folder, "02-home-review.png").isFile()) {
-                act { model.review(episode) }; shot("02-home-review"); act { model.closeReview() }
-            }
+            ui.onAllNodes(hasText("查看本段文字与全部记忆") and hasClickAction()).onFirst().performScrollTo().performClick()
+            ui.onNodeWithText("已核对的文字").assertExists()
+            ui.onNodeWithText(story.text("transcript")).assertExists()
+            assertNull(model.ui.value.reviewEpisode) // submitted text must not reopen a write-once review
             val replay = journal.uploadCandidate(entry.importId, identity)
             assertTrue(replay.file.isFile); assertEquals(candidate.idempotencyKey, replay.idempotencyKey)
             ui.runOnIdle { model.recorder().play(receipt, 2400) }

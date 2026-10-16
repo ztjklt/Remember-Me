@@ -52,9 +52,16 @@ import me.remember.app.core.designsystem.LocalSimpleMode
         if (story.text("status") == "ready") story.rows("memories").take(3).forEach { memory ->
             Text(memory.text("content"), style = MaterialTheme.typography.bodyLarge)
         }
-        TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) {
-            Text(if(story.optBoolean("waiting_for_review")) "核对本段文字" else "查看本段处理结果")
-        }
+        if (story.optBoolean("waiting_for_review")) TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) { Text("核对本段文字") }
+        else if (story.text("status") == "ready") {
+            var expanded by rememberSaveable(story.text("episode_id")) { mutableStateOf(false) }
+            TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起本段文字与全部记忆" else "查看本段文字与全部记忆") }
+            if (expanded) {
+                Text("已核对的文字", style = MaterialTheme.typography.titleMedium)
+                Text(story.text("transcript"), style = MaterialTheme.typography.bodyLarge)
+                story.rows("memories").drop(3).forEach { Text(it.text("content"), style = MaterialTheme.typography.bodyLarge) }
+            }
+        } else if (story.text("status") == "failed") TextButton(onClick = { model.retry(story.text("episode_id")) }, enabled = !state.busy) { Text("重试本段处理") }
     }
     val pending=state.stories.filter{it.optBoolean("waiting_for_review") || it.text("status")!="ready"}
     val unuploaded=state.local.count{it.episode.isBlank()}
