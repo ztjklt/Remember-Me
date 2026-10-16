@@ -45,6 +45,20 @@ def test_direct_and_selected_identical_quote_get_identical_review_prompt_and_mat
     assert direct.requests[0]==selected.requests[1]
 
 
+def test_broad_preference_policy_is_shared_without_inventing_missing_details():
+    chat=Chat({'points':[{'known':True,'source_ids':['s1']}]}, verdict())
+    QuotedTwin(chat,direct_original=False).answer(payload())
+    for system, _ in chat.requests:
+        assert '开放式偏好' in system and '明确限定' in system
+
+
+def test_review_shape_repair_retains_question_and_reference_rules():
+    incomplete=verdict();incomplete.pop('replacement')
+    chat=Chat(incomplete,verdict())
+    QuotedTwin(chat).answer(payload())
+    assert chat.requests[1][0].startswith(chat.requests[0][0])
+
+
 def test_reviewer_sees_conflicting_full_source_and_can_replace_then_recheck():
     p=payload(); other=p.candidates[0].model_copy(deep=True)
     other.memory_item_id='m2'; other.evidence[0].evidence_id='e2'; other.evidence[0].episode_id='ep2'
