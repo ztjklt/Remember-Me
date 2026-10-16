@@ -45,6 +45,22 @@ def test_direct_and_selected_identical_quote_get_identical_review_prompt_and_mat
     assert direct.requests[0]==selected.requests[1]
 
 
+@pytest.mark.parametrize('question', ['刚才说的茶，你喜欢浓一点还是淡一点？',
+                                    '关于茶，你喜欢浓一点还是淡一点？'])
+def test_explicit_topic_comma_does_not_add_a_selection_call(question):
+    p=payload(question); chat=Chat(verdict())
+    answer=QuotedTwin(chat).answer(p)
+    assert len(chat.requests)==1 and answer.evidence_ids==['e1']
+    assert chat.requests[0][1]['question']==question
+
+
+def test_topic_prefix_does_not_hide_a_second_question():
+    p=payload('关于茶，你喜欢什么茶，母亲在哪里工作？')
+    chat=Chat({'points':[{'known':False,'source_ids':[]}]}, verdict())
+    QuotedTwin(chat).answer(p)
+    assert 'selection' not in chat.requests[0][1] and len(chat.requests)==2
+
+
 def test_broad_preference_policy_is_shared_without_inventing_missing_details():
     chat=Chat({'points':[{'known':True,'source_ids':['s1']}]}, verdict())
     QuotedTwin(chat,direct_original=False).answer(payload())

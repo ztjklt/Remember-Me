@@ -191,9 +191,15 @@ def original_proposal(payload, packet):
     """
     from .providers.weixin import _query_terms
     question=payload.question
+    # ASR often separates an explicit topic from its one question with a comma.
+    # Ignore only that leading separator for routing. The reviewer still gets
+    # the untouched question/history; other commas and unresolved referents stay
+    # conservative, and this never makes a proposed quote an accepted answer.
+    shape=re.sub(r'^(?:关于|(?:刚才|刚刚|之前|前面)(?:说|提到)的)'
+                 r'([^，,。？！?!;；]{1,16})[,，]\s*',r'\1 ',question)
     if len(question)>60 or re.search(
         r'为什么|为何|原因|怎么|如何|假如|如果|假设|讲讲|介绍|故事|总结|分析|'
-        r'这种|那种|这件|那件|这次|那次|他|她|它|[,，;；]|[？?].+\S', question):
+        r'这种|那种|这件|那件|这次|那次|他|她|它|[,，;；]|[？?].+\S', shape):
         return None
     content=re.sub(r'什么时候|什么|哪里|哪个|多少|是不是|你|您|我|的|了|呢|吗|呀|啊', ' ', question)
     terms=_query_terms(content)|{s for s in re.findall(r'[\u3400-\u9fff]+',content) if len(s)==1}
