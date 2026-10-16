@@ -80,7 +80,12 @@ public final class Soundcore1302Bridge implements HardwareTransport {
                 if (current(address, id)) events.error("file_list", code);
             }
             @Override public void onTransferFileStatusChanged(String address, String id, int fileId, int status, ArrayList<Integer> markers) {
-                if (current(address, id)) events.transfer(fileId, status);
+                if (current(address, id)) {
+                    events.transfer(fileId, status);
+                    // The supplied guide specifies offsets in milliseconds for
+                    // this callback too. Preserve them even if decode markers arrive later.
+                    if (markers != null && !markers.isEmpty()) events.markers(fileId, markers.stream().mapToInt(Integer::intValue).toArray());
+                }
             }
             @Override public void onDeviceTransferStateChanged(String address, String id, com.oceanwing.soundcore.spplink.listener.DeviceTransferState state) {
                 if (current(address, id)) events.transferIdle(state == com.oceanwing.soundcore.spplink.listener.DeviceTransferState.IDLE);

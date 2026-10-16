@@ -19,15 +19,22 @@ class RecorderTimeline(private val now: () -> Long = { System.nanoTime() / 1_000
     fun elapsedMs(): Long = milliseconds + if (phase == DeviceRecordPhase.RECORDING)
         (now() - observedAt).coerceIn(0, 10_000) else 0
 
-    fun status(status: Int, durationMs: Long, id: Int): Boolean {
-        if (status !in 0..2 || id <= 0 || durationMs < 0 || id in finished || id in pending) return false
+    fun status(status: Int, durationMs: Long, reportedId: Int): Boolean {
+        if (status !in 0..2 || (status == 0 && durationMs < 0)) return false
+        // SDK only promises fileID for RECORDING; pause/stop may report -1.
+        // Associate those events only with an observed active recording, never
+        // guess from the newest file in storage or an unknown disconnected state.
+        val id = reportedId.takeIf { it > 0 } ?: if (status != 1 &&
+            phase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) fileId ?: return false else return false
+        if (id in finished || id in pending) return false
         if (fileId != null && id < fileId!!) return false
+        val measured = if (status == 0) durationMs else if (id == fileId) elapsedMs() else 0L
         if (id != fileId) {
             fileId = id; annotations = emptyList(); milliseconds = 0; phase = DeviceRecordPhase.IDLE
         }
         val next = when (status) { 1 -> DeviceRecordPhase.RECORDING; 2 -> DeviceRecordPhase.PAUSED; else -> DeviceRecordPhase.ENDED }
-        if (next != phase || durationMs > milliseconds) {
-            milliseconds = maxOf(milliseconds, durationMs)
+        if (next != phase || measured > milliseconds) {
+            milliseconds = if (status == 0) measured else maxOf(milliseconds, measured)
             observedAt = now()
         }
         phase = next

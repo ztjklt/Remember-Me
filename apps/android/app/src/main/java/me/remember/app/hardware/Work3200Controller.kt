@@ -177,18 +177,20 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         }
         override fun recording(status: Int, durationMs: Int, fileId: Int) = post {
             if (!timeline.status(status, durationMs.toLong(), fileId)) return@post
+            val activeFileId = timeline.fileId ?: return@post
             publishTimeline()
-            record("recording status=$status file=$fileId durationMs=$durationMs")
-            if (timeline.fileId == fileId && status == 1) {
+            record("recording status=$status file=$activeFileId reportedFile=$fileId durationMs=$durationMs")
+            if (status != 1 && !deviceTransferBusy) realtimeFile = null
+            if (status == 1) {
                 stopPlayback()
-                if (realtimeFile != fileId && mutable.value.busy.isEmpty()) {
-                    realtimeFile = fileId
+                if (realtimeFile != activeFileId && mutable.value.busy.isEmpty()) {
+                    realtimeFile = activeFileId
                     val folder = File(journal.rawDirectory, "live-${UUID.randomUUID()}").apply { mkdirs() }
                     mutable.value = mutable.value.copy(realtimeMarked = false)
                     runCatching { transport?.realtime(folder) }.onFailure { realtimeFile = null; record("realtime unavailable file=$fileId") }
                 }
             }
-            if (timeline.fileId == fileId && status == 0) {
+            if (status == 0) {
                 notice("录音已结束，正在取得本段文件并同步到手机。")
                 if (transferDraining()) waitForTransferDrain()
                 scheduleNextFile()

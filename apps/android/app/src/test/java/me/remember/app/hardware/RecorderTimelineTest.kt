@@ -4,6 +4,34 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RecorderTimelineTest {
+    @Test fun finalDeviceDurationReplacesInterpolatedPauseEstimate() {
+        var now = 0L
+        val timeline = RecorderTimeline { now }
+        timeline.status(1, -1, 1000)
+        timeline.duration(1000)
+        now += 5000
+        timeline.status(2, -1, -1)
+        assertEquals(6000, timeline.elapsedMs())
+        timeline.status(0, 2000, -1)
+        assertEquals(2000, timeline.elapsedMs())
+    }
+    @Test fun sdkPauseAndStopWithoutIdReferOnlyToKnownActiveRecording() {
+        var now = 0L
+        val timeline = RecorderTimeline { now }
+        assertFalse(timeline.status(0, 2000, -1))
+        assertTrue(timeline.status(1, -1, 1000)) // duration is undefined outside STOP
+        timeline.duration(1200)
+        now += 300
+        assertTrue(timeline.status(2, -1, -1))
+        assertEquals(DeviceRecordPhase.PAUSED, timeline.phase)
+        assertEquals(1500, timeline.elapsedMs())
+        assertTrue(timeline.status(1, -1, 1000))
+        assertTrue(timeline.status(0, 2500, -1))
+        assertEquals(DeviceRecordPhase.ENDED, timeline.phase)
+        assertEquals(listOf(1000), timeline.pendingFiles)
+        assertEquals(2500, timeline.elapsedMs())
+        assertFalse(timeline.status(0, 2500, -1))
+    }
     @Test fun stoppedIdentityCannotBeReopenedBeforeDownload() {
         val timeline = RecorderTimeline { 0 }
         timeline.status(1, 0, 1000)
@@ -24,6 +52,7 @@ class RecorderTimelineTest {
         now += 2300
         assertEquals(2300, timeline.elapsedMs())
         timeline.duration(2100)
+        timeline.duration(2500)
         timeline.status(2, 2500, 1000)
         now += 10000
         assertEquals(2500, timeline.elapsedMs())
@@ -70,6 +99,7 @@ class RecorderTimelineTest {
         timeline.duration(4000)
         assertEquals(0, timeline.elapsedMs())
         timeline.status(1, 1000, 1000)
+        timeline.duration(1000)
         now = 60000
         assertEquals(11000, timeline.elapsedMs()) // stale events cannot keep ticking forever
         assertNull(transferPercent(20, 0))

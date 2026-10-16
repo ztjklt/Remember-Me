@@ -40,11 +40,13 @@ class RecorderSessionTest {
             await("authorized") { controller.ui.value.authorized }
             main { controller.connect(NearbyRecorder("Synthetic recorder", "D3200", "test-mac", "test-uuid")) }
             await("connected") { controller.ui.value.connected }
-            main { fake.events.recording(1, 0, 1700000000); fake.events.recordingDuration(1200) }
+            main { fake.events.recording(1, -1, 1700000000); fake.events.recordingDuration(1200) }
             await("physical button reflected") { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING && controller.ui.value.elapsedMs >= 1200 }
             main { controller.addMark(); fake.events.markers(1700000000, intArrayOf(500)) }
             await("both marker sources") { controller.ui.value.recordMarks.size == 2 }
-            main { fake.events.recording(0, 2000, 1700000000); fake.events.recording(0, 2000, 1700000000) }
+            main { fake.events.recording(2, -1, -1) }
+            await("pause with absent file ID") { controller.ui.value.recordPhase == DeviceRecordPhase.PAUSED }
+            main { fake.events.recording(1, -1, 1700000000); fake.events.recording(0, 2000, -1); fake.events.recording(0, 2000, -1) }
             if (realtimeStarted) {
                 Thread.sleep(1800) // Live backlog exceeds the old one-second offline queue delay.
                 assertEquals("offline transfer must wait for live drain", 0, fake.transfers)

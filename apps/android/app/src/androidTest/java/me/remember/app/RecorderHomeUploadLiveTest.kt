@@ -79,6 +79,9 @@ class RecorderHomeUploadLiveTest {
                 story = model.ui.value.stories.single { it.text("episode_id") == episode }
             }
             assertEquals("ready", story.text("status")); assertTrue(story.rows("memories").isNotEmpty())
+            if (!File(folder, "02-home-review.png").isFile()) {
+                act { model.review(episode) }; shot("02-home-review"); act { model.closeReview() }
+            }
             val replay = journal.uploadCandidate(entry.importId, identity)
             assertTrue(replay.file.isFile); assertEquals(candidate.idempotencyKey, replay.idempotencyKey)
             ui.runOnIdle { model.recorder().play(receipt, 2400) }
