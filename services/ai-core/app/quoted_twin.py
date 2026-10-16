@@ -3,7 +3,8 @@
 Exactness is deterministic. Relevance, speaker context and completeness still
 need semantic review and project evaluation; this is not a guarantee of truth.
 """
-import json,logging
+import json,logging,math,re
+from collections import Counter
 from uuid import uuid4
 from time import monotonic, sleep
 from typing import Literal
@@ -179,8 +180,35 @@ def render_ids(raw,payload,model):
     return render({'points':[{'known':point.known,'quotes':[{'source_id':id,'text':sources[id]['text']}
         for id in sorted(set(point.source_ids),key=positions.get)]} for point in selected.points]},payload,model)
 
+
+def original_proposal(payload, packet):
+    """A cheap candidate, NEVER an accepted answer or a semantic confidence score.
+
+    Only whole authorized short originals are eligible. All sources, conflicts,
+    attribution and history still go to the unchanged independent reviewer.
+    Complex questions retain the model selector. No guessed UNKNOWN proposal.
+    """
+    from .providers.weixin import _query_terms
+    question=payload.question
+    if len(question)>60 or re.search(
+        r'为什么|为何|原因|怎么|如何|假如|如果|假设|讲讲|介绍|故事|总结|分析|'
+        r'这种|那种|这件|那件|这次|那次|他|她|它|[,，;；]|[？?].+\S', question):
+        return None
+    content=re.sub(r'什么时候|什么|哪里|哪个|多少|是不是|你|您|我|的|了|呢|吗|呀|啊', ' ', question)
+    terms=_query_terms(content)|{s for s in re.findall(r'[\u3400-\u9fff]+',content) if len(s)==1}
+    sources=[s for r in packet['recordings'] for s in r['sources']
+        if s['type']=='SUBJECT' and 'parent_id' not in s and len(s['text'])<=380]
+    words=[_query_terms(s['text'])|set(s['text']) for s in sources]
+    counts=Counter(t for ts in words for t in ts)
+    ranked=sorted(zip(sources,words),key=lambda pair:-sum(
+        math.log(1+len(sources)/counts[t]) for t in terms & pair[1]))
+    if not ranked or not terms & ranked[0][1]:return None
+    return {'points':[{'known':True,'source_ids':[ranked[0][0]['id']]}]}
+
+
 class QuotedTwin:
-    def __init__(self,chat):self.chat=chat
+    def __init__(self,chat,*,direct_original=True):
+        self.chat=chat;self.direct_original=direct_original
     def answer(self,payload):
         trace=uuid4().hex;token=quote_trace_id.set(trace);started=monotonic()
         record={'event':'quote_request','trace_id':trace,'prompt_version':VERSION,'status':'failed'}
@@ -270,16 +298,27 @@ class QuotedTwin:
                     call_record['duration_ms']=round((monotonic()-call_started)*1000,3)
                     record.setdefault('stage_calls',[]).append(call_record)
             raise AssertionError('unreachable')
-        record['stage']='selection'
-        raw,model=complete(selection_system,packet,reserve_review=True)
-        record['stage']='selection_validation'
-        try:output,selection=render_ids(raw,payload,model)
-        except AIOutputInvalid as exc:
-            logger.warning(json.dumps({'event':'quote_selection_invalid','prompt_version':VERSION,'reason':exc.message}))
-            raw,model=complete(selection_system+'\n这是唯一一次修正。草稿不是事实。严格依据原始sources修正所选编号或JSON格式。总长过长时选择能回答的更少、更短的来源；不得通过伪造未知躲过校验。',
-                {**packet,'rejected_draft':raw,'validation_error':exc.message,
-                    'schema_errors':schema_errors(raw,SourceSelection)},reserve_review=True)
-            output,selection=render_ids(raw,payload,model)
+        def generate():
+            record['stage']='selection'
+            raw,model=complete(selection_system,packet,reserve_review=True)
+            record['stage']='selection_validation'
+            try:output,selection=render_ids(raw,payload,model)
+            except AIOutputInvalid as exc:
+                logger.warning(json.dumps({'event':'quote_selection_invalid','prompt_version':VERSION,'reason':exc.message}))
+                raw,model=complete(selection_system+'\n这是唯一一次修正。草稿不是事实。严格依据原始sources修正所选编号或JSON格式。总长过长时选择能回答的更少、更短的来源；不得通过伪造未知躲过校验。',
+                    {**packet,'rejected_draft':raw,'validation_error':exc.message,
+                        'schema_errors':schema_errors(raw,SourceSelection)},reserve_review=True)
+                output,selection=render_ids(raw,payload,model)
+            return output,selection,model
+        from .voice_stream import semantic_review_required
+        proposal=(original_proposal(payload,review_packet) if self.direct_original and
+            payload.voice_response and semantic_review_required.get() and not generation_streamed.get() else None)
+        if proposal is not None:
+            record['original_proposal']='whole-source-v1'
+            model='pending-independent-review'
+            output,selection=render_ids(proposal,payload,model)
+        else:
+            output,selection,model=generate()
         if monotonic()-start>65:raise ProviderTimeout('Quote review budget exhausted')
         if payload.voice_response:
             from .voice_stream import prepare_draft, semantic_review_required
@@ -288,6 +327,7 @@ class QuotedTwin:
                 record.update(stage='complete',calls=calls,semantic_review='skipped')
                 return output
         def review():
+            nonlocal model
             record['stage']='review'
             sources={s['id']:s for r in review_packet['recordings'] for s in r['sources']}
             cited=[{'known':p.known,'sources':[sources[q.source_id] for q in p.quotes]} for p in selection.points]
@@ -297,7 +337,7 @@ class QuotedTwin:
             review_prompt=REVIEW
             if payload.voice_response:
                 review_prompt+='\n'+VOICE_REFERENCE_POLICY+'\n语音审阅输出 v1：reasoning 用不超过90字概括问题要点、关键来源编号和有无不足，不抄写原文；核查项目、失败类型和修正要求保持不变。'
-            checked,_=complete(review_prompt,request)
+            checked,review_model=complete(review_prompt,request)
             record['stage']='review_validation'
             try:verdict=Verdict.model_validate(checked)
             except ValidationError as exc:
@@ -311,7 +351,7 @@ class QuotedTwin:
                 if calls>=3:raise AIOutputInvalid('Quote review schema invalid') from exc
                 record['review_schema_repair_attempted']=True
                 # Repair the review shape, never bypass review or change evidence.
-                checked,_=complete(REVIEW+'\n上次审阅JSON不合结构，请重新审阅同一答案并返回全部必需字段。',
+                checked,review_model=complete(REVIEW+'\n上次审阅JSON不合结构，请重新审阅同一答案并返回全部必需字段。',
                     {**request,'schema_errors':schema_errors(checked,Verdict)})
                 try:verdict=Verdict.model_validate(checked)
                 except ValidationError as retry:raise AIOutputInvalid('Quote review schema invalid') from retry
@@ -320,14 +360,27 @@ class QuotedTwin:
             if not verdict.valid and not verdict.failure_codes:raise AIOutputInvalid('Negative review requires explicit failure class')
             logger.info(json.dumps({'event':'quote_review','prompt_version':VERSION,'valid':verdict.valid,'failure_codes':verdict.failure_codes}))
             record['failure_codes']=verdict.failure_codes
+            if proposal is not None:model=review_model
             return verdict
         verdict=review()
+        if not verdict.valid and proposal is not None and verdict.replacement is None and calls==1:
+            rejected=selection
+            record['original_proposal_fallback']=True
+            output,selection,model=generate()
+            if selection==rejected:raise AIOutputInvalid('Quoted answer failed relevance review')
+            prepare_draft(output)
+            verdict=review()
         if not verdict.valid and verdict.replacement is not None and calls<3:
             record['stage']='correction_validation'
+            rejected=selection
             output,selection=render_ids(verdict.replacement.model_dump(),payload,model)
+            if proposal is not None and selection==rejected:
+                raise AIOutputInvalid('Quoted answer failed relevance review')
             if monotonic()-start>65:raise ProviderTimeout('Quote correction review budget exhausted')
+            if payload.voice_response:prepare_draft(output)
             verdict=review()
             logger.info(json.dumps({'event':'quote_correction_reviewed','prompt_version':VERSION,'calls':calls,'valid':verdict.valid}))
         if not verdict.valid:raise AIOutputInvalid('Quoted answer failed relevance review')
+        if proposal is not None:output.model_version=model
         record['stage']='complete';record['calls']=calls
         return output
