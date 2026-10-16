@@ -63,9 +63,11 @@ class VoiceExperienceTest {
         ui.onNodeWithText("暂停").assertIsNotEnabled()
         ui.runOnIdle { state = state.copy(ready = true, phase = CallPhase.LISTENING, status = "我在听") }
         shot("01-listening")
-        ui.runOnIdle { state = state.copy(phase = CallPhase.THINKING, status = "正在想") }
+        ui.runOnIdle { state = state.copy(phase = CallPhase.THINKING, status = "正在想", transcript = "临时来了一个安排，我一般会怎么处理？") }
         ui.onNodeWithTag("voice-interrupt").assertIsDisplayed(); shot("02-thinking")
-        ui.runOnIdle { state = state.copy(phase = CallPhase.PREPARING, status = "准备播报", answer = "示例回答") }
+        ui.runOnIdle { state = state.copy(phase = CallPhase.PREPARING, status = "准备播报",
+            answer = "平常我大概会先问清楚，再决定怎么安排。但家里有急事时，我可能会先顾家里。",
+            sources = JSONObject().put("response_type", "SIMULATION")) }
         ui.onNodeWithText("准备播报").assertIsDisplayed()
         ui.runOnIdle { state = state.playbackStarted() }
         shot("03-speaking")
@@ -83,15 +85,31 @@ class VoiceExperienceTest {
         val state = CallUi(active = true, ready = true, phase = CallPhase.SPEAKING, status = "正在说",
             transcript = "我平时喜欢做什么？", answer = "我喜欢傍晚去公园散步。", sources = answer)
         show { VoiceCallContent(state, {}, {}, {}) }
+        ui.onNodeWithText(state.answer).assertIsDisplayed()
+        ui.onNodeWithTag("voice-text-toggle").performClick()
         ui.onNodeWithText(state.answer).assertDoesNotExist()
+        ui.onNodeWithText("显示文字").assertIsDisplayed()
+        ui.onNodeWithTag("voice-text-toggle").performClick()
+        ui.onNodeWithText(state.answer).assertIsDisplayed(); shot("09-inline-dialogue")
         ui.onNodeWithTag("voice-details").performClick()
         ui.onNodeWithText("本人原话").assertIsDisplayed()
-        ui.onNodeWithText(state.answer).assertIsDisplayed(); shot("05-conversation")
+        ui.onAllNodesWithText(state.answer).onLast().assertIsDisplayed(); shot("05-conversation")
         ui.onNodeWithText("查看回答依据").performScrollTo().performClick()
         ui.onAllNodesWithText("我喜欢傍晚去公园散步。").onLast().performScrollTo().assertIsDisplayed(); shot("06-evidence")
         ui.onNodeWithText("收起").performClick()
-        ui.onNodeWithText(state.answer).assertDoesNotExist()
+        ui.onNodeWithText(state.answer).assertIsDisplayed()
         ui.onNodeWithText("结束").assertIsDisplayed()
+    }
+    @Test fun longDialogueAtLargeFontCanScrollWithoutHidingCallControls() {
+        val text = "这是用来检查排版的示例文字。".repeat(20)
+        show(fontScale = 1.6f) { VoiceCallContent(CallUi(active = true, ready = true, phase = CallPhase.SPEAKING,
+            status = "正在说", transcript = "可以把刚才的内容讲详细一点吗？", answer = text), {}, {}, {}) }
+        ui.onNodeWithText("结束").assertIsDisplayed()
+        ui.onNodeWithTag("voice-details").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText("结束").assertIsDisplayed(); shot("10-large-text-dialogue")
+        ui.onNodeWithTag("voice-text-toggle").performClick()
+        ui.onNodeWithText(text).assertDoesNotExist()
+        ui.onNodeWithText("暂停").assertIsDisplayed()
     }
     @Test fun largeTextAndFailureKeepExitReachable() {
         show(fontScale = 1.6f) { VoiceCallContent(CallUi(active = false, phase = CallPhase.FAILED, status = "已结束",

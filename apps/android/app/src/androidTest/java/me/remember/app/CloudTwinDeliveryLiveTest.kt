@@ -214,6 +214,7 @@ class CloudTwinDeliveryLiveTest {
             val styleBefore = model.ui.value.narrative.optJSONObject("style")?.optBoolean("enabled") == true
             result.put("style_enabled_before", styleBefore)
             if(role == "owner") {
+                click("对话工具")
                 val styleToggle = hasText(STYLE) and isToggleable()
                 ui.onNode(styleToggle).assertExists()
                 if(!styleBefore && phase.optBoolean("allow_enable_style", false)) {
@@ -371,6 +372,6 @@ class CloudTwinDeliveryLiveTest {
     companion object {
         private const val SERVER = "https://39.108.183.47"
         private const val STYLE = "允许分身使用已确认的理解与表达"
-        private const val CLOUD = "同意本次将问题和有权访问的核对文字发送给云端文字模型。"
+        private const val CLOUD = "同意将问题与已授权的核对文字交由云端回答"
     }
 }

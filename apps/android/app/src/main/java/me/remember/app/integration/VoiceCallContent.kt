@@ -5,7 +5,7 @@ import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,9 +18,12 @@ import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -46,6 +49,8 @@ import me.remember.app.core.designsystem.atmosphere
     onInterrupt: () -> Unit, onEnd: () -> Unit,
 ) {
     var details by remember { mutableStateOf(false) }
+    var showWords by rememberSaveable { mutableStateOf(true) }
+    val hasWords = state.transcript.isNotBlank() || state.answer.isNotBlank()
     val view = LocalView.current
     val surface = MaterialTheme.colorScheme.background
     SideEffect {
@@ -68,14 +73,16 @@ import me.remember.app.core.designsystem.atmosphere
                 Text("语音聊聊", style = MaterialTheme.typography.titleLarge)
                 Text("AI 分身", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButton(onClick = { details = true }, modifier = Modifier.size(52.dp).testTag("voice-details")) {
-                Icon(Icons.AutoMirrored.Outlined.Chat, "本轮对话")
+            TextButton(onClick = { showWords = !showWords }, modifier = Modifier.testTag("voice-text-toggle")) {
+                Icon(Icons.AutoMirrored.Outlined.Chat, null, Modifier.size(20.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(if (showWords) "收起文字" else "显示文字")
             }
         }
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            VoicePresence(state.phase)
-            Spacer(Modifier.height(28.dp))
+            VoicePresence(state.phase, compact = showWords && hasWords)
+            Spacer(Modifier.height(16.dp))
             Text(state.status.ifBlank { "正在连接" }, style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center, modifier = Modifier.testTag("voice-status").semantics { liveRegion = LiveRegionMode.Polite })
             val hint = when {
@@ -88,9 +95,17 @@ import me.remember.app.core.designsystem.atmosphere
                 state.phase == CallPhase.SPEAKING -> "你可以随时接着说"
                 else -> ""
             }
-            if (hint.isNotBlank()) Text(hint, Modifier.padding(top = 12.dp), textAlign = TextAlign.Center,
+            if (hint.isNotBlank() && (!hasWords || state.error.isNotBlank() || state.paused)) Text(hint, Modifier.padding(top = 12.dp), textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (state.error.isNotBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            if (showWords && hasWords) {
+                Column(Modifier.fillMaxWidth().padding(top = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (state.transcript.isNotBlank()) VoiceDialogueBubble("你", state.transcript, fromUser = true)
+                    if (state.answer.isNotBlank()) VoiceDialogueBubble(
+                        "AI · " + (state.sources?.let(::voiceAnswerLabel) ?: "回答"), state.answer, fromUser = false)
+                }
+            }
+            if (hasWords) TextButton(onClick = { details = true }, modifier = Modifier.testTag("voice-details")) { Text("本轮详情") }
             // Reserve the slot so the main status never jumps as a round changes.
             Box(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(top = 16.dp), contentAlignment = Alignment.Center) {
                 if (state.canInterrupt) OutlinedButton(onClick = onInterrupt, modifier = Modifier.testTag("voice-interrupt")) {
@@ -132,6 +147,19 @@ import me.remember.app.core.designsystem.atmosphere
     }
 }
 
+@Composable private fun VoiceDialogueBubble(label: String, text: String, fromUser: Boolean) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = if (fromUser) Alignment.CenterEnd else Alignment.CenterStart) {
+        Column(Modifier.fillMaxWidth(if (fromUser) .88f else 1f)
+            .background(if (fromUser) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp, bottomEnd = if (fromUser) 6.dp else 26.dp,
+                    bottomStart = if (fromUser) 26.dp else 6.dp)).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            SelectionContainer { Text(text, style = MaterialTheme.typography.bodyLarge) }
+        }
+    }
+}
+
 @Composable private fun VoiceTextBlock(label: String, text: String) {
     Column(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(20.dp)).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -140,7 +168,7 @@ import me.remember.app.core.designsystem.atmosphere
     }
 }
 
-@Composable private fun VoicePresence(phase: CallPhase) {
+@Composable private fun VoicePresence(phase: CallPhase, compact: Boolean) {
     val moving = interactionMotion() && phase in setOf(CallPhase.LISTENING, CallPhase.THINKING, CallPhase.PREPARING, CallPhase.SPEAKING)
     val scale = if (moving) {
         val transition = rememberInfiniteTransition(label = "conversation-presence")
@@ -149,15 +177,17 @@ import me.remember.app.core.designsystem.atmosphere
         value
     } else 1f
     val accent = MaterialTheme.colorScheme.primary
-    Box(Modifier.size(232.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.size(if (compact) 168.dp else 232.dp, if (compact) 108.dp else 184.dp), contentAlignment = Alignment.Center) {
         // Ambient state animation only; never presented as measured microphone amplitude.
-        Box(Modifier.size(224.dp).graphicsLayer { scaleX = scale; scaleY = scale }
-            .background(Brush.radialGradient(listOf(accent.copy(alpha = .16f), accent.copy(alpha = 0f))), CircleShape))
-        Box(Modifier.size(192.dp).border(1.dp, accent.copy(alpha = .16f), CircleShape))
-        Box(Modifier.size(152.dp).background(MaterialTheme.colorScheme.surface.copy(alpha = .9f), CircleShape)
-            .border(1.dp, accent.copy(alpha = .24f), CircleShape), contentAlignment = Alignment.Center) {
-            RememberMeBrand(size = 96.dp)
+        Canvas(Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale }) {
+            val cloud = accent
+            drawContext.canvas.saveLayer(androidx.compose.ui.geometry.Rect(Offset.Zero, size), androidx.compose.ui.graphics.Paint().apply { alpha = .15f })
+            drawCircle(cloud, size.height * .34f, Offset(size.width * .36f, size.height * .46f))
+            drawCircle(cloud, size.height * .42f, Offset(size.width * .62f, size.height * .43f))
+            drawRoundRect(cloud, Offset(size.width * .08f, size.height * .42f), Size(size.width * .84f, size.height * .48f), CornerRadius(size.height * .24f))
+            drawContext.canvas.restore()
         }
+        RememberMeBrand(size = if (compact) 64.dp else 88.dp)
     }
 }
 

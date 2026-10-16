@@ -107,7 +107,7 @@ class PersonaReadOnlyLiveTest {
                 }
                 ui.runOnIdle{model.closeCalibration()}
             }
-            if(role=="owner") {click("分身声音与亲友许可");ui.onNodeWithText(if(model.ui.value.voiceProfile.optBoolean("ready")) "分身声音已就绪" else "分身声音尚未启用").performScrollTo();shot("05-native-owner-voice-controls")}
+            if(role=="owner") {click("对话工具");click("分身声音与亲友许可");ui.onNodeWithText(if(model.ui.value.voiceProfile.optBoolean("ready")) "分身声音已就绪" else "分身声音尚未启用").performScrollTo();shot("05-native-owner-voice-controls")}
             click("档案");click("亲友");idle();shot("06-native-companion")
             if(config.optString("contribution_id").isNotBlank()) {
                 val originalId=config.getString("contribution_id")

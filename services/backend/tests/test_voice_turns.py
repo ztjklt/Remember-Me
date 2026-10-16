@@ -5,6 +5,8 @@ from app.voice_turns import VoiceTurns, conversation_control
 
 def test_social_controls_cannot_answer_embedded_memory_questions():
     assert conversation_control('你好，可以和我聊聊吗？')
+    assert conversation_control('谢谢！') == '不客气。'
+    assert conversation_control('你好。') == '你好，我在听。'
     assert conversation_control('你好，我女儿叫什么？') is None
     assert conversation_control('谢谢，你最喜欢什么？') is None
 

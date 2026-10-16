@@ -219,6 +219,10 @@ class QuotedTwin:
             packet=compact_packet(packet)
             selection_system+='\n'+COMPACT_INSTRUCTION
             record['prompt_version']='twin-voice-quotes-v2-lossless'
+        if payload.voice_response:
+            from .conversation_style import VERSION as STYLE_VERSION, generation_style
+            selection_system += '\n' + generation_style(voice=True)
+            record['conversation_style_version'] = STYLE_VERSION
         prepared=False
         def first_point(point,model):
             nonlocal prepared

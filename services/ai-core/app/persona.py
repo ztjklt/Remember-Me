@@ -481,6 +481,10 @@ class PersonaProvider:
                 prepared=True;prepare_draft(output)
 
         def complete(system, request, *, generation=False):
+            if generation:
+                from .conversation_style import VERSION, generation_style
+                system += "\n" + generation_style(voice=payload.voice_response)
+                record['conversation_style_version'] = VERSION
             limit = 2 if generation else 3  # Always reserve final semantic review.
             while True:
                 remaining = self.total_timeout_seconds - (monotonic() - started)

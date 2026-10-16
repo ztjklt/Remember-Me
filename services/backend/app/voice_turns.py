@@ -11,8 +11,8 @@ logger=logging.getLogger(__name__)
 def conversation_control(text):
     """Only literal social controls. Never infer a person's facts or attitudes."""
     key=re.sub(r'[\s，。！？,.!?]','',text)
-    return {'你好':'你好，你想聊哪段故事？','你好可以和我聊聊吗':'可以，你想聊哪段故事？',
-            '谢谢':'不客气。你可以接着问，也可以结束通话。'}.get(key)
+    return {'你好':'你好，我在听。','你好可以和我聊聊吗':'可以，慢慢说。',
+            '谢谢':'不客气。'}.get(key)
 
 
 class VoiceTurns:
