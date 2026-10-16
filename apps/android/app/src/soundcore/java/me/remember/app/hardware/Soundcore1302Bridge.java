@@ -31,6 +31,8 @@ public final class Soundcore1302Bridge implements HardwareTransport {
     private volatile String mac;
     private volatile String uuid;
     private volatile File downloadRoot;
+    private volatile Integer downloadFileId;
+    private final java.util.Set<File> realtimeRoots = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private volatile boolean connected;
     private File logRoot;
     private RecorderCommand pendingCommand;
@@ -42,6 +44,7 @@ public final class Soundcore1302Bridge implements HardwareTransport {
     public synchronized void initialize(Object application, Work3200Credentials credentials) {
         final long epoch = ++generation;
         auth = null; mac = null; uuid = null; downloadRoot = null; connected = false; ++connectionGeneration;
+        downloadFileId = null; realtimeRoots.clear();
         wifiActive=false; wifiBleLost=false;
         if(logRoot == null) logRoot = new File(((android.content.Context) application).getFilesDir(), "recorder-logs/" + java.util.UUID.randomUUID());
         if (!logRoot.isDirectory() && !logRoot.mkdirs()) throw new IllegalStateException("Log directory unavailable");
@@ -63,6 +66,7 @@ public final class Soundcore1302Bridge implements HardwareTransport {
             }
             @Override public void onAudioRecordStatusChanged(String address, String id, int status, int duration, int fileId) {
                 if (current(address, id)) events.recording(status, duration, fileId);
+                if (current(address, id) && status == 0 && (pendingCommand == RecorderCommand.PAUSE || pendingCommand == RecorderCommand.RESUME)) pendingCommand = null;
                 if (current(address, id) && ((status == 2 && pendingCommand == RecorderCommand.PAUSE) ||
                         (status == 1 && pendingCommand == RecorderCommand.RESUME))) {
                     events.commandResult(pendingCommand, true, "设备已确认录音状态"); pendingCommand = null;
@@ -116,18 +120,27 @@ public final class Soundcore1302Bridge implements HardwareTransport {
                 if (current(address, id)) events.progress(fileId, received, total, sequence, marked);
             }
             @Override public void onDecodeFileCompleted(String address, String id, int fileId, String path) {
-                if (!current(address, id) || downloadRoot == null) return;
+                if (!current(address, id)) return;
                 try {
                     File file = new File(path).getCanonicalFile();
-                    if (!file.toPath().startsWith(downloadRoot.toPath()) || !file.isFile() || file.length() == 0) throw new IllegalArgumentException();
+                    // Live and offline callbacks share this API. A delayed live callback
+                    // must not fail the offline download of the same recording.
+                    for (File liveRoot : realtimeRoots) if (file.toPath().startsWith(liveRoot.toPath())) {
+                        events.diagnostic("live file callback file=" + fileId + " ignored by offline receiver"); return;
+                    }
+                    File expectedRoot = downloadRoot;
+                    if (expectedRoot == null || !Integer.valueOf(fileId).equals(downloadFileId)) return;
+                    boolean within = file.toPath().startsWith(expectedRoot.toPath());
+                    events.diagnostic("sdk file file=" + fileId + " within=" + within + " exists=" + file.isFile() + " bytes=" + file.length());
+                    if (!within || !file.isFile() || file.length() == 0) throw new IllegalArgumentException();
                     events.receivedSdkFile(fileId, file); // Still SDK raw Opus; never an upload-ready WAV claim.
-                } catch (Exception error) { events.error("received_file_path", -1); }
+                } catch (Exception error) { events.fileError(fileId, "received_file_path", -1); }
             }
             @Override public void onDecodeFileMarkers(String address, String id, int fileId, int[] offsets) {
                 if (current(address, id)) events.markers(fileId, offsets.clone());
             }
             @Override public void onTransferFileError(String address, String id, int fileId, FileTransferError error) {
-                if (current(address, id)) events.error("file_transfer", error.getCode());
+                if (current(address, id)) events.fileError(fileId, "file_transfer", error.getCode());
             }
             @Override public void onTransferFileSupplementProgress(String a, String u, int file, int total, int received) {
                 if (current(a,u)) events.supplement(file, received, total);
@@ -246,16 +259,22 @@ public final class Soundcore1302Bridge implements HardwareTransport {
     }
     public synchronized void bind() { requireConnected(); sdk.bindingDevice(mac, uuid, true); }
     public synchronized void refreshInfo() { requireConnected(); sdk.getDeviceInfo(mac, uuid); }
-    public synchronized void realtime(File directory) { requireConnected(); sdk.acquireRealtimeAudioData(mac, uuid, directory.getPath()); }
+    public synchronized void realtime(File directory) {
+        requireConnected();
+        String folder = SoundcoreSavePath.directoryArgument(directory);
+        realtimeRoots.add(new File(folder));
+        sdk.acquireRealtimeAudioData(mac, uuid, folder);
+    }
     public synchronized void listFiles() { requireConnected(); sdk.getAllAudioRecordFiles(mac, uuid); }
     public synchronized void transfer(DeviceRecording recording, File privateDownloadDirectory) {
         requireConnected();
         try { downloadRoot = privateDownloadDirectory.getCanonicalFile(); }
         catch (java.io.IOException error) { throw new IllegalArgumentException("Download folder unavailable"); }
         if (!downloadRoot.isDirectory()) throw new IllegalArgumentException("Create the app-private download directory first");
+        downloadFileId = recording.getFileId();
         ArrayList<FileInfoModel> files = new ArrayList<>();
         files.add(new FileInfoModel(recording.getFileId(), recording.getEndTime(), recording.getSizeBytes(), recording.getDurationMs(), recording.getCode()));
-        sdk.startSyncAudioFile(mac, uuid, files, downloadRoot.getPath(), 15000);
+        sdk.startSyncAudioFile(mac, uuid, files, SoundcoreSavePath.directoryArgument(downloadRoot), 15000);
     }
     private void requireConnected() { requireAuthorized(); if ((!connected && !wifiActive) || mac == null || uuid == null) throw new IllegalStateException("Device is not connected"); }
     public synchronized void pauseExistingRecording() { requireConnected(); sdk.pauseRecord(mac, uuid); }
@@ -273,10 +292,11 @@ public final class Soundcore1302Bridge implements HardwareTransport {
         requireConnected();
         try { downloadRoot=directory.getCanonicalFile(); } catch(java.io.IOException e) { throw new IllegalArgumentException(e); }
         if(!downloadRoot.isDirectory()) throw new IllegalArgumentException("Download folder unavailable");
+        downloadFileId = recording.getFileId();
         ArrayList<FileInfoModel> files=new ArrayList<>();
         files.add(new FileInfoModel(recording.getFileId(),recording.getEndTime(),recording.getSizeBytes(),recording.getDurationMs(),recording.getCode()));
         wifiActive=true; wifiBleLost=false;
-        sdk.startSyncAudioFileByWIFI(mac,uuid,files,downloadRoot.getPath(),1000L);
+        sdk.startSyncAudioFileByWIFI(mac,uuid,files,SoundcoreSavePath.directoryArgument(downloadRoot),1000L);
     }
     @Override public synchronized void command(RecorderCommand command,int fileId,RecorderFirmware firmware) {
         requireConnected(); pendingCommand=command;
@@ -312,5 +332,6 @@ public final class Soundcore1302Bridge implements HardwareTransport {
         ++generation; ++connectionGeneration;
         try { sdk.stopScan(); if (mac != null && uuid != null) sdk.disconnect(mac, uuid); } catch (RuntimeException ignored) { }
         auth = null; mac = null; uuid = null; downloadRoot = null; connected = false; wifiActive=false; wifiBleLost=false; sdk.close();
+        downloadFileId = null; realtimeRoots.clear(); pendingCommand = null;
     }
 }

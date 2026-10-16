@@ -77,6 +77,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         if (state.recordPhase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED, DeviceRecordPhase.ENDED))
             Text(clock(state.elapsedMs), style = MaterialTheme.typography.displaySmall)
         if (state.recordPhase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) {
+            Text("连接期间持续计时，结束后按设备文件校准时长。", style = MaterialTheme.typography.bodySmall)
             Text("按录音豆按钮结束后，本段会自动同步到手机。")
             OutlinedButton(onClick = controller::addMark) { Text("标记重点 · ${state.recordMarks.size}") }
             OutlinedButton(onClick = { controller.runCommand(if(state.recordPhase==DeviceRecordPhase.RECORDING) RecorderCommand.PAUSE else RecorderCommand.RESUME) }, enabled=state.busy.isEmpty()) {
@@ -129,7 +130,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 2.dp) {
             Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 Text(recordingTime(file.fileId), style = MaterialTheme.typography.titleMedium)
-                Text("${file.durationMs / 1000} 秒 · 设备标记 ${file.sizeBytes} 字节")
+                Text("${file.durationMs / 1000} 秒 · 设备文件 ${recorderMegabytes(file.sizeBytes.toLong())}")
                 Button(onClick = { controller.download(file) }, enabled = idle && state.listComplete && file.code == 0 && file.sizeBytes > 0) { Text("下载到手机") }
                 RecorderFileActions(controller,state,file)
                 if (file.code != 0) Text("设备暂不允许下载此文件（${file.code}）。")
@@ -142,7 +143,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(recordingTime(receipt.fileId), style = MaterialTheme.typography.titleMedium)
                 Text("来源：录音豆 · 已保存到本机")
-                if (!compact) Text("实际 ${receipt.bytes} 字节 · 校验 ${receipt.sha256.take(16)}…")
+                if (!compact) Text("实际 ${recorderMegabytes(receipt.bytes)} · 校验 ${receipt.sha256.take(16)}…")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { controller.play(receipt) }, enabled = idle && !state.playing) { Text("手机试听") }
                     OutlinedButton(onClick = { exporting = receipt; exportFile.launch("recording-${receipt.fileId}.raw") }, enabled = idle) { Text("导出原文件") }

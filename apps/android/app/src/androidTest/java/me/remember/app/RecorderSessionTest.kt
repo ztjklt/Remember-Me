@@ -10,6 +10,7 @@ import java.util.UUID
 
 /** Synthetic SDK boundary only: exercises real controller, journal and Android Opus decoder. */
 class RecorderSessionTest {
+    private var controllerUnderTest: Work3200Controller? = null
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private fun main(block: () -> Unit) = instrumentation.runOnMainSync(block)
     private fun await(message: String, condition: () -> Boolean) {
@@ -71,6 +72,7 @@ class RecorderSessionTest {
         main {
             controller = Work3200Controller(instrumentation.targetContext, scope, ::grant,
                 onPrepared = { _, audio -> prepared = audio }, transportFactory = { FakeRecorder(it, realtimeStarted).also { fake = it } })
+            controllerUnderTest = controller
             controller.authorize()
         }
         try {
@@ -83,7 +85,12 @@ class RecorderSessionTest {
             await("both marker sources") { controller.ui.value.recordMarks.size == 2 }
             main { fake.events.recording(2, -1, -1) }
             await("pause with absent file ID") { controller.ui.value.recordPhase == DeviceRecordPhase.PAUSED }
-            main { fake.events.recording(1, -1, 1700000000); fake.events.recording(0, 2000, -1); fake.events.recording(0, 2000, -1) }
+            main { fake.events.recording(1, -1, -1) }
+            await("actual SDK resume without ID") { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
+            main { controller.runCommand(RecorderCommand.PAUSE) }
+            assertEquals("maintenance", controller.ui.value.busy)
+            // A physical stop can race the app's pending pause; the real stop wins.
+            main { fake.events.recording(0, 2000, -1); fake.events.recording(0, 2000, -1) }
             if (realtimeStarted) {
                 Thread.sleep(1800) // Live backlog exceeds the old one-second offline queue delay.
                 assertEquals("offline transfer must wait for live drain", 0, fake.transfers)
@@ -117,7 +124,14 @@ class RecorderSessionTest {
             val raw = File(privateDownloadDirectory, "synthetic.raw")
             instrumentation.context.assets.open("synthetic-device.raw").use { input -> raw.outputStream().use { input.copyTo(it) } }
             events.progress(recording.fileId, raw.length().toInt(), raw.length().toInt(), 0, false)
-            events.receivedSdkFile(recording.fileId, raw)
+            events.transfer(recording.fileId, 4)
+            // Late error from a different file must not cancel this transfer.
+            events.fileError(recording.fileId - 1, "file_transfer", 1)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                assertEquals("100% alone must not create a saved recording", 0, controllerUnderTest!!.ui.value.downloads.size)
+                assertEquals("download", controllerUnderTest!!.ui.value.busy)
+                events.receivedSdkFile(recording.fileId, raw)
+            }, 250)
         }
         override fun close() { }
     }

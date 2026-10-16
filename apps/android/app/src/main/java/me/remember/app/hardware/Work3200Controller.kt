@@ -157,6 +157,17 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         } catch (_: Exception) { disconnect("录音豆通信组件未能启动，请检查权限后重试，并导出连接记录。"); record("sdk initialization failed") }
     }
     private fun events(current: Long): HardwareEvents = object : HardwareEvents {
+        override fun diagnostic(message: String) = post { record(message.take(300)) }
+        override fun fileError(fileId: Int, operation: String, code: Int) = post {
+            record("file-error file=$fileId operation=$operation code=$code")
+            if (downloading?.recording?.fileId == fileId) error(operation, code)
+            else if (realtimeFile == fileId) {
+                realtimeFile = null; deviceTransferBusy = false
+                drainDeadline?.cancel(); drainTimedOut = false
+                if (mutable.value.busy.isEmpty()) notice("实时音频回传未完成；录音状态以设备为准，结束后仍会下载完整原音。")
+                scheduleNextFile()
+            }
+        }
         private fun post(action: () -> Unit) { handler.post {
             if (current != epoch || closed) return@post
             try { action() } catch (_: Exception) { disconnect("设备数据处理未完成，请重新连接；已保存的文件仍在本机。"); record("callback rejected") }
@@ -233,7 +244,10 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             })
         }
         override fun recording(status: Int, durationMs: Int, fileId: Int) = post {
-            if (!timeline.status(status, durationMs.toLong(), fileId)) return@post
+            if (!timeline.status(status, durationMs.toLong(), fileId)) {
+                record("recording ignored status=$status reportedFile=$fileId durationMs=$durationMs phase=${timeline.phase}")
+                return@post
+            }
             val activeFileId = timeline.fileId ?: return@post
             publishTimeline()
             record("recording status=$status file=$activeFileId reportedFile=$fileId durationMs=$durationMs")
@@ -250,6 +264,13 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             }
             if (status == 2) notice("录音豆已暂停，等待设备继续录音或结束。")
             if (status == 0) {
+                if (maintenanceCommand in setOf(RecorderCommand.PAUSE, RecorderCommand.RESUME)) {
+                    // The physical stop supersedes an in-flight pause/resume.
+                    // Waiting for that obsolete command would block automatic sync.
+                    deadline?.cancel(); maintenanceCommand = null
+                    mutable.value = mutable.value.copy(busy = "", maintenanceAction = null)
+                    record("physical stop superseded pending record control")
+                }
                 notice("录音已结束，正在取得本段文件并同步到手机。")
                 if (transferDraining()) waitForTransferDrain()
                 scheduleNextFile()
@@ -293,7 +314,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         override fun disconnected(systemCode: Int?) = post { disconnect("连接已断开（${systemCode ?: 0}）。已保存的录音仍在手机上，可重新连接。") }
         override fun info(battery: Int?, firmware: String?, freeKb: Int?, totalKb: Int?) = post {
             val percent = battery?.takeIf { it in 0..10 }?.times(10)?.let { "$it%" } ?: "未知"
-            mutable.value = mutable.value.copy(deviceInfo = "电量 $percent · 固件 ${firmware ?: "未知"}\n剩余 ${freeKb ?: "?"} / ${totalKb ?: "?"} KB")
+            mutable.value = mutable.value.copy(deviceInfo = "电量 $percent · 固件 ${firmware?.takeIf { it.isNotBlank() } ?: "未知"}\n剩余 ${recorderKilobytesAsMb(freeKb)} / ${recorderKilobytesAsMb(totalKb)}\n数据来自录音豆，电量按设备档位显示")
             record("device-info battery=$battery firmware=${firmware?.take(30)} freeKB=$freeKb totalKB=$totalKb")
         }
         override fun binding(confirmed: Boolean) = post {
@@ -311,6 +332,10 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                 deadline?.cancel(); listing = null
                 mutable.value = mutable.value.copy(busy = "", bound = true, message = "设备已就绪，已读取 ${mutable.value.files.size} 段录音。")
                 record("file-list complete count=${mutable.value.files.size}")
+                mutable.value.files.firstOrNull { it.fileId == timeline.fileId }?.let {
+                    timeline.reconcileDuration(it.fileId, it.durationMs.toLong()); publishTimeline()
+                    record("file-metadata file=${it.fileId} durationMs=${it.durationMs} bytes=${it.sizeBytes}")
+                }
                 downloadPendingFile()
             }
         }
@@ -325,7 +350,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             }
             if (downloading?.recording?.fileId != fileId) return@post
             record("transfer file=$fileId status=$sdkStatus")
-            if (sdkStatus == 2 || sdkStatus == 4) notice("设备传输已进入文件处理阶段，正在等待本机文件校验。")
+            if (sdkStatus == 2 || sdkStatus == 4) notice("数据接收结束，正在等待本机文件校验；尚未保存成功，也未上传。")
         }
         override fun transferIdle(idle: Boolean) = post {
             deviceTransferBusy = !idle
@@ -344,12 +369,17 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         override fun progress(fileId: Int, receivedBytes: Int, totalBytes: Int, sequenceNumber: Int, marked: Boolean) = post {
             if (downloading?.recording?.fileId != fileId || mutable.value.busy != "download") return@post
             val percent = transferPercent(receivedBytes.toLong(), totalBytes.toLong())
-            mutable.value = mutable.value.copy(percent = percent, progress = "同步到手机 ${percent?.let { "$it% · " }.orEmpty()}$receivedBytes / $totalBytes 字节")
+            mutable.value = mutable.value.copy(percent = percent, progress = "接收数据 ${percent?.let { "$it% · " }.orEmpty()}${recorderMegabytes(receivedBytes.toLong())} / ${recorderMegabytes(totalBytes.toLong())}")
+            if (percent == 100) notice("数据接收达到 100%，正在等待文件校验与音频转换；尚未上传。")
         }
         override fun receivedSdkFile(fileId: Int, rawFile: File) = post {
             val active = downloading ?: return@post
             if (active.recording.fileId != fileId || mutable.value.busy != "download") return@post
-            require(rawFile.canonicalFile.toPath().startsWith(active.directory.canonicalFile.toPath()))
+            if (!rawFile.canonicalFile.toPath().startsWith(active.directory.canonicalFile.toPath()) || !rawFile.isFile || rawFile.length() <= 0) {
+                record("file-validation failed file=$fileId exists=${rawFile.isFile} bytes=${rawFile.length()}")
+                operationFailed("本机文件校验未通过，未计为保存成功。原录音仍在设备上，请重试同步。")
+                return@post
+            }
             deadline?.cancel()
             mutable.value = mutable.value.copy(busy = "verify", message = "正在校验已接收文件…")
             jobs.launch {
@@ -385,7 +415,8 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                 })
                 "sync_time_binding", "device_info" -> record("nonfatal info error=$code")
                 "file_list" -> operationFailed("读取设备录音列表未完成（$code）。连接保留，可点刷新或重试同步。")
-                "file_transfer", "received_file_path" -> operationFailed("本段同步未完成（$code）。原录音仍在设备上，可重试同步。")
+                "file_transfer" -> operationFailed("设备传输未完成（$code）。原录音仍在设备上，可重试同步。")
+                "received_file_path" -> operationFailed("接收后的本机文件校验失败（$code），未保存成功。原录音仍在设备上，可重试同步或导出连接记录。")
                 "wifi" -> { runCatching { transport?.closeWifi() }; wifiDownload=false; operationFailed("Wi-Fi 同步未完成（$code）。原文件保留，可重新连接后使用蓝牙下载。") }
                 else -> disconnect("设备操作未完成（$operation/$code）。请重新连接后重试。")
             }
@@ -569,6 +600,8 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                     journal.uploadCandidate(receipt.importId, identity)
                 }
                 if (current != epoch) return@launch
+                timeline.reconcileDuration(receipt.fileId, candidate.audio.durationMs)
+                publishTimeline()
                 onPrepared(receipt, candidate)
                 if (playAfter) player = MediaPlayer().apply {
                     setDataSource(candidate.file.path)
@@ -578,7 +611,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                 }
                 mutable.value = mutable.value.copy(busy = "", percent = null, progress = "", preparingId = null, playing = playAfter,
                     message = if (playAfter) "正在试听录音豆的声音。" else "录音已保存在手机，可试听或确认上传转写。")
-                record("audio ready file=${receipt.fileId} play=$playAfter")
+                record("audio ready file=${receipt.fileId} durationMs=${candidate.audio.durationMs} play=$playAfter")
                 scheduleNextFile()
             } catch (e: Exception) {
                 if (e is CancellationException) throw e

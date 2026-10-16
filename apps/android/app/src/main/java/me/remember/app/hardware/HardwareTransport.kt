@@ -3,6 +3,8 @@ package me.remember.app.hardware
 import java.io.File
 
 interface HardwareEvents {
+    fun diagnostic(message: String) { }
+    fun fileError(fileId: Int, operation: String, code: Int) { error(operation, code) }
     fun commandResult(command: RecorderCommand, success: Boolean, detail: String) { }
     fun maintenanceProgress(command: RecorderCommand, percent: Int?, detail: String, complete: Boolean) { }
     fun deviceDetails(details: RecorderDetails) { }

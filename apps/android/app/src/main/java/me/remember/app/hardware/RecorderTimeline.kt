@@ -17,14 +17,14 @@ class RecorderTimeline(private val now: () -> Long = { System.nanoTime() / 1_000
     val pendingFiles get() = pending.toList()
     val marks get() = annotations
     fun elapsedMs(): Long = milliseconds + if (phase == DeviceRecordPhase.RECORDING)
-        (now() - observedAt).coerceIn(0, 10_000) else 0
+        (now() - observedAt).coerceAtLeast(0) else 0
 
     fun status(status: Int, durationMs: Long, reportedId: Int): Boolean {
         if (status !in 0..2 || (status == 0 && durationMs < 0)) return false
-        // SDK only promises fileID for RECORDING; pause/stop may report -1.
+        // Actual 1.3.02 resume, pause and stop callbacks may all report -1.
         // Associate those events only with an observed active recording, never
         // guess from the newest file in storage or an unknown disconnected state.
-        val id = reportedId.takeIf { it > 0 } ?: if (status != 1 &&
+        val id = reportedId.takeIf { it > 0 } ?: if (
             phase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) fileId ?: return false else return false
         if (id in finished || id in pending) return false
         if (fileId != null && id < fileId!!) return false
@@ -50,6 +50,9 @@ class RecorderTimeline(private val now: () -> Long = { System.nanoTime() / 1_000
         annotations = (annotations + RecorderMark(offsetMs, origin)).distinct().sortedBy { it.offsetMs }
     }
     fun completed(id: Int) { pending.remove(id); finished.add(id) }
+    fun reconcileDuration(id: Int, durationMs: Long) {
+        if (id == fileId && phase == DeviceRecordPhase.ENDED && durationMs > 0) milliseconds = durationMs
+    }
     fun disconnected() { milliseconds = elapsedMs(); phase = DeviceRecordPhase.UNKNOWN }
 }
 

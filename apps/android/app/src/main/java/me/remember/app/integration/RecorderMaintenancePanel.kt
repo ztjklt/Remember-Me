@@ -38,7 +38,7 @@ import me.remember.app.hardware.*
     val firmware=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(controller::importFirmware) }
     val logs=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(controller::exportDeviceLogs) }
     Text("传输：${state.maintenance.channel}",style=MaterialTheme.typography.bodySmall)
-    if(state.maintenance.livePackets>0) Text("已收到实时音频 ${state.maintenance.liveBytes} 字节；完整原音在结束后校验保存。",style=MaterialTheme.typography.bodySmall)
+    if(state.maintenance.livePackets>0) Text("已收到实时音频 ${recorderMegabytes(state.maintenance.liveBytes)}；完整原音在结束后校验保存。",style=MaterialTheme.typography.bodySmall)
     TextButton(onClick={expanded=!expanded}) { Text(if(expanded) "收起设备维护" else "设备信息与维护") }
     if(expanded) {
         val d=state.maintenance.details
