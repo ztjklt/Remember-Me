@@ -5,14 +5,15 @@ import json
 import httpx
 import pytest
 
-from app.errors import ProviderTimeout, ProviderRateLimited
+from app.errors import AIOutputInvalid, ProviderTimeout, ProviderRateLimited
 from test_weixin_deadline import bounded_chat, envelope
 
 
-def test_slow_review_has_one_backup_and_closes_loser(monkeypatch):
+def test_slow_review_closes_first_before_identical_retry(monkeypatch):
     requests=[]; closed=[]
     async def handle(request):
         number=len(requests)+1; requests.append(json.loads(request.content))
+        if number==2: assert closed==[1]
         try:
             if number==1: await asyncio.sleep(10)
             return httpx.Response(200,json=envelope())
@@ -76,7 +77,7 @@ def test_outer_persona_retry_cannot_multiply_managed_attempts():
     assert len(chat.requests)==1
 
 
-def test_malformed_fast_backup_does_not_discard_valid_primary(monkeypatch):
+def test_malformed_backup_cannot_publish_after_stalled_primary_closed(monkeypatch):
     calls=[]
     async def handle(request):
         number=len(calls)+1;calls.append(number)
@@ -87,7 +88,7 @@ def test_malformed_fast_backup_does_not_discard_valid_primary(monkeypatch):
     chat=bounded_chat(monkeypatch,handle)
     try:
         with chat.transport_scope(timeout_seconds=1,json_retry_after_seconds=.1):
-            assert chat.complete('review',{})[0]=={'valid':True}
+            with pytest.raises(AIOutputInvalid):chat.complete('review',{})
         assert calls==[1,2]
     finally:chat.close()
 
@@ -106,7 +107,7 @@ def test_persona_http_voice_uses_backup_policy_and_keeps_review(monkeypatch,json
     def scope(self,**options):
         scopes.append(options);yield
     monkeypatch.setattr(WeixinChat,'transport_scope',scope)
-    # Reviewed JSON racing can be tuned without shortening streamed requests.
+    # Reviewed JSON recovery can be tuned without shortening streamed requests.
     chat=ScriptedChat({'points':[point()]},review())
     response=post(monkeypatch,dict(payload(),voice_response=True),chat,provider='weixin')
     assert response.status_code==200,response.text

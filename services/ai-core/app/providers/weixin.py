@@ -297,20 +297,21 @@ class WeixinChat:
                 # thread. Existing unbudgeted consumers keep their sync client.
                 scope=_transport_scope.get()
                 async def managed():
-                    from .voice_race import bounded_race
+                    from .voice_race import bounded_retry
                     async def attempt(number):
                         attempt_start=perf_counter()
                         entry={'number':number,'start_ms':round((attempt_start-started)*1000,3)}
                         telemetry.setdefault('attempts',[]).append(entry)
                         try:
                             data=await self._bounded_bytes(body,headers,timeout_seconds,entry)
-                            # A malformed fast response cannot cancel a valid slower one.
+                            # Validate before accepting; a malformed response can
+                            # use the one remaining serial attempt, never publish.
                             self._decode(data,entry)
                             telemetry['winner']=number
                             telemetry.update({k:v for k,v in entry.items() if k not in {'number','start_ms'}})
                             return data
                         finally:entry['duration_ms']=round((perf_counter()-attempt_start)*1000,3)
-                    return await bounded_race(attempt,delay=scope[4]['json_delay'],timeout=timeout_seconds)
+                    return await bounded_retry(attempt,delay=scope[4]['json_delay'],timeout=timeout_seconds)
                 operation=cancellable(managed() if self.json_retry_managed else self._bounded_bytes(body, headers, timeout_seconds, telemetry))
                 chunks=(scope[1].run(operation,context=copy_context()) if scope is not None and scope[0] is self
                         else asyncio.run(operation))
