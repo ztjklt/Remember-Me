@@ -183,6 +183,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             if (status != 1 && !deviceTransferBusy) realtimeFile = null
             if (status == 1) {
                 stopPlayback()
+                notice("录音豆正在采集声音，按设备按钮结束后会自动同步到手机。")
                 if (realtimeFile != activeFileId && mutable.value.busy.isEmpty()) {
                     realtimeFile = activeFileId
                     val folder = File(journal.rawDirectory, "live-${UUID.randomUUID()}").apply { mkdirs() }
@@ -190,6 +191,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
                     runCatching { transport?.realtime(folder) }.onFailure { realtimeFile = null; record("realtime unavailable file=$fileId") }
                 }
             }
+            if (status == 2) notice("录音豆已暂停，等待设备继续录音或结束。")
             if (status == 0) {
                 notice("录音已结束，正在取得本段文件并同步到手机。")
                 if (transferDraining()) waitForTransferDrain()
