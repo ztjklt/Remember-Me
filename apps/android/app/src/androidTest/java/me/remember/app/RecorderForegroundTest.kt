@@ -27,6 +27,27 @@ import java.util.UUID
 class RecorderForegroundTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
     @Suppress("DEPRECATION")
+    @Test fun cancellingBeforeServiceCreationDoesNotKillTheApp() {
+        val context=ui.activity
+        val automation=androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
+        if(Build.VERSION.SDK_INT>=31) listOf(Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT).forEach {
+            automation.grantRuntimePermission(context.packageName,it)
+        }
+        val manager=context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        repeat(5) {
+            ui.runOnIdle {
+                val controller=Work3200Controller(context,HardwareScope("https://example.invalid","cancel-${UUID.randomUUID()}","subject"),
+                    getGrant={_,_->error("unused")})
+                controller.keepConnectedInBackground()
+                controller.close() // Same main-loop turn, before Service.onCreate.
+            }
+            ui.waitForIdle()
+            Thread.sleep(300) // Allow Android to deliver asynchronous service start/cancel.
+            ui.waitUntil(10000) { manager.getRunningServices(100).none {it.service.className==RecorderConnectionService::class.java.name} }
+        }
+        ui.runOnIdle { assertFalse(context.isFinishing);assertFalse(context.isDestroyed) }
+    }
+    @Suppress("DEPRECATION")
     @Test fun importedGrantRestoresServiceAndPanelDisposalKeepsConnection() {
         val context = ui.activity
         val automation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -70,13 +91,13 @@ class RecorderForegroundTest {
             ui.waitUntil(10000) { controller.ui.value.connected }
             ui.runOnIdle { events.recording(1, 2000, 1700000000) }
             ui.waitUntil(10000) { controller.ui.value.recordPhase == DeviceRecordPhase.RECORDING }
-            ui.onNodeWithText("正在记录这一刻").assertExists()
+            ui.onNodeWithText("正在录音").assertExists()
             ui.runOnIdle { visible.value = false }
             ui.onNodeWithText("另一页面").assertExists()
             assertFalse("disposing the device panel must not close SDK", closed)
             assertTrue(foreground()); assertTrue(controller.ui.value.connected)
             ui.runOnIdle { visible.value = true }
-            ui.onNodeWithText("正在记录这一刻").assertExists()
+            ui.onNodeWithText("正在录音").assertExists()
         } finally { ui.runOnIdle { controller.close() }; ui.waitUntil(10000) { !foreground() } }
     }
 }
