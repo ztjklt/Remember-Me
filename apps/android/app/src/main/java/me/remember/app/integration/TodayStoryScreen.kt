@@ -22,7 +22,7 @@ import me.remember.app.core.designsystem.LocalSimpleMode
 import androidx.compose.ui.platform.testTag
 
 @Composable internal fun TodayStoryScreen(state: NativeState, model: NativeWorkbenchModel,
-    record: () -> Unit, library: () -> Unit, review: (String) -> Unit) {
+    record: () -> Unit, library: () -> Unit, openStory: (String) -> Unit) {
     var source by rememberSaveable(state.actor, state.subject) { mutableStateOf(model.preferredCaptureSource()) }
     var manage by remember { mutableStateOf(false) }
     val recorder by model.recorder().ui.collectAsState()
@@ -73,7 +73,8 @@ import androidx.compose.ui.platform.testTag
         if(failed) TextButton(onClick={model.retry(processing.text("episode_id"))},enabled=!state.busy) { Text("重试处理") }
         else LinearProgressIndicator(Modifier.fillMaxWidth())
     }
-    val recent=state.stories.firstOrNull { it.text("status")=="ready" }
+    val recent=state.stories.firstOrNull { it.text("status")=="ready" && it.text("episode_id")==state.draftFocus }
+        ?: state.stories.firstOrNull { it.text("status")=="ready" }
     if(recent!=null && draft==null && processing==null && pendingCapture==null) Panel {
         Text("已加入记忆",style=MaterialTheme.typography.titleMedium)
         recent.rows("memories").take(2).forEach { Text(it.text("content"),maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
@@ -81,6 +82,7 @@ import androidx.compose.ui.platform.testTag
         if(analysis in setOf("queued","running")) Text("正在结合过往记录更新理解",style=MaterialTheme.typography.bodyMedium)
         if(analysis=="complete") Text("已结合过往记录更新理解",style=MaterialTheme.typography.bodyMedium)
         if(analysis in setOf("failed","authorization_required")) Text("累计分析暂未完成，已保存的记忆不受影响。",style=MaterialTheme.typography.bodyMedium)
+        TextButton(onClick={openStory(recent.text("episode_id"))}) { Text("查看这条记忆") }
     }
     TextButton(onClick=library,modifier=Modifier.fillMaxWidth()) { Icon(Icons.Outlined.AutoStories,null);Spacer(Modifier.width(8.dp));Text("查看全部录音与记忆") }
     if(manage) NativeDialog("录音豆",{manage=false}) { Work3200Screen(model) }

@@ -73,6 +73,7 @@ class AutomaticCaptureCloudTest {
             assertFalse(model.ui.value.drafts.containsKey(episode))
             assertEquals(episode,journal.uploadCandidate(entry.importId,identity).episodeId)
             report.put("ok",true)
+            ui.runOnIdle {model.focusDraft(episode)}
             shot("03-real-cloud-complete")
         } finally {File(folder,"result.json").writeText(report.toString(2))}
     }

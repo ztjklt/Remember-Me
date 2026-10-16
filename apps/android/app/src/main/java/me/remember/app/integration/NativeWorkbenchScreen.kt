@@ -207,7 +207,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                                 if(appearance.simpleMode && !state.owner) SimpleHome(state, {revision=null;recordingPage=true},
                                     {tab=1;archiveMode=3}, {tab=1;archiveMode=0}, {tab=2})
                                 else if(state.owner) TodayStoryScreen(state,model,{revision=null;recordingPage=true},
-                                    {tab=1;archiveMode=0},{model.review(it)})
+                                    {tab=1;archiveMode=0},{detail=it})
                                 else {
                                     Text("从真实故事和声音，了解这个人。")
                                     if(state.stories.isEmpty()) Text("这里暂时没有可见故事。")

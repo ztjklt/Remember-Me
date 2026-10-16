@@ -285,7 +285,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
                     JSONObject().put("transcript",draft.text.trim()).put("supplement",draft.supplement.trim())
                         .put("cloud_analysis_consent_id",consent)) }
                 gate.requireCurrent(s)
-                state.value=state.value.copy(drafts=state.value.drafts-id, notice="已保存，正在整理记忆。")
+                state.value=state.value.copy(drafts=state.value.drafts-id, draftFocus=id, notice="已保存，正在整理记忆。")
                 persistDrafts(s)
                 if(state.value.reviewEpisode==id) closeReview()
                 refreshNow(s)
