@@ -27,7 +27,11 @@ class AutomaticCaptureCloudTest {
         val report=JSONObject().put("physical_device",false).put("audio","fictional E01 synthetic speech")
             .put("version",BuildConfig.VERSION_NAME).put("backend","real deployed API, ASR and model workers")
         fun shot(name: String) {
-            ui.waitForIdle(); val bitmap=inst.uiAutomation.takeScreenshot()
+            ui.waitForIdle()
+            // Compose semantics may settle before the platform dialog/window
+            // transition reaches the compositor. Capture the presented frame.
+            Thread.sleep(500); inst.waitForIdleSync()
+            val bitmap=inst.uiAutomation.takeScreenshot()
             File(folder,"$name.png").outputStream().use {bitmap.compress(Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
         }
         ui.waitUntil(90000) {!model.ui.value.busy}
