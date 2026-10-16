@@ -408,7 +408,8 @@ class ProcessingWorker:
         episode.transcript = simplified_transcript(transcript.text)
         episode.stt_transcript = transcript.text
         episode.capture_metadata = {**(episode.capture_metadata or {}),
-                                    'transcript_normalization': NORMALIZATION_VERSION}
+                                    'transcript_normalization': NORMALIZATION_VERSION,
+                                    'asr_timeline': transcript.segments}
         if transcript.metadata:
             episode.capture_metadata['asr_call'] = transcript.metadata
         episode.stt_backend = transcript.backend
@@ -428,6 +429,8 @@ class ProcessingWorker:
                 f"Episode {episode.episode_id} reached the extract stage with no transcript"
             )
 
+        from .recording_highlights import highlight_report
+        highlights = highlight_report(episode)
         payload = AICoreInput(
             episode_id=episode.episode_id,
             subject_id=episode.subject_id,
@@ -439,8 +442,13 @@ class ProcessingWorker:
                 episode.subject_id
             ),
             trace_id=episode.trace_id,
+            subject_context={'recording_highlights': highlights},
         )
         output = self.ai.process(payload)
+        episode.capture_metadata = {**(episode.capture_metadata or {}),
+            'highlight_analysis': {**highlights, 'state_at_extraction': highlights['state'],
+                'attention_requested': bool(highlights['spans']),
+                'prioritized_memory_count': sum(bool((m.metadata or {}).get('recording_priority')) for m in output.memory_items)}}
         MemoryRepository(session).store_result(episode, output)
 
     def _model(self, session, episode: Episode) -> None:

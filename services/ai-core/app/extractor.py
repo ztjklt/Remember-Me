@@ -58,9 +58,11 @@ class MemoryExtractor:
 
         identify = getattr(self.provider, "identify_model", None)
         model_version = identify(self.model) if callable(identify) else self.model_version
+        from .recording_highlights import INSTRUCTION, validated_highlights, annotate_output
+        highlights = validated_highlights(payload)
         request = ModelRequest(
             payload=payload,
-            system_prompt=build_system_prompt(),
+            system_prompt=build_system_prompt() + ('\n' + INSTRUCTION if highlights else ''),
             response_schema=AICoreOutput.model_json_schema(),
             model=self.model,
             model_version=model_version,
@@ -86,7 +88,7 @@ class MemoryExtractor:
             trait.model_version = model_version
         for fact in output.graph_updates:
             fact.model_version = model_version
-        return validate_output(payload, output)
+        return annotate_output(payload, validate_output(payload, output))
 
 
 __all__ = ["MemoryExtractor"]

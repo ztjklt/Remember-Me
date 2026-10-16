@@ -344,7 +344,7 @@ class CompactExtraction(BaseModel):
 
 
 class WeixinProvider(WeixinChat):
-    prompt_version = 'weixin-memory-semantic-units-v5'
+    prompt_version = 'weixin-memory-highlights-v6'
 
     def generate(self, request):
         from ..memory_units import ground_units
@@ -376,7 +376,14 @@ class WeixinProvider(WeixinChat):
             '下面只是格式示例，必须用sources中的实际编号及内容填写，不要输出Schema：'
             '{"memories":[{"source_ids":["s1"],"statement":"所选原文支持的简短陈述",'
             '"domain":"EPISODIC_MEMORY","memory_type":"EVENT","confidence":0.8,"anchors":{}}]}')
-        raw,version=self.complete(instruction,{'sources':[{'source_id':id,'text':text} for id,text in sources.items()]})
+        from ..recording_highlights import INSTRUCTION, validated_highlights, overlaps
+        highlights = validated_highlights(request.payload)
+        if highlights:
+            instruction += INSTRUCTION
+        raw,version=self.complete(instruction,{'sources':[
+            {'source_id':id,'text':text,
+             'priority_weight':2.0 if overlaps(match.start(),match.end(),highlights) else 1.0}
+            for (id,text),match in zip(sources.items(),matches)]})
         try:
             items=raw.get('memories',[]) if isinstance(raw,dict) else []
             if isinstance(items,list) and any(isinstance(item,dict) and 'source_ids' in item for item in items):

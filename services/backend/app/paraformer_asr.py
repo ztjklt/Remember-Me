@@ -209,7 +209,10 @@ class ParaformerSttProvider:
                 authorize()
                 record['usage'] = body.get('usage')
                 record['validation'] = 'transcript_received_unreviewed'
-                return Transcript(text.strip(), self.backend, 'bailian/' + MODEL, record)
+                from .recording_highlights import validated_sentences
+                segments = validated_sentences(channels[0].get('sentences', []))
+                # The private timeline travels with the transcript, not calls.jsonl.
+                return Transcript(text.strip(), self.backend, 'bailian/' + MODEL, record, segments)
         except Timeout:
             record['error_code'] = 'STT_UNAVAILABLE'
             raise SttUnavailable('同一音频的百炼任务正在处理，稍后重试。') from None

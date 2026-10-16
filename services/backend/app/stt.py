@@ -69,6 +69,7 @@ class Transcript:
     backend: str
     model_version: str
     metadata: dict = field(default_factory=dict)
+    segments: list[dict] = field(default_factory=list)
 
 
 class SttProvider(Protocol):

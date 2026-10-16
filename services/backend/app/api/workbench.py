@@ -140,7 +140,7 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
     for episode in session.scalars(select(Episode).where(Episode.episode_id.in_(ids)).order_by(Episode.recorded_at.desc())):
         job = session.scalar(select(Job).where(Job.episode_id == episode.episode_id)) if owner else None
         memory_rows = list(session.scalars(select(MemoryItem).where(
-            MemoryItem.episode_id == episode.episode_id, MemoryItem.deleted_at.is_(None))))
+            MemoryItem.episode_id == episode.episode_id, MemoryItem.deleted_at.is_(None)).order_by(MemoryItem.ordinal)))
         active = [m for m in memory_rows if m.review_state == 'active' and m.memory_item_id in effective]
         # A corrected private replacement must not leak via a formerly shared
         # transcript or original-audio endpoint. The owner retains the history.
@@ -156,6 +156,7 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                 'domain': (memory.item_metadata or {}).get('domain'),
                 'source_type': memory.source_type,
                 'origin': (memory.item_metadata or {}).get('origin', 'extracted'),
+                'recording_priority': (memory.item_metadata or {}).get('recording_priority'),
                 'evidence': [{'evidence_id': e.evidence_id, 'excerpt': e.excerpt,
                     'source_type': e.source_type, 'episode_id': e.episode_id} for e in sources
                     if e is not None and e.episode_id == episode.episode_id]})
@@ -165,6 +166,7 @@ def stories(subject_id: str, actor: Actor = Depends(current_actor), session: Ses
                 if episode.transcript is not None and episode.transcript_reviewed_at is None else episode.transcript),
             'machine_transcript': episode.stt_transcript if owner else None,
             'reviewed': episode.transcript_reviewed_at is not None,
+            'recording_highlights': (episode.capture_metadata or {}).get('highlight_analysis') if owner else None,
             'waiting_for_review': bool(job and job.state == 'waiting'),
             'can_reextract_empty': bool(owner and episode.status == 'ready' and episode.transcript_reviewed_at
                 and session.scalar(select(MemoryItem.memory_item_id).where(MemoryItem.episode_id == episode.episode_id).limit(1)) is None),

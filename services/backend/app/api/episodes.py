@@ -85,6 +85,7 @@ class TranscriptReview(BaseModel):
     supplement: str = ''
     machine_transcript: str | None = None
     automatic_correction: dict | None = None
+    recording_highlights: dict | None = None
 
 
 class ConfirmTranscript(BaseModel):
@@ -365,6 +366,8 @@ def _create_episode(response, form, actor, store, settings, session, client_tran
     capture_metadata.pop('transcript_normalization', None)
     capture_metadata.pop('transcript_correction_receipt', None)
     capture_metadata.pop('automatic_correction', None)
+    capture_metadata.pop('asr_timeline', None)
+    capture_metadata.pop('highlight_analysis', None)
     requested_correction = capture_metadata.get('transcript_correction_policy')
     if requested_correction is not None:
         from ..transcript_correction import correction_policy, SOURCES
@@ -545,8 +548,10 @@ def read_transcript_review(
         state = "not_required"
     else:
         state = "transcribing"
+    from ..recording_highlights import highlight_report
     return TranscriptReview(
         state=state,
+        recording_highlights=highlight_report(episode),
         transcript=simplified_transcript(episode.transcript)
             if state == "reviewing" and episode.transcript is not None else None,
         stt_model_version=episode.stt_model_version,

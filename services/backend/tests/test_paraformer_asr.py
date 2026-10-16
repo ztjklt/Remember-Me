@@ -85,6 +85,19 @@ def test_audio_only_private_upload_and_raw_text_provenance(tmp_path,monkeypatch)
     assert result.metadata['task_id']=='task-1'
 
 
+def test_real_adapter_preserves_sentence_timing_without_logging_text(tmp_path,monkeypatch):
+    remote=Remote()
+    def timed(req):
+        response=remote(req)
+        if req.url.host=='dashscope-result-bj.oss-cn-beijing.aliyuncs.com':
+            body=response.json(); body['transcripts'][0]['sentences']=[{'begin_time':100,'end_time':3000,'text':'我沒有去過北京。'}]
+            return httpx.Response(200,json=body)
+        return response
+    result=wired(tmp_path,monkeypatch,timed).transcribe(b'ORIGINAL','audio/mp4')
+    assert result.segments==[{'start_ms':100,'end_ms':3000,'text':'我沒有去過北京。'}]
+    assert '我沒有去過北京' not in (tmp_path/'calls.jsonl').read_text()
+
+
 def test_signed_result_url_is_not_exposed_by_http_library_logs(tmp_path,monkeypatch,caplog):
     import logging
     from app.logging_config import configure_logging

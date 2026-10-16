@@ -160,13 +160,16 @@ class OllamaProvider:
             raise ProviderUnavailable("Configured local model is not installed") from exc
 
     def generate(self, request: ModelRequest) -> dict:
+        from ..recording_highlights import INSTRUCTION, validated_highlights
+        highlights = validated_highlights(request.payload)
         try:
             response = self._client.post(
                 self.base_url + "/api/chat",
                 json={"model": request.model, "stream": False, "think": False,
                       "format": COMPACT_SCHEMA, "options": {"temperature": 0},
-                      "messages": [{"role": "system", "content": PROMPT},
-                                   {"role": "user", "content": request.payload.transcript}]},
+                      "messages": [{"role": "system", "content": PROMPT + (INSTRUCTION if highlights else '')},
+                                   {"role": "user", "content": json.dumps({'transcript': request.payload.transcript,
+                                       'recording_highlights': highlights}, ensure_ascii=False) if highlights else request.payload.transcript}]},
                 timeout=self.timeout_seconds,
             )
             if response.status_code in (408, 504):
