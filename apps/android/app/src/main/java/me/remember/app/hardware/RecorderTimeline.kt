@@ -19,9 +19,9 @@ class RecorderTimeline(private val now: () -> Long = { System.nanoTime() / 1_000
     fun elapsedMs(): Long = milliseconds + if (phase == DeviceRecordPhase.RECORDING)
         (now() - observedAt).coerceIn(0, 10_000) else 0
 
-    fun status(status: Int, durationMs: Long, id: Int) {
-        if (status !in 0..2 || id <= 0 || durationMs < 0 || id in finished) return
-        if (fileId != null && id < fileId!!) return
+    fun status(status: Int, durationMs: Long, id: Int): Boolean {
+        if (status !in 0..2 || id <= 0 || durationMs < 0 || id in finished || id in pending) return false
+        if (fileId != null && id < fileId!!) return false
         if (id != fileId) {
             fileId = id; annotations = emptyList(); milliseconds = 0; phase = DeviceRecordPhase.IDLE
         }
@@ -32,6 +32,7 @@ class RecorderTimeline(private val now: () -> Long = { System.nanoTime() / 1_000
         }
         phase = next
         if (next == DeviceRecordPhase.ENDED) pending.add(id)
+        return true
     }
     fun duration(ms: Long) {
         if (fileId == null || phase !in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED) || ms < milliseconds) return

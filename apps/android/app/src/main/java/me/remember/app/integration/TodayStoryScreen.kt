@@ -49,6 +49,9 @@ import me.remember.app.core.designsystem.LocalSimpleMode
     }
     state.stories.filter { story -> state.local.any { it.source == "WORK_3200" && it.episode == story.text("episode_id") } }.take(3).forEach { story ->
         Text(if (story.optBoolean("waiting_for_review")) "录音豆录音 · 等待核对文字" else "录音豆录音 · ${processingLabel(story.text("status"))}")
+        if (story.text("status") == "ready") story.rows("memories").take(3).forEach { memory ->
+            Text(memory.text("content"), style = MaterialTheme.typography.bodyLarge)
+        }
         TextButton(onClick = { review(story.text("episode_id")) }, enabled = !state.busy) {
             Text(if(story.optBoolean("waiting_for_review")) "核对本段文字" else "查看本段处理结果")
         }

@@ -95,7 +95,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         require(value in setOf("recorder", "phone"))
         spacePreferences.edit().putString("capture-source:${state.value.actor}:${state.value.subject}", value).apply()
     }
-    private fun acceptRecorderAudio(receipt: HardwareDownloadReceipt, candidate: HardwareUploadCandidate) {
+    internal fun acceptRecorderAudio(receipt: HardwareDownloadReceipt, candidate: HardwareUploadCandidate) {
         val s = session ?: return
         val existing = state.value.local.firstOrNull { it.key == candidate.idempotencyKey }
         val recording = AudioRecording(audioPath = candidate.file.path, durationMillis = candidate.audio.durationMs,
@@ -353,6 +353,7 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         val capabilities = io { client.json(s, "/api/v1/workbench/capabilities") }
         val portrait = if(companionOnly) JSONObject() else io { client.json(s, "$path/portrait").optJSONObject("views") ?: JSONObject() }
         val owner = stories.text("role") == "owner"
+        if (!owner) closeRecorder()
         val info = io { loadServiceInfo { client.json(s, "/api/v1/service-info") } }
         val invitations = if(owner && info.invitations) io { client.json(s, "$path/invitations").rows() } else emptyList()
         val recipients = if(owner && info.invitations) io { client.json(s, "$path/recipients").rows() } else emptyList()

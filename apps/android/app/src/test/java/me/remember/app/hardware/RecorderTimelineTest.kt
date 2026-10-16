@@ -4,6 +4,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RecorderTimelineTest {
+    @Test fun stoppedIdentityCannotBeReopenedBeforeDownload() {
+        val timeline = RecorderTimeline { 0 }
+        timeline.status(1, 0, 1000)
+        timeline.status(0, 2000, 1000)
+        timeline.status(1, 0, 1000)
+        timeline.status(2, 3000, 1000)
+        assertEquals(DeviceRecordPhase.ENDED, timeline.phase)
+        assertEquals(2000, timeline.elapsedMs())
+        timeline.disconnected()
+        timeline.status(1, 0, 1000)
+        assertEquals(DeviceRecordPhase.UNKNOWN, timeline.phase)
+        assertEquals(listOf(1000), timeline.pendingFiles)
+    }
     @Test fun physicalButtonsDriveTimerAndOneFinishedFile() {
         var now = 100L
         val timeline = RecorderTimeline { now }

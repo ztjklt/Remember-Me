@@ -3,6 +3,8 @@ package me.remember.app.hardware
 import java.io.File
 
 interface HardwareEvents {
+    fun transferIdle(idle: Boolean) { }
+    fun transferRejected(fileId: Int) { }
     fun recording(status: Int, durationMs: Int, fileId: Int) { }
     fun recordingDuration(durationMs: Long) { }
     fun recordingSnapshot(recording: Int?, startedAt: Int) { }

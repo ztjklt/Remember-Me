@@ -82,6 +82,12 @@ public final class Soundcore1302Bridge implements HardwareTransport {
             @Override public void onTransferFileStatusChanged(String address, String id, int fileId, int status, ArrayList<Integer> markers) {
                 if (current(address, id)) events.transfer(fileId, status);
             }
+            @Override public void onDeviceTransferStateChanged(String address, String id, com.oceanwing.soundcore.spplink.listener.DeviceTransferState state) {
+                if (current(address, id)) events.transferIdle(state == com.oceanwing.soundcore.spplink.listener.DeviceTransferState.IDLE);
+            }
+            @Override public void onTransferFileTransmitting(String address, String id, int fileId) {
+                if (current(address, id)) events.transferRejected(fileId);
+            }
             @Override public void onTransferFileProgress(String address, String id, int fileId, int total, int received, int sequence, boolean marked) {
                 if (current(address, id)) events.progress(fileId, received, total, sequence, marked);
             }

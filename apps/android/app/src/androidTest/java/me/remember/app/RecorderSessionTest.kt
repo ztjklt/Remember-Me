@@ -24,14 +24,16 @@ class RecorderSessionTest {
             .put("token_expire_time", end).put("license_json", JSONObject().put("user_id", scope.actorId)
                 .put("device_id", device).put("license_expire_time", end).toString())
     }
-    @Test fun physicalEventsSaveExactlyOneFileAndKeepConnectionAfterFileErrors() {
+    @Test fun physicalEventsWaitForLiveDrainAndSaveExactlyOneFile() = runSession(true)
+    @Test fun cancelledPendingRealtimeRequestDoesNotBlockOfflineSync() = runSession(false)
+    private fun runSession(realtimeStarted: Boolean) {
         lateinit var controller: Work3200Controller
         lateinit var fake: FakeRecorder
         var prepared: HardwareUploadCandidate? = null
         val scope = HardwareScope("https://example.invalid", "test-${UUID.randomUUID()}", "subject")
         main {
             controller = Work3200Controller(instrumentation.targetContext, scope, ::grant,
-                onPrepared = { _, audio -> prepared = audio }, transportFactory = { FakeRecorder(it).also { fake = it } })
+                onPrepared = { _, audio -> prepared = audio }, transportFactory = { FakeRecorder(it, realtimeStarted).also { fake = it } })
             controller.authorize()
         }
         try {
@@ -43,6 +45,13 @@ class RecorderSessionTest {
             main { controller.addMark(); fake.events.markers(1700000000, intArrayOf(500)) }
             await("both marker sources") { controller.ui.value.recordMarks.size == 2 }
             main { fake.events.recording(0, 2000, 1700000000); fake.events.recording(0, 2000, 1700000000) }
+            if (realtimeStarted) {
+                Thread.sleep(1800) // Live backlog exceeds the old one-second offline queue delay.
+                assertEquals("offline transfer must wait for live drain", 0, fake.transfers)
+            }
+            main { fake.events.recording(1, 0, 1700000000) }
+            await("late start cannot reopen stopped file") { controller.ui.value.recordPhase == DeviceRecordPhase.ENDED }
+            if (realtimeStarted) main { fake.events.transfer(1700000000, 3) }
             await("download and decode") { prepared != null }
             assertEquals("WORK_3200", prepared!!.source)
             assertEquals(1, fake.transfers)
@@ -53,13 +62,14 @@ class RecorderSessionTest {
             assertTrue(controller.ui.value.connected)
         } finally { main { controller.close() } }
     }
-    private inner class FakeRecorder(val events: HardwareEvents) : HardwareTransport {
+    private inner class FakeRecorder(val events: HardwareEvents, val realtimeStarted: Boolean) : HardwareTransport {
         var transfers = 0
         override fun initialize(application: Any, credentials: Work3200Credentials) { events.auth(HardwareAuthResult(true, true, true, Long.MAX_VALUE, false, null)) }
         override fun scan() { }
         override fun stopScan() { }
         override fun connect(address: String, id: String) { events.connected() }
         override fun bind() { events.binding(true) }
+        override fun realtime(directory: File) { if (realtimeStarted) events.transferIdle(false) }
         override fun listFiles() { events.files(listOf(DeviceRecording(1700000000, 0, 16000, 2000, 0)), true) }
         override fun transfer(recording: DeviceRecording, privateDownloadDirectory: File) {
             transfers++

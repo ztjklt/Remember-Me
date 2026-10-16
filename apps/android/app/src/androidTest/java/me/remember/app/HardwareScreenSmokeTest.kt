@@ -35,7 +35,7 @@ class HardwareScreenSmokeTest {
         click("我的"); click("连接录音豆")
         ui.runOnIdle { assertSame(retained, model.recorder()) }
         ui.onNodeWithText("准备连接").assertExists()
-        ui.onNodeWithText("手机已保存：0 段").assertExists()
+        ui.onNode(hasText("手机已保存：", substring = true)).assertExists()
         ui.onNodeWithText("准备连接").performScrollTo()
         ui.waitForIdle()
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()

@@ -56,6 +56,9 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     private var nextFile: Job? = null
     private val listAttempts = mutableMapOf<Int, Int>()
     private var realtimeFile: Int? = null
+    private var deviceTransferBusy = false
+    private var drainDeadline: Job? = null
+    private var drainTimedOut = false
     private data class Download(val recording: DeviceRecording, val device: NearbyRecorder, val directory: File)
     private var downloading: Download? = null
     private val log = ArrayDeque<String>()
@@ -115,6 +118,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     }
     fun importGrant(uri: Uri) {
         if (mutable.value.busy.isNotEmpty()) return
+        keepConnectedInBackground()
         val current = epoch
         mutable.value = mutable.value.copy(busy = "auth")
         jobs.launch {
@@ -172,19 +176,21 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             })
         }
         override fun recording(status: Int, durationMs: Int, fileId: Int) = post {
-            timeline.status(status, durationMs.toLong(), fileId); publishTimeline()
+            if (!timeline.status(status, durationMs.toLong(), fileId)) return@post
+            publishTimeline()
             record("recording status=$status file=$fileId durationMs=$durationMs")
             if (timeline.fileId == fileId && status == 1) {
                 stopPlayback()
                 if (realtimeFile != fileId && mutable.value.busy.isEmpty()) {
                     realtimeFile = fileId
                     val folder = File(journal.rawDirectory, "live-${UUID.randomUUID()}").apply { mkdirs() }
-                    runCatching { transport?.realtime(folder) }.onFailure { record("realtime unavailable file=$fileId") }
+                    mutable.value = mutable.value.copy(realtimeMarked = false)
+                    runCatching { transport?.realtime(folder) }.onFailure { realtimeFile = null; record("realtime unavailable file=$fileId") }
                 }
             }
             if (timeline.fileId == fileId && status == 0) {
-                realtimeFile = null
                 notice("录音已结束，正在取得本段文件并同步到手机。")
+                if (transferDraining()) waitForTransferDrain()
                 scheduleNextFile()
             }
         }
@@ -239,9 +245,31 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
             }
         }
         override fun transfer(fileId: Int, sdkStatus: Int) = post {
+            if (sdkStatus == 1 && realtimeFile == fileId && downloading == null) deviceTransferBusy = true
+            if (sdkStatus == 3 && realtimeFile == fileId) {
+                realtimeFile = null
+                deviceTransferBusy = false
+                drainDeadline?.cancel(); drainTimedOut = false
+                record("live transfer drained file=$fileId")
+                scheduleNextFile()
+            }
             if (downloading?.recording?.fileId != fileId) return@post
             record("transfer file=$fileId status=$sdkStatus")
             if (sdkStatus == 2 || sdkStatus == 4) notice("设备传输已进入文件处理阶段，正在等待本机文件校验。")
+        }
+        override fun transferIdle(idle: Boolean) = post {
+            deviceTransferBusy = !idle
+            if (idle && timeline.phase !in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) {
+                realtimeFile = null; drainDeadline?.cancel(); drainTimedOut = false
+                if (mutable.value.busy.isEmpty()) scheduleNextFile()
+            }
+        }
+        override fun transferRejected(fileId: Int) = post {
+            if (downloading?.recording?.fileId != fileId) return@post
+            operationFailed("设备正在完成上一段传输，等待设备就绪后继续同步。")
+            deviceTransferBusy = true
+            waitForTransferDrain(); scheduleNextFile()
+            record("download deferred file=$fileId")
         }
         override fun progress(fileId: Int, receivedBytes: Int, totalBytes: Int, sequenceNumber: Int, marked: Boolean) = post {
             if (downloading?.recording?.fileId != fileId || mutable.value.busy != "download") return@post
@@ -332,6 +360,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         val device = mutable.value.device ?: return
         if (!mutable.value.connected || mutable.value.busy.isNotEmpty() || !mutable.value.listComplete || file.code != 0 || file.sizeBytes <= 0 ||
             timeline.phase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) return
+        if (transferDraining()) { waitForTransferDrain(); return }
         runCatching {
             val directory = File(journal.rawDirectory, UUID.randomUUID().toString()).apply { check(mkdirs()) }
             downloading = Download(file, device, directory)
@@ -351,7 +380,23 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
         nextFile = jobs.launch {
             delay(delayMs)
             if (timeline.phase in setOf(DeviceRecordPhase.RECORDING, DeviceRecordPhase.PAUSED)) return@launch
+            if (transferDraining()) { if (!drainTimedOut) scheduleNextFile(); return@launch }
             if (mutable.value.busy.isEmpty()) listFiles() else scheduleNextFile()
+        }
+    }
+    // A realtime request can be cancelled by the SDK before it starts. Only an
+    // observed active transfer blocks offline sync; request return is not proof.
+    private fun transferDraining() = deviceTransferBusy
+    private fun waitForTransferDrain() {
+        notice("录音已结束，等待设备完成传输后自动同步到手机…")
+        if (drainDeadline?.isActive == true) return
+        drainTimedOut = false
+        drainDeadline = jobs.launch {
+            delay(60_000)
+            if (transferDraining()) {
+                drainTimedOut = true; nextFile?.cancel()
+                notice("设备仍未结束传输。原录音保留在设备上，请断开后重新连接，再刷新录音列表同步。")
+            }
         }
     }
     private fun downloadPendingFile() {
@@ -443,6 +488,7 @@ class Work3200Controller(context: Context, val identity: HardwareScope,
     }
     private fun stopTransport() {
         ++epoch; deadline?.cancel(); scanTimeout?.cancel(); nextFile?.cancel(); realtimeFile = null
+        drainDeadline?.cancel(); drainTimedOut = false; deviceTransferBusy = false
         runCatching { transport?.close() }; transport = null
         session.close(); ticket = null; listing = null; downloading = null
     }
