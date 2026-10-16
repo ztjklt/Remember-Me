@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,8 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -33,6 +38,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import me.remember.app.R
 import me.remember.app.core.designsystem.LocalSimpleMode
+import me.remember.app.hardware.NearbyRecorder
 import org.json.JSONObject
 import kotlin.math.roundToInt
 
@@ -85,7 +91,7 @@ internal fun captureStageProgress(status: String, reviewed: Boolean): CaptureSta
     }
 }
 
-@Composable internal fun RecorderProductHero() {
+@Composable internal fun RecorderProductHero(searching: Boolean = false, compact: Boolean = false) {
     val simple = LocalSimpleMode.current
     val animate = !simple && ValueAnimator.areAnimatorsEnabled()
     val float: () -> Float = if (animate) {
@@ -95,12 +101,35 @@ internal fun captureStageProgress(status: String, reviewed: Boolean): CaptureSta
         val readPose: () -> Float = { pose.value }
         readPose
     } else { { 0f } }
-    // The user-supplied product photograph remains unchanged. GPU transforms add
-    // restrained depth; this is a product illustration, never a device-state signal.
-    Surface(Modifier.fillMaxWidth().testTag("recorder-product-hero"), shape = RoundedCornerShape(24.dp), color = Color.White) {
-        Box(Modifier.fillMaxWidth().height(184.dp), contentAlignment = Alignment.Center) {
-            Image(painterResource(R.drawable.soundcore_work_product), "soundcore Work 录音豆与充电盒",
-                Modifier.padding(12.dp).height(160.dp).graphicsLayer {
+    val sweep = if (searching && animate) {
+        val transition = rememberInfiniteTransition(label = "nearby-scan")
+        val angle = transition.animateFloat(0f, 360f, infiniteRepeatable(tween(5000, easing = LinearEasing)), label = "scan-angle")
+        val read: () -> Float = { angle.value }
+        read
+    } else { { 0f } }
+    val ink = MaterialTheme.colorScheme.primary
+    val stage = MaterialTheme.colorScheme.primaryContainer
+    val base = MaterialTheme.colorScheme.surface
+    // A transparent product cutout on the same green palette as the app.
+    // The subtle GPU transforms are decorative, independent of device telemetry.
+    Surface(Modifier.fillMaxWidth().testTag("recorder-product-hero"), shape = RoundedCornerShape(24.dp), color = base) {
+        Box(Modifier.fillMaxWidth().height(if (compact) 112.dp else 216.dp)
+            .background(Brush.radialGradient(listOf(stage.copy(alpha = .9f), base))), contentAlignment = Alignment.Center) {
+            Canvas(Modifier.fillMaxSize()) {
+                val radius = size.minDimension * .43f
+                if (searching) {
+                    drawCircle(ink.copy(alpha = .15f), radius, style = Stroke(1.dp.toPx()))
+                    drawCircle(ink.copy(alpha = .08f), radius * .74f, style = Stroke(1.dp.toPx()))
+                    rotate(sweep()) {
+                        drawCircle(Brush.sweepGradient(listOf(Color.Transparent, ink.copy(alpha = .20f), Color.Transparent)), radius)
+                    }
+                } else {
+                    drawOval(Color.Black.copy(alpha = .10f), topLeft = Offset(center.x - 62.dp.toPx(), size.height * .88f),
+                        size = Size(124.dp.toPx(), 10.dp.toPx()))
+                }
+            }
+            Image(painterResource(R.drawable.soundcore_work_cutout), "soundcore Work 录音豆与充电盒",
+                Modifier.padding(12.dp).height(if (compact) 100.dp else if (searching) 134.dp else 184.dp).graphicsLayer {
                     if (animate) {
                         translationY = float() * 4.dp.toPx()
                         rotationY = float() * 5f
@@ -108,6 +137,24 @@ internal fun captureStageProgress(status: String, reviewed: Boolean): CaptureSta
                         cameraDistance = 16 * density
                     }
                 }, contentScale = ContentScale.Fit)
+        }
+    }
+}
+
+@Composable internal fun NearbyRecorderCard(device: NearbyRecorder, enabled: Boolean, connect: () -> Unit) {
+    Surface(onClick = connect, enabled = enabled, shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .65f)) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Image(painterResource(R.drawable.soundcore_work_cutout), null, Modifier.size(64.dp), contentScale = ContentScale.Fit)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(device.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // The SDK scan identifier is not a verified serial number.
+                Text("标识 · ${device.mac.takeLast(5)}", style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Outlined.ChevronRight, null, Modifier.size(20.dp))
         }
     }
 }

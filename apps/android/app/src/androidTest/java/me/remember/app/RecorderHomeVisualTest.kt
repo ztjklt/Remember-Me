@@ -70,20 +70,34 @@ class RecorderHomeVisualTest {
                 controller.authorize()
             }
             ui.waitUntil(20000) { controller.ui.value.authorized }
-            ui.runOnIdle { controller.connect(NearbyRecorder("soundcore Work · 演示事件", "D3200", "visual-mac", "visual-uuid", true)) }
+            click("今天"); click("连接")
+            ui.runOnIdle { controller.scan() }
+            ui.onNodeWithText("正在搜索设备").assertIsDisplayed(); shot("00a-searching")
+            ui.runOnIdle {
+                events.found("D3200", "soundcore Work", "02:00:00:00:00:01", "visual-uuid-1")
+                events.found("D3200", "soundcore Work", "02:00:00:00:00:02", "visual-uuid-2")
+                events.bindingAdvertisement("02:00:00:00:00:01", "visual-uuid-1", true)
+                events.bindingAdvertisement("02:00:00:00:00:02", "visual-uuid-2", true)
+            }
+            ui.onNodeWithText("选择录音豆").assertIsDisplayed(); shot("00b-device-picker")
+            ui.onNodeWithText("标识 · 00:01").performClick()
             ui.waitUntil(10000) { controller.ui.value.connected && controller.ui.value.busy.isEmpty() }
-            click("今天")
+            click("关闭")
             shot("00-home-before-recording")
+            val motion = InstrumentationRegistry.getArguments().getString("motionCapture") == "true"
+            // Infinite animations started while the test clock auto-advances are
+            // suppressed by Compose's test policy. Set the policy before opening.
+            if(motion) ui.mainClock.autoAdvance = false
             click("设备")
+            if(motion) { ui.mainClock.advanceTimeBy(1000); ui.waitForIdle() }
             ui.onNodeWithTag("recorder-product-hero").assertIsDisplayed()
             ui.onNodeWithText("设备设置").assertIsDisplayed()
             shot("00-connected-product")
-            if (InstrumentationRegistry.getArguments().getString("motionCapture") == "true") {
-                ui.mainClock.autoAdvance = false
-                File(folder,"motion-ready-0163.txt").writeText("Product animation on emulator; simulated SDK connection")
+            if (motion) {
+                File(folder,"motion-final-ready-0163.txt").writeText("Product animation on emulator; simulated SDK connection")
                 // Drive the Compose test clock at wall-clock speed for a direct
                 // screen recording of the production GPU transform.
-                repeat(140) { ui.mainClock.advanceTimeBy(100); Thread.sleep(100) }
+                repeat(840) { ui.mainClock.advanceTimeBy(16); Thread.sleep(16) }
                 ui.mainClock.autoAdvance = true
             }
             click("关闭")
@@ -112,7 +126,17 @@ class RecorderHomeVisualTest {
             Thread.sleep(1200)
             shot("02b-download-70-percent")
             ui.runOnIdle { events.progress(fileId, bytes.size, bytes.size, 1, false); events.receivedSdkFile(fileId, received) }
-            ui.waitUntil(30000) { controller.ui.value.busy.isEmpty() && controller.ui.value.downloads.any { it.fileId==fileId } }
+            try {
+                // Wait on background MediaCodec work in wall-clock time. Advancing
+                // the Compose test clock on every poll needlessly drives each
+                // finite progress animation while native decoding is running.
+                val deadline = System.currentTimeMillis() + 120000
+                while (controller.ui.value.busy.isNotEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(100)
+                assertTrue("Decoded recording must be saved", controller.ui.value.busy.isEmpty() && controller.ui.value.downloads.any { it.fileId==fileId })
+            } catch(e: Throwable) {
+                shot("failure-download-state")
+                throw AssertionError("Download did not settle: busy=${controller.ui.value.busy}; ${controller.ui.value.message}", e)
+            }
             shot("03-saved-synthetic-audio")
             File(folder, "evidence.json").writeText(JSONObject().put("version", BuildConfig.VERSION_NAME).put("physical_device", false)
                 .put("sdk_events", "simulated").put("ui", "production NativeWorkbenchScreen").put("decoder", "real Android MediaCodec")

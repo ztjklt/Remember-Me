@@ -74,12 +74,20 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         return
     }
     val active=state.recordPhase in setOf(DeviceRecordPhase.RECORDING,DeviceRecordPhase.PAUSED)
-    RecorderProductHero()
+    val scanning = state.busy == "scan"
+    val selecting = !state.connected && state.busy != "connect" && state.nearby.isNotEmpty()
+    val connectionFlow = !state.connected && (state.busy in setOf("auth", "scan", "connect") || selecting)
+    RecorderProductHero(searching = scanning, compact = selecting)
+    if(!state.connected) {
+        Text(if(state.busy == "connect") "正在连接" else if(selecting) "选择录音豆" else if(scanning) "正在搜索设备" else "soundcore Work", style=MaterialTheme.typography.headlineSmall)
+        if(scanning && !selecting) Text("请将录音豆靠近手机", style=MaterialTheme.typography.bodyLarge)
+    }
     if(state.connected) RecorderDeviceStatusRow(state)
     if(active) Text("${if(state.recordPhase==DeviceRecordPhase.PAUSED) "已暂停" else "正在录音"} · ${clock(state.elapsedMs)}",style=MaterialTheme.typography.titleMedium)
     if (!BuildConfig.SOUNDCORE_ENABLED) Text("当前安装包未包含录音豆 SDK，请安装设备联调版。", color = MaterialTheme.colorScheme.error)
     val routineMessage=listOf("录音豆正在采集声音", "录音豆已暂停", "设备正在录音", "已连接录音豆。", "设备已确认绑定", "设备已就绪", "录音已保存到手机", "已保存，正在转文字", "播放结束", "正在播放原音", "蓝牙已恢复").any {state.message.startsWith(it)}
-    if(!idle || !state.connected || !state.bound || !routineMessage) Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
+    val connectionPrompt = state.message.startsWith("开启手机蓝牙") || state.message.startsWith("录音豆授权成功") || state.message.startsWith("扫描结束，请选择")
+    if(!scanning && state.busy != "connect" && !connectionPrompt && (!idle || !state.connected || !state.bound || !routineMessage)) Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(when(state.busy) { "download" -> "正在同步录音"; "verify","decode" -> "正在准备转文字"; "list" -> "正在读取设备录音"; else -> state.message })
             if (!idle) key(state.busy, state.recordingFileId) { RecorderProgress(state.percent) }
@@ -90,13 +98,11 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
         else prepare()
     }, enabled = idle && BuildConfig.SOUNDCORE_ENABLED, modifier = Modifier.fillMaxWidth()) { Text("准备连接") }
     if (state.authorized && !state.connected && !state.reconnecting) {
-        Button(onClick = controller::scan, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("扫描附近录音豆") }
-        if (state.busy == "scan") OutlinedButton(onClick = controller::stopScan) { Text("停止扫描") }
-        state.nearby.forEach { device ->
-            OutlinedButton(onClick = { controller.connect(device) }, enabled = idle || state.busy == "scan", modifier = Modifier.fillMaxWidth()) {
-                Text("${device.name} · ${device.product}\n${device.mac.takeLast(5)} · 连接")
-            }
+        if(idle) Button(onClick = controller::scan, modifier = Modifier.fillMaxWidth()) { Text(if(selecting) "重新搜索" else "搜索录音豆") }
+        (if(state.busy == "connect") emptyList() else state.nearby).forEach { device ->
+            NearbyRecorderCard(device, enabled = idle || scanning) { controller.connect(device) }
         }
+        if (scanning) TextButton(onClick = controller::stopScan) { Text("停止搜索") }
     }
     if (state.connected) {
         if (!state.bound) OutlinedButton(onClick = controller::bind, enabled = idle, modifier = Modifier.fillMaxWidth()) { Text("首次使用：绑定这颗录音豆") }
@@ -123,7 +129,7 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
             }
         }
     }
-    RecorderMenuRow("手机原音 ${state.downloads.size}", Icons.Outlined.PhoneAndroid, downloadsExpanded) {downloadsExpanded=!downloadsExpanded}
+    if(!connectionFlow && (state.connected || state.downloads.isNotEmpty())) RecorderMenuRow("手机原音 ${state.downloads.size}", Icons.Outlined.PhoneAndroid, downloadsExpanded) {downloadsExpanded=!downloadsExpanded}
     (if (downloadsExpanded) state.downloads else emptyList()).forEach { receipt ->
         Surface(shape = MaterialTheme.shapes.medium, tonalElevation = 2.dp) {
             Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -143,9 +149,9 @@ internal fun Work3200Panel(controller: Work3200Controller, compact: Boolean = fa
     }
     if (state.playing) OutlinedButton(onClick = controller::stopPlayback) { Text("停止播放") }
     if(state.connected) RecorderMaintenancePanel(controller,state)
-    RecorderMenuRow("连接帮助", Icons.Outlined.HelpOutline, diagnostics) {diagnostics=!diagnostics}
+    if(!connectionFlow) RecorderMenuRow("连接帮助", Icons.Outlined.HelpOutline, diagnostics) {diagnostics=!diagnostics}
     if(diagnostics) TextButton(onClick = { reportFile.launch("remember-device-diagnostics.json") }, enabled = idle) { Text("导出连接与下载记录") }
-    if (state.connected || !idle || state.authorized) TextButton(onClick = { controller.disconnect() },enabled=state.maintenanceAction!=RecorderCommand.OTA) { Text(if(idle) "断开连接" else "取消当前操作") }
+    if (state.connected || (!idle && !scanning)) TextButton(onClick = { controller.disconnect() },enabled=state.maintenanceAction!=RecorderCommand.OTA) { Text(if(idle) "断开连接" else "取消当前操作") }
 }
 
 @Composable private fun RecorderCaptureSummary(state: RecorderUi, controller: Work3200Controller, manage: () -> Unit, condensed: Boolean) {
