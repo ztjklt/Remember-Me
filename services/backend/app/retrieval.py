@@ -86,14 +86,28 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
     live = {item.memory_item_id for item, _ in rows}
     traits = [t for t in traits if set(t.memory_item_ids).issubset(live)]
     facts = [f for f in facts if set(f.memory_item_ids).issubset(live)]
-    for stale in ([] if reader else session.scalars(select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id))):
+    # Hold one map for this fresh, authorized retrieval transaction. ORM weak
+    # identity references otherwise let the same vectors be SELECTed once per
+    # memory, then again for ranking. No vectors or answers survive this call.
+    embedding_query = select(MemoryEmbedding).where(MemoryEmbedding.subject_id == subject_id)
+    if reader:
+        embedding_query = embedding_query.where(MemoryEmbedding.memory_item_id.in_(live))
+    embeddings = {vector.memory_item_id: vector for vector in session.scalars(embedding_query)}
+    for stale in ([] if reader else embeddings.values()):
         if stale.memory_item_id not in live:
             session.delete(stale)
+    source_ids = list({identifier for item, _ in rows for identifier in item.evidence_ids})
+    allowed_episodes = {episode.episode_id for _, episode in rows}
+    source_map = {}
+    for offset in range(0, len(source_ids), 500):
+        source_map.update((source.evidence_id, source) for source in session.scalars(select(Evidence).where(
+            Evidence.evidence_id.in_(source_ids[offset:offset + 500]),
+            Evidence.episode_id.in_(allowed_episodes))))
     pending = []
     documents = []
     evidence_by_item = {}
     for item, episode in rows:
-        evidence = [session.get(Evidence, identifier) for identifier in item.evidence_ids]
+        evidence = [source_map.get(identifier) for identifier in item.evidence_ids]
         evidence = [source for source in evidence if source is not None and source.episode_id == episode.episode_id]
         evidence_by_item[item.memory_item_id] = evidence
         related_traits = [trait for trait in traits if item.memory_item_id in trait.memory_item_ids]
@@ -104,17 +118,18 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
                               *[fact.content for fact in related_facts]])
         documents.append(document)
         digest = hashlib.sha256(document.encode()).hexdigest()
-        cached = session.get(MemoryEmbedding, item.memory_item_id)
+        cached = embeddings.get(item.memory_item_id)
         if cached is None or cached.content_hash != digest or cached.model_version != encoder.version:
             pending.append((item, document, digest))
     if pending:
         vectors = encoder.encode([document for _, document, _ in pending])
         for (item, _, digest), vector in zip(pending, vectors, strict=True):
-            cached = session.get(MemoryEmbedding, item.memory_item_id)
+            cached = embeddings.get(item.memory_item_id)
             if cached is None:
                 cached = MemoryEmbedding(memory_item_id=item.memory_item_id, subject_id=subject_id,
                                          content_hash=digest, model_version=encoder.version, vector=vector)
                 session.add(cached)
+                embeddings[item.memory_item_id] = cached
             else:
                 cached.content_hash, cached.model_version, cached.vector = digest, encoder.version, vector
         session.flush()
@@ -123,7 +138,7 @@ def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEnc
     query_vector = encoder.encode([question])[0]
     ranked = []
     for (item, episode), document in zip(rows, documents, strict=True):
-        cached = session.get(MemoryEmbedding, item.memory_item_id)
+        cached = embeddings[item.memory_item_id]
         score = 0.85 * max(0.0, _cosine(query_vector, cached.vector)) + 0.15 * _lexical(question, document)
         ranked.append((score, item, episode))
     ranked.sort(key=lambda row: row[0], reverse=True)

@@ -14,7 +14,7 @@ def validate(payload):
     for item in record['files']:assert releases.digest(candidate/item['path'])==item['after']
     suites={'ai-core':[], 'backend':['test_voice_turns','test_voice_sessions','test_voice_optimization',
         'test_voice_prefetch','test_twin_rag_integration','test_rag_contract','test_twin_voice',
-        'test_reader_understandings','test_persona_dialogue','test_twin_context']}
+        'test_reader_understandings','test_persona_dialogue','test_twin_context','test_retrieval_batching']}
     for service,tests in suites.items():
         with (payload/(service+'-tests.log')).open('w') as out:
             subprocess.run([str(candidate/'.test-venv/bin/python'),'-m','pytest',
