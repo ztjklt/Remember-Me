@@ -1108,7 +1108,11 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         operation(s) {
             stopSource(); audio.stopPlayback()
             val ticket = playbackGate.begin(s)
-            val bytes = io { load(s) }
+            state.value=state.value.copy(player=SourcePlayback(episode=episode,preparing=true))
+            val bytes = try { io { load(s) } } catch(error:Exception) {
+                if(playbackGate.isCurrent(ticket)) stopSource()
+                throw error
+            }
             // No cache or player may be restored by a download that crossed Home, stop, or identity change.
             playbackGate.publish(ticket) {
                 val file = File(sources, "source-${s.epoch}-${ticket.generation}.audio"); file.writeBytes(bytes)

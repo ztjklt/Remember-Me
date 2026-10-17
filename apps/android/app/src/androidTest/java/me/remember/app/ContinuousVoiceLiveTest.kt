@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.media.AudioTrack
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
@@ -225,6 +226,36 @@ class ContinuousVoiceLiveTest {
                     if(!(interruptDemo&&round==1))Thread.sleep(1000)
                 }
                 if(interruptDemo)assertTrue("Local VAD did not stop the previous playing turn",interruptionMarked)
+                if(InstrumentationRegistry.getArguments().getString("entrustedRecall")=="true"){
+                    assertEquals(0,failedRounds)
+                    val sources=checkNotNull(engine.ui.value.sources)
+                    assertTrue("Last real answer must have an authorized recall",sources.getJSONArray("recall_actions").length()>0)
+                    ui.onNodeWithTag("open-entrusted-letter").performScrollTo().performClick()
+                    ui.waitUntil(20000){model.ui.value.openedLetter!=null||model.ui.value.error!=null}
+                    assertNull(model.ui.value.error);assertTrue(engine.ui.value.paused)
+                    val letter=checkNotNull(model.ui.value.openedLetter)
+                    report.put("recall_letter_id",letter.getString("id"));shot("demo-letter-sealed")
+                    ui.onNodeWithText("轻触拆开").performClick()
+                    ui.onNodeWithText(letter.getString("title")).assertIsDisplayed()
+                    ui.onNodeWithText(letter.getString("author_display_name")).performScrollTo().assertIsDisplayed()
+                    shot("demo-letter-opened")
+                    ui.onNodeWithTag("letter-play").performScrollTo().performClick()
+                    ui.waitUntil(30000){model.ui.value.player.playing&&model.ui.value.player.duration>0}
+                    ui.waitUntil(10000){model.ui.value.player.position>500}
+                    val duration=model.ui.value.player.duration
+                    report.put("letter_audio_duration_ms",duration);shot("demo-letter-playing")
+                    ui.onNodeWithTag("letter-play").performClick()
+                    ui.waitUntil(10000){!model.ui.value.player.playing}
+                    ui.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress)).performScrollTo().performSemanticsAction(SemanticsActions.SetProgress){it(duration*.5f)}
+                    ui.waitUntil(10000){kotlin.math.abs(model.ui.value.player.position-duration/2)<1500}
+                    shot("demo-letter-seeked")
+                    ui.onNodeWithTag("letter-play").performScrollTo().performClick()
+                    ui.waitUntil(10000){model.ui.value.player.playing};Thread.sleep(1500)
+                    ui.onNodeWithContentDescription("关闭信笺").performClick()
+                    ui.waitUntil(10000){model.ui.value.openedLetter==null&&!model.ui.value.player.playing}
+                    assertTrue(model.ui.value.player.episode.isBlank())
+                    report.put("authorized_recall_opened",true).put("real_audio_pause_seek_resume_close",true)
+                }
                 click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
                 report.put("ok",failedRounds==0).put("failed_rounds",failedRounds).put("all_rounds_attempted",true).put("timing_demo",true).put("events",events)
                 assertEquals("Completed the batch but retained failed replies",0,failedRounds)
