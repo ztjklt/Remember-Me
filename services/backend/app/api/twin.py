@@ -416,7 +416,10 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
             or len(cited) != len(set(cited)) or any(identifier not in valid for identifier in cited)):
         raise TwinFailed("模型回答的证据格式不正确。")
     if kind == "UNKNOWN":
-        content, cited, confidence = "现有记录还不足以确定。", [], 0
+        # Match the AI Core's reviewed/prepared voice wording. Replacing this
+        # after synthesis needlessly discards valid audio and synthesizes twice.
+        content = "这个我还说不准。" if voice_context is not None else "现有记录还不足以确定。"
+        cited, confidence = [], 0
     elif (not cited and not used_notes) or not content.strip():
         raise TwinFailed("模型回答缺少可核对的证据。")
     if kind == "ORIGINAL":

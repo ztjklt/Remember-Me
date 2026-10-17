@@ -77,6 +77,16 @@ def test_unconfigured_persona_route_is_explicit_unavailable(monkeypatch):
     assert response.json()["error_code"] == "AI_UNAVAILABLE"
 
 
+def test_voice_unknown_review_and_preparation_use_final_spoken_wording(monkeypatch):
+    data = payload()
+    data['voice_response'] = True
+    chat = ScriptedChat({'points': [point(mode='UNKNOWN', text='', understanding_ids=[])]}, review())
+    response = post(monkeypatch, data, chat)
+    assert response.status_code == 200, response.text
+    assert response.json()['answer'] == '这个我还说不准。'
+    assert chat.requests[1][1]['rendered_answer']['answer'] == response.json()['answer']
+
+
 def test_confirmed_conditional_simulation_tracks_support_and_counterexample(monkeypatch):
     chat = ScriptedChat({"points": [point()]}, review())
     response = post(monkeypatch, payload(), chat, provider="weixin")

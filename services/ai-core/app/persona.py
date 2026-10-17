@@ -24,6 +24,7 @@ from .twin import TwinCandidate, TwinOutput, DialogueContextTurn
 
 PROMPT_VERSION = "persona-conditional-reviewed-v8"
 UNKNOWN = "现有记录还不足以确定。"
+VOICE_UNKNOWN = "这个我还说不准。"
 PARTIAL_NOTICE = "部分问题尚未回答。"
 FICTIONAL_TRACE_DIR = Path(__file__).resolve().parents[1] / "var" / "persona-fictional-traces"
 logger = logging.getLogger("remember_me.ai_core")
@@ -198,6 +199,8 @@ ASR动作、断句有歧义时，不允许模型以常识把改写变成确定�
 
 def _packet(payload):
     packet, sources = source_packet(payload)
+    if payload.voice_response:
+        packet['voice_response'] = True
     # Deliberately discard candidate.traits; only this endpoint's explicit,
     # confirmed understanding records may provide a conditional persona basis.
     packet.pop("confirmed_understanding")
@@ -277,7 +280,8 @@ def _render(raw, packet, aliases, understandings, contributions, model):
             if point.text or point.source_ids or point.understanding_ids or point.contribution_ids or point.names:
                 raise PersonaValidationInvalid("unknown_contains_claims")
             # question_part is unverified model prose, not safe display text.
-            text = f"未回答部分（第{index}项）：{UNKNOWN}" if len(draft.points) > 1 else UNKNOWN
+            unknown = VOICE_UNKNOWN if packet.get('voice_response') else UNKNOWN
+            text = f"未回答部分（第{index}项）：{unknown}" if len(draft.points) > 1 else unknown
         else:
             known = True
             if not point.text.strip():
@@ -469,7 +473,7 @@ class PersonaProvider:
         payload = PersonaInput.model_validate(payload.model_dump(mode="json"))
         packet, aliases, understandings, contributions = _packet(payload)
         if not aliases and not contributions:
-            return PersonaOutput(answer=UNKNOWN, response_type="UNKNOWN", evidence_ids=[],
+            return PersonaOutput(answer=VOICE_UNKNOWN if payload.voice_response else UNKNOWN, response_type="UNKNOWN", evidence_ids=[],
                 understanding_ids=[], contribution_ids=[], confidence=0, model_version="no-evidence", coverage="partial")
 
         from .voice_stream import generation_streamed,prepare_draft

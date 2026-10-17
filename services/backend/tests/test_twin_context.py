@@ -5,6 +5,24 @@ from app.models import Episode, MemoryItem
 from test_agent_workbench import setup_pair
 
 
+def test_voice_unknown_keeps_the_prepared_spoken_text(app, client, session):
+    from types import SimpleNamespace
+    from app.models import Actor
+    from app.api.twin import generate_answer, TwinQuestion
+    owner, reader, oh, rh, ep, cloud = setup_pair(app, client, session)
+    class Unknown:
+        def answer(self, question, candidates):
+            return dict(answer='这个我还说不准。', response_type='UNKNOWN',
+                        evidence_ids=[], confidence=0, model_version='test')
+    app.state.twin_client = Unknown()
+    result = generate_answer(owner.subject_id,
+        TwinQuestion(question='你什么时候喝茶？', cloud_consent_id=cloud),
+        SimpleNamespace(app=app), session.get(Actor, owner.actor_id), session,
+        voice_context=[])
+    assert result['answer'] == '这个我还说不准。'
+    assert result['response_type'] == 'UNKNOWN' and result['evidence'] == []
+
+
 def capture(app):
     seen = []
     class Inspect:
