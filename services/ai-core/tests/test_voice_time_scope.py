@@ -1,10 +1,13 @@
 """The reported tea-time follow-up must not quote a taste as a time."""
+import pytest
 from app.quoted_twin import QuotedTwin
 from test_voice_original_proposal import Chat, payload, verdict
 
 
-def test_unknown_tea_time_is_proposed_before_one_full_review():
-    p = payload('你一般什么时候喝茶？')
+@pytest.mark.parametrize('source', ['我喝茶喜欢淡一点，太甜的我喝不惯。',
+    '我喜欢淡茶，太浓的喝不惯，但客人喜欢浓茶也随他。'])
+def test_unknown_tea_time_is_proposed_before_one_full_review(source):
+    p = payload('你一般什么时候喝茶？', source)
     chat = Chat(verdict())
     result = QuotedTwin(chat).answer(p)
     assert result.response_type == 'UNKNOWN'

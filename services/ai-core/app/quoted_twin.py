@@ -23,7 +23,7 @@ VOICE_SYSTEM='''twin-voice-quotes-v1。你在进行连续语音事实问答。�
 问原因须有明确原因，先后顺序不能证明因果。怀疑、指责不证明事件发生。具体事实未交代或仍记不清则known=false，source_ids=[]；明确没做、未决定是已知。部分已知不可全部拒答。题外资料与原文过去的分享意愿不改变当前授权。输出严格符合response_schema的JSON，编号只用输入的sources。'''
 logger=logging.getLogger('remember_me.ai_core')
 VOICE_REFERENCE_POLICY='''语音指代核对 v1：conversation_only_not_evidence 仅用于理解问题指代，不能作为事实证据。先确定用户当前问的具体对象；“这种活动/那件事/他”只能由当前问题或已听到的对话明确定位。不能反过来用检索到的某段经历猜测用户所指，也不能把相似词、年份或“第一次”当成同一事件。指代仍不明确时 known=false；不能因此把有明确前指的正常追问也拒答。生成与审阅均先核对对象是否一致；引用真实但对象未确定或不一致仍属 irrelevant。'''
-VOICE_QUESTION_SCOPE='''语音问题范围 v1：按用户实际问法理解日常问题。开放式偏好问题可以用材料中明确的口味、习惯或具体喜好直接回答，不擅自收窄成用户未要求的品牌、品种等单一属性，也不补造这些属性。用户明确限定了某属性时，必须有该属性的证据；仅有相关口味不能回答具体品种。多问须分别覆盖已知与未知，不能用一个相关事实冒充全部已知。'''
+VOICE_QUESTION_SCOPE='''语音问题范围 v2：按用户实际问法理解日常问题。开放式偏好问题可以用材料中明确的口味、习惯或具体喜好直接回答，不擅自收窄成用户未要求的品牌、品种等单一属性，也不补造这些属性。用户明确限定了某属性时，必须有该属性的证据；仅有相关口味不能回答具体品种。问作息、几点或什么时候，必须有时间或时间范围的依据；“淡一点、甜一点”的一点不是钟点，口味不能回答时间。多问须分别覆盖已知与未知，不能用一个相关事实冒充全部已知。'''
 
 class Quote(BaseModel):
     model_config=ConfigDict(extra='forbid',strict=True)
@@ -215,7 +215,7 @@ def original_proposal(payload, packet):
     # proof of absence: the full reviewer can reject it and find another source.
     # Ignore recording metadata; a recording date is not an event/habit time.
     time_question=bool(re.search(r'什么时候|何时|几点|哪个时段|哪一年|哪年|哪天|哪一天|哪月|几月',question))
-    time_cue=r'\d|[零一二三四五六七八九十百〇两]+[年月日点岁]|早[上晨饭]|中午|下午|晚上|傍晚|夜里|饭[前后]|睡[前后]|周末|星期|礼拜|退休|上班|下班|小时|分钟|从前|以前|后来|过去|现在|今天|昨天|明天|当时'
+    time_cue=r'\d|[零一二三四五六七八九十百〇两]+[年月日岁]|早[上晨饭]|中午|下午|晚上|傍晚|夜里|饭[前后]|睡[前后]|周末|星期|礼拜|退休|上班|下班|小时|分钟|从前|以前|后来|过去|现在|今天|昨天|明天|当时'
     if time_question and (not ranked or not terms & ranked[0][1] or not re.search(time_cue,ranked[0][0]['text'])):
         return {'points':[{'known':False,'source_ids':[]}]}
     if not ranked or not terms & ranked[0][1]:return None
