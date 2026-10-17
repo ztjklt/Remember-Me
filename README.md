@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-10-17 完整提交入口：** [下载全量源码、Python 后端、APK 与验证附件](https://github.com/ztjklt/Remember-Me/releases/tag/submission-full-20261017) · [给接手 AI 的说明](https://github.com/ztjklt/Remember-Me/blob/4facdc066a1a15f7e5c3061c120d311f14c97fa2/SUBMISSION.md) · [Python Backend 源码](https://github.com/ztjklt/Remember-Me/tree/4facdc066a1a15f7e5c3061c120d311f14c97fa2/services/backend)。本次完整交付在 `codex/work3200-device-20261016`，固定提交 `4facdc0`，共 1843 个文件；下方 main 分支原说明保留历史，不代表最新交付状态。
+
 Remember Me is a consent-first system that turns recorded life episodes into traceable memories, an evolving person model, and evidence-backed Twin responses. The existing Android client and the authorized iOS track share one Backend Contract and processing path.
 
 ## Current status
