@@ -202,7 +202,8 @@ def create_app(
         try:
             policy={'retry_after_seconds':settings.voice_retry_after_seconds} if generation_streamed.get() and settings.voice_retry_after_seconds>0 else {}
             with (active_twin.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,
-                  json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds,**policy)
+                  json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds,
+                  **({'json_hedged':True} if settings.voice_json_hedged else {}),**policy)
                   if payload.voice_response and hasattr(active_twin,'transport_scope') else nullcontext()):
                 return active_twin.answer(payload)
         finally:
@@ -259,7 +260,8 @@ def create_app(
         try:
             chat=getattr(active_persona,'chat',None)
             with (chat.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,
-                  json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds)
+                  json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds,
+                  **({'json_hedged':True} if settings.voice_json_hedged else {}))
                   if payload.voice_response and hasattr(chat,'transport_scope') else nullcontext()):
                 return active_persona.answer(payload, started_at=started)
         finally:

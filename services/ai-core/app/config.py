@@ -50,6 +50,7 @@ class Settings(BaseSettings):
         default=None, ge=0, le=10, allow_inf_nan=False,
         validation_alias='AI_VOICE_JSON_RETRY_AFTER_SECONDS',
     )
+    voice_json_hedged: bool = Field(default=False,validation_alias='AI_VOICE_JSON_HEDGED')
 
     @property
     def effective_voice_json_retry_after_seconds(self) -> float:

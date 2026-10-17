@@ -117,7 +117,9 @@ class ContinuousVoiceLiveTest {
                 val appPcm=InstrumentationRegistry.getArguments().getString("appPcm")=="true"
                 val interruptDemo=InstrumentationRegistry.getArguments().getString("interruptDemo")=="true"
                 var interruptedTurn=-1L;var interruptionMarked=false
-                val demoRounds=InstrumentationRegistry.getArguments().getString("timingRounds","2").toInt().coerceIn(1,3)
+                val demoRounds=InstrumentationRegistry.getArguments().getString("timingRounds","2").toInt().coerceIn(1,8)
+                val continueOnError=InstrumentationRegistry.getArguments().getString("continueOnError")=="true"
+                var failedRounds=0
                 if(appPcm){
                     report.put("synthetic_microphone_injection",false).put("instrumented_app_pcm",true)
                     // Bypass only the emulator HAL. ASR, answer and TTS remain real.
@@ -161,6 +163,7 @@ class ContinuousVoiceLiveTest {
                     mark("ready_for_question",round)
                     File(folder,"demo-ready-$round").writeText("inject synthetic question")
                     var transcript="";var answerSeen=false;var audioSeen=false;var completed=false
+                    var roundFailed=false;var priorErrorCleared=engine.ui.value.error.isBlank()
                     var lastAnswerText=""
                     val deadline=System.currentTimeMillis()+65000
                     var lastSample=0L;var lastProgress=0L
@@ -190,8 +193,11 @@ class ContinuousVoiceLiveTest {
                             transcript=s.transcript;mark("transcript",round,JSONObject().put("text",transcript))
                             ui.waitForIdle() // Compose test clock must render the actual state change.
                         }
-                        if(s.error.isNotBlank()){
-                            mark("error",round,JSONObject().put("message",s.error));fail(s.error)
+                        if(s.error.isBlank())priorErrorCleared=true
+                        if(s.error.isNotBlank()&&priorErrorCleared){
+                            mark("error",round,JSONObject().put("message",s.error));shot("demo-$round-error")
+                            if(!continueOnError)fail(s.error)
+                            failedRounds++;roundFailed=true;break
                         }
                         val answerId=s.sources?.let{it.optString("answer_id").ifBlank{it.optString("live_turn_id")}}.orEmpty()
                         if(answerId.isNotBlank()&&answerId!=previousAnswer){
@@ -215,12 +221,13 @@ class ContinuousVoiceLiveTest {
                         }
                         Thread.sleep(25)
                     }
-                    assertTrue("Round $round did not complete playback",answerSeen&&audioSeen&&completed)
+                    assertTrue("Round $round did not complete playback",roundFailed||(answerSeen&&audioSeen&&completed))
                     if(!(interruptDemo&&round==1))Thread.sleep(1000)
                 }
                 if(interruptDemo)assertTrue("Local VAD did not stop the previous playing turn",interruptionMarked)
                 click("结束");ui.waitUntil(10000){model.voiceCall.value==null}
-                report.put("ok",true).put("timing_demo",true).put("events",events)
+                report.put("ok",failedRounds==0).put("failed_rounds",failedRounds).put("all_rounds_attempted",true).put("timing_demo",true).put("events",events)
+                assertEquals("Completed the batch but retained failed replies",0,failedRounds)
                 return
             }
             File(folder,"ready").writeText("inject synthetic question now")

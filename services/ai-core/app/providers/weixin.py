@@ -74,12 +74,12 @@ class WeixinChat:
             limits=httpx.Limits(max_connections=4,max_keepalive_connections=2,keepalive_expiry=5))
 
     @contextmanager
-    def transport_scope(self, *, timeout_seconds=None, retry_after_seconds=0, json_retry_after_seconds=0):
+    def transport_scope(self, *, timeout_seconds=None, retry_after_seconds=0, json_retry_after_seconds=0, json_hedged=False):
         """One worker/request owns the loop and pool; cancellation still closes streams."""
         with asyncio.Runner() as runner:
             client=self._async_client()
             policy=dict(delay=retry_after_seconds, deadline=perf_counter()+(timeout_seconds or 45), remaining=2,
-                        json_delay=json_retry_after_seconds)
+                        json_delay=json_retry_after_seconds,json_hedged=json_hedged)
             token=_transport_scope.set((self,runner,client,timeout_seconds,policy))
             try:yield
             finally:
@@ -297,7 +297,7 @@ class WeixinChat:
                 # thread. Existing unbudgeted consumers keep their sync client.
                 scope=_transport_scope.get()
                 async def managed():
-                    from .voice_race import bounded_retry
+                    from .voice_race import bounded_retry,bounded_race
                     async def attempt(number):
                         attempt_start=perf_counter()
                         entry={'number':number,'start_ms':round((attempt_start-started)*1000,3)}
@@ -307,11 +307,16 @@ class WeixinChat:
                             # Validate before accepting; a malformed response can
                             # use the one remaining serial attempt, never publish.
                             self._decode(data,entry)
-                            telemetry['winner']=number
-                            telemetry.update({k:v for k,v in entry.items() if k not in {'number','start_ms'}})
-                            return data
+                            return data,entry
                         finally:entry['duration_ms']=round((perf_counter()-attempt_start)*1000,3)
-                    return await bounded_retry(attempt,delay=scope[4]['json_delay'],timeout=timeout_seconds)
+                    # Only a slow call gains one identical backup. A completed
+                    # negative verdict wins too; this is not a vote for approval.
+                    operation=bounded_race if scope[4]['json_hedged'] else bounded_retry
+                    telemetry['retry_policy']='hedged' if scope[4]['json_hedged'] else 'serial'
+                    data,winner=await operation(attempt,delay=scope[4]['json_delay'],timeout=timeout_seconds)
+                    telemetry['winner']=winner['number']
+                    telemetry.update({k:v for k,v in winner.items() if k not in {'number','start_ms'}})
+                    return data
                 operation=cancellable(managed() if self.json_retry_managed else self._bounded_bytes(body, headers, timeout_seconds, telemetry))
                 chunks=(scope[1].run(operation,context=copy_context()) if scope is not None and scope[0] is self
                         else asyncio.run(operation))

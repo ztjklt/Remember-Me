@@ -561,6 +561,7 @@ class PersonaProvider:
             # Strict parsing below still rejects extra fields; no coercion or
             # second vote can turn a malformed/negative review into acceptance.
             review_system += "\n语音审阅结构核对 v1：输出points的每项仅有point_index、verdict、codes、rationale、depends_on五个字段；coverage仅有status、codes、missing_question_parts、rationale四个字段。draft及review_scope中的mode、text、question_part等是输入信息，不要复制到审阅输出。先完成上述全部语义检查，再核对JSON字段与response_schema完全一致。"
+            review_system += "\n语音审阅简述 v1：全部核查项目不变；每个rationale用不超过80字写关键依据编号、条件及通过或失败原因，不复述整段草稿或原文。coverage的rationale不超过60字，不重复逐点理由。"
             record['review_shape_policy'] = 'voice-review-shape-v1'
         checked, _ = complete(review_system, {**packet, "response_schema": PersonaReview.model_json_schema(),
             "draft": draft.model_dump(), "cited_material": cited, "review_scope": review_scope,

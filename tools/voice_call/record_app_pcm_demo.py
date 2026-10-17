@@ -33,7 +33,7 @@ def main(a):
     try:
         result=run('shell','am','instrument','-w','-e','class','me.remember.app.ContinuousVoiceLiveTest',
             '-e','timingDemo','true','-e','appPcm','true','-e','timingRounds',str(len(a.audio)),
-            '-e','responseSpeed',a.response_speed,'-e','voiceMode',a.mode,'-e','voiceEngine',a.engine,'-e','interruptDemo',str(a.interrupt_demo).lower(),'me.remember.app.internal.test/androidx.test.runner.AndroidJUnitRunner',timeout=240)
+            '-e','responseSpeed',a.response_speed,'-e','voiceMode',a.mode,'-e','continueOnError',str(a.continue_on_error).lower(),'-e','voiceEngine',a.engine,'-e','interruptDemo',str(a.interrupt_demo).lower(),'me.remember.app.internal.test/androidx.test.runner.AndroidJUnitRunner',timeout=240)
         (out/'instrumentation.log').write_bytes(result.stdout+result.stderr)
     finally:
         stop.set();watcher.join(5)
@@ -56,4 +56,5 @@ if __name__=='__main__':
     p.add_argument('--interrupt-demo',action='store_true')
     p.add_argument('--engine',choices=['pipeline','step_realtime'],default='pipeline')
     p.add_argument('--mode',choices=['evidence','persona'],default='evidence')
+    p.add_argument('--continue-on-error',action='store_true',help='Attempt later rounds after a provider error; the batch still fails if any reply failed')
     raise SystemExit(0 if main(p.parse_args()) else 1)
