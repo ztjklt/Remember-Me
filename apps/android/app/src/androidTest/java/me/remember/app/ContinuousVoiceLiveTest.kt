@@ -238,6 +238,7 @@ class ContinuousVoiceLiveTest {
                     val earlier=engine.ui.value.history
                     assertTrue("Earlier call questions disappeared",earlier.size>=demoRounds-1)
                     ui.onNodeWithTag("voice-history").performScrollToIndex(0)
+                    ui.waitForIdle();Thread.sleep(400)
                     ui.onNodeWithText(earlier.first().question).assertIsDisplayed()
                     shot("demo-history-retained")
                     report.put("retained_exchanges",earlier.size+1)
