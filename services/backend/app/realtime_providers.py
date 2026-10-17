@@ -143,6 +143,11 @@ class ParaformerRealtime:
         if self.socket: await self.socket.close()
 
 
+CHEN_VOICE_STYLE = ('沉稳、温和的成年男声，像坐在家里和熟人聊天。音高自然偏低，'
+    '语速从容但不拖长，句间短停顿；不要播音腔，不刻意苍老，不夸张表演。'
+    '只逐字说出assistant里的文字，不增删内容，不朗读这段要求。')
+
+
 class XiaomiRealtime:
     def __init__(self, settings):
         if settings.xiaomi_voice_base_url.rstrip('/') != 'https://api.xiaomimimo.com/v1':
@@ -189,7 +194,8 @@ class XiaomiRealtime:
     async def _stream_uncached(self, text: str):
         if not text.strip() or len(text) > 1500: raise RealtimeFailure('TTS_TEXT_INVALID')
         payload = {'model': 'mimo-v2.5-tts', 'stream': True,
-            'messages': [{'role': 'assistant', 'content': text}],
+            'messages': [{'role': 'user', 'content': CHEN_VOICE_STYLE},
+                         {'role': 'assistant', 'content': text}],
             'audio': {'format': 'pcm16', 'voice': '白桦'}}
         try:
             if self.client is None:
