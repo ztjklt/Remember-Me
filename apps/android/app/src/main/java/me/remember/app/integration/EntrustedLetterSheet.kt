@@ -49,7 +49,7 @@ private val Ink=Color(0xFF354B3E)
     ModalBottomSheet(onDismissRequest=onClose,containerColor=Forest,contentColor=Paper,sheetMaxWidth=960.dp,
         sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),dragHandle=null) {
         Box(Modifier.fillMaxWidth().heightIn(max=760.dp).testTag("entrusted-letter-sheet")) {
-            if(petals) LetterPetals(motion)
+            if(petals) LetterPetals(motion,Modifier.matchParentSize())
             Column(Modifier.fillMaxWidth()) {
                 Row(Modifier.fillMaxWidth().padding(start=24.dp,end=12.dp,top=12.dp,bottom=12.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text("留给你",Modifier.weight(1f),style=MaterialTheme.typography.titleLarge,fontFamily=FontFamily.Serif)
@@ -130,13 +130,13 @@ private val Ink=Color(0xFF354B3E)
 
 private fun letterTime(ms:Long)="%02d:%02d".format(ms/60000,(ms/1000)%60)
 
-@Composable private fun LetterPetals(moving:Boolean) {
+@Composable private fun LetterPetals(moving:Boolean,modifier:Modifier) {
     val glow=if(moving) {
         val t=rememberInfiniteTransition(label="letter-glow")
         val a by t.animateFloat(.12f,.32f,infiniteRepeatable(tween(3600),RepeatMode.Reverse),label="petal-alpha")
         a
     } else .2f
-    Canvas(Modifier.fillMaxWidth().height(700.dp).graphicsLayer{alpha=glow}) {
+    Canvas(modifier.graphicsLayer{alpha=glow}) {
         listOf(.03f to .19f,.97f to .43f,.05f to .78f,.95f to .08f).forEach { (x,y) ->
             val center=Offset(size.width*x,size.height*y)
             repeat(5){i->val a=i*2*Math.PI/5;drawCircle(Paper,5.dp.toPx(),center+Offset(kotlin.math.cos(a).toFloat()*6.dp.toPx(),kotlin.math.sin(a).toFloat()*6.dp.toPx()))}

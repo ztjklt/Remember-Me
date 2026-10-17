@@ -28,7 +28,9 @@ class EntrustedLetterVisualTest {
         val inst=InstrumentationRegistry.getInstrumentation()
         val dir=File(ui.activity.getExternalFilesDir(null),"entrusted-letter-visual").apply{mkdirs()}
         fun shot(name:String) { ui.waitForIdle();Thread.sleep(500);val b=inst.uiAutomation.takeScreenshot();File(dir,"$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle() }
-        shot("01-sealed")
+        ui.waitUntil(10000){ui.onNodeWithText("轻触拆开").isDisplayed()}
+        // Wait for the platform dialog window after orientation/density changes as well as Compose.
+        Thread.sleep(1500);shot("01-sealed")
         ui.onNodeWithText("轻触拆开").performClick()
         ui.onNodeWithText("厨房那盏小灯").assertIsDisplayed();shot("02-opened")
         ui.onNodeWithContentDescription("播放原音").performScrollTo().assertIsDisplayed();shot("03-player")
