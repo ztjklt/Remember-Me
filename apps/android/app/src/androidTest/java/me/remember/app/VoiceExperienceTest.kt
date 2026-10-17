@@ -137,16 +137,34 @@ class VoiceExperienceTest {
         val model = NativeWorkbenchModel(ui.activity, audio)
         val state = NativeState(actor = "local-fixture", space = JSONObject().put("role", "owner").put("subject_id", "fixture"),
             narrative = JSONObject().put("style", JSONObject().put("enabled", true)))
-        show { Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Lake).systemBarsPadding()
+        val fontScale = InstrumentationRegistry.getArguments().getString("reviewFontScale")?.toFloatOrNull() ?: 1f
+        show(fontScale = fontScale) { Column(Modifier.fillMaxSize().atmosphere(scene = NatureScene.Lake).systemBarsPadding()
             .verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             AskTab(state, model)
         } }
         ui.onNodeWithText("先录下我的回答，再对照").assertDoesNotExist()
         ui.onNodeWithText("分身声音与亲友许可").assertDoesNotExist()
+        ui.onNodeWithText("查找记录").assertDoesNotExist()
+        ui.onNodeWithText("与 AI 分身聊聊").assertDoesNotExist()
+        ui.onNodeWithText("同意将问题与已授权的核对文字交由云端回答").assertDoesNotExist()
+        ui.onNodeWithText("想聊什么？").assertDoesNotExist()
+        ui.onNodeWithText("语音聊聊").assertIsDisplayed()
+        shot("08-chat-landing")
+        ui.onNodeWithText("打字聊聊").performClick()
+        ui.onNodeWithText("想聊什么？").assertIsDisplayed()
+        ui.onNodeWithText("发送").assertIsNotEnabled()
         shot("08-text-chat")
+        ui.onNodeWithText("想聊什么？").performTextInput("今天想聊聊")
+        ui.onNodeWithText("发送").performScrollTo().performClick()
+        ui.onNodeWithText("使用云端回答").assertIsDisplayed()
+        ui.onNodeWithText("取消").performClick()
+        ui.onNodeWithText("今天想聊聊").assertExists()
         ui.onNodeWithText("对话工具").performScrollTo().performClick()
         ui.onNodeWithText("允许分身使用已确认的理解与表达").performScrollTo().assertIsDisplayed()
         ui.onNodeWithText("分身声音与亲友许可").performScrollTo().assertIsDisplayed()
+        ui.onNodeWithText("关闭").performClick()
+        ui.onNodeWithText("想聊什么？").assertDoesNotExist()
+        ui.onNodeWithText("语音聊聊").assertIsDisplayed()
         audio.release()
     }
 }

@@ -193,7 +193,7 @@ import me.remember.app.core.designsystem.atmosphere
     }
 }
 
-@Composable private fun VoicePresence(phase: CallPhase, compact: Boolean) {
+@Composable internal fun VoicePresence(phase: CallPhase, compact: Boolean) {
     val moving = interactionMotion() && phase in setOf(CallPhase.LISTENING, CallPhase.THINKING, CallPhase.PREPARING, CallPhase.SPEAKING)
     val scale = if (moving) {
         val transition = rememberInfiniteTransition(label = "conversation-presence")

@@ -454,24 +454,36 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var question by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion) }
     var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
-    var mode by rememberSaveable(state.actor,state.subject) { mutableStateOf(if(state.demoRole == "relative") "persona" else "evidence") }
+    var textChat by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion.isNotBlank()) }
+    var confirmCloud by remember(state.actor, state.subject) { mutableStateOf(false) }
     var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
     var tools by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
     val style=state.narrative.optJSONObject("style")
-    Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
-    VoiceCallEntry(state,model,mode)
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-        FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
-        FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
+    val mode = if(style?.optBoolean("enabled") == true) "persona" else "evidence"
+    Column(Modifier.fillMaxWidth().padding(top = 28.dp, bottom = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        VoicePresence(CallPhase.PAUSED, compact = false)
+        Text("聊一聊", style = MaterialTheme.typography.headlineMedium)
+        VoiceCallEntry(state,model,mode)
+        TextButton(onClick = { textChat = true }, modifier = Modifier.heightIn(min = 48.dp)) {
+            Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("打字聊聊")
+        }
     }
-    LaunchedEffect(style?.optBoolean("enabled"),state.busy) { if(!state.busy && style?.optBoolean("enabled")!=true) mode="evidence" }
-    OutlinedTextField(question, { question = it }, label = { Text("想了解什么？") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-
-    Check("同意将问题与已授权的核对文字交由云端回答", cloud, { cloud = it })
-    RememberActionButton("提问", !state.busy && !state.recording && question.isNotBlank() && cloud, filled=true,
+    if(textChat) NativeDialog("文字聊聊", { textChat = false; confirmCloud = false }) {
+    OutlinedTextField(question, { question = it }, label = { Text("想聊什么？") }, modifier = Modifier.fillMaxWidth(), minLines = 2, maxLines = 4)
+    RememberActionButton("发送", !state.busy && !state.recording && question.isNotBlank(), filled=true,
         icon=Icons.Outlined.ChatBubbleOutline, pendingLabel="正在整理回答…", successLabel="回答已返回") {
-        focus.clearFocus(); keyboard?.hide(); model.ask(question, cloud, mode)
+        focus.clearFocus(); keyboard?.hide()
+        if(cloud) model.ask(question, true, mode) else confirmCloud = true
     }
+    if(confirmCloud) AlertDialog(onDismissRequest = { confirmCloud = false },
+        title = { Text("使用云端回答") }, text = { Text("问题和已授权的文字将交给云端处理。") },
+        confirmButton = { TextButton(enabled = !state.busy && !state.recording, onClick = {
+            confirmCloud = false; cloud = true; model.ask(question, true, mode)
+        }) { Text("继续") } },
+        dismissButton = { TextButton(onClick = { confirmCloud = false }) { Text("取消") } })
     if(state.owner) TextButton(onClick={tools=!tools}) { Text(if(tools) "收起对话工具" else "对话工具") }
     if(state.owner && tools) {
     if(style!=null) RememberToggle("允许分身使用已确认的理解与表达",style.optBoolean("enabled"),{enabled -> model.mutation("/narrative/style","PUT",JSONObject().put("revision",style.optInt("revision")).put("enabled",enabled))},enabled=!state.busy&&!state.recording)
@@ -521,6 +533,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     {model.voiceRecipient(person.text("actor_id"),it)},enabled=!state.busy&&!state.recording)}
             }
         }
+    }
     }
 }
 @Composable private fun Evidence(evidence: JSONObject, state: NativeState, model: NativeWorkbenchModel) {

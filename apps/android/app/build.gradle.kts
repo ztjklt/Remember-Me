@@ -20,8 +20,8 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261037
-        versionName = "0.16.7-device-internal"
+        versionCode = 20261038
+        versionName = "0.16.8-device-internal"
         buildConfigField("boolean", "DEMO_ACCOUNTS", "false")
         buildConfigField("boolean", "SOUNDCORE_ENABLED", soundcoreEnabled.toString())
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
