@@ -329,11 +329,13 @@ class LocalRetrievalAdapter:
             if identifier not in refs:
                 continue
             score = retrieval._lexical(request.query, source["excerpt"])
+            if source.get('source_type')=='SUBJECT' and retrieval._self_name_hint(request.query,source['excerpt']):
+                score=max(score,1.1)
             if score >= 0.35:
                 scores[identifier] = max(score, scores.get(identifier, float("-inf")))
         # This is a seed budget, not truncation of an Episode or counterexample.
         seeds = sorted(scores, key=lambda i: (-scores[i], i))[:request.budget.max_hits]
-        suffix = "+source-lexical-v1" if self.sources else ""
+        suffix = "+source-lexical-v2" if self.sources else ""
         return RagResult(hits=tuple(RagHit(evidence_id=i, fingerprint=refs[i], score=scores[i]) for i in seeds),
                          retriever_version="local-v1:" + self.encoder.version + suffix)
 

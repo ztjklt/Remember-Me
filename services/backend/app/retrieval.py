@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 from functools import lru_cache
 
 from sqlalchemy import select
@@ -58,6 +59,13 @@ def _lexical(question: str, content: str) -> float:
     if not symbols:
         symbols = set(question.casefold().split())
     return len(symbols.intersection(content.casefold())) / len(symbols) if symbols else 0.0
+
+
+def _self_name_hint(question: str, content: str) -> bool:
+    """Rank an authorized self-introduction; never turn a lexical match into an answer."""
+    q=re.sub(r'[\s，,。？！?!]','',question)
+    if not re.fullmatch(r'(?:你好|您好)?(?:你|您)(?:叫什么(?:名字)?|的名字(?:叫什么|是什么)|怎么称呼)(?:呀|呢|啊|吗)?',q):return False
+    return bool(re.search(r'(?:^|[。；！？])\s*我(?:叫|的名字(?:叫|是))[^，。；！？\s]{2,8}[，。；！？]',content))
 
 
 def retrieve(session: Session, subject_id: str, question: str, encoder: LocalEncoder,

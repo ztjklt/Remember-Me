@@ -43,6 +43,21 @@ class Provider:
         return self.transform(result) if self.transform else RagResult.model_validate(result)
 
 
+def test_name_lookup_selects_authorized_self_introduction_over_pronoun_overlap(monkeypatch):
+    monkeypatch.setattr('app.retrieval.retrieve',lambda *a,**kw: [])
+    current=snapshot(source('bio',text='我叫周明，今年六十岁，住在老街。'),
+                     source('tea',text='你来之前打个电话，我在下棋。'))
+    adapter=LocalRetrievalAdapter(SimpleNamespace(commit=lambda:None),SimpleNamespace(version='fixture'),
+        episode_ids={'ep1'},reader=True,sources=current.source_map)
+    result=retrieve_context('你叫什么名字？',lambda:current,adapter,budget=RagBudget(max_hits=1))
+    assert result.hit_ids==('bio',)
+    assert '周明' in result.sources['bio']['excerpt']
+    from app.retrieval import _self_name_hint
+    assert not _self_name_hint('我叫什么名字？','我叫周明，今年六十岁。')
+    assert not _self_name_hint('你叫什么名字？','他说我叫周明，想来做客。')
+    assert not _self_name_hint('你爱喝什么茶？','我叫周明，今年六十岁。')
+
+
 def test_request_contains_only_query_subject_refs_budget_and_no_source_text():
     local = source("e1", text="唯一私密原文，不发送给检索端。")
     provider = Provider(["e1"])
@@ -201,7 +216,7 @@ def test_unextracted_original_can_seed_local_retrieval_without_a_memory_item(mon
     selected = retrieve_context("台灯", lambda: current, adapter)
     assert selected.hit_ids == ("raw",)
     assert set(selected.sources) == {"raw", "condition"}
-    assert "source-lexical-v1" in selected.retriever_version
+    assert "source-lexical-v2" in selected.retriever_version
 
 
 def test_local_extra_source_or_stale_bound_source_fails(monkeypatch):
