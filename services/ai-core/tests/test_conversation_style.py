@@ -12,14 +12,14 @@ def test_persona_style_reaches_generation_without_relaxing_review(voice):
     chat = ScriptedChat({"points": [point()]}, review())
     result = PersonaProvider(chat).answer(PersonaInput.model_validate(dict(payload(), voice_response=voice)))
     system, request = chat.requests[0]
-    assert "natural-dialogue-v3" in system
+    assert "natural-dialogue-v4" in system
     assert ("连续语音补充" in system) == voice
     assert "反例" in system and "不能编造" in system
     assert result.evidence_ids == ["e1", "e2"]
     assert result.answer == point()["text"]
     assert len(chat.requests) == 2
     assert "persona-semantic-review" in chat.requests[1][0]
-    assert chat.requests[1][1]["rendered_answer"]["answer"] == result.answer
+    assert chat.requests[1][1]["review_scope"][0]["rendered_text"] == result.answer
 
 
 def test_quote_style_preserves_exact_source_and_does_not_add_rewrite_call():
@@ -35,7 +35,7 @@ def test_quote_style_preserves_exact_source_and_does_not_add_rewrite_call():
     source.voice_response = True
     chat = Chat()
     result = QuotedTwin(chat).answer(source)
-    assert "natural-dialogue-v3" in chat.calls[0][0]
+    assert "natural-dialogue-v4" in chat.calls[0][0]
     assert "不得改写原文" in chat.calls[0][0]
     assert len(chat.calls) == 2
     assert '同事老周告诉我，他父亲曾在铁路工作。' in result.answer

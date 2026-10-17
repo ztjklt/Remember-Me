@@ -62,3 +62,18 @@ def test_letter_audio_cannot_attach_foreign_or_unreviewed_recording(app,client,s
     assert client.post(root+'/letters',headers=oh,json=body).status_code==404
     own=upload(client,root,oh,purpose='letter',key='own')
     assert client.post(root+'/letters',headers=oh,json=body|{'audio_id':own['audio_id']}).status_code==409
+
+
+def test_letter_revoked_during_audio_fetch_is_not_returned(app,client,session,monkeypatch):
+    from app.persona_models import CompanionAudio
+    o,c,r,oh,ch,rh,ep,root=prepare(app,client,session)
+    audio=upload(client,root,oh,purpose='letter')
+    row=session.get(CompanionAudio,audio['audio_id']);row.status='confirmed';row.reviewed_text='仅给你的声音';session.commit()
+    letter=post(client,root+'/letters',oh,dict(idempotency_key='race-letter',recipient_actor_id=r.actor_id,title='信',text=row.reviewed_text,audio_id=row.audio_id),201)
+    letter=post(client,root+'/letters/'+letter['id']+'/publish',oh,dict(revision=1,confirmed=True))
+    original=app.state.object_store.get
+    def revoke_then_read(key):
+        post(client,root+'/letters/'+letter['id']+'/revoke',oh,dict(revision=letter['revision']))
+        return original(key)
+    monkeypatch.setattr(app.state.object_store,'get',revoke_then_read)
+    assert client.get(root+'/audio/'+row.audio_id+'/content',headers=rh).status_code==404

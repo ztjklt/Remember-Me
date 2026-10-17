@@ -43,7 +43,7 @@ import me.remember.app.core.designsystem.atmosphere
         dismissButton={TextButton(onClick={consent=false}){Text("暂不")}})
 }
 
-@Composable internal fun VoiceCallScreen(engine:VoiceCallEngine,onEnd:()->Unit){
+@Composable internal fun VoiceCallScreen(engine:VoiceCallEngine,onEnd:()->Unit,onRecall:(String,String)->Unit={_,_->}){
     val state by engine.ui.collectAsStateWithLifecycle()
-    VoiceCallContent(state,{if(state.paused)engine.resume() else engine.pause()},engine::interrupt,onEnd)
+    VoiceCallContent(state,{if(state.paused)engine.resume() else engine.pause()},engine::interrupt,onEnd,onRecall)
 }

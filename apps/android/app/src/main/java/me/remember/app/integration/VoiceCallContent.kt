@@ -47,6 +47,7 @@ import me.remember.app.core.designsystem.atmosphere
 @Composable internal fun VoiceCallContent(
     state: CallUi, onPause: () -> Unit,
     onInterrupt: () -> Unit, onEnd: () -> Unit,
+    onRecall: (String, String) -> Unit = { _, _ -> },
 ) {
     var details by remember { mutableStateOf(false) }
     var showWords by rememberSaveable { mutableStateOf(true) }
@@ -105,6 +106,7 @@ import me.remember.app.core.designsystem.atmosphere
                         "AI · " + (state.sources?.let(::voiceAnswerLabel) ?: "回答"), state.answer, fromUser = false)
                 }
             }
+            state.sources?.let { RecallActions(it, onRecall) }
             if (hasWords) TextButton(onClick = { details = true }, modifier = Modifier.testTag("voice-details")) { Text("本轮详情") }
             // Reserve the slot so the main status never jumps as a round changes.
             Box(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(top = 16.dp), contentAlignment = Alignment.Center) {

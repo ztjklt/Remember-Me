@@ -58,6 +58,14 @@ class CompanionLetter(SideRecord, Base):
     audio_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class LetterRecallCue(Base):
+    __tablename__ = 'letter_recall_cues'
+    letter_id: Mapped[str] = mapped_column(String(64), ForeignKey('companion_letters.id'), primary_key=True)
+    letter_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    evidence_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+
+
 class SealedSnapshot(SideRecord, Base):
     __tablename__ = 'sealed_snapshots'
     __table_args__ = (

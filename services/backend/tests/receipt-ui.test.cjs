@@ -8,6 +8,7 @@ function page(){
     replaceChildren(...children){this.children=children}
     set src(value){this.attributes.src=value}get src(){return this.attributes.src}
     getAttribute(name){return this.attributes[name]}removeAttribute(name){delete this.attributes[name]}
+    setAttribute(name,value){this.attributes[name]=value}querySelector(){return null}
     addEventListener(){}focus(){}load(){}pause(){this.playing=false}async play(){this.playing=true}
   }
   const ids=['notice','gate','opened','sources','title','message','forYou','code','contact','send','verify','verifyForm','contactForm','sentTo','end'];
@@ -44,20 +45,20 @@ async function unlock(p){
 test('recipient verification leads straight to scoped content and authenticated audio',async()=>{
   const p=page();await unlock(p);assert.equal(p.elements.opened.hidden,false);
   assert.equal(p.elements.title.textContent,'专属测试');assert.equal(p.elements.code.value,'');assert.equal(p.elements.contact.value,'');
-  p.all().find(x=>x.textContent==='听这段声音').onclick();await settle();
+  p.all().find(x=>x.attributes['aria-label']==='播放原音').onclick();await settle();
   const media=p.requests.find(x=>x.url.includes('/audio/'));
   assert.equal(media.options.headers.Authorization,'Bearer test-recipient-token');assert.equal(media.options.credentials,'omit');assert.equal(media.options.cache,'no-store');
   assert.equal(p.urls.length,1);
 });
 test('revoked access clears content and active audio on next validation',async()=>{
-  const p=page();await unlock(p);p.all().find(x=>x.textContent==='听这段声音').onclick();await settle();
+  const p=page();await unlock(p);p.all().find(x=>x.attributes['aria-label']==='播放原音').onclick();await settle();
   const audio=p.all().find(x=>x.tag==='audio');assert.equal(audio.playing,true);
   p.setRevoked();await p.intervals.find(x=>x.ms===30000).fn();
   assert.equal(p.elements.opened.hidden,true);assert.equal(p.elements.sources.children.length,0);assert.equal(audio.playing,false);assert.equal(audio.src,undefined);
 });
 test('close during audio transfer discards a late response',async()=>{
   const p=page();await unlock(p);let finish;p.setAudio(new Promise(resolve=>finish=resolve));
-  p.all().find(x=>x.textContent==='听这段声音').onclick();await settle();p.elements.end.onclick();
+  p.all().find(x=>x.attributes['aria-label']==='播放原音').onclick();await settle();p.elements.end.onclick();
   assert.equal(p.elements.opened.hidden,true);finish(p.response({}));await settle();
   assert.equal(p.urls.length,0);assert.equal(p.elements.title.textContent,'');
   assert.ok(p.requests.some(x=>x.options.method==='DELETE'));

@@ -50,6 +50,10 @@
   }
   function render(data) {
     $('gate').hidden = true; $('opened').hidden = false;
+    if ($('unfold')) {
+      $('unfold').hidden=false; $('letterPaper').hidden=true; $('sources').hidden=true;
+      $('unfold').onclick=()=> { $('unfold').hidden=true; $('letterPaper').hidden=false; $('sources').hidden=false; $('unfold').setAttribute('aria-expanded','true'); };
+    }
     $('forYou').textContent = '留给 ' + data.recipient_label;
     $('title').textContent = data.title; $('message').textContent = data.message;
     $('message').hidden = !data.message;
@@ -58,9 +62,12 @@
       const card = document.createElement('article'); card.className = 'card audio-card';
       const heading = document.createElement('h2'); heading.textContent = item.title; card.append(heading);
       if (item.has_audio) {
-        const play = document.createElement('button'); play.textContent = '听这段声音'; play.className = 'secondary';
+        const play = document.createElement('button'); play.className = 'ev-device';
+        play.setAttribute('aria-label','播放原音');
+        play.innerHTML='<span class="ev-device-top">原 声</span><span class="ev-grille" aria-hidden="true"></span><span class="ev-display"><span class="ev-device-state">听听那时的声音</span><span class="ev-device-clock">--:--</span></span><span class="ev-device-key" aria-hidden="true"><span class="ev-play-glyph"></span></span>';
         const audio = document.createElement('audio'); audio.controls = true; audio.preload = 'none'; audio.hidden = true;
         play.onclick = () => run(async () => {
+          if(audio.getAttribute('src')) { if(audio.paused) await audio.play(); else audio.pause(); return; }
           const epoch = generation;
           const blob = await api('/audio/' + encodeURIComponent(item.kind) + '/' + encodeURIComponent(item.id), null, 'GET', true);
           if (epoch !== generation || Date.now() >= expiry) return;
@@ -69,6 +76,14 @@
           await audio.play().catch(() => text('声音已取回，请点击播放器继续。'));
         });
         audio.addEventListener('error', () => { if (audio.getAttribute('src')) text('这段声音未能播放，请重新取回。'); });
+        const time = value => Number.isFinite(value) ? `${Math.floor(value/60).toString().padStart(2,'0')}:${Math.floor(value%60).toString().padStart(2,'0')}` : '--:--';
+        const display = () => {
+          const clock=play.querySelector('.ev-device-clock'), state=play.querySelector('.ev-device-state');
+          if(clock) clock.textContent=time(audio.currentTime)+' / '+time(audio.duration);
+          if(state) state.textContent=audio.paused?'轻触播放':'轻触暂停';
+          play.setAttribute('aria-label',audio.paused?'播放原音':'暂停原音');
+        };
+        ['loadedmetadata','timeupdate','play','pause','ended'].forEach(name=>audio.addEventListener(name,display));
         card.append(play, audio);
       }
       if (item.text || item.supplement) {

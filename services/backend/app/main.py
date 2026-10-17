@@ -243,6 +243,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get('/receive/receipt.css')
     def receive_style():
         return FileResponse(receive_dir / 'receipt.css', media_type='text/css', headers={'Cache-Control':'no-store'})
+    @app.get('/receive/envelope.css')
+    def receive_envelope_style():
+        return FileResponse(receive_dir / 'envelope.css', media_type='text/css', headers={'Cache-Control':'no-store'})
     if settings.enable_workbench:
         from pathlib import Path
         from fastapi.staticfiles import StaticFiles

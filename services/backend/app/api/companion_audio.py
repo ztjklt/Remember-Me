@@ -108,7 +108,13 @@ def get_audio(subject_id:str,id:str,request:Request,actor=Depends(current_actor)
 @router.get('/{id}/content')
 def content(subject_id:str,id:str,request:Request,actor=Depends(current_actor),session=Depends(get_session)):
     row=visible_audio(session,subject_id,actor.actor_id,id)
-    return Response(request.app.state.object_store.get(row.object_key),media_type=row.content_type,
+    key,mime=row.object_key,row.content_type
+    session.commit()
+    data=request.app.state.object_store.get(key)
+    session.expire_all();publication_lock(session,subject_id)
+    current=visible_audio(session,subject_id,actor.actor_id,id)
+    if current.object_key!=key: raise SourceChanged('声音已变化，请重新打开。')
+    return Response(data,media_type=mime,
         headers={'Cache-Control':'private, no-store'})
 
 

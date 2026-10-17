@@ -36,6 +36,7 @@ data class NativeState(
     val portrait: JSONObject = JSONObject(),
     val companion: JSONObject = JSONObject(), val voiceProfile: JSONObject = JSONObject(), val voiceGrants: List<JSONObject> = emptyList(),
     val contributionOriginal: JSONObject? = null,
+    val openedLetter: JSONObject? = null,
     val companionAudio: CompanionAudioDraft? = null, val companionRecording: String = "",
     val calibrations: List<JSONObject> = emptyList(), val calibrationId: String = "",
     val narrative: JSONObject = JSONObject(), val narrativeJobs: List<JSONObject> = emptyList(),
@@ -1073,6 +1074,30 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
             client.json(s,"$path/twin/answers/${segment(answerId)}")
             client.media(s,"$path/voice/assets/${segment(assetId)}/audio")
         }
+    }
+    private var letterGuard: Job? = null
+    fun openRecall(answerId: String, letterId: String) {
+        val s=session ?: return
+        val path=subjectRoot()+"/twin/answers/${segment(answerId)}/letters/${segment(letterId)}"
+        callState.value?.pause("正在读信")
+        closeLetter()
+        operation(s) {
+            val letter=io { client.json(s,path) }
+            if(session!=s) return@operation
+            state.value=state.value.copy(openedLetter=letter)
+            letterGuard=viewModelScope.launch {
+                while(isActive && session==s && state.value.openedLetter!=null) {
+                    delay(15000)
+                    if(session!=s || state.value.openedLetter?.text("id")!=letterId) break
+                    try { io { client.json(s,path) } }
+                    catch(e: Exception) { if(e is CancellationException) throw e; closeLetter(); report("这封信暂时无法查看，请重新打开。"); break }
+                }
+            }
+        }
+    }
+    fun closeLetter() {
+        letterGuard?.cancel();letterGuard=null;stopSource()
+        state.value=state.value.copy(openedLetter=null)
     }
     fun playCompanionAudio(id: String) {
         val path = root()+"/companion/audio/"+segment(id)

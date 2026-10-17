@@ -1,0 +1,10 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://remember-me/contracts/twin-recall-v1",
+  "title":"Additive Twin answer recall_actions field",
+  "type":"array","maxItems":3,
+  "items":{"type":"object","additionalProperties":false,
+    "required":["letter_id","label","prompt","has_audio"],
+    "properties":{"letter_id":{"type":"string","minLength":1},
+      "label":{"const":"打开那封信"},"prompt":{"const":"这里还留着一段话。"},"has_audio":{"type":"boolean"}}}
+}

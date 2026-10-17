@@ -51,9 +51,18 @@ import org.json.JSONObject
 fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceChoice = AppearanceChoice(), updateAppearance: (AppearanceChoice) -> Unit = {}) {
     val state by model.ui.collectAsStateWithLifecycle()
     val call by model.voiceCall.collectAsStateWithLifecycle()
+    state.openedLetter?.let { letter ->
+        CompositionLocalProvider(LocalInteractions provides InteractionContext(reduceMotion=appearance.reduceMotion)) {
+            EntrustedLetterSheet(letter,state.player,model::closeLetter,{
+                if(state.player.episode=="companion:${letter.text("audio_id")}") {
+                    if(state.player.playing) model.pauseSource() else model.resumeSource()
+                } else model.playCompanionAudio(letter.text("audio_id"))
+            },model::seekSource)
+        }
+    }
     if(call!=null){
         CompositionLocalProvider(LocalInteractions provides InteractionContext(reduceMotion=appearance.reduceMotion)) {
-            VoiceCallScreen(call!!,model::endVoice)
+            VoiceCallScreen(call!!,model::endVoice,model::openRecall)
         }
         return
     }
@@ -470,6 +479,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     state.answer?.let { answer -> Panel {
         Text(if(answer.text("mode")=="persona") "AI 分身" else when(answer.text("response_type")) { "ORIGINAL" -> "来自本人原话"; "SIMULATION" -> "AI 分身"; else -> "还没有足够的记录" }, style = MaterialTheme.typography.titleMedium)
         Text(answer.text("answer"),style=MaterialTheme.typography.bodyLarge)
+        RecallActions(answer,model::openRecall)
         personaCoverageHint(answer)?.let {Text(it,style=MaterialTheme.typography.bodyMedium)}
         if(answer.text("response_type")!="UNKNOWN") RememberActionButton("听这条回答", !state.busy,
             pendingLabel="正在准备声音…",successLabel="声音已取回") { model.speakAnswer(answer) }

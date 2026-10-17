@@ -20,8 +20,8 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261034
-        versionName = "0.16.4-device-internal"
+        versionCode = 20261035
+        versionName = "0.16.5-device-internal"
         buildConfigField("boolean", "SOUNDCORE_ENABLED", soundcoreEnabled.toString())
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
         require(serviceUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+"))) { "rememberServiceUrl must be a service root URL" }

@@ -219,6 +219,13 @@ import org.json.JSONObject
                     RememberConfirmedAction("核对收信人后发送","发送给$name？正文与附加声音将一并发送。",false,ready&&!editing,
                         pendingLabel="正在发送…",successLabel="已发送") {model.mutation("/companion/letters/${segment(letter.text("id"))}/publish","POST",JSONObject().put("revision",letter.optInt("revision")).put("confirmed",true))}
                 }
+                if(letter.text("status")=="published") {
+                    val evidence=state.answer?.rows("evidence").orEmpty().map{it.text("evidence_id")}.distinct()
+                    if(evidence.isNotEmpty()) RememberConfirmedAction("关联刚才的对话","以后回答引用这段来源时，为本人和指定收信人显示拆信入口。正文仍只在打开信后显示。",false,ready) {
+                        model.mutation("/companion/letters/${segment(letter.text("id"))}/recall","PUT",JSONObject().put("revision",letter.optInt("revision")).put("evidence_ids",org.json.JSONArray(evidence)))
+                    }
+                    TextButton(onClick={model.mutation("/companion/letters/${segment(letter.text("id"))}/recall","PUT",JSONObject().put("revision",letter.optInt("revision")).put("evidence_ids",org.json.JSONArray()))},enabled=ready){Text("取消对话关联")}
+                }
                 RememberConfirmedAction("撤销这封信","撤销后，收信人将无法继续读取正文与声音。",true,ready,
                     pendingLabel="正在撤销…",successLabel="已撤销") {model.mutation("/companion/letters/${segment(letter.text("id"))}/revoke","POST",JSONObject().put("revision",letter.optInt("revision")))}
             }

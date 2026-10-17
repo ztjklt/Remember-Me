@@ -99,11 +99,13 @@ def require_subject(session: Session, subject_id: str, actor: Actor) -> None:
 
 def answer_view(session: Session, row: TwinAnswer) -> dict:
     from ..persona_models import PersonaAnswerContext
+    from ..entrusted_recall import recall_actions
     meta=session.get(PersonaAnswerContext,row.answer_id)
     review=meta.review_summary if meta and row.invalidated_at is None else {}
     sources = [session.get(Evidence, identifier) for identifier in row.evidence_ids]
     return {
         "answer_id": row.answer_id, "subject_id": row.subject_id,
+        "recall_actions": recall_actions(session, row),
         "question": row.question, "answer": row.answer if row.invalidated_at is None else "相关记忆已变化，请重新提问。",
         "response_type": row.response_type, "confidence": row.confidence,
         "model_version": row.model_version, "person_model_version": row.person_model_version,
@@ -476,3 +478,12 @@ def read_answer(subject_id: str, answer_id: str,
         row.invalidated_at=utcnow()
         session.commit()
     return answer_view(session, row)
+
+
+@router.get('/twin/answers/{answer_id}/letters/{letter_id}')
+def open_recall(subject_id:str,answer_id:str,letter_id:str,actor:Actor=Depends(current_actor),session:Session=Depends(get_session)):
+    answer=read_answer(subject_id,answer_id,actor,session)
+    if not any(a['letter_id']==letter_id for a in answer['recall_actions']):
+        raise TwinNotFound('这封信的访问状态已变化。')
+    from .companion import get_letter
+    return get_letter(subject_id,letter_id,actor,session)

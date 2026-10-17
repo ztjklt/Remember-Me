@@ -84,7 +84,7 @@ def test_voice_unknown_review_and_preparation_use_final_spoken_wording(monkeypat
     response = post(monkeypatch, data, chat)
     assert response.status_code == 200, response.text
     assert response.json()['answer'] == '这个我还说不准。'
-    assert chat.requests[1][1]['rendered_answer']['answer'] == response.json()['answer']
+    assert chat.requests[1][1]['review_scope'][0]['rendered_text'] == response.json()['answer']
 
 
 @pytest.mark.parametrize('valid', [True, False])
@@ -95,7 +95,7 @@ def test_single_voice_point_has_no_cross_point_dependency_to_generate(monkeypatc
     response=post(monkeypatch, data, chat)
     assert response.status_code == (200 if valid else 502), response.text
     assert len(chat.requests)==2
-    shape=chat.requests[1][1]['response_schema']['$defs']['PersonaPointReview']
+    shape=chat.requests[1][1]['response_schema']
     assert 'depends_on' not in shape['required'] and 'depends_on' not in shape['properties']
 
 
