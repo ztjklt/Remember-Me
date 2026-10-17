@@ -18,6 +18,7 @@
     {"id":"year", "text":"你第一次独立跑十二路是哪一年？", "mode":"evidence"},
     {"id":"tired", "text":"我今天有点累，什么都不想干。要是坐在你旁边，你会怎么陪我？", "mode":"persona"},
     {"id":"visit", "text":"周末我来吃面，可不可以泡一杯浓茶？", "mode":"persona"},
+    {"id":"urgent", "text":"要是今天还有一件急事，你也会劝我都留到明天吗？", "mode":"persona"},
     {"id":"unknown_year", "text":"女儿是哪一年送你茉莉的？", "mode":"evidence"}
   ]
 }

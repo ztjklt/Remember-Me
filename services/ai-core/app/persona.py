@@ -560,19 +560,37 @@ class PersonaProvider:
                 question_coverage_checked_separately=True,
                 attribution_label_verified=p.mode == "ATTRIBUTED", quote_match=quote_match))
         review_system = REVIEW_SYSTEM
+        review_schema = PersonaReview.model_json_schema()
+        single_voice_point = payload.voice_response and len(draft.points) == 1
+        if single_voice_point:
+            # A single point has no other point to depend on. Do not ask the
+            # model to generate an impossible cross-point relationship.
+            shape=review_schema['$defs']['PersonaPointReview']
+            shape['properties'].pop('depends_on')
+            shape['required'].remove('depends_on')
         if payload.voice_response:
             # Keep the review shape separate from draft/review_scope metadata.
             # Strict parsing below still rejects extra fields; no coercion or
             # second vote can turn a malformed/negative review into acceptance.
-            review_system += "\n语音审阅结构核对 v1：输出points的每项仅有point_index、verdict、codes、rationale、depends_on五个字段；coverage仅有status、codes、missing_question_parts、rationale四个字段。draft及review_scope中的mode、text、question_part等是输入信息，不要复制到审阅输出。先完成上述全部语义检查，再核对JSON字段与response_schema完全一致。"
-            review_system += "\n语音审阅简述 v1：全部核查项目不变；每个rationale用不超过80字写关键依据编号、条件及通过或失败原因，不复述整段草稿或原文。coverage的rationale不超过60字，不重复逐点理由。"
-            record['review_shape_policy'] = 'voice-review-shape-v1'
-        checked, _ = complete(review_system, {**packet, "response_schema": PersonaReview.model_json_schema(),
+            fields='point_index、verdict、codes、rationale' if single_voice_point else 'point_index、verdict、codes、rationale、depends_on'
+            review_system += f"\n语音审阅结构核对 v2：输出points的每项仅有{fields}字段；coverage仅有status、codes、missing_question_parts、rationale四个字段。draft及review_scope中的mode、text、question_part等是输入信息，不要复制到审阅输出。先完成上述全部语义检查，再核对JSON字段与response_schema完全一致。"
+            if single_voice_point:
+                review_system += "\n本轮只有一个完整要点，没有跨要点依赖，不输出depends_on。仍核查这个要点的全部细节、条件、例外、人物归属，以及整个问题的覆盖。通过时rationale用一句必要依据编号与限制概括，通常35字内；失败时须写清失败原因，不为字数省略问题。coverage简述覆盖或遗漏，不复述要点。"
+            else:
+                review_system += "\n语音审阅简述 v1：全部核查项目不变；每个rationale用不超过80字写关键依据编号、条件及通过或失败原因，不复述整段草稿或原文。coverage的rationale不超过60字，不重复逐点理由。"
+            record['review_shape_policy'] = 'voice-review-shape-v2'
+        checked, _ = complete(review_system, {**packet, "response_schema": review_schema,
             "draft": draft.model_dump(), "cited_material": cited, "review_scope": review_scope,
             # Coverage is an outcome of this review, not an input default that
             # could pre-judge it. Per-point completeness is semantic scope only.
             "rendered_answer": output.model_dump(exclude={"model_version", "confidence", "coverage", "omitted_points"})})
         self._trace_draft(checked, record, kind="review")
+        if (single_voice_point and isinstance(checked,dict) and isinstance(checked.get('points'),list)
+                and len(checked['points'])==1 and isinstance(checked['points'][0],dict)
+                and checked['points'][0].get('point_index')==1 and 'depends_on' not in checked['points'][0]):
+            # Only this structurally forced empty set is supplied locally.
+            # Verdict, codes, coverage and rationale are never inferred/defaulted.
+            checked={**checked,'points':[{**checked['points'][0],'depends_on':[]}]}
         try:
             review = PersonaReview.model_validate(checked)
         except ValidationError as exc:
