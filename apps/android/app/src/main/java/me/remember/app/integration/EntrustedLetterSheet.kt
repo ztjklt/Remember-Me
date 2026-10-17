@@ -46,7 +46,7 @@ private val Ink=Color(0xFF354B3E)
     var opened by remember(letter.text("id")) { mutableStateOf(false) }
     var petals by remember { mutableStateOf(true) }
     val motion=interactionMotion() && petals
-    ModalBottomSheet(onDismissRequest=onClose,containerColor=Forest,contentColor=Paper,
+    ModalBottomSheet(onDismissRequest=onClose,containerColor=Forest,contentColor=Paper,sheetMaxWidth=960.dp,
         sheetState=rememberModalBottomSheetState(skipPartiallyExpanded=true),dragHandle=null) {
         Box(Modifier.fillMaxWidth().heightIn(max=760.dp).testTag("entrusted-letter-sheet")) {
             if(petals) LetterPetals(motion)

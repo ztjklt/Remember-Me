@@ -7,7 +7,7 @@ def main(a):
     out=Path(a.output);out.mkdir(parents=True,exist_ok=False)
     remote='/sdcard/Android/data/me.remember.app.internal/files/continuous-voice'
     def run(*args,**kw):
-        return subprocess.run([a.adb,'-s','emulator-5554',*args],capture_output=True,timeout=kw.pop('timeout',10),**kw)
+        return subprocess.run([a.adb,'-s',a.serial,*args],capture_output=True,timeout=kw.pop('timeout',10),**kw)
     assert not run('reverse','--list').stdout.strip()
     for i,source in enumerate(a.audio,1):
         path=out/f'question-{i}.wav'
@@ -26,7 +26,7 @@ def main(a):
                 stop.wait(.2)
             if stop.is_set():return
             if i==1:
-                video.append(subprocess.Popen([a.adb,'-s','emulator-5554','shell','screenrecord','--time-limit','180','--bit-rate','3000000','/sdcard/voice-app-pcm.mp4'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL))
+                video.append(subprocess.Popen([a.adb,'-s',a.serial,'shell','screenrecord','--time-limit','180','--bit-rate','3000000','/sdcard/voice-app-pcm.mp4'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL))
                 stop.wait(2)
             run('shell','touch',remote+f'/demo-start-{i}').check_returncode()
     watcher=threading.Thread(target=watch,daemon=True);watcher.start()
@@ -52,6 +52,7 @@ def main(a):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--adb',required=True);p.add_argument('--audio',action='append',required=True)
+    p.add_argument('--serial',default='emulator-5554',help='Explicit emulator/device target; keeps concurrent test runs isolated')
     p.add_argument('--output',required=True);p.add_argument('--response-speed',choices=['reviewed','fast','streamed'],default='fast')
     p.add_argument('--interrupt-demo',action='store_true')
     p.add_argument('--entrusted-recall',action='store_true',help='After the last live answer, open its authorized letter and exercise real media playback')

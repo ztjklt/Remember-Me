@@ -128,7 +128,8 @@ class ContinuousVoiceLiveTest {
                     paused.setBoolean(engine,true)
                     val job=engine.javaClass.getDeclaredField("capture").apply{isAccessible=true}.get(engine) as? kotlinx.coroutines.Job
                     job?.cancel()
-                    (engine.javaClass.getDeclaredField("recorder").apply{isAccessible=true}.get(engine) as? android.media.AudioRecord)?.stop()
+                    // Cancellation may already have released AudioRecord in its finally block.
+                    runCatching { (engine.javaClass.getDeclaredField("recorder").apply{isAccessible=true}.get(engine) as? android.media.AudioRecord)?.stop() }
                     kotlinx.coroutines.runBlocking{job?.join()}
                     paused.setBoolean(engine,false)
                     val audio=(1..demoRounds).map{r->ParcelFileDescriptor.AutoCloseInputStream(inst.uiAutomation.executeShellCommand("cat /data/local/tmp/voice-demo-input-$r.pcm")).use{it.readBytes()}}
