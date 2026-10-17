@@ -35,3 +35,24 @@ def test_personal_fact_or_old_unknown_in_social_output_is_not_published():
     for text in ['我的名字叫王浩宇','这个我还说不准。']:
         chat=SimpleNamespace(model='fixture',complete=lambda *a,**k:({'answer':text},'fixture'))
         with pytest.raises(AIOutputInvalid):respond(chat,ConversationInput(question='你好',intent='greeting'))
+
+
+def test_social_call_uses_same_bounded_transport_policy_as_voice():
+    from contextlib import contextmanager
+    class BoundedChat(Chat):
+        scope=None
+        @contextmanager
+        def transport_scope(self,**policy):
+            self.scope=policy
+            try: yield
+            finally:self.scope=None
+        def complete(self,*args,**kwargs):
+            assert self.scope['timeout_seconds']==8
+            assert self.scope['json_hedged'] is True
+            assert self.scope['json_retry_after_seconds']==2.8
+            return super().complete(*args,**kwargs)
+    settings=Settings(_env_file=None,environment='test',provider='fixture',
+        voice_call_timeout_seconds=8,voice_json_retry_after_seconds=2.8,voice_json_hedged=True)
+    with TestClient(create_app(settings,persona_provider=SimpleNamespace(chat=BoundedChat()))) as client:
+        response=client.post('/conversation',json={'question':'你好','intent':'greeting'})
+        assert response.status_code==200,response.text

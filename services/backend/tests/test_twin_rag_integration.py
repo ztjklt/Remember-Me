@@ -49,6 +49,24 @@ def provider(monkeypatch, source, callback=None):
     return picker
 
 
+@pytest.mark.parametrize('question,expected',[
+    ('你叫什么名字？','你叫什么名字？'),
+    ('你知道我喜欢什么颜色的车吗？','你知道我喜欢什么颜色的车吗？'),
+    ('那什么时候呢？','你喜欢喝什么茶？；追问：那什么时候呢？'),
+])
+def test_voice_retrieval_carries_history_only_for_dependent_followups(app,client,session,monkeypatch,question,expected):
+    from types import SimpleNamespace
+    from app.api.twin import TwinQuestion,generate_answer
+    o,_,oh,_,_,_,source,_,_=prepare(app,client,session)
+    picker=provider(monkeypatch,source)
+    packet=generate_answer(o.subject_id,TwinQuestion(question=question,retrieval_mode='local',
+        cloud_consent_id=cloud(client,o.subject_id,oh)),SimpleNamespace(app=app),o,session,
+        voice_context=[{'question':'你喜欢喝什么茶？','answer':'喜欢淡一点。'}],context_only=True)
+    assert picker.seen.query==expected
+    assert packet['question']==question
+    assert packet['dialogue_context'][0]['question']=='你喜欢喝什么茶？'
+
+
 def test_context_only_keeps_counterexample_without_model_or_answer_write(app,client,session,monkeypatch):
     from types import SimpleNamespace
     from app.api.twin import TwinQuestion, generate_answer

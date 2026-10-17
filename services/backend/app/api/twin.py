@@ -236,10 +236,8 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
             episode_ids=loaded['ids'],reader=loaded['reader'],sources=loaded['sources'])
         retrieval_question=payload.question
         if voice_context:
-            # Only lookup hints. The model receives history separately as non-evidence.
-            previous=voice_context[-1]['question']
-            if len(previous)+len(retrieval_question)<980:
-                retrieval_question=previous+'；追问：'+retrieval_question
+            from ..voice_query import retrieval_query
+            retrieval_question=retrieval_query(payload.question,voice_context)
         selection_key=(subject_id,actor_id,payload.cloud_consent_id,payload.mode,snapshot.signature)
         selection=selection_cache.get(selection_key,retrieval_question) if selection_cache is not None else None
         prefetched=selection is not None

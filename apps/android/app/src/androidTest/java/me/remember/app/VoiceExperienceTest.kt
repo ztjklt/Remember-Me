@@ -1,6 +1,7 @@
 package me.remember.app
 
 import android.graphics.Bitmap
+import androidx.activity.compose.setContent
 import android.media.AudioTrack
 import android.media.AudioFormat
 import android.media.AudioAttributes
@@ -28,11 +29,11 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.File
 
-/** Local production UI and protocol fixtures. No account, microphone, LLM or TTS request. */
+/** Production UI fixtures hosted by the installed activity; no microphone/LLM/TTS request. */
 class VoiceExperienceTest {
-    @get:Rule val ui = createAndroidComposeRule<androidx.activity.ComponentActivity>()
+    @get:Rule val ui = createAndroidComposeRule<MainActivity>()
     private fun show(fontScale: Float = 1f, content: @Composable () -> Unit) {
-        ui.setContent { RememberMeTheme(darkTheme = true) {
+        ui.runOnIdle { ui.activity.setContent { RememberMeTheme(darkTheme = true) {
             val density = LocalDensity.current
             val background = androidx.compose.material3.MaterialTheme.colorScheme.background
             SideEffect {
@@ -44,7 +45,7 @@ class VoiceExperienceTest {
             }
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale),
                 LocalInteractions provides InteractionContext(reduceMotion = true)) { Surface { content() } }
-        } }
+        } } }
     }
     private fun shot(name: String) {
         ui.waitForIdle(); Thread.sleep(400)

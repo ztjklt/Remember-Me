@@ -206,7 +206,9 @@ class ContinuousVoiceLiveTest {
                             if(!continueOnError)fail(s.error)
                             failedRounds++;roundFailed=true;break
                         }
-                        val answerId=s.sources?.let{it.optString("answer_id").ifBlank{it.optString("live_turn_id")}}.orEmpty()
+                        val answerId=s.sources?.let{it.optString("answer_id").ifBlank{it.optString("live_turn_id")}.ifBlank {
+                            if(it.optString("response_type")=="CONVERSATION") "conversation:"+engine.javaClass.getDeclaredField("turn").apply{isAccessible=true}.getLong(engine) else ""
+                        }}.orEmpty()
                         if(answerId.isNotBlank()&&answerId!=previousAnswer){
                             if(!answerSeen||s.answer!=lastAnswerText){
                                 mark("answer_visible",round,JSONObject().put("text",s.answer).put("answer_id",answerId))
@@ -232,6 +234,15 @@ class ContinuousVoiceLiveTest {
                     if(!(interruptDemo&&round==1))Thread.sleep(1000)
                 }
                 if(interruptDemo)assertTrue("Local VAD did not stop the previous playing turn",interruptionMarked)
+                if(!interruptDemo&&demoRounds>1){
+                    val earlier=engine.ui.value.history
+                    assertTrue("Earlier call questions disappeared",earlier.size>=demoRounds-1)
+                    ui.onNodeWithTag("voice-history").performScrollToIndex(0)
+                    ui.onNodeWithText(earlier.first().question).assertIsDisplayed()
+                    shot("demo-history-retained")
+                    report.put("retained_exchanges",earlier.size+1)
+                    ui.onNodeWithTag("voice-history").performScrollToIndex(earlier.size)
+                }
                 if(InstrumentationRegistry.getArguments().getString("entrustedRecall")=="true"){
                     assertEquals(0,failedRounds)
                     val sources=checkNotNull(engine.ui.value.sources)

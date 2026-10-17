@@ -198,7 +198,13 @@ def create_app(
         def run():
             if active_persona is None or not slots.acquire(timeout=2):
                 raise ProviderUnavailable('Conversation temporarily unavailable')
-            try: return conversation_reply(active_persona.chat,payload)
+            try:
+                chat=active_persona.chat
+                with (chat.transport_scope(timeout_seconds=settings.voice_call_timeout_seconds,
+                      json_retry_after_seconds=settings.effective_voice_json_retry_after_seconds,
+                      **({'json_hedged':True} if settings.voice_json_hedged else {}))
+                      if hasattr(chat,'transport_scope') else nullcontext()):
+                    return conversation_reply(chat,payload)
             finally: slots.release()
         return await until_disconnect(request,run)
 
