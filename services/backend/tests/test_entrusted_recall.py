@@ -55,3 +55,37 @@ def test_material_change_disables_prior_owner_association(app, client, session):
     source=session.get(Evidence,e);source.excerpt+='后来已更正';session.commit()
     row=SimpleNamespace(subject_id=o.subject_id,actor_id=r.actor_id,evidence_ids=[e],invalidated_at=None,response_type='FACT')
     assert recall_actions(session,row)==[]
+
+
+def test_unrelated_new_recording_keeps_selected_source_association(app, client, session):
+    from app.entrusted_recall import recall_actions
+    from app.models import Episode, utcnow
+    o,r,x,oh,rh,xh,root,l,e = setup(app,client,session)
+    assert client.put(root+'/letters/'+l['id']+'/recall',headers=oh,
+        json=dict(revision=l['revision'],evidence_ids=[e])).status_code==200
+    session.expire_all()
+    prior=session.get(Episode,session.get(Evidence,e).episode_id)
+    session.add(Episode(episode_id='ep_unrelated_new',subject_id=o.subject_id,
+        actor_id=prior.actor_id,recording_consent_id=prior.recording_consent_id,
+        audio_object_key='new-object',audio_size_bytes=44,audio_content_type='audio/wav',
+        audio_checksum='0'*64,trace_id='unrelated-recording',
+        source='IMPORT',status='uploaded',recorded_at=utcnow(),
+        audio_ref='new.wav',idempotency_key='unrelated-new'))
+    session.commit()
+    row=SimpleNamespace(subject_id=o.subject_id,actor_id=r.actor_id,evidence_ids=[e],
+        invalidated_at=None,response_type='FACT')
+    assert [a['letter_id'] for a in recall_actions(session,row)]==[l['id']]
+
+
+def test_unavailable_selected_episode_disables_association(app, client, session):
+    from app.entrusted_recall import recall_actions
+    from app.models import Episode
+    o,r,x,oh,rh,xh,root,l,e = setup(app,client,session)
+    assert client.put(root+'/letters/'+l['id']+'/recall',headers=oh,
+        json=dict(revision=l['revision'],evidence_ids=[e])).status_code==200
+    session.expire_all()
+    session.get(Episode,session.get(Evidence,e).episode_id).status='failed'
+    session.commit()
+    row=SimpleNamespace(subject_id=o.subject_id,actor_id=r.actor_id,evidence_ids=[e],
+        invalidated_at=None,response_type='FACT')
+    assert recall_actions(session,row)==[]

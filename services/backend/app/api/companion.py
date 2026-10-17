@@ -359,7 +359,9 @@ def set_letter_recall(subject_id:str,id:str,body:RecallSelection,actor=Depends(c
         from ..access import visible_episodes
         if episode.status!='ready' or episode.episode_id not in visible_episodes(session,subject_id,actor.actor_id):
             raise Hidden('来源不可用。')
-    basis=source_basis(session,subject_id)
+    from ..entrusted_recall import selected_source_basis
+    basis=selected_source_basis(session,subject_id,body.evidence_ids)
+    if basis is None: raise Hidden('来源不可用。')
     cue=session.get(LetterRecallCue,id)
     if cue is None: cue=LetterRecallCue(letter_id=id);session.add(cue)
     cue.letter_revision=row.revision;cue.source_version=basis;cue.evidence_ids=list(body.evidence_ids)
