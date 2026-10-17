@@ -1,5 +1,7 @@
 # Remember Me
 
+> **2026-10-17 完整交付：** [源码与 AI 接手入口](SUBMISSION.md) · [完整源码、Python 后端、APK 与验证附件](https://github.com/ztjklt/Remember-Me/releases/tag/submission-full-20261017)。本次分支为 `codex/work3200-device-20261016`，Python 后端、AI Core、Voice 源码和依赖均在仓库中。Android 验收版为 0.16.7；以下旧日期记录保留历史，不作为最新下载/部署入口。
+
 > **2026-10-15 夜间双端整合交接：** [比赛前复盘、技术协议与后续开发入口](docs/integration/README.md)。Android 当前下载版为 0.12.1；iOS 声纹后端独立运行在 CloudBase，最新 iOS 客户端源码尚未在本次扫描的分支中找到。已列出 Twin 请求字段、WSS/LiveKit、迁移和 UI 差异，不能只替换服务器地址或整分支覆盖。继续使用 `codex/continuous-voice-20261014`，PR #94 不合并。
 
 > **2026-10-15 ECS＋Android 0.12.1 已同步：** [下载、账号和操作说明](docs/agent-loop/ANDROID_0121_QUICK_START_2026-10-15.md) · [实跑结果与已知问题](docs/agent-loop/CLOUD_SYNC_RESULTS_2026-10-15.md) · [12 张原生截图](docs/agent-loop/screenshots/cloud-sync-20261015/README.md)。API、AI、录音与人物任务统一升级；自动纠错已开启，记忆修订与亲友再分享、连续语音在公网 HTTPS 上实测。属于模拟器验收的内测试用，尚未稳定两秒，人物模拟仍有失败与偏强推断。PR #94 保持未合并。下方各日期记录保留当时状态。
@@ -64,6 +66,7 @@ PRD v2.0 is archived history in [`docs/PRD/archive/`](docs/PRD/archive/). The 20
 
 - `apps/android` — Android client (Kotlin, Jetpack Compose) and its build documentation
 - `apps/ios` — iOS SwiftUI client, local pairing and device runbook
+- `apps/web` — [Web experience and same-origin gateway](apps/web/README.md), reusing the existing backend; Chen-only demo, Android garden assets, person views and text dialogue; local preview
 - `services/backend` — API, persistence, auth, jobs, and storage
 - `services/ai-core` — memory extraction, person model, Twin, calibration, and capture planning
 - `services/voice` — consent-gated voice dataset, clone, and TTS adapters

@@ -1,0 +1,13 @@
+{
+  "id": "/",
+  "name": "勿忘我 Remember Me",
+  "short_name": "勿忘我",
+  "description": "留下故事，慢慢了解。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f5ee",
+  "theme_color": "#edf1e7",
+  "icons": [{"src":"/icon.png","sizes":"1024x1024","type":"image/png","purpose":"any"}]
+}

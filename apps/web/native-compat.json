@@ -1,0 +1,6 @@
+{
+  "note": "Reviewed Android source for client/model.js. A changed hash requires comparison and projection tests before updating this file.",
+  "sources": {
+    "apps/android/app/src/main/java/me/remember/app/integration/GardenProjection.kt": "6ad620c2e0bdea8bc1936b54f41e422ff669323af37dc656ac1997a5078ebc1e"
+  }
+}

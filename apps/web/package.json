@@ -1,0 +1,13 @@
+{
+  "name": "remember-me-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check:sync": "node build.mjs --check"
+  }
+}
