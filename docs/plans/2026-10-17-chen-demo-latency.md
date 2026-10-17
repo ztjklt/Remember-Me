@@ -1,6 +1,6 @@
 # 陈守义演示与语音等待优化
 
-本轮按用户授权延续 DeepSeek、现有 ECS、Paraformer 与小米 TTS，不更换语音供应商，不删除旧账号或历史材料。
+本轮按用户授权延续 DeepSeek、现有 ECS、Paraformer 与小米 TTS，不更换语音供应商。下文记录最初方案；用户后续明确要求清理旧测试账号，当前执行以 `docs/validation/2026-10-17-voice-demo-cleanup.md` 为准。旧测试账号与授权已停用，历史材料只保留于不可访问归档及私有备份。
 
 ## 已确认的问题
 
