@@ -50,7 +50,11 @@ class ContinuousVoiceLiveTest {
             if(model.ui.value.subject!=space.text("subject_id"))ui.runOnIdle{model.selectSpace(space)}
             ui.waitUntil(90000){!model.ui.value.busy&&!model.ui.value.spaceChoiceRequired}
             inst.uiAutomation.executeShellCommand("pm grant ${context.packageName} android.permission.RECORD_AUDIO").close()
-            click("对话");click("语音聊聊")
+            click("对话")
+            val voiceMode=InstrumentationRegistry.getArguments().getString("voiceMode","evidence")
+            if(voiceMode=="persona")click("与 AI 分身聊聊")
+            report.put("mode",voiceMode)
+            click("语音聊聊")
             val speed=InstrumentationRegistry.getArguments().getString("responseSpeed","reviewed")
             val voiceEngine=InstrumentationRegistry.getArguments().getString("voiceEngine","pipeline")
             if(voiceEngine=="step_realtime"){
