@@ -1,0 +1,439 @@
+{
+  "accepted-old-six": [
+    {
+      "round": 1,
+      "status": "completed",
+      "asr_final_ms": 675,
+      "retrieval_ms": 908,
+      "model_total_ms": 2692.078,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2682.936
+        }
+      ],
+      "tts_first_pcm_ms": 785,
+      "input_end_to_playback_ms": 5144,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 5654
+    },
+    {
+      "round": 2,
+      "status": "completed",
+      "asr_final_ms": 643,
+      "retrieval_ms": 500,
+      "model_total_ms": 2061.744,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2057.191
+        }
+      ],
+      "tts_first_pcm_ms": 591,
+      "input_end_to_playback_ms": 4006,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 4576
+    },
+    {
+      "round": 3,
+      "status": "completed",
+      "asr_final_ms": 875,
+      "retrieval_ms": 737,
+      "model_total_ms": 3752.825,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 3749.201
+        }
+      ],
+      "tts_first_pcm_ms": 579,
+      "input_end_to_playback_ms": 6007,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 6347
+    },
+    {
+      "round": 4,
+      "status": "completed",
+      "asr_final_ms": 738,
+      "retrieval_ms": 737,
+      "model_total_ms": 4647.768,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2006.817
+        },
+        {
+          "stage": "review",
+          "call": 2,
+          "status": "returned",
+          "duration_ms": 2635.073
+        }
+      ],
+      "tts_first_pcm_ms": 680,
+      "input_end_to_playback_ms": 6600,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 7140
+    },
+    {
+      "round": 5,
+      "status": "completed",
+      "asr_final_ms": 775,
+      "retrieval_ms": 502,
+      "model_total_ms": 1998.337,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1993.484
+        }
+      ],
+      "tts_first_pcm_ms": 576,
+      "input_end_to_playback_ms": 4117,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 4557
+    },
+    {
+      "round": 6,
+      "status": "completed",
+      "asr_final_ms": 614,
+      "retrieval_ms": 511,
+      "model_total_ms": 2035.569,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2031.576
+        }
+      ],
+      "tts_first_pcm_ms": 688,
+      "input_end_to_playback_ms": 3914,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 4494
+    }
+  ],
+  "accepted-chen-facts": [
+    {
+      "round": 1,
+      "status": "completed",
+      "asr_final_ms": 611,
+      "retrieval_ms": 227,
+      "model_total_ms": 1644.899,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1643.24
+        }
+      ],
+      "tts_first_pcm_ms": 883,
+      "input_end_to_playback_ms": 2866,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3396
+    },
+    {
+      "round": 2,
+      "status": "completed",
+      "asr_final_ms": 790,
+      "retrieval_ms": 144,
+      "model_total_ms": 1880.217,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1876.821
+        }
+      ],
+      "tts_first_pcm_ms": 810,
+      "input_end_to_playback_ms": 3000,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3450
+    },
+    {
+      "round": 3,
+      "status": "completed",
+      "asr_final_ms": 782,
+      "retrieval_ms": 179,
+      "model_total_ms": 1861.509,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1858.186
+        }
+      ],
+      "tts_first_pcm_ms": 625,
+      "input_end_to_playback_ms": 3109,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3599
+    },
+    {
+      "round": 4,
+      "status": "completed",
+      "asr_final_ms": 625,
+      "retrieval_ms": 135,
+      "model_total_ms": 2519.644,
+      "model_stages": [
+        {
+          "stage": "selection",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1300.489
+        },
+        {
+          "stage": "review",
+          "call": 2,
+          "status": "returned",
+          "duration_ms": 1217.042
+        }
+      ],
+      "tts_first_pcm_ms": 842,
+      "input_end_to_playback_ms": 3653,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 4203
+    },
+    {
+      "round": 5,
+      "status": "completed",
+      "asr_final_ms": 918,
+      "retrieval_ms": 138,
+      "model_total_ms": 1639.748,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1635.624
+        }
+      ],
+      "tts_first_pcm_ms": 584,
+      "input_end_to_playback_ms": 3043,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3383
+    },
+    {
+      "round": 6,
+      "status": "completed",
+      "asr_final_ms": 710,
+      "retrieval_ms": 131,
+      "model_total_ms": 1889.81,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1888.043
+        }
+      ],
+      "tts_first_pcm_ms": 578,
+      "input_end_to_playback_ms": 3213,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3723
+    }
+  ],
+  "accepted-chen-persona": [
+    {
+      "round": 1,
+      "status": "completed",
+      "asr_final_ms": 832,
+      "retrieval_ms": 237,
+      "model_total_ms": 4743.093,
+      "model_stages": [
+        {
+          "stage": "generation",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2189.782
+        },
+        {
+          "stage": "semantic_review",
+          "call": 2,
+          "status": "returned",
+          "duration_ms": 2532.045
+        }
+      ],
+      "tts_first_pcm_ms": 718,
+      "input_end_to_playback_ms": 6115,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 6545
+    },
+    {
+      "round": 2,
+      "status": "completed",
+      "asr_final_ms": 733,
+      "retrieval_ms": 133,
+      "model_total_ms": 4264.311,
+      "model_stages": [
+        {
+          "stage": "generation",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2131.103
+        },
+        {
+          "stage": "semantic_review",
+          "call": 2,
+          "status": "returned",
+          "duration_ms": 2111.13
+        }
+      ],
+      "tts_first_pcm_ms": 593,
+      "input_end_to_playback_ms": 5423,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 5983
+    },
+    {
+      "round": 3,
+      "status": "completed",
+      "asr_final_ms": 973,
+      "retrieval_ms": 141,
+      "model_total_ms": 4371.677,
+      "model_stages": [
+        {
+          "stage": "generation",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 2048.002
+        },
+        {
+          "stage": "semantic_review",
+          "call": 2,
+          "status": "returned",
+          "duration_ms": 2296.727
+        }
+      ],
+      "tts_first_pcm_ms": 374,
+      "input_end_to_playback_ms": 5534,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 5944
+    }
+  ],
+  "demo-chen-facts-clear": [
+    {
+      "round": 1,
+      "status": "completed",
+      "asr_final_ms": 680,
+      "retrieval_ms": 236,
+      "model_total_ms": 1464.366,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1462.727
+        }
+      ],
+      "tts_first_pcm_ms": 726,
+      "input_end_to_playback_ms": 2691,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3221
+    },
+    {
+      "round": 2,
+      "status": "completed",
+      "asr_final_ms": 862,
+      "retrieval_ms": 132,
+      "model_total_ms": 1788.553,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1786.881
+        }
+      ],
+      "tts_first_pcm_ms": 623,
+      "input_end_to_playback_ms": 3043,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3503
+    },
+    {
+      "round": 3,
+      "status": "completed",
+      "asr_final_ms": 784,
+      "retrieval_ms": 129,
+      "model_total_ms": 1552.659,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1549.316
+        }
+      ],
+      "tts_first_pcm_ms": 634,
+      "input_end_to_playback_ms": 2635,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3135
+    },
+    {
+      "round": 4,
+      "status": "completed",
+      "asr_final_ms": 900,
+      "retrieval_ms": 130,
+      "model_total_ms": 1672.087,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1668.837
+        }
+      ],
+      "tts_first_pcm_ms": 619,
+      "input_end_to_playback_ms": 2839,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3239
+    },
+    {
+      "round": 5,
+      "status": "completed",
+      "asr_final_ms": 962,
+      "retrieval_ms": 133,
+      "model_total_ms": 1563.121,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 1559.938
+        }
+      ],
+      "tts_first_pcm_ms": 834,
+      "input_end_to_playback_ms": 2854,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 3214
+    },
+    {
+      "round": 6,
+      "status": "completed",
+      "asr_final_ms": 964,
+      "retrieval_ms": 132,
+      "model_total_ms": 3771.277,
+      "model_stages": [
+        {
+          "stage": "review",
+          "call": 1,
+          "status": "returned",
+          "duration_ms": 3769.634
+        }
+      ],
+      "tts_first_pcm_ms": 593,
+      "input_end_to_playback_ms": 5083,
+      "prepared_audio_match": true,
+      "last_voice_to_first_voice_ms": 5463
+    }
+  ]
+}

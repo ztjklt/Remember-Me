@@ -17,6 +17,9 @@ def main(a):
     def get(kind,r):return next(x for x in events if x['kind']==kind and x['round']==r)
     completed=[e['round'] for e in events if e['kind'] in {'playback_finished','playback_interrupted'}]
     assert completed
+    if a.demo_name:
+        attempted={e['round'] for e in events if e['kind']=='question_started'}
+        assert result.get('ok') is True and set(completed)==attempted, 'Do not present a partial/failed capture as the complete fictional demo'
     turns=[]
     for r in completed:
         played=get('audio_track_started',r);input_end=get('question_input_ended',r)['epoch_ms']
@@ -45,6 +48,8 @@ def main(a):
             text_ms=answer['epoch_ms']-end))
     turns.sort(key=lambda t:t['round'])
     duration=(turns[-1]['finished']-start)/1000+1
+    raw_duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',str(raw)]))
+    assert duration<=raw_duration+.5, 'Capture ended before playback; keep the failure, do not manufacture missing video'
     mix=np.zeros(int((duration+.1)*24000),dtype=np.float64)
     def insert(pcm,at):
         i=round((at-start)*24)
