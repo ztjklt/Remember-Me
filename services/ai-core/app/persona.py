@@ -585,12 +585,18 @@ class PersonaProvider:
             # could pre-judge it. Per-point completeness is semantic scope only.
             "rendered_answer": output.model_dump(exclude={"model_version", "confidence", "coverage", "omitted_points"})})
         self._trace_draft(checked, record, kind="review")
-        if (single_voice_point and isinstance(checked,dict) and isinstance(checked.get('points'),list)
-                and len(checked['points'])==1 and isinstance(checked['points'][0],dict)
-                and checked['points'][0].get('point_index')==1 and 'depends_on' not in checked['points'][0]):
-            # Only this structurally forced empty set is supplied locally.
-            # Verdict, codes, coverage and rationale are never inferred/defaulted.
-            checked={**checked,'points':[{**checked['points'][0],'depends_on':[]}]}
+        if payload.voice_response and isinstance(checked,dict) and isinstance(checked.get('points'),list):
+            rows=checked['points'];expected=set(range(1,len(draft.points)+1))
+            exact_indices=(len(rows)==len(expected) and all(isinstance(r,dict) and type(r.get('point_index')) is int for r in rows)
+                and {r['point_index'] for r in rows}==expected)
+            all_supported=exact_indices and all(r.get('verdict')=='supported' and r.get('codes')==[] for r in rows)
+            if exact_indices and (single_voice_point or all_supported):
+                # Every point was supported, so no premise is removed. Missing
+                # edges cannot change publication; conservatively link to ALL
+                # other points. Mixed verdicts still require explicit edges.
+                # Never infer verdicts, codes, coverage, reasons or evidence.
+                checked={**checked,'points':[{**r,**({'depends_on':sorted(expected-{r['point_index']})}
+                    if 'depends_on' not in r else {})} for r in rows]}
         try:
             review = PersonaReview.model_validate(checked)
         except ValidationError as exc:

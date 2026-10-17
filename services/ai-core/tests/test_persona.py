@@ -105,11 +105,24 @@ def test_single_point_schema_never_fills_semantic_fields_or_multi_point_dependen
     points=[point()];verdict=review()
     if damage=='multi_point':
         points.append(point(mode='UNKNOWN', text='', understanding_ids=[]));verdict=review(count=2)
+        verdict['points'][0].update(verdict='unsupported',codes=['unsupported'])
         verdict['points'][1].pop('depends_on')
     elif damage=='self_dependency':verdict['points'][0]['depends_on']=[1]
     else:verdict['points'][0].pop('verdict')
     response=post(monkeypatch, data, ScriptedChat({'points':points}, verdict))
     assert response.status_code==502, response.text
+
+
+def test_all_supported_points_missing_edges_remain_one_conservative_group(monkeypatch):
+    data=payload();data['voice_response']=True
+    unknown=point(mode='UNKNOWN', text='', understanding_ids=[])
+    verdict=review(count=2)
+    for row in verdict['points']:row.pop('depends_on')
+    chat=ScriptedChat({'points':[point(),unknown]},verdict)
+    response=post(monkeypatch,data,chat)
+    assert response.status_code==200,response.text
+    assert response.json()['omitted_points']==0 and response.json()['coverage']=='complete'
+    assert len(chat.requests)==2
 
 
 def test_confirmed_conditional_simulation_tracks_support_and_counterexample(monkeypatch):

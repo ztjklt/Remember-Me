@@ -79,8 +79,8 @@ def main(a):
         '[Events]','Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text']
     def text(value,y,frm=0,to=duration,size=27):
         lines.append(f'Dialogue: 0,{ts(frm)},{ts(to)},Main,,0,0,0,,{{\\pos(575,{y})\\fs{size}}}'+value.replace('\n',r'\N'))
-    text('勿忘我 · 连续语音',55,size=35)
-    text('Android '+result['version']+' → ECS',120,size=26)
+    text(a.demo_name or '勿忘我 · 连续语音',55,size=35)
+    text('真实 App · 陈守义的生活记忆' if a.demo_name else 'Android '+result['version']+' → ECS',120,size=26)
     text('Realtime 试用 / 实际记忆检索' if result.get('voice_engine')=='step_realtime' else ('快速回复 / 无独立模型审阅' if result['response_speed']!='reviewed' else '标准回复 / 保留模型审阅'),165,size=24)
     text('1× 原速 · 保留完整等待',215,size=26)
     for index,t in enumerate(turns):
@@ -94,7 +94,7 @@ def main(a):
         while tick<playing:
             text(f'等待回复 {tick-stopped:.1f} 秒',500,tick,min(tick+.1,playing),size=32);tick+=.1
         text(f"{t['latency_ms']/1000:.1f} 秒后听到回答",500,playing,until,size=32)
-    text('演示范围\n预录问题送入 App 通话音频通道\n绕过模拟器系统麦克风\n\n转写、模型回答、合成均为实调\n声音来自 App 本轮收到的音频\n按 AudioTrack 播放进度同步',750,size=22)
+    text('虚构人物 · 小米合成音色\n\n模拟原音输入，绕过系统麦克风\n真实转写、检索、模型与语音\n声音按 App 实际播放进度同步' if a.demo_name else '演示范围\n预录问题送入 App 通话音频通道\n绕过模拟器系统麦克风\n\n转写、模型回答、合成均为实调\n声音来自 App 本轮收到的音频\n按 AudioTrack 播放进度同步',750,size=22)
     text('连续追问＋插话打断 · 原速实录' if result['ok'] and any(t['interrupted'] for t in turns) else '连续追问；本次未演示打断。',1080,size=22)
     (out/'demo.ass').write_text('\n'.join(lines)+'\n',encoding='utf-8-sig')
     subprocess.run(['ffmpeg','-y','-v','error','-i',str(raw),'-i',str(out/'soundtrack.wav'),'-t',str(duration),
@@ -107,4 +107,5 @@ def main(a):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--input',required=True);p.add_argument('--output',required=True)
+    p.add_argument('--demo-name',help='Optional presentation title; timing and capture boundaries remain visible')
     main(p.parse_args())
