@@ -282,7 +282,9 @@ def letter_visible(row,session,actor):
 def letter_view(row,session,actor):
     if not letter_visible(row,session,actor): raise Hidden('留言不可访问。')
     view=metadata(row,'SUBJECT','recipient_only' if row.status=='published' else 'owner')
-    view.update(recipient_actor_id=row.recipient_actor_id,title=row.title,audio_id=row.audio_id if row.status!='revoked' else None)
+    author=session.get(Actor,row.author_actor_id)
+    view.update(recipient_actor_id=row.recipient_actor_id,title=row.title,audio_id=row.audio_id if row.status!='revoked' else None,
+        author_display_name=author.display_name if author else '')
     if row.status!='revoked': view['text']=row.text
     return view
 

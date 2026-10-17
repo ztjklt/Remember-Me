@@ -23,6 +23,15 @@ def test_opt_in_requires_owner_and_current_published_letter(app, client, session
     assert client.put(path,headers=oh,json=body).status_code==200
 
 
+def test_authorized_letter_includes_actual_author_display_name(app,client,session):
+    from app.models import Actor
+    o,r,x,oh,rh,xh,root,l,e=setup(app,client,session)
+    reply=client.get(root+'/letters/'+l['id'],headers=rh)
+    assert reply.status_code==200
+    assert reply.json()['author_display_name']==session.get(Actor,o.actor_id).display_name
+    assert client.get(root+'/letters/'+l['id'],headers=xh).status_code==404
+
+
 def test_recall_is_scoped_to_answer_sources_actor_and_live_letter(app, client, session):
     from app.entrusted_recall import recall_actions
     o,r,x,oh,rh,xh,root,l,e = setup(app,client,session)
