@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import secrets
 from uuid import uuid4
+from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from sqlalchemy import select, func, delete
@@ -70,13 +71,31 @@ def throttle(session,request,username):
 def password_digest(password,salt):
     return hashlib.pbkdf2_hmac('sha256',password.encode(),bytes.fromhex(salt),600_000).hex()
 
-def issue(session,actor,request,response):
-    token=generate_actor_token();expiry=utcnow()+timedelta(days=30)
+def issue(session,actor,request,response,lifetime=timedelta(days=30)):
+    token=generate_actor_token();expiry=utcnow()+lifetime
     session.add(DeviceCredential(token_hash=hash_actor_token(token),actor_id=actor.actor_id,expires_at=expiry))
     session.commit()
     response.headers['Cache-Control']='no-store'
-    response.set_cookie(COOKIE,token,max_age=30*86400,httponly=True,secure=request.url.scheme=='https',samesite='strict',path='/')
+    response.set_cookie(COOKIE,token,max_age=int(lifetime.total_seconds()),httponly=True,secure=request.url.scheme=='https',samesite='strict',path='/')
     return {'actor_token':token,'actor_id':actor.actor_id,'display_name':actor.display_name,'expires_at':expiry.isoformat()}
+
+
+class DemoSessionInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    role: Literal['owner', 'relative']
+
+
+@router.post('/demo-session')
+def demo_session(payload: DemoSessionInput, request: Request, response: Response, session: Session = Depends(get_session)):
+    from ..demo_accounts import demo_actor, demo_identity
+    transport(request)
+    settings = request.app.state.settings
+    actor = demo_actor(settings, session, payload.role)
+    # Independent devices can use the demo without a single global role quota.
+    peer = request.client.host if request.client else 'unknown'
+    throttle(session, request, f'demo:{peer}:{payload.role}')
+    return {**issue(session, actor, request, response, timedelta(days=1)),
+            **demo_identity(settings, actor.actor_id)}
 
 @router.post('/register',status_code=201)
 def register(payload:Registration,request:Request,response:Response,session:Session=Depends(get_session)):

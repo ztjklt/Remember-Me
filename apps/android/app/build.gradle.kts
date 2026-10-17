@@ -20,8 +20,9 @@ android {
         applicationId = "me.remember.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 20261035
-        versionName = "0.16.5-device-internal"
+        versionCode = 20261036
+        versionName = "0.16.6-device-internal"
+        buildConfigField("boolean", "DEMO_ACCOUNTS", "false")
         buildConfigField("boolean", "SOUNDCORE_ENABLED", soundcoreEnabled.toString())
         val serviceUrl = providers.gradleProperty("rememberServiceUrl").orElse("http://127.0.0.1:8877").get()
         require(serviceUrl.matches(Regex("https?://[a-zA-Z0-9.:-]+"))) { "rememberServiceUrl must be a service root URL" }
@@ -46,6 +47,7 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".internal"
             isDebuggable = false
+            buildConfigField("boolean", "DEMO_ACCOUNTS", "true")
             signingConfig = signingConfigs.getByName("internal")
             buildConfigField("String", "SERVICE_URL", "\"https://39.108.183.47\"")
             matchingFallbacks += listOf("release")

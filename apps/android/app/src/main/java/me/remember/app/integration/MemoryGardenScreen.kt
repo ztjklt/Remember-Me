@@ -76,6 +76,16 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
         label = "garden-story", contentKey = { it?.id }) { current ->
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if(current == null) {
+                if(!state.owner) Surface(shape = RoundedCornerShape(24.dp), color = gardenGlass.copy(alpha = .88f), contentColor = gardenInk,
+                    modifier = Modifier.fillMaxWidth().testTag("garden-unopened")) {
+                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Icon(Icons.Outlined.Lock, null)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("待开放", style = MaterialTheme.typography.titleMedium)
+                            Text("这里只展开与你分享的记忆", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val chips = FilterChipDefaults.filterChipColors(containerColor = gardenGlass.copy(alpha = .55f),
                         labelColor = gardenInk, iconColor = gardenInk, selectedContainerColor = gardenGlass.copy(alpha = .94f),
@@ -104,7 +114,7 @@ fun MemoryGardenScreen(state: NativeState, model: NativeWorkbenchModel, appearan
                         Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             RememberMeBrand(size = 64.dp)
                             Text(if(clusters.isEmpty()) "故事会在这里慢慢留下" else "没有找到匹配的故事", style = MaterialTheme.typography.titleMedium)
-                            Text(if(clusters.isEmpty()) "完成文字核对与整理后，真实记忆会出现在花田。" else "试试别的词，或清除内容侧面筛选。")
+                            Text(if(clusters.isEmpty()) { if(state.owner) "完成文字核对与整理后，记忆会出现在花田。" else "收到分享后，故事会在这里开放。" } else "试试别的词，或清除内容侧面筛选。")
                             if(query.isNotBlank() || facet.isNotBlank()) TextButton(onClick = { query = ""; facet = "" }) { Text("清除筛选") }
                         }
                     }

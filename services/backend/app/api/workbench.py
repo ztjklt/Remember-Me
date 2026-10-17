@@ -87,13 +87,15 @@ def own_episode(session, subject_id, episode_id, actor):
 
 
 @router.get('/spaces')
-def spaces(actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
+def spaces(request: Request, actor: Actor = Depends(current_actor), session: Session = Depends(get_session)):
     owned = list(session.scalars(select(Subject).where(Subject.owner_actor_id == actor.actor_id)))
     shared_ids = select(Episode.subject_id).join(StoryGrant).where(
         StoryGrant.reader_actor_id == actor.actor_id, StoryGrant.revoked_at.is_(None))
     shared = list(session.scalars(select(Subject).where(Subject.subject_id.in_(shared_ids),
         Subject.owner_actor_id.is_not(None), Subject.owner_actor_id != actor.actor_id)))
+    from ..demo_accounts import demo_identity
     return {'actor_id': actor.actor_id, 'display_name': actor.display_name,
+        **demo_identity(request.app.state.settings, actor.actor_id),
         'items': [{'subject_id': s.subject_id, 'display_name': s.display_name, 'role': role}
                   for rows, role in [(owned, 'owner'), (shared, 'reader')] for s in rows]}
 

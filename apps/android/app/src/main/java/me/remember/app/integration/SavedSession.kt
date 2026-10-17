@@ -39,7 +39,7 @@ class SavedSession(context: Context) {
 
 /** Authentication has no pre-existing SessionGate snapshot. Redirects are refused. */
 fun accountRequest(server: String, action: String, body: JSONObject = JSONObject(), token: String? = null): JSONObject {
-    require(action in listOf("login", "register", "logout"))
+    require(action in listOf("login", "register", "logout", "demo-session"))
     val connection = java.net.URI(normalizeServer(server) + "/api/v1/accounts/" + action).toURL().openConnection() as java.net.HttpURLConnection
     try {
         connection.requestMethod = "POST"; connection.connectTimeout = 15_000; connection.readTimeout = 30_000

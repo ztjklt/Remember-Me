@@ -45,26 +45,30 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
         "home" -> {
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 RememberMeBrand(size = 56.dp)
-                Column { Text(state.actorName, style = MaterialTheme.typography.headlineMedium)
-                    Text(if(state.owner) "留下故事的人" else "被邀请的亲友", style = MaterialTheme.typography.bodyMedium) }
+                Column { Text(accountLabel(state), style = MaterialTheme.typography.titleLarge)
+                    Text(if(state.demoRole.isNotBlank()) "演示账号" else if(state.owner) "留下故事的人" else "被邀请的亲友", style = MaterialTheme.typography.bodyMedium) }
             }
             Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                 RememberToggle("简明模式", appearance.simpleMode,
                     { updateAppearance(appearance.copy(simpleMode=it)) }, modifier=Modifier.padding(horizontal=16.dp),
                     supporting=if(appearance.simpleMode) "更清楚的文字，更直接的操作" else "按你的阅读习惯切换")
             }
-            SettingsEntry("账号与空间", "当前身份、换号与退出", Icons.Outlined.AccountCircle) { section = "account" }
+            SettingsEntry("我的账号", "查看身份与切换账号", Icons.Outlined.AccountCircle) { section = "account" }
             SettingsEntry("外观与阅读", "${appearance.theme.title} · ${appearance.scene.title}", Icons.Outlined.Palette) { section = "appearance" }
             SettingsEntry("设备权限与提醒", "麦克风、通知与系统设置", Icons.Outlined.Security) { section = "permissions" }
             if(state.owner) SettingsEntry("连接录音豆", "扫描连接、绑定与下载录音", Icons.Outlined.Bluetooth) { section = "recorder" }
-            SettingsEntry("亲友与分享", "邀请、完整分享范围与撤销", Icons.Outlined.PeopleOutline) { section = "sharing" }
+            if(state.owner) SettingsEntry("亲友与分享", "邀请、分享范围与撤销", Icons.Outlined.PeopleOutline) { section = "sharing" }
             if(state.owner) SettingsEntry("我的用词", "补充人名和方言含义", Icons.Outlined.EditNote) { section = "vocabulary" }
-            SettingsEntry("待处理与核对", "录音、亲友问题、人物理解", Icons.Outlined.FactCheck) { section = "pending" }
+            if(state.owner) SettingsEntry("待处理与核对", "录音、亲友问题、人物理解", Icons.Outlined.FactCheck) { section = "pending" }
             SettingsEntry("数据与帮助", "来源、缓存和版本", Icons.Outlined.Info) { section = "help" }
             Text("声音、文字和分享范围，都由你决定。", style = MaterialTheme.typography.bodySmall)
         }
         "account" -> {
-            Text("账号与空间", style = MaterialTheme.typography.headlineMedium)
+            Text("我的账号", style = MaterialTheme.typography.headlineMedium)
+            if(BuildConfig.DEMO_ACCOUNTS) {
+                DemoAccountPanel(state.demoRole, enabled, model::enterDemo)
+                TextButton(onClick = model::logout, enabled = enabled) { Text("使用其他账号") }
+            } else {
             Text("当前登录：${state.actorName}", style = MaterialTheme.typography.titleMedium)
             Text("角色由服务端根据空间所有权和授权确定，换外观不会改变角色。")
             state.spaces.forEach { space ->
@@ -76,6 +80,7 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("内测账号由管理员准备；需要修改密码时请联系管理员。新设密码可用 8 位，现有密码仍有效。", style = MaterialTheme.typography.bodySmall)
             Button(onClick = { confirm("退出将停止播放并清除本机访问内容，保留按账号隔离的本机原音。再次登录需输入账号密码。", false) { model.logout() } },
                 enabled = !state.busy, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text("退出登录 / 换个账号") }
+            }
         }
         "appearance" -> {
             Text("外观与阅读", style = MaterialTheme.typography.headlineMedium)

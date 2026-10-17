@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     enable_workbench: bool = False
     allow_account_registration: bool | None = None
+    # Explicitly public, fictional demo identities. Never configure real accounts.
+    demo_accounts_enabled: bool = False
+    demo_owner_actor_id: str = ''
+    demo_relative_actor_id: str = ''
+    demo_subject_id: str = ''
     allowed_hosts: list[str] = ['127.0.0.1', 'localhost', '[::1]', 'testserver']
     work3200_app_id: str = ''
     work3200_app_key: SecretStr = SecretStr('')

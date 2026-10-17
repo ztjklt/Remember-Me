@@ -80,7 +80,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     var server by remember { mutableStateOf(me.remember.app.BuildConfig.SERVICE_URL) }
     LaunchedEffect(server, state.actor) { if(state.actor.isBlank()) model.loadServiceInfo(server) }
     var token by remember { mutableStateOf("") }
-    var tab by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(0) }
+    var tab by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(if(state.demoRole == "relative") 2 else 0) }
     var archiveMode by rememberSaveable(state.actor, state.subject) { mutableIntStateOf(if(appearance.simpleMode) 3 else 1) }
     var lastSimpleMode by rememberSaveable { mutableStateOf(appearance.simpleMode) }
     LaunchedEffect(appearance.simpleMode) {
@@ -168,6 +168,8 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
             key(identity) { RememberLoadingSlot(state.busy) }
             state.error?.let { message -> RememberIssue(message) { model.dismissError(message) } }
             if(state.actor.isBlank()) {
+                if(state.demoEntry) DemoEntryPanel(state, model)
+                else {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     var username by remember { mutableStateOf("") }
                     var password by remember { mutableStateOf("") }
@@ -175,6 +177,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     var registering by remember { mutableStateOf(false) }
                     var connection by remember { mutableStateOf(false) }
                     Text("进入自己的空间", style = MaterialTheme.typography.headlineMedium)
+                    if(me.remember.app.BuildConfig.DEMO_ACCOUNTS) TextButton(onClick = { model.enterDemo("owner") }, enabled = !state.busy) { Text("免登录体验陈守义") }
                     Text("留住想记得的故事，也决定与谁分享。")
                     if(state.connectionCheck.message.isNotBlank()) Text(state.connectionCheck.message, style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = { model.loadServiceInfo(server) }, enabled = !state.busy && state.connectionCheck.phase != ConnectionPhase.CHECKING) { Text("检查连接") }
@@ -200,6 +203,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
                     Text("云端演示使用预设 HTTPS 地址直接连接，无需电脑转发。连接本机开发服务时才需要局域网或 ADB；HTTP 仅支持本机或私有局域网。", style = MaterialTheme.typography.bodySmall)
                     Text("每日提醒：关闭。录音、上传和云端文字处理均由你主动发起。", style = MaterialTheme.typography.bodySmall)
                     }
+                }
                 }
             } else {
                 if(state.subject.isBlank()) {
@@ -450,7 +454,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     var question by rememberSaveable(state.actor, state.subject, initialQuestion) { mutableStateOf(initialQuestion) }
     var cloud by remember(state.actor, state.subject) { mutableStateOf(false) }
-    var mode by rememberSaveable(state.actor,state.subject) { mutableStateOf("evidence") }
+    var mode by rememberSaveable(state.actor,state.subject) { mutableStateOf(if(state.demoRole == "relative") "persona" else "evidence") }
     var sources by remember(state.answer?.text("answer_id")) { mutableStateOf(false) }
     var tools by rememberSaveable(state.actor,state.subject) { mutableStateOf(false) }
     val style=state.narrative.optJSONObject("style")
@@ -460,7 +464,7 @@ fun NativeWorkbenchScreen(model: NativeWorkbenchModel, appearance: AppearanceCho
         FilterChip(mode=="evidence",{mode="evidence"},label={Text("查找记录")})
         FilterChip(mode=="persona",{mode="persona"},enabled=style?.optBoolean("enabled")==true,label={Text("与 AI 分身聊聊")})
     }
-    LaunchedEffect(style?.optBoolean("enabled")) { if(style?.optBoolean("enabled")!=true) mode="evidence" }
+    LaunchedEffect(style?.optBoolean("enabled"),state.busy) { if(!state.busy && style?.optBoolean("enabled")!=true) mode="evidence" }
     OutlinedTextField(question, { question = it }, label = { Text("想了解什么？") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
 
     Check("同意将问题与已授权的核对文字交由云端回答", cloud, { cloud = it })
@@ -664,8 +668,8 @@ internal fun clock(ms: Long): String = "%02d:%02d".format(ms / 60_000, ms / 1000
             contentColor=ink, modifier=Modifier.fillMaxWidth().testTag("space-chooser")) {
             Row(Modifier.padding(horizontal=12.dp,vertical=7.dp),verticalAlignment=Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(state.space?.text("display_name") ?: "选择空间",style=MaterialTheme.typography.labelLarge,maxLines=1,overflow=TextOverflow.Ellipsis)
-                    Text(if(state.owner) "我来记录" else "亲友阅读",style=MaterialTheme.typography.labelSmall,maxLines=1)
+                    Text(accountLabel(state),style=MaterialTheme.typography.labelLarge,maxLines=1,overflow=TextOverflow.Ellipsis)
+                    Text(if(state.demoRole.isNotBlank()) "演示账号" else state.space?.text("display_name").orEmpty(),style=MaterialTheme.typography.bodyMedium,maxLines=1)
                 }
                 Icon(Icons.Outlined.ExpandMore,"切换人物空间",Modifier.size(20.dp))
             }
