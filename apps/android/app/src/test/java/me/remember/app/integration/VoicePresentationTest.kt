@@ -4,6 +4,17 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class VoicePresentationTest {
+    @Test fun newSpeechKeepsBothSidesAndPartialsDoNotDuplicateHistory() {
+        val previous = CallUi(transcript = "你爱喝什么茶？", answer = "淡一点的。", submitted = true)
+        val draft = previous.beginInput().copy(transcript = "嗯，")
+        assertEquals(1, draft.history.size)
+        assertEquals("淡一点的。", draft.history.single().answer)
+        val next = draft.beginInput().copy(transcript = "嗯，那平时什么时候喝？", submitted = true)
+        assertEquals(1, next.history.size)
+        assertEquals(2, next.beginInput().history.size)
+        assertEquals("你爱喝什么茶？", next.history.first().question)
+    }
+
     @Test fun retiredCallbacksCannotReplaceTheCurrentConversation() {
         for (kind in listOf("transcript", "error", "answer_ready", "audio", "audio_end", "turn_started", "interrupted")) {
             assertFalse(kind, acceptsVoiceEvent(kind, 3, 4, false, false))

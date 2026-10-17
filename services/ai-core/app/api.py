@@ -20,6 +20,7 @@ from .profile_relations import RelationInput, RelationOutput
 from .narrative import NarrativeInput
 from .expression import ExpressionInput, ExpressionProvider
 from .persona import PersonaInput, PersonaOutput, PersonaProvider
+from .conversation import ConversationInput, respond as conversation_reply
 from .providers.weixin import WeixinProvider, WeixinChat, WeixinTwinProvider, WeixinCalibrationProvider
 from .limits import RequestSizeLimit
 from .providers.fixture import FixtureProvider
@@ -190,6 +191,16 @@ def create_app(
             return await until_disconnect(request,lambda: run_twin(payload))
         from starlette.concurrency import run_in_threadpool
         return await run_in_threadpool(run_twin,payload)
+
+    @app.post('/conversation')
+    async def conversation(payload: ConversationInput, request: Request):
+        from .cancellation import until_disconnect
+        def run():
+            if active_persona is None or not slots.acquire(timeout=2):
+                raise ProviderUnavailable('Conversation temporarily unavailable')
+            try: return conversation_reply(active_persona.chat,payload)
+            finally: slots.release()
+        return await until_disconnect(request,run)
 
     def run_twin(payload):
         from .voice_stream import generation_streamed

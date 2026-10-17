@@ -308,3 +308,16 @@ def test_malformed_negative_review_cannot_turn_into_a_positive_revote():
     chat=Chat()
     with pytest.raises(AIOutputInvalid):QuotedTwin(chat).answer(data())
     assert chat.calls==2
+
+
+def test_short_sentence_proposal_keeps_full_parent_for_condition_review():
+    from app.quoted_twin import quote_packet,original_proposal,render_ids
+    payload=data();payload.question='你喜欢什么茶？'
+    text='我喝茶喜欢淡一点，太浓的喝不惯。客人想喝浓茶，就另泡一杯。'
+    payload.candidates[0].evidence[0].excerpt=text
+    packet,aliases=quote_packet(payload)
+    sources=[s for r in packet['recordings'] for s in r['sources']]
+    assert any(s['text']==text for s in sources)
+    assert any(s.get('parent_id')=='s1' and s['text']=='我喝茶喜欢淡一点，太浓的喝不惯。' for s in sources)
+    answer,_=render_ids({'points':[{'known':True,'source_ids':['s1w0']}]},payload,'fixture')
+    assert '另泡' not in answer.answer and answer.evidence_ids==['e1']

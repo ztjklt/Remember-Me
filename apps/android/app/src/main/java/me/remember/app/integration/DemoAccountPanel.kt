@@ -45,6 +45,5 @@ internal fun DemoEntryPanel(state: NativeState, model: NativeWorkbenchModel) {
         Text(if(state.busy) "正在进入演示" else "走进陈守义的故事", style = MaterialTheme.typography.headlineMedium)
         if(state.busy) Text("正在加载账号与记忆", style = MaterialTheme.typography.bodyLarge)
         else DemoAccountPanel("", true, model::enterDemo)
-        TextButton(onClick = model::useManualLogin, enabled = !state.busy) { Text("使用其他账号") }
     }
 }

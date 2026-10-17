@@ -41,7 +41,7 @@ def asr_start(task_id: str, silence_ms: int) -> dict:
 
 
 def endpoint_silence(simple_mode: bool, response_speed: str) -> int:
-    return 1400 if simple_mode else (400 if response_speed=='streamed' else 800)
+    return 1800 if simple_mode else 1400
 
 
 def parse_asr(data: dict) -> dict | None:

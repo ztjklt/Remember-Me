@@ -4,12 +4,19 @@ import org.json.JSONObject
 
 enum class CallPhase { CONNECTING, LISTENING, THINKING, PREPARING, SPEAKING, PAUSED, FAILED, ENDED }
 
+data class CallExchange(val question: String, val answer: String, val sources: JSONObject? = null)
+
 data class CallUi(
     val active: Boolean = false, val status: String = "", val paused: Boolean = false,
     val muted: Boolean = false, val transcript: String = "", val answer: String = "",
     val error: String = "", val sources: JSONObject? = null, val ready: Boolean = false,
     val inputEnabled: Boolean = true, val phase: CallPhase = CallPhase.CONNECTING,
+    val history: List<CallExchange> = emptyList(), val submitted: Boolean = false,
 ) {
+    /** A new utterance never replaces a submitted exchange. Partials update only the draft. */
+    internal fun beginInput(): CallUi = if (!submitted) this else copy(
+        history = history + CallExchange(transcript, answer, sources),
+        transcript = "", answer = "", sources = null, submitted = false)
     val canInterrupt: Boolean get() = active && ready && inputEnabled && !paused &&
         phase in setOf(CallPhase.THINKING, CallPhase.PREPARING, CallPhase.SPEAKING)
 

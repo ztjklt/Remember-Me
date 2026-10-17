@@ -67,7 +67,6 @@ fun AppSettingsScreen(state: NativeState, model: NativeWorkbenchModel, appearanc
             Text("我的账号", style = MaterialTheme.typography.headlineMedium)
             if(BuildConfig.DEMO_ACCOUNTS) {
                 DemoAccountPanel(state.demoRole, enabled, model::enterDemo)
-                TextButton(onClick = model::logout, enabled = enabled) { Text("使用其他账号") }
             } else {
             Text("当前登录：${state.actorName}", style = MaterialTheme.typography.titleMedium)
             Text("角色由服务端根据空间所有权和授权确定，换外观不会改变角色。")

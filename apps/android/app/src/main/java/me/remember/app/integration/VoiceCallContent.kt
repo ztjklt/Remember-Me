@@ -8,6 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,7 +54,23 @@ import me.remember.app.core.designsystem.atmosphere
 ) {
     var details by remember { mutableStateOf(false) }
     var showWords by rememberSaveable { mutableStateOf(true) }
-    val hasWords = state.transcript.isNotBlank() || state.answer.isNotBlank()
+    val hasWords = state.history.isNotEmpty() || state.transcript.isNotBlank() || state.answer.isNotBlank()
+    val exchanges = state.history + if(state.transcript.isNotBlank() || state.answer.isNotBlank())
+        listOf(CallExchange(state.transcript, state.answer, state.sources)) else emptyList()
+    val conversationScroll = rememberLazyListState()
+    var followLatest by remember { mutableStateOf(true) }
+    var automaticScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(conversationScroll) {
+        snapshotFlow { conversationScroll.isScrollInProgress to conversationScroll.canScrollForward }.collect { (scrolling, more) ->
+            if(scrolling && !automaticScroll) followLatest = !more
+        }
+    }
+    LaunchedEffect(exchanges.size, state.transcript, state.answer, showWords) {
+        if(showWords && exchanges.isNotEmpty() && followLatest) {
+            automaticScroll = true
+            try { conversationScroll.animateScrollToItem(exchanges.lastIndex) } finally { automaticScroll = false }
+        }
+    }
     val view = LocalView.current
     val surface = MaterialTheme.colorScheme.background
     SideEffect {
@@ -80,7 +99,7 @@ import me.remember.app.core.designsystem.atmosphere
                 Text(if (showWords) "收起文字" else "显示文字")
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 24.dp),
+        Column(Modifier.weight(1f).fillMaxWidth().padding(vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             VoicePresence(state.phase, compact = showWords && hasWords)
             Spacer(Modifier.height(16.dp))
@@ -100,16 +119,20 @@ import me.remember.app.core.designsystem.atmosphere
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (state.error.isNotBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             if (showWords && hasWords) {
-                Column(Modifier.fillMaxWidth().padding(top = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (state.transcript.isNotBlank()) VoiceDialogueBubble("你", state.transcript, fromUser = true)
-                    if (state.answer.isNotBlank()) VoiceDialogueBubble(
-                        "AI · " + (state.sources?.let(::voiceAnswerLabel) ?: "回答"), state.answer, fromUser = false)
+                LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(top = 16.dp).testTag("voice-history"),
+                    state = conversationScroll, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(exchanges) { exchange ->
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if(exchange.question.isNotBlank()) VoiceDialogueBubble("你", exchange.question, fromUser = true)
+                            if(exchange.answer.isNotBlank()) VoiceDialogueBubble("AI", exchange.answer, fromUser = false)
+                            exchange.sources?.let { RecallActions(it, onRecall) }
+                        }
+                    }
                 }
             }
-            state.sources?.let { RecallActions(it, onRecall) }
-            if (hasWords) TextButton(onClick = { details = true }, modifier = Modifier.testTag("voice-details")) { Text("本轮详情") }
+            if (hasWords) TextButton(onClick = { details = true }, modifier = Modifier.testTag("voice-details")) { Text("查看依据") }
             // Reserve the slot so the main status never jumps as a round changes.
-            Box(Modifier.fillMaxWidth().heightIn(min = 76.dp).padding(top = 16.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().heightIn(min = 48.dp), contentAlignment = Alignment.Center) {
                 if (state.canInterrupt) OutlinedButton(onClick = onInterrupt, modifier = Modifier.testTag("voice-interrupt")) {
                     Icon(Icons.Outlined.RecordVoiceOver, null, Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Text("我来说")
                 }

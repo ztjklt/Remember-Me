@@ -306,9 +306,13 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     private var pendingTransfer: CaptureTransfer? = null
     init {
         reminders.disable()
+        if(me.remember.app.BuildConfig.DEMO_ACCOUNTS && spacePreferences.getInt("chen-demo-generation", 0) < 2) {
+            savedSession.clear()
+            spacePreferences.edit().clear().putInt("chen-demo-generation", 2).putString("demo-role", "owner").commit()
+        }
         val saved = savedSession.load()
         if(saved != null) connect(saved.first, saved.second, remember = true)
-        else if(me.remember.app.BuildConfig.DEMO_ACCOUNTS && !spacePreferences.getBoolean("manual-login", false)) {
+        else if(me.remember.app.BuildConfig.DEMO_ACCOUNTS) {
             enterDemo(spacePreferences.getString("demo-role", "owner") ?: "owner")
         }
     }
@@ -344,12 +348,14 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
     }
 
     fun useManualLogin() {
+        if(me.remember.app.BuildConfig.DEMO_ACCOUNTS) return
         if(state.value.busy) return
         spacePreferences.edit().putBoolean("manual-login", true).apply()
         state.value = state.value.copy(demoEntry = false, error = null)
     }
 
     fun signIn(server: String, username: String, password: String, name: String? = null) {
+        if(me.remember.app.BuildConfig.DEMO_ACCOUNTS) return
         if(state.value.busy) return
         spacePreferences.edit().putBoolean("manual-login", true).apply()
         val operationId = beginOperation()
@@ -419,6 +425,10 @@ class NativeWorkbenchModel(context: Context, val audio: AndroidAudioCaptureServi
         session = next
         operation(next) {
             val result = io { client.json(next, "/api/v1/workbench/spaces") }
+            if(me.remember.app.BuildConfig.DEMO_ACCOUNTS) check(result.text("demo_role") in setOf("owner", "relative") && result.text("demo_subject_id").isNotBlank()) {
+                savedSession.clear()
+                "请重新选择演示身份。"
+            }
             if(remember) savedSession.save(next.server, next.token) else savedSession.clear()
             state.value = state.value.copy(actor = result.text("actor_id"), actorName = result.text("display_name"),
                 demoRole = result.text("demo_role"), demoEntry = false, spaces = result.rows())

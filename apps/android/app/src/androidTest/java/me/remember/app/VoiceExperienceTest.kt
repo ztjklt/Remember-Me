@@ -53,6 +53,20 @@ class VoiceExperienceTest {
         File(folder, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
     }
+    @Test fun previousExchangesRemainScrollableWhileTheNextUtteranceChanges() {
+        val history=(1..12).map { CallExchange("第${it}轮的问题", "第${it}轮的回答") }
+        var state by mutableStateOf(CallUi(active=true, ready=true, phase=CallPhase.LISTENING, status="我在听",
+            history=history,transcript="嗯，我还想问"))
+        show { VoiceCallContent(state, {}, {}, {}) }
+        ui.onNodeWithTag("voice-history").performScrollToIndex(0)
+        ui.onNodeWithText("第1轮的问题").assertIsDisplayed()
+        ui.runOnIdle { state=state.copy(transcript="嗯，我还想问你喜欢喝什么茶？") }
+        ui.onNodeWithText("第1轮的问题").assertIsDisplayed()
+        shot("11-retained-history")
+        ui.onNodeWithTag("voice-history").performScrollToIndex(12)
+        ui.onNodeWithText(state.transcript).assertIsDisplayed()
+        ui.onNodeWithText("结束").assertIsDisplayed()
+    }
     @Test fun conversationPhasesAndInterruptRemainClear() {
         var state by mutableStateOf(CallUi(active = true, status = "正在连接"))
         var ended = 0

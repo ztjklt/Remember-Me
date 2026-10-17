@@ -40,12 +40,12 @@ def test_wrong_predicted_speech_is_never_released():
     asyncio.run(run())
 
 
-def test_endpoint_silence_is_only_faster_in_explicit_streamed_mode():
+def test_endpoint_silence_preserves_natural_short_pauses():
     from app.realtime_providers import endpoint_silence
-    assert endpoint_silence(False,'streamed')==400
-    assert endpoint_silence(False,'fast')==800
-    assert endpoint_silence(False,'reviewed')==800
-    assert endpoint_silence(True,'streamed')==1400
+    assert endpoint_silence(False,'streamed')==1400
+    assert endpoint_silence(False,'fast')==1400
+    assert endpoint_silence(False,'reviewed')==1400
+    assert endpoint_silence(True,'streamed')==1800
 
 
 def test_tts_client_is_reused_until_call_closes(monkeypatch):

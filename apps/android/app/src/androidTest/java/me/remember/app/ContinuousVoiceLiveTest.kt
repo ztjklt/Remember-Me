@@ -42,11 +42,16 @@ class ContinuousVoiceLiveTest {
         try{
             scenario.onActivity{model=ViewModelProvider(it)[NativeWorkbenchModel::class.java]}
             ui.waitUntil(90000){!model.ui.value.busy}
-            ui.runOnIdle{if(model.ui.value.actor.isNotBlank())model.logout()}
-            ui.waitUntil(30000){model.ui.value.actor.isBlank()}
-            ui.onNodeWithText("账号").performTextReplacement(config.getString("username"))
-            ui.onNodeWithText("密码（至少8个字符）").performTextReplacement(config.getString("password"))
-            click("登录");ui.waitUntil(90000){!model.ui.value.busy&&model.ui.value.actor.isNotBlank()}
+            if(BuildConfig.DEMO_ACCOUNTS) {
+                ui.runOnIdle{model.enterDemo("relative")}
+                ui.waitUntil(90000){!model.ui.value.busy && model.ui.value.demoRole=="relative"}
+            } else {
+                ui.runOnIdle{if(model.ui.value.actor.isNotBlank())model.logout()}
+                ui.waitUntil(30000){model.ui.value.actor.isBlank()}
+                ui.onNodeWithText("账号").performTextReplacement(config.getString("username"))
+                ui.onNodeWithText("密码（至少8个字符）").performTextReplacement(config.getString("password"))
+                click("登录");ui.waitUntil(90000){!model.ui.value.busy&&model.ui.value.actor.isNotBlank()}
+            }
             val space=model.ui.value.spaces.single{it.text("subject_id")==config.getString("subject_id")}
             if(model.ui.value.subject!=space.text("subject_id"))ui.runOnIdle{model.selectSpace(space)}
             ui.waitUntil(90000){!model.ui.value.busy&&!model.ui.value.spaceChoiceRequired}

@@ -10,10 +10,28 @@ logger=logging.getLogger(__name__)
 
 
 def conversation_control(text):
-    """Only literal social controls. Never infer a person's facts or attitudes."""
+    """Select a non-memory LLM lane, never supply a canned answer."""
     key=re.sub(r'[\s，。！？,.!?]','',text)
-    return {'你好':'你好，我在听。','你好可以和我聊聊吗':'可以，慢慢说。',
-            '谢谢':'不客气。'}.get(key)
+    if re.fullmatch(r'(?:喂|你好|您好|嗨)*(?:你|您)?(?:能|可以)?听(?:到|见|得见|得到)(?:我|我的)?(?:说话|说的话|声音)?(?:吗|么|了吗|不)',key):
+        return 'audio_check'
+    if key in {'你好','您好','嗨','喂','你好可以和我聊聊吗','在吗','你在吗','谢谢','谢谢你','谢了'}:
+        return 'thanks' if key.startswith(('谢','谢谢')) else 'greeting'
+    return None
+
+
+class UtteranceBuffer:
+    """Keep hesitations and unfinished preambles until the substantive sentence arrives."""
+    def __init__(self): self.pending=''
+    def clear(self): self.pending=''
+    def display(self,text): return self.pending+text
+    def final(self,text):
+        combined=self.display(text)
+        key=re.sub(r'[\s，。！？,.!?]','',combined)
+        if re.fullmatch(r'(?:嗯|呃|啊|那个|这个|就是|我想|我想问|我想问一下|我想说|等一下)+',key):
+            self.pending=combined[-120:]
+            return None
+        self.pending=''
+        return combined
 
 
 class VoiceTurns:

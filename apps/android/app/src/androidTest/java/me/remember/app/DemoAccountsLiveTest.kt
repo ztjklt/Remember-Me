@@ -21,8 +21,10 @@ class DemoAccountsLiveTest {
         val inst = InstrumentationRegistry.getInstrumentation()
         val context = inst.targetContext
         assertTrue(BuildConfig.DEMO_ACCOUNTS)
-        SavedSession(context).clear()
-        context.getSharedPreferences("remember-spaces",0).edit().remove("manual-login").remove("demo-role").commit()
+        // An upgrade must discard an old test login before any old-space request.
+        SavedSession(context).save(BuildConfig.SERVICE_URL, "retired-test-session-must-not-be-restored")
+        context.getSharedPreferences("remember-spaces",0).edit().putBoolean("manual-login",true)
+            .remove("chen-demo-generation").putString("demo-role","relative").commit()
         val folder = File(context.getExternalFilesDir(null),"demo-accounts-live").apply { mkdirs() }
         fun shot(name: String) { ui.waitForIdle(); Thread.sleep(500); val b=inst.uiAutomation.takeScreenshot();File(folder,"$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)}; b.recycle() }
         fun click(text: String) {
@@ -40,8 +42,9 @@ class DemoAccountsLiveTest {
             val owner=model.ui.value.actor
             val ownerStories=model.ui.value.stories.map { it.text("episode_id") }.toSet()
             ui.onNodeWithText("陈守义 · 本人").assertIsDisplayed()
-            ui.onNodeWithText("录音豆", substring=true).assertExists();shot("01-owner")
+            ui.onAllNodesWithText("录音豆", substring=true).onFirst().assertIsDisplayed();shot("01-owner")
             click("我的");click("我的账号");ui.onNodeWithTag("demo-account-relative").assertIsDisplayed();shot("02-switch")
+            ui.onNodeWithText("使用其他账号").assertDoesNotExist()
             ui.onNodeWithTag("demo-account-relative").performClick()
             ready("relative");assertFalse(model.ui.value.owner);assertNotEquals(owner,model.ui.value.actor)
             val relative=model.ui.value.actor
@@ -60,6 +63,7 @@ class DemoAccountsLiveTest {
             ready("owner");assertEquals(owner,model.ui.value.actor);assertTrue(model.ui.value.owner)
             assertEquals(ownerStories,model.ui.value.stories.map { it.text("episode_id") }.toSet());shot("06-back-owner")
             report.put("fresh_owner",true).put("different_actors",true).put("relative_subset",true)
+                .put("old_login_migrated",true).put("demo_only_entry",true)
                 .put("owner_story_count",ownerStories.size).put("relative_story_count",shared.size)
                 .put("restore_relative",true).put("back_owner",true).put("no_relative_recorder",true).put("ok",true)
         } finally { File(folder,"report.json").writeText(report.toString(2)); scenario.close() }

@@ -23,7 +23,7 @@ from ..security import current_actor
 from ..realtime_providers import ParaformerRealtime, XiaomiRealtime, RealtimeFailure, endpoint_silence
 from ..voice_material_cache import VoiceMaterialCache
 from ..voice_prefetch import VoicePrefetch, SelectionCache
-from ..voice_turns import VoiceTurns, conversation_control
+from ..voice_turns import VoiceTurns, conversation_control, UtteranceBuffer
 from ..twin_client import TwinUnavailable
 from ..twin_validity import get_current_answer
 from .twin import TwinQuestion, generate_answer, SourceChanged
@@ -239,7 +239,7 @@ async def stream(websocket:WebSocket,session_id:str):
                 if row.status!='complete' or not _check_source(session,row): raise SourceChanged('对照依据已变化。')
                 if answer and answer['answer']!=row.summary: raise SourceChanged('对照已变化。')
             elif answer and answer.get('interaction'):
-                if answer['answer']!=conversation_control(answer.get('question','')):
+                if not conversation_control(answer.get('question','')) or answer.get('response_type')!='CONVERSATION':
                     raise SourceChanged('通话状态已变化。')
             elif answer:
                 get_current_answer(session,call.subject,call.actor,answer['answer_id'])
@@ -297,10 +297,16 @@ async def stream(websocket:WebSocket,session_id:str):
             return await asyncio.to_thread(report)
         control=conversation_control(question)
         if control:
-            return {'answer':control,'question':question,'interaction':True,
-                    'source_version':initial_basis,'response_type':'SIMULATION',
-                    'model_version':'call-controls-v1','evidence':[],
-                    'voice_timing':{'retrieval_ms':0}}
+            started=time.monotonic()
+            async with httpx.AsyncClient(timeout=12,trust_env=False,follow_redirects=False) as client:
+                response=await client.post(settings.ai_core_url.rstrip('/')+'/conversation',
+                    json={'question':question,'intent':control})
+                if response.is_error: raise TwinUnavailable('本轮回应暂未完成。')
+                result=response.json()
+            if result.get('response_type')!='CONVERSATION' or not isinstance(result.get('answer'),str) or not 0<len(result['answer'])<=60:
+                raise TwinUnavailable('对话回应无效。')
+            return dict(result,question=question,interaction=True,source_version=initial_basis,evidence=[],
+                voice_timing={'retrieval_ms':0,'conversation_generation_ms':round((time.monotonic()-started)*1000)})
         loop=asyncio.get_running_loop(); cancelled=threading.Event()
         bridge=AsyncTwinBridge(loop,settings,history,cancelled,on_draft,response_speed=call.payload.response_speed)
         timing={};started=time.monotonic()
@@ -352,7 +358,7 @@ async def stream(websocket:WebSocket,session_id:str):
         turns=RealtimeVoiceTurns(call.id,send,context,StepRealtimeSpeech(settings),guard)
     else:
         turns=VoiceTurns(call.id,send,answer,tts,guard,prepare_audio=True)
-    asr=None; asr_task=None; paused=False; tasks=[]
+    asr=None; asr_task=None; paused=False; tasks=[]; utterance=UtteranceBuffer()
     async def stop_asr():
         nonlocal asr,asr_task
         if asr_task:
@@ -370,17 +376,19 @@ async def stream(websocket:WebSocket,session_id:str):
                     if paused or call.stop.is_set(): continue
                     if event['type']!='transcript': continue
                     await guard()
-                    await turns.emit('transcript',text=event['text'],final=event['final'],
+                    displayed=utterance.display(event['text'])
+                    question=utterance.final(event['text']) if event['final'] else None
+                    await turns.emit('transcript',text=displayed,final=event['final'] and question is not None,
                         begin_ms=event.get('begin_ms'),end_ms=event.get('end_ms'))
                     if event['final']:
                         prefetcher.finish()
-                        await turns.submit(event['text'])
+                        if question: await turns.submit(question)
                     else:
                         if turns.current is not None:
                             # ASR confirms speech if local VAD missed it.
                             await turns.interrupt()
                         if call.payload.engine=='step_realtime' or (call.payload.response_speed in {'reviewed','streamed'} and settings.realtime_voice_prefetch_enabled):
-                            prefetcher.offer(event['text'],list(turns.history))
+                            prefetcher.offer(displayed,list(turns.history))
             except asyncio.CancelledError: raise
             except Exception as exc:
                 await turns.emit('error',code=getattr(exc,'code','ASR_CONNECTION_FAILED'),

@@ -130,6 +130,18 @@ def quote_packet(payload):
                     windows.append((score,recording,source,start,excerpt))
     chosen=sorted(windows,key=lambda w:-w[0])[:8]
     selected_windows={}
+    # Offer complete short sentences as exact excerpts too. The complete parent
+    # stays in recordings for the same attribution/condition review.
+    for recording in packet['recordings']:
+        for source in recording['sources']:
+            parts=list(re.finditer(r'[^。！？]+[。！？]?',source['text']))
+            if 1<len(parts)<=8 and len(source['text'])<=380:
+                for part in parts:
+                    if len(part.group().strip())<6: continue
+                    id=source['id']+'w'+str(part.start())
+                    selected_windows.setdefault(source['id'],[]).append(dict(id=id,text=part.group(),type=source['type'],
+                        parent_id=source['id'],start=part.start(),end=part.end()))
+                    aliases[id]=aliases[source['id']]
     for _,recording,source,start,excerpt in chosen:
         id=source['id']+'w'+str(start)
         selected_windows.setdefault(source['id'],[]).append(dict(id=id,text=excerpt,type=source['type'],
@@ -211,11 +223,11 @@ def original_proposal(payload, packet):
         content=re.sub(r'^那|一般|通常|平时|常常', ' ', content)
     terms=_query_terms(content)|{s for s in re.findall(r'[\u3400-\u9fff]+',content) if len(s)==1}
     sources=[s for r in packet['recordings'] for s in r['sources']
-        if s['type']=='SUBJECT' and 'parent_id' not in s and len(s['text'])<=380]
+        if s['type']=='SUBJECT' and len(s['text'])<=380]
     words=[_query_terms(s['text'])|set(s['text']) for s in sources]
     counts=Counter(t for ts in words for t in ts)
-    ranked=sorted(zip(sources,words),key=lambda pair:-sum(
-        math.log(1+len(sources)/counts[t]) for t in terms & pair[1]))
+    ranked=sorted(zip(sources,words),key=lambda pair:(-sum(
+        math.log(1+len(sources)/counts[t]) for t in terms & pair[1]),len(pair[0]['text'])))
     # A taste/occupation is not a time. This is a proposal routing hint, never
     # proof of absence: the full reviewer can reject it and find another source.
     # Ignore recording metadata; a recording date is not an event/habit time.

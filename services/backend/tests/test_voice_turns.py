@@ -5,8 +5,8 @@ from app.voice_turns import VoiceTurns, conversation_control
 
 def test_social_controls_cannot_answer_embedded_memory_questions():
     assert conversation_control('你好，可以和我聊聊吗？')
-    assert conversation_control('谢谢！') == '不客气。'
-    assert conversation_control('你好。') == '你好，我在听。'
+    assert conversation_control('谢谢！') == 'thanks'
+    assert conversation_control('你好。') == 'greeting'
     assert conversation_control('你好，我女儿叫什么？') is None
     assert conversation_control('谢谢，你最喜欢什么？') is None
 
@@ -132,3 +132,20 @@ def test_source_change_stops_audio_and_clears_history():
         assert call.history==[]
         await call.close()
     asyncio.run(run())
+
+
+def test_audio_checks_do_not_bypass_memory_questions():
+    for q in ['喂，你好，你能听到我说的话吗？','能听见我说话吗？','你听得到吗？']:
+        assert conversation_control(q)=='audio_check'
+    for q in ['你以前听到我说什么？','你好，你叫什么名字？','你能听到我说话吗？我爱喝什么茶？']:
+        assert conversation_control(q) is None
+
+
+def test_hesitation_remains_part_of_the_next_sentence():
+    from app.voice_turns import UtteranceBuffer
+    b=UtteranceBuffer()
+    assert b.final('嗯，') is None
+    assert b.final('我想问一下，') is None
+    assert b.display('你喜欢什么茶')=='嗯，我想问一下，你喜欢什么茶'
+    assert b.final('你喜欢什么茶？')=='嗯，我想问一下，你喜欢什么茶？'
+    assert b.pending==''

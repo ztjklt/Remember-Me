@@ -108,10 +108,10 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
             "interrupted","turn_started"->{
                 if(id<turn)return
                 turn=id;flush();outputSuppressed=false;receivedSamples=0;lastAcknowledgedSamples=-1L;previousSequence=0;expectedSamples=null
-                if(e.optString("type")=="turn_started")mutable.update{it.copy(phase=if(it.paused)CallPhase.PAUSED else CallPhase.THINKING,status=if(it.paused)"已暂停" else "正在想",transcript=e.optString("question"),answer="",sources=null,error="")}
-                else mutable.update{it.copy(phase=if(it.paused)CallPhase.PAUSED else CallPhase.LISTENING,status=if(it.paused)"已暂停" else "我在听",answer="",sources=null,error="")}
+                if(e.optString("type")=="turn_started")mutable.update{it.copy(phase=if(it.paused)CallPhase.PAUSED else CallPhase.THINKING,status=if(it.paused)"已暂停" else "正在想",transcript=e.optString("question"),answer="",sources=null,error="",submitted=true)}
+                else mutable.update{it.beginInput().copy(phase=if(it.paused)CallPhase.PAUSED else CallPhase.LISTENING,status=if(it.paused)"已暂停" else "我在听",error="")}
             }
-            "transcript"->mutable.update{it.copy(transcript=e.optString("text"),phase=if(e.optBoolean("final"))CallPhase.THINKING else CallPhase.LISTENING,status=if(e.optBoolean("final"))"正在想" else "我在听",error="")}
+            "transcript"->mutable.update{it.beginInput().copy(transcript=e.optString("text"),phase=if(e.optBoolean("final"))CallPhase.THINKING else CallPhase.LISTENING,status=if(e.optBoolean("final"))"正在想" else "我在听",error="")}
             "answer_ready"->if(id==turn&&!outputSuppressed){val a=e.getJSONObject("answer");mutable.update{it.copy(answer=a.optString("answer"),sources=a,phase=CallPhase.PREPARING,status="准备播报")}}
             "audio"->if(id==turn&&!outputSuppressed&&!inputPaused){
                 val seq=e.getInt("sequence");require(seq==previousSequence+1)
@@ -230,7 +230,7 @@ class VoiceCallEngine(private val context:Context,private val identityValid:()->
     private fun interruptOutput(){
         outputSuppressed=true;flush()
         lastInterruptEpochMs=System.currentTimeMillis()
-        mutable.update{it.copy(phase=CallPhase.LISTENING,status="我在听",answer="",sources=null,error="")}
+        mutable.update{it.beginInput().copy(phase=CallPhase.LISTENING,status="我在听",error="")}
         send(JSONObject().put("type","interrupt"))
     }
     private fun send(event:JSONObject){ if(!closed&&identityValid())socket?.send(event.toString()) }
