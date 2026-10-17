@@ -58,7 +58,15 @@ class ContinuousVoiceLiveTest {
             inst.uiAutomation.executeShellCommand("pm grant ${context.packageName} android.permission.RECORD_AUDIO").close()
             click("对话")
             val voiceMode=InstrumentationRegistry.getArguments().getString("voiceMode","evidence")
-            if(voiceMode=="persona")click("与 AI 分身聊聊")
+            val legacyMode=ui.onAllNodes(hasText("与 AI 分身聊聊") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
+            if(legacyMode) {
+                if(voiceMode=="persona")click("与 AI 分身聊聊")
+            } else {
+                // 0.16.8 selects the visible space's permitted mode in AskTab.
+                // Verify that actual route; never mutate it through the test seam.
+                val actualMode=if(model.ui.value.narrative.optJSONObject("style")?.optBoolean("enabled")==true) "persona" else "evidence"
+                assertEquals("Requested mode differs from the current chat entry",voiceMode,actualMode)
+            }
             report.put("mode",voiceMode)
             click("语音聊聊")
             val speed=InstrumentationRegistry.getArguments().getString("responseSpeed","reviewed")

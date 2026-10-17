@@ -9,6 +9,10 @@ class PersonaSpy:
     def persona(self, payload):
         self.payload=payload
         if self.callback: self.callback()
+        if not payload['understandings']:
+            return dict(answer='现有记录还不足以确定。',response_type='UNKNOWN',
+                evidence_ids=[],confidence=0,model_version='fixture-persona',
+                understanding_ids=[],contribution_ids=[],prompt_version='persona-v1')
         trait=payload['understandings'][0]
         return dict(answer='我平时会省着花，但也会看看这次具体需要什么。',response_type='SIMULATION',
             evidence_ids=trait['evidence_ids']+trait['counter_evidence_ids'],confidence=.7,
@@ -30,6 +34,24 @@ def cloud(client,subject,oh):
     return client.post('/api/v1/consents',headers=oh,json={'subject_id':subject,'scope':'CLOUD_TWIN'}).json()['consent_id']
 
 
+def test_recorded_facts_remain_available_without_current_personality_inference(app,client,session):
+    """New recordings may stale traits; they must not disable authorized facts."""
+    o,_,oh,_,_,_,source,_,root=prepare(app,client,session)
+    enable(client,root,oh,source)
+    class Facts:
+        def persona(self,payload):
+            assert payload['understandings']==[]
+            assert source['evidence_id'] in {e['evidence_id'] for c in payload['candidates'] for e in c['evidence']}
+            return dict(answer=source['excerpt'],response_type='SIMULATION',evidence_ids=[source['evidence_id']],
+                understanding_ids=[],contribution_ids=[],confidence=.6,model_version='fixture',prompt_version='fixture')
+    app.state.settings.ai_backend='http';app.state.twin_client=Facts()
+    response=client.post(f'/api/v1/subjects/{o.subject_id}/twin/answers',headers=oh,
+        json={'question':'以前留下了什么原话？','cloud_consent_id':cloud(client,o.subject_id,oh),'mode':'persona'})
+    assert response.status_code==200,response.text
+    assert response.json()['answer']==source['excerpt']
+    assert response.json()['understanding_ids']==[]
+
+
 def test_persona_uses_same_confirmed_context_for_reader_and_owner(app,client,session):
     o,r,oh,rh,ep,other,source,extra,root=prepare(app,client,session,second=True)
     row=candidate(session,o,[source],[extra]);confirm(client,root,oh,row)
@@ -49,7 +71,7 @@ def test_persona_uses_same_confirmed_context_for_reader_and_owner(app,client,ses
     assert len(list(session.scalars(select(TwinAnswer))))==1
 
 
-def test_persona_disabled_or_incomplete_counter_source_never_calls_model(app,client,session):
+def test_persona_disabled_stops_model_and_missing_counter_source_excludes_trait(app,client,session):
     o,r,oh,rh,ep,other,source,extra,root=prepare(app,client,session,second=True)
     row=candidate(session,o,[source],[extra]);confirm(client,root,oh,row)
     c=cloud(client,o.subject_id,oh);spy=PersonaSpy();app.state.twin_client=spy;app.state.settings.ai_backend='http'
@@ -59,9 +81,16 @@ def test_persona_disabled_or_incomplete_counter_source_never_calls_model(app,cli
     enable(client,root,oh,source);g=grant(client,root,oh,r,ep)
     from app.models import StoryGrant
     session.get(StoryGrant,g['grant_id']).cloud_processing_allowed=True;session.commit()
+    class Unknown:
+        def persona(self,payload):
+            assert payload['understandings']==[]
+            assert extra['evidence_id'] not in {e['evidence_id'] for c in payload['candidates'] for e in c['evidence']}
+            return dict(answer='现有记录还不足以确定。',response_type='UNKNOWN',evidence_ids=[],
+                understanding_ids=[],contribution_ids=[],confidence=0,model_version='fixture',prompt_version='fixture')
+    app.state.twin_client=Unknown()
     response=client.post(path,headers=rh,json={'question':'怎么考虑','cloud_consent_id':g['grant_id'],'mode':'persona'})
-    assert response.status_code==422,response.text
-    assert spy.payload is None
+    assert response.status_code==200,response.text
+    assert response.json()['response_type']=='UNKNOWN' and response.json()['understanding_ids']==[]
 
 
 def test_style_disable_during_generation_does_not_publish_old_persona(app,client,session):

@@ -279,8 +279,11 @@ def generate_answer(subject_id, payload, request, actor, session, *, voice_conte
     pref=session.get(NarrativePreference,subject_id)
     examples=[{'id':r['id'],'text':r['text']} for r in organized if r['kind']=='style'] if pref and pref.style_enabled else []
     from ..errors import RequestInvalid
-    if payload.mode=='persona' and (not pref or not pref.style_enabled or not examples or not loaded['understandings']):
-        raise RequestInvalid('请先由本人开启分身表达，并确认可使用的人物理解和表达范例。')
+    # Missing/stale personality inference must not suppress authorized original
+    # facts. Pass only current understandings; AI Core still requires one for
+    # every conditional SIMULATION and reviews FACT claims against raw sources.
+    if payload.mode=='persona' and (not pref or not pref.style_enabled or not examples):
+        raise RequestInvalid('请先由本人开启分身表达，并确认可使用的表达范例。')
     from ..persona_context import visible_contributions, select_contributions
     contributions=visible_contributions(session,subject_id,actor_id,
         enforce_budget=payload.retrieval_mode=='full',

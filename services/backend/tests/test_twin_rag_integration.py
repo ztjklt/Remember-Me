@@ -167,10 +167,13 @@ def test_reader_retrieval_never_receives_private_source(app,client,session,monke
     picker=provider(monkeypatch,source)
     response=client.post(f'/api/v1/subjects/{o.subject_id}/twin/answers',headers=rh,json={
         'question':'怎么考虑？','mode':'persona','retrieval_mode':'local','cloud_consent_id':g['grant_id']})
-    # Persona is unavailable because its counterexample is not shared.
-    assert response.status_code==422,response.text
+    # Authorized facts remain usable, but the unshared counterexample cannot
+    # support an inference, reach the model, or leak through its response.
+    assert response.status_code==200,response.text
+    assert response.json()['response_type']=='UNKNOWN'
     assert extra['evidence_id'] not in {e.evidence_id for e in picker.seen.authorized_evidence}
-    assert spy.payload is None
+    assert spy.payload['understandings']==[]
+    assert extra['evidence_id'] not in {e['evidence_id'] for c in spy.payload['candidates'] for e in c['evidence']}
 
 
 def test_old_event_selection_also_carries_later_change(app,client,session,monkeypatch):
